@@ -47,6 +47,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Trygg Hand brand colors
+        "trust-blue": "hsl(var(--trust-blue))",
+        "trust-blue-dark": "hsl(var(--trust-blue-dark))",
+        "trust-green": "hsl(var(--trust-green))",
+        "trust-green-light": "hsl(var(--trust-green-light))",
+        "warm-gray": "hsl(var(--warm-gray))",
+        "soft-gray": "hsl(var(--soft-gray))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
