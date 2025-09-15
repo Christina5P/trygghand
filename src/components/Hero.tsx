@@ -12,7 +12,7 @@ const Hero = () => {
               <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
                 Från beslut till nytt kapitel
               </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed">
+              <p className="text-xl text-foreground leading-relaxed">
                 Vi erbjuder helhetslösning för livsförändringar, äldreflytt och hantering av dödsbo. 
                 Med digital uppföljning och komplett koordinering – all hjälp du behöver, på ett tryggt och smidigt sätt.
               </p>
@@ -39,7 +39,7 @@ const Hero = () => {
               </div>
               <div className="text-center space-y-2">
                 <Users className="h-8 w-8 text-primary mx-auto" />
-                <p className="text-sm font-medium">Erfaren personal</p>
+                <p className="text-sm font-medium">Fasta priser</p>
               </div>
             </div>
           </div>

@@ -4,34 +4,28 @@ import { Shield, Heart, Clock, CheckCircle } from "lucide-react";
 const About = () => {
   const values = [
     {
-      icon: Shield,
+      icon: Heart,
       title: "Trygghet & Förtroende",
-      description: "Vi förstår att du anförtror oss dina mest värdefulla tillhörigheter och minnen. Allt hanteras med största respekt och omsorg."
+      description: "Vi förstår att du anförtror oss dina mest värdefulla tillhörigheter och minnen. Allt hanteras med största respekt och omsorg och vi arbetar under sekretess."
     },
     {
-      icon: Heart,
-      title: "Integritet & Medkänsla",
-      description: "Vi vet att livsförändringar kan vara känslomässigt krävande. Vårt team arbetar med empati och förståelse för din situation."
+      icon: CheckCircle,
+      title: "Professionell Koordinering",
+      description: "En kontaktpunkt för hela processen. Vi tar hand om all koordinering så att du kan fokusera på det som verkligen är viktigt."
     },
     {
       icon: Clock,
       title: "Effektivitet & Transparens",
       description: "Med vår digitala plattform kan du följa processens framsteg i realtid. Vi håller dig informerad varje steg på vägen."
     },
-    {
-      icon: CheckCircle,
-      title: "Professionell Koordinering",
-      description: "En kontaktpunkt för hela processen. Vi tar hand om all koordinering så att du kan fokusera på det som verkligen är viktigt."
-    }
   ];
 
   const benefits = [
-    "Över 10 års erfarenhet av livsförändringar",
-    "Licensierade och försäkrade partners",
-    "Digital uppföljning i realtid",
-    "Kostnadsfri initial konsultation",
+    "Försäkrad verksamhet och nöjd kund-garanti – vi rättar till om något inte blir som förväntat",
     "Flexibel service anpassad efter dina behov",
-    "Etablerat nätverk av pålitliga partners"
+    "Kostnadsfri första konsultation",
+    "Digital uppföljning i realtid – du kan följa arbetet steg för steg",
+    "Etablerat nätverk av pålitliga partners för städning, flytt och värdering"
   ];
 
   return (
@@ -43,14 +37,15 @@ const About = () => {
               <h2 className="text-3xl lg:text-4xl font-bold text-foreground">
                 Varför välja Trygg Hand?
               </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Vi hjälper dig att lösa problem med hantering av livsförändringar, äldreflytt och dödsbon 
-                som kan vara tids- och energikrävande i svåra stunder.
+              <p className="text-lg text-foreground leading-relaxed">
+               När livet förändras kan det praktiska kännas överväldigande.<br></br>Vi finns där för att göra processen enklare – oavsett om det gäller flytt till ett nytt boende eller att ta hand om ett dödsbo.
+
+<br></br>Med personlig samordning, pålitliga partners och vår nöjd-kund-garanti kan du känna dig trygg i att allt blir ordnat på ett respektfullt och professionellt sätt.
               </p>
             </div>
 
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-foreground">Vad våra kunder säger:</h3>
+              <h3 className="text-xl font-semibold text-foreground">Vad vi erbjuder:</h3>
               <div className="grid gap-4">
                 {benefits.map((benefit, index) => (
                   <div key={index} className="flex items-center space-x-3">

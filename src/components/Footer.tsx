@@ -23,7 +23,7 @@ const Footer = () => {
             <ul className="space-y-2 text-sm text-background/80">
               <li>Rådgivning & planering</li>
               <li>Städning</li>
-              <li>Tömning av bostad</li>
+              <li>Tömning av bohag</li>
               <li>Flytt</li>
               <li>Värdering</li>
               <li>Försäljning</li>
@@ -36,7 +36,6 @@ const Footer = () => {
             <ul className="space-y-2 text-sm text-background/80">
               <li>Om oss</li>
               <li>Våra värderingar</li>
-              <li>Karriär</li>
               <li>Partner</li>
               <li>Integritetspolicy</li>
               <li>Villkor</li>
@@ -48,7 +47,7 @@ const Footer = () => {
             <div className="space-y-3 text-sm text-background/80">
               <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4" />
-                <span>08-123 456 78</span>
+                <span>070-175 35 85</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
@@ -56,7 +55,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
-                <span>Stockholm, Sverige</span>
+                <span>Sundsvall, Sverige</span>
               </div>
             </div>
           </div>
@@ -64,7 +63,7 @@ const Footer = () => {
 
         <div className="border-t border-background/20 mt-12 pt-8 text-center">
           <p className="text-sm text-background/60">
-            © 2024 Trygg Hand. Alla rättigheter förbehållna.
+            © 2025 Trygg Hand. Alla rättigheter förbehållna.
           </p>
         </div>
       </div>

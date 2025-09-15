@@ -9,7 +9,7 @@ const Contact = () => {
     {
       icon: Phone,
       title: "Telefon",
-      value: "08-123 456 78",
+      value: "070-175 35 85",
       description: "Vardagar 08:00-17:00"
     },
     {
@@ -21,8 +21,8 @@ const Contact = () => {
     {
       icon: MapPin,
       title: "Kontor",
-      value: "Stockholm, Sverige",
-      description: "Vi verkar i hela Stockholmsområdet"
+      value: "Sundsvall, Sverige",
+      description: "Vi verkar i hela Sundsvallsområdet"
     },
     {
       icon: Clock,
@@ -37,7 +37,7 @@ const Contact = () => {
       <div className="container mx-auto px-4">
         <div className="text-center space-y-4 mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground">Kontakta oss</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-xl text-foreground max-w-3xl mx-auto">
             Låt oss hjälpa dig med din livsförändring. Boka en kostnadsfri konsultation idag.
           </p>
         </div>
