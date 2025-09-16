@@ -6,7 +6,9 @@ const Header = () => {
     <header className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <h1 className="text-2xl font-bold text-primary">Trygg Hand</h1>
+          <a href="#top" onClick={e => { e.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
+            <h1 className="text-2xl font-bold text-primary cursor-pointer">Trygg Hand</h1>
+          </a>
          
         </div>
         
@@ -22,10 +24,10 @@ const Header = () => {
               <Phone className="h-4 w-4" />
               <span>070-175 35 85</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <a href="mailto:info@trygghand.se" className="flex items-center space-x-1 hover:text-primary transition-colors">
               <Mail className="h-4 w-4" />
               <span>info@trygghand.se</span>
-            </div>
+            </a>
           </div>
          
         </div>

@@ -286,7 +286,7 @@ const Services = () => {
           </div>
 
           <div className="text-lg max-w-2xl mx-auto text-foreground">
-              <h3 className="text-xl font-semibold text-foreground mb-4">Skräddarsydda lösningar</h3>
+              <h3   id="las-mer-tjanster"  className="text-xl font-semibold text-foreground mb-4">Skräddarsydda lösningar</h3>
               <p className="leading-relaxed">
                 Behöver du hjälp med specifika tjänster utanför våra paket? Vi erbjuder även individuella tjänster och skräddarsydda lösningar anpassade efter dina unika behov.
               </p>
@@ -302,65 +302,65 @@ const Services = () => {
           <ServicesGrid />
         </div>
       </div>
+      
     </section>
   );
 };
 
 function ServicesGrid() {
   return (
-    <div className="mt-16">
-      <h3 className="text-2xl font-bold text-foreground mb-8">
-        Läs mer om våra tjänster
-      </h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-        
-        <Link to="/services/radgivning-planering" className="text-center space-y-2 block hover:scale-105 transition-transform">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Users className="h-6 w-6 text-primary" />
-          </div>
-          <p className="font-small text-foreground">Rådgivning & planering</p>
-        </Link>
+    <div className="mt-16" >
+  
+       <h3 
+  
+  className="text-3xl font-bold text-foreground underline"
+>
+  Läs mer om våra tjänster
+</h3>
 
-        <Link to="/services/stadning" className="text-center space-y-2 block hover:scale-105 transition-transform">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Heart className="h-6 w-6 text-primary" />
+<br />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
+        <Link to="/services/tjanster" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Users className="h-10 w-10 text-primary" />
           </div>
-          <p className="font-small text-foreground">Städning</p>
+          <p className="text-lg font-semibold text-foreground">Rådgivning & planering</p>
         </Link>
-
-        <Link to="/services/tomning-bohag" className="text-center space-y-2 block hover:scale-105 transition-transform">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Shield className="h-6 w-6 text-primary" />
+        <Link to="/services/stadning" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Heart className="h-10 w-10 text-primary" />
           </div>
-          <p className="font-small text-foreground">Tömning av bohag</p>
+          <p className="text-lg font-semibold text-foreground">Städning</p>
         </Link>
-
-        <Link to="/services/flytt" className="text-center space-y-2 block hover:scale-105 transition-transform">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle className="h-6 w-6 text-primary" />
+        <Link to="/services/tomning-bohag" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Shield className="h-10 w-10 text-primary" />
           </div>
-          <p className="font-small text-foreground">Flytt</p>
+          <p className="text-lg font-semibold text-foreground">Tömning av bohag</p>
         </Link>
-
-        <Link to="/services/vardering" className="text-center space-y-2 block hover:scale-105 transition-transform">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Users className="h-6 w-6 text-primary" />
+        <Link to="/services/flytt" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle className="h-10 w-10 text-primary" />
           </div>
-          <p className="font-small text-foreground">Värdering</p>
+          <p className="text-lg font-semibold text-foreground">Flytt</p>
         </Link>
-
-        <Link to="/services/forsaljning" className="text-center space-y-2 block hover:scale-105 transition-transform">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Heart className="h-6 w-6 text-primary" />
+        <Link to="/services/vardering" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Users className="h-10 w-10 text-primary" />
           </div>
-          <p className="font-small text-foreground">Försäljning</p>
+          <p className="text-lg font-semibold text-foreground">Värdering</p>
         </Link>
-
-        <Link to="/services/magasinering" className="text-center space-y-2 block hover:scale-105 transition-transform">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Shield className="h-6 w-6 text-primary" />
+        <Link to="/services/forsaljning" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Heart className="h-10 w-10 text-primary" />
           </div>
-          <p className="font-small text-foreground">Magasinering</p>
+          <p className="text-lg font-semibold text-foreground">Försäljning</p>
+        </Link>
+        <Link to="/services/magasinering" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Shield className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-lg font-semibold text-foreground">Magasinering</p>
         </Link>
       </div>
     </div>
