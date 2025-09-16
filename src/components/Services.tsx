@@ -8,6 +8,7 @@ import {
   Shield,
   CheckCircle
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Services = () => {
   const seniorPackages = [
@@ -227,7 +228,9 @@ const Services = () => {
           </p>
         </div>
         
-        <Tabs defaultValue="senior" className="w-full">
+        <Tabs defaultValue="senior"  className="text-lg py-3 px-8 font-semibold rounded-t-lg 
+             bg-blue-100 
+             data-[state=active]:bg-blue-200">
           <TabsList className="grid w-full grid-cols-2 mb-12">
             <TabsTrigger value="senior" className="text-lg py-3">
               <Heart className="mr-2 h-5 w-5" />
@@ -266,7 +269,7 @@ const Services = () => {
           </TabsContent>
         </Tabs>
         
-        <div className="text-center mt-16 space-y-4">
+        <div className="text-center mt-16 space-y-8">
           <div className="flex justify-center space-x-6 mb-8">
             <div className="text-center space-y-2">
               <Users className="h-8 w-8 text-primary mx-auto" />
@@ -281,15 +284,87 @@ const Services = () => {
               <p className="text-sm font-medium">Trygg hantering</p>
             </div>
           </div>
+
+          <div className="text-lg max-w-2xl mx-auto text-foreground">
+              <h3 className="text-xl font-semibold text-foreground mb-4">Skräddarsydda lösningar</h3>
+              <p className="leading-relaxed">
+                Behöver du hjälp med specifika tjänster utanför våra paket? Vi erbjuder även individuella tjänster och skräddarsydda lösningar anpassade efter dina unika behov.
+              </p>
+              <p className="text-sm text-muted-foreground">Kontakta oss för en kostnadsfri konultation så diskuterar vi hur bäst vi kan hjälpa dig.</p>
+          </div>
+          <div></div>
           <a href="#kontakt">
-  <Button size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark">
-    Boka kostnadsfri konsultation
-  </Button>
-</a>
+            <Button size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark">
+              Boka kostnadsfri konsultation
+            </Button>
+          </a>
+
+          <ServicesGrid />
         </div>
       </div>
     </section>
   );
 };
+
+function ServicesGrid() {
+  return (
+    <div className="mt-16">
+      <h3 className="text-2xl font-bold text-foreground mb-8">
+        Läs mer om våra tjänster
+      </h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+        
+        <Link to="/services/radgivning-planering" className="text-center space-y-2 block hover:scale-105 transition-transform">
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Users className="h-6 w-6 text-primary" />
+          </div>
+          <p className="font-small text-foreground">Rådgivning & planering</p>
+        </Link>
+
+        <Link to="/services/stadning" className="text-center space-y-2 block hover:scale-105 transition-transform">
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Heart className="h-6 w-6 text-primary" />
+          </div>
+          <p className="font-small text-foreground">Städning</p>
+        </Link>
+
+        <Link to="/services/tomning-bohag" className="text-center space-y-2 block hover:scale-105 transition-transform">
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Shield className="h-6 w-6 text-primary" />
+          </div>
+          <p className="font-small text-foreground">Tömning av bohag</p>
+        </Link>
+
+        <Link to="/services/flytt" className="text-center space-y-2 block hover:scale-105 transition-transform">
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle className="h-6 w-6 text-primary" />
+          </div>
+          <p className="font-small text-foreground">Flytt</p>
+        </Link>
+
+        <Link to="/services/vardering" className="text-center space-y-2 block hover:scale-105 transition-transform">
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Users className="h-6 w-6 text-primary" />
+          </div>
+          <p className="font-small text-foreground">Värdering</p>
+        </Link>
+
+        <Link to="/services/forsaljning" className="text-center space-y-2 block hover:scale-105 transition-transform">
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Heart className="h-6 w-6 text-primary" />
+          </div>
+          <p className="font-small text-foreground">Försäljning</p>
+        </Link>
+
+        <Link to="/services/magasinering" className="text-center space-y-2 block hover:scale-105 transition-transform">
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Shield className="h-6 w-6 text-primary" />
+          </div>
+          <p className="font-small text-foreground">Magasinering</p>
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export default Services;

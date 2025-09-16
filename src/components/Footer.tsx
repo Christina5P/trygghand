@@ -1,4 +1,5 @@
 import { Phone, Mail, MapPin, Facebook, Linkedin, Instagram } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -21,13 +22,13 @@ const Footer = () => {
           <div className="space-y-4">
             <h4 className="font-semibold">Tjänster</h4>
             <ul className="space-y-2 text-sm text-background/80">
-              <li>Rådgivning & planering</li>
-              <li>Städning</li>
-              <li>Tömning av bohag</li>
-              <li>Flytt</li>
-              <li>Värdering</li>
-              <li>Försäljning</li>
-              <li>Magasinering</li>
+              <li><Link to="/services/radgivning-planering" className="hover:underline">Rådgivning & planering</Link></li>
+              <li><Link to="/services/stadning" className="hover:underline">Städning</Link></li>
+              <li><Link to="/services/tomning-bohag" className="hover:underline">Tömning av bohag</Link></li>
+              <li><Link to="/services/flytt" className="hover:underline">Flytt</Link></li>
+              <li><Link to="/services/vardering" className="hover:underline">Värdering</Link></li>
+              <li><Link to="/services/forsaljning" className="hover:underline">Försäljning</Link></li>
+              <li><Link to="/services/magasinering" className="hover:underline">Magasinering</Link></li>
             </ul>
           </div>
 

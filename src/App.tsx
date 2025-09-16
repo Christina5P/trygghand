@@ -3,22 +3,50 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+
+// Dina services-sidor
+// If the file is named 'services.tsx'
+import Services from "./pages/services";
+import Forsaljning from "./pages/services/Forsaljning";
+import Stadning from "./pages/services/Stadning";
+import Flytt from "./pages/services/Flytt";
+import TomningBohag from "./pages/services/TomningBohag";
+import Vardering from "./pages/services/Vardering";
+import Magasinering from "./pages/services/Magasinering";
+import RadgivningPlanering from "./pages/services/RadgivningPlanering";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Startsida */}
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+
+          {/* Services översikt */}
+          <Route path="/services" element={<Services />} />
+
+          {/* Individuella tjänster */}
+          <Route path="/services/forsaljning" element={<Forsaljning />} />
+          <Route path="/services/stadning" element={<Stadning />} />
+          <Route path="/services/flytt" element={<Flytt />} />
+          <Route path="/services/tomning-bohag" element={<TomningBohag />} />
+          <Route path="/services/vardering" element={<Vardering />} />
+          <Route path="/services/magasinering" element={<Magasinering />} />
+          <Route path="/services/radgivning-planering" element={<RadgivningPlanering />} />
+
+          {/* Catch-all 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+
+        {/* Toast & notifieringar */}
+        <Toaster />
+        <Sonner />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
