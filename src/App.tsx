@@ -38,7 +38,7 @@ const App = () => (
           <Route path="/services/tomning-bohag" element={<TomningBohag />} />
           <Route path="/services/vardering" element={<Vardering />} />
           <Route path="/services/magasinering" element={<Magasinering />} />
-          <Route path="/services/radgivning-planering" element={<RadgivningPlanering />} />
+          <Route path="/services/RadgivningPlanering" element={<RadgivningPlanering />} />
 
           {/* Catch-all 404 */}
           <Route path="*" element={<NotFound />} />

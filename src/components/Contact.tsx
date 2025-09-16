@@ -1,10 +1,22 @@
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
 
 const Contact = () => {
+  useEffect(() => {
+    if (window.location.hash === '#kontakt-form') {
+      setTimeout(() => {
+        const form = document.getElementById('kontakt-form');
+        if (form) {
+          form.scrollIntoView({ behavior: 'smooth' });
+          (form.querySelector('input,textarea,button') as HTMLElement)?.focus();
+        }
+      }, 100);
+    }
+  }, []);
   const contactInfo = [
     {
       icon: Phone,
@@ -46,7 +58,7 @@ const Contact = () => {
           <div className="space-y-8">
             <div>
               <h3 className="text-2xl font-bold text-foreground mb-6">Få en kostnadsfri konsultation</h3>
-              <Card className="shadow-lg border-border/50">
+              <Card className="shadow-lg border-border/50" id="kontakt-form">
                 <CardHeader>
                   <CardTitle>Berätta om din situation</CardTitle>
                   <CardDescription>

@@ -20,11 +20,11 @@ const Hero = () => {
             
             <div className="flex flex-col sm:flex-row gap-4">
               <a href="#kontakt">
-              <Button size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark hover:from-trust-blue-dark hover:to-primary shadow-lg">
-                Boka kostnadsfri konsultation
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <Button size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark hover:from-trust-blue-dark hover:to-primary shadow-lg">
+                  Boka kostnadsfri konsultation
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                </a>
+              </a>
              <a href="#las-mer-tjanster">
     <Button variant="outline" size="lg" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"> Läs mer om våra tjänster
  </Button>

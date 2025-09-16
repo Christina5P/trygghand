@@ -51,9 +51,12 @@ const Footer = () => {
                 <span>070-175 35 85</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Mail className="h-4 w-4" />
-                <span>info@trygghand.se</span>
-              </div>
+               
+                <a href="mailto:info@trygghand.se" className="flex items-center space-x-1 hover:text-primary transition-colors">
+                              <Mail className="h-4 w-4" />
+                              <span>info@trygghand.se</span>
+                            </a>
+                </div>
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
                 <span>Sundsvall, Sverige</span>

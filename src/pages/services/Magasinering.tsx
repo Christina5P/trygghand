@@ -1,28 +1,50 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, ArrowLeft, CheckCircle, Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Magasinering = () => {
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <Link to="/#tjanster" className="inline-flex items-center text-primary hover:text-primary/80 mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Tillbaka till tjänster
-          </Link>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-              <Shield className="h-8 w-8 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Magasinering</h1>
-              <p className="text-xl text-muted-foreground">Säker förvaring av värdesaker</p>
-            </div>
-          </div>
-        </div>
-
+ const navigate = useNavigate();
+  
+    const scrollToSection = (id: string) => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    };
+  
+    const handleConsultationClick = () => {
+      // Navigera till startsidan
+      navigate("/", { replace: false });
+      // Scrolla till kontakt efter en kort timeout
+      setTimeout(() => scrollToSection("kontakt"), 50);
+    };
+  
+    const handleBackToServicesClick = () => {
+      navigate("/", { replace: false });
+      setTimeout(() => scrollToSection("skraddarsydda-losningar"), 50);
+    };
+  
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <button
+              onClick={handleBackToServicesClick}
+              className="inline-flex items-center text-primary hover:text-primary/80 mb-4"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Tillbaka till tjänster
+            </button>
+  
+     <div className="flex items-center gap-4 mb-6">
+             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+               <Shield className="h-8 w-8 text-primary" />
+             </div>
+             <div>
+               <h1 className="text-3xl font-bold text-foreground">Magasinering</h1>
+               <p className="text-xl text-muted-foreground">Förvaring</p>
+             </div>
+           </div>
+         </div>
         <div className="max-w-4xl mx-auto">
           <Card>
             <CardHeader>
@@ -101,11 +123,16 @@ const Magasinering = () => {
             </CardContent>
           </Card>
         </div>
+ <div className="mt-12 text-center">
+          <Link to="/#kontakt-form">
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-primary to-trust-blue-dark"
+            >
+              Boka kostnadsfri konsultation
+            </Button>
+          </Link>
 
-        <div className="mt-12 text-center">
-          <Button size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark">
-            Boka kostnadsfri konsultation
-          </Button>
         </div>
       </div>
     </div>

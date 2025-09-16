@@ -286,18 +286,20 @@ const Services = () => {
           </div>
 
           <div className="text-lg max-w-2xl mx-auto text-foreground">
-              <h3   id="las-mer-tjanster"  className="text-xl font-semibold text-foreground mb-4">Skräddarsydda lösningar</h3>
+              <h3 id="skraddarsydda-losningar" className="text-xl font-semibold text-foreground mb-4">Skräddarsydda lösningar</h3>
               <p className="leading-relaxed">
                 Behöver du hjälp med specifika tjänster utanför våra paket? Vi erbjuder även individuella tjänster och skräddarsydda lösningar anpassade efter dina unika behov.
               </p>
               <p className="text-sm text-muted-foreground">Kontakta oss för en kostnadsfri konultation så diskuterar vi hur bäst vi kan hjälpa dig.</p>
           </div>
           <div></div>
-          <a href="#kontakt">
-            <Button size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark">
-              Boka kostnadsfri konsultation
-            </Button>
-          </a>
+          
+            <a href="#kontakt">
+              <Button id="boka-kostnadsfri" size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark">
+                Boka kostnadsfri konsultation
+              </Button>
+            </a>
+         
 
           <ServicesGrid />
         </div>
@@ -309,18 +311,18 @@ const Services = () => {
 
 function ServicesGrid() {
   return (
-    <div className="mt-16" >
+    <div id="las-mer-tjanster" className="mt-16" >
   
        <h3 
   
-  className="text-3xl font-bold text-foreground underline"
+  className="text-3xl font-bold text-foreground underline" 
 >
   Läs mer om våra tjänster
 </h3>
 
 <br />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
-        <Link to="/services/tjanster" className="text-center space-y-3 block hover:scale-105 transition-transform">
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
+        <Link to="/services/RadgivningPlanering" className="text-center space-y-3 block hover:scale-105 transition-transform">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
             <Users className="h-10 w-10 text-primary" />
           </div>

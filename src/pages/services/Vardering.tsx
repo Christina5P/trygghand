@@ -1,17 +1,38 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Vardering = () => {
+  const navigate = useNavigate();
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleConsultationClick = () => {
+    navigate("/", { replace: false });
+    setTimeout(() => scrollToSection("kontakt"), 50);
+  };
+
+  const handleBackToServicesClick = () => {
+    navigate("/", { replace: false });
+    setTimeout(() => scrollToSection("skraddarsydda-losningar"), 50);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <Link to="/#tjanster" className="inline-flex items-center text-primary hover:text-primary/80 mb-4">
+          <button
+            onClick={handleBackToServicesClick}
+            className="inline-flex items-center text-primary hover:text-primary/80 mb-4"
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Tillbaka till tjänster
-          </Link>
+          </button>
+
           <div className="flex items-center gap-4 mb-6">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
               <Users className="h-8 w-8 text-primary" />
@@ -71,7 +92,11 @@ const Vardering = () => {
         </div>
 
         <div className="mt-12 text-center">
-          <Button size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark">
+          <Button
+            size="lg"
+            className="bg-gradient-to-r from-primary to-trust-blue-dark"
+            onClick={handleConsultationClick}
+          >
             Boka kostnadsfri konsultation
           </Button>
         </div>
