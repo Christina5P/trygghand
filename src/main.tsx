@@ -1,16 +1,17 @@
+import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import ComingSoon from "./pages/ComingSoon";
 
-createRoot(document.getElementById("root")!).render(<App />);
+const root = createRoot(document.getElementById("root")!);
 
-const showComingSoon = true; // ⬅ byt till false när du är redo
+const showComingSoon = true; // byt till false när sidan är redo
 
 const isMaintenance = import.meta.env.VITE_MAINTENANCE === "true";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+root.render(
   <React.StrictMode>
-    {isMaintenance ? <ComingSoon /> : <App />}
+    {isMaintenance || showComingSoon ? <ComingSoon /> : <App />}
   </React.StrictMode>
 );
