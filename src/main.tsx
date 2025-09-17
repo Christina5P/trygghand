@@ -6,12 +6,14 @@ import ComingSoon from "./pages/ComingSoon";
 
 const root = createRoot(document.getElementById("root")!);
 
-const showComingSoon = true; // byt till false när sidan är redo
-
+// Endast visa "ComingSoon" i produktion om miljövariabeln är satt
 const isMaintenance = import.meta.env.VITE_MAINTENANCE === "true";
+
+// Lokalt utvecklingsläge visar alltid appen
+const isDev = import.meta.env.MODE === "development";
 
 root.render(
   <React.StrictMode>
-    {isMaintenance || showComingSoon ? <ComingSoon /> : <App />}
+    <App />
   </React.StrictMode>
 );
