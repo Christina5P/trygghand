@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// Support both Vite and Node environments
+const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -101,3 +106,8 @@ export interface StorageItem {
   monthly_cost?: number
   created_at: string
 }
+// Optionally export an admin client if service role key is present
+export const supabaseAdmin =
+  process.env.SUPABASE_SERVICE_ROLE_KEY && supabaseUrl
+    ? createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY)
+    : undefined
