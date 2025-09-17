@@ -8,7 +8,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 // Dina services-sidor
-// If the file is named 'services.tsx'
 import Services from "./pages/services";
 import Forsaljning from "./pages/services/Forsaljning";
 import Stadning from "./pages/services/Stadning";
@@ -17,6 +16,7 @@ import TomningBohag from "./pages/services/TomningBohag";
 import Vardering from "./pages/services/Vardering";
 import Magasinering from "./pages/services/Magasinering";
 import RadgivningPlanering from "./pages/services/RadgivningPlanering";
+// Viktigt! Importera Portal-komponenten
 import Portal from "./pages/Portal";
 
 const queryClient = new QueryClient();

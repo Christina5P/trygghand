@@ -1,6 +1,36 @@
+
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase, Case, CaseComment } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
+
+
+// Define types here if not exported elsewhere
+type Case = {
+  id: string
+  title: string
+  status: string
+  service_type?: {
+    name: string
+    description?: string
+  }
+  scheduled_date?: string
+  address?: string
+  total_price?: number
+  [key: string]: any
+}
+
+type CaseComment = {
+  id: string
+  case_id: string
+  author_id: string
+  author_type: string
+  content: string
+  created_at: string
+  author?: {
+    name: string
+  }
+}
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,15 +47,23 @@ const CustomerPortal = () => {
   const [comments, setComments] = useState<CaseComment[]>([])
   const [newComment, setNewComment] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadingComments, setLoadingComments] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
-    if (customer) {
+    if (customer?.id) {
+      setLoading(true)
       fetchCases()
+    } else {
+      setCases([])
+      setLoading(false)
     }
-  }, [customer])
+    // eslint-disable-next-line
+  }, [customer?.id])
 
   const fetchCases = async () => {
+    if (!customer?.id) return
+    setLoading(true)
     try {
       const { data, error } = await supabase
         .from('cases')
@@ -37,7 +75,7 @@ const CustomerPortal = () => {
             subscription:subscriptions(name, provider)
           )
         `)
-        .eq('customer_id', customer?.id)
+        .eq('customer_id', customer.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -49,12 +87,14 @@ const CustomerPortal = () => {
         description: 'Kunde inte hämta ärenden',
         variant: 'destructive'
       })
+      setCases([])
     } finally {
       setLoading(false)
     }
   }
 
   const fetchComments = async (caseId: string) => {
+    setLoadingComments(true)
     try {
       const { data, error } = await supabase
         .from('case_comments')
@@ -69,6 +109,9 @@ const CustomerPortal = () => {
       setComments(data || [])
     } catch (error) {
       console.error('Error fetching comments:', error)
+      setComments([])
+    } finally {
+      setLoadingComments(false)
     }
   }
 
@@ -236,26 +279,30 @@ const CustomerPortal = () => {
                 <CardContent>
                   {/* Comments */}
                   <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
-                    {comments.map((comment) => (
-                      <div
-                        key={comment.id}
-                        className={`p-3 rounded-lg ${
-                          comment.author_type === 'customer' 
-                            ? 'bg-trust-blue/10 ml-4' 
-                            : 'bg-gray-100 mr-4'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm font-medium">
-                            {comment.author_type === 'customer' ? 'Du' : 'Trygg Hand'}
-                          </span>
-                          <span className="text-xs text-warm-gray">
-                            {format(new Date(comment.created_at), 'dd MMM HH:mm', { locale: sv })}
-                          </span>
+                    {loadingComments ? (
+                      <div className="text-center text-warm-gray">Laddar kommentarer...</div>
+                    ) : (
+                      comments.map((comment) => (
+                        <div
+                          key={comment.id}
+                          className={`p-3 rounded-lg ${
+                            comment.author_type === 'customer' 
+                              ? 'bg-trust-blue/10 ml-4' 
+                              : 'bg-gray-100 mr-4'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-sm font-medium">
+                              {comment.author_type === 'customer' ? 'Du' : 'Trygg Hand'}
+                            </span>
+                            <span className="text-xs text-warm-gray">
+                              {format(new Date(comment.created_at), 'dd MMM HH:mm', { locale: sv })}
+                            </span>
+                          </div>
+                          <p className="text-sm">{comment.content}</p>
                         </div>
-                        <p className="text-sm">{comment.content}</p>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
 
                   {/* Add Comment */}
@@ -268,7 +315,7 @@ const CustomerPortal = () => {
                     />
                     <Button 
                       onClick={addComment} 
-                      disabled={!newComment.trim()}
+                      disabled={!newComment.trim() || loadingComments}
                       className="w-full"
                     >
                       Skicka kommentar

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase, Case, Customer, ServiceType, ContactRequest, Subscription } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase' // RÄTT!
+//import { supabase } from '@/lib/supabaseClient'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +13,66 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { Plus, LogOut, Users, FileText, Phone, Package } from 'lucide-react'
+import NewCaseForm from '@/components/NewCaseForm'
+
+// Type definitions
+interface Case {
+  id: string
+  customer?: {
+    name: string
+    email: string
+    phone: string
+  }
+  service_type?: {
+    name: string
+  }
+  title: string
+  description: string
+  status: string
+  priority: string
+  scheduled_date?: string | null
+  address?: string | null
+  total_price?: number | null
+  notes?: string | null
+  [key: string]: any
+}
+
+interface Customer {
+  id: string
+  name: string
+  email: string
+  phone?: string
+  is_admin?: boolean
+  [key: string]: any
+}
+
+interface ServiceType {
+  id: string
+  name: string
+  [key: string]: any
+}
+
+interface Subscription {
+  id: string
+  name: string
+  provider: string
+  category: string
+  [key: string]: any
+}
+
+interface ContactRequest {
+  id: string
+  name: string
+  email: string
+  phone?: string
+  message?: string
+  service_interest?: string
+  status: string
+  admin_notes?: string
+  created_at?: string
+  updated_at?: string
+  [key: string]: any
+}
 
 const AdminPortal = () => {
   const { customer, signOut } = useAuth()
