@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Phone, Mail } from "lucide-react";
+import { Phone, Mail, User } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   return (
@@ -13,12 +14,12 @@ const Header = () => {
         </div>
         
         <nav className="hidden md:flex items-center space-x-8">
-          <a href="#tjanster" className="text-foreground hover:text-primary transition-colors">Tjänster</a>
-          <a href="#om-oss" className="text-foreground hover:text-primary transition-colors">Om oss</a>
-          <a href="#kontakt" className="text-foreground hover:text-primary transition-colors">Kontakt</a>
+          <Link to="/services" className="text-foreground hover:text-primary transition-colors">Tjänster</Link>
+          <a href="#about" className="text-foreground hover:text-primary transition-colors">Om oss</a>
+          <a href="#contact" className="text-foreground hover:text-primary transition-colors">Kontakt</a>
         </nav>
         
-        <div className="flex items-end justify-end space-x-4">
+        <div className="flex items-center space-x-4">
           <div className="hidden lg:flex items-center space-x-4 text-sm text-foreground">
             <div className="flex items-center space-x-1">
               <Phone className="h-4 w-4" />
@@ -29,7 +30,18 @@ const Header = () => {
               <span>info@trygghand.se</span>
             </a>
           </div>
-         
+          
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="border-trust-blue text-trust-blue hover:bg-trust-blue hover:text-white"
+          >
+            <Link to="/portal">
+              <User className="w-4 h-4 mr-2" />
+              Min sida
+            </Link>
+          </Button>
         </div>
       </div>
     </header>
