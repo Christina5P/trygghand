@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { User } from '@supabase/supabase-js'
-import { supabase, Customer } from '@/lib/supabase'
+import { Customer } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null)
@@ -8,7 +9,7 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
+    // Hämta initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -18,7 +19,7 @@ export const useAuth = () => {
       }
     })
 
-    // Listen for auth changes
+    // Lyssna på auth-ändringar
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -30,6 +31,7 @@ export const useAuth = () => {
     })
 
     return () => subscription.unsubscribe()
+    // eslint-disable-next-line
   }, [])
 
   const fetchCustomerData = async (userId: string) => {
@@ -38,15 +40,19 @@ export const useAuth = () => {
         .from('customers')
         .select('*')
         .eq('id', userId)
-        .single()
+        .single() // Viktigt: krävs för att undvika 406-felet!
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching customer:', error)
+        setCustomer(null)
       } else if (data) {
         setCustomer(data)
+      } else {
+        setCustomer(null)
       }
     } catch (error) {
       console.error('Error:', error)
+      setCustomer(null)
     } finally {
       setLoading(false)
     }
@@ -67,7 +73,7 @@ export const useAuth = () => {
     })
 
     if (data.user && !error) {
-      // Create customer profile
+      // Skapa kundprofil
       const { error: profileError } = await supabase
         .from('customers')
         .insert({
