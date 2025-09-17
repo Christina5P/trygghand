@@ -17,6 +17,7 @@ import TomningBohag from "./pages/services/TomningBohag";
 import Vardering from "./pages/services/Vardering";
 import Magasinering from "./pages/services/Magasinering";
 import RadgivningPlanering from "./pages/services/RadgivningPlanering";
+import Portal from "./pages/Portal";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,9 @@ const App = () => (
           <Route path="/services/vardering" element={<Vardering />} />
           <Route path="/services/magasinering" element={<Magasinering />} />
           <Route path="/services/RadgivningPlanering" element={<RadgivningPlanering />} />
+
+          {/* Portal för kunder och admin */}
+          <Route path="/portal" element={<Portal />} />
 
           {/* Catch-all 404 */}
           <Route path="*" element={<NotFound />} />
