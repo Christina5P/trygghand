@@ -7,7 +7,7 @@ import ComingSoon from "./pages/ComingSoon";
 const root = createRoot(document.getElementById("root")!);
 
 // Endast visa "ComingSoon" i produktion om miljövariabeln är satt
-const isMaintenance = import.meta.env.VITE_MAINTENANCE === "true";
+const isMaintenance = import.meta.env.VITE_MAINTENANCE === "false";
 
 // Lokalt utvecklingsläge visar alltid appen
 const isDev = import.meta.env.MODE === "development";
