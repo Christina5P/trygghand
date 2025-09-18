@@ -14,6 +14,6 @@ const isDev = import.meta.env.MODE === "development";
 
 root.render(
   <React.StrictMode>
-    <App />
+    {isMaintenance && !isDev ? <ComingSoon /> : <App />}
   </React.StrictMode>
 );
