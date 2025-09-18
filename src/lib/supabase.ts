@@ -7,8 +7,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// To get the current user, use the async method below:
+// const { data: { user } } = await supabase.auth.getUser();
 
 // Database types
 export interface Customer {
