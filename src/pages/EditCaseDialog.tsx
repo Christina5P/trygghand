@@ -144,7 +144,7 @@ const EditCaseDialog: React.FC<EditCaseDialogProps> = ({ caseId, onClose }) => {
       setIsSaving(false);
     }
   };
-
+console.log('Customer ID:', customer?.id);
   useEffect(() => {
     if (loading === false) {
       const fetchData = async () => {

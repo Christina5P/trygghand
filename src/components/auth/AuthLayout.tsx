@@ -32,7 +32,7 @@ const AuthLayout = () => {
     } else {
       toast({
         title: 'Välkommen!',
-        description: 'Du är nu inloggad.'
+        description: 'Du är nu inloggad.', duration: 5000
       })
     }
 
