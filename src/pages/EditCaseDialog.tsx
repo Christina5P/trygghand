@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from "@/components/ui/input";
-import { supabaseClient } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabase';
 import {
   Select,
   SelectContent,
@@ -81,7 +81,7 @@ const EditCaseDialog: React.FC<EditCaseDialogProps> = ({ caseId, onClose }) => {
   const fetchCase = async () => {
     if (!caseId) return;
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('cases')
         .select('*')
         .eq('id', caseId)
@@ -99,7 +99,7 @@ const EditCaseDialog: React.FC<EditCaseDialogProps> = ({ caseId, onClose }) => {
   const fetchComments = async () => {
     if (!caseId) return;
     try {
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from('case_comments')
         .select('*')
         .eq('case_id', caseId)
@@ -122,7 +122,7 @@ const EditCaseDialog: React.FC<EditCaseDialogProps> = ({ caseId, onClose }) => {
     }
     setIsSaving(true);
     try {
-      const { data, error } = await supabaseClient.from('case_comments').insert([
+      const { data, error } = await supabase.from('case_comments').insert([
         {
           case_id: caseId,
           content: newComment,
@@ -154,7 +154,7 @@ const EditCaseDialog: React.FC<EditCaseDialogProps> = ({ caseId, onClose }) => {
 
       fetchData();
       
-      const channel = supabaseClient
+      const channel = supabase
         .channel(`case_comments:${caseId}`)
         .on(
           'postgres_changes',
@@ -170,7 +170,7 @@ const EditCaseDialog: React.FC<EditCaseDialogProps> = ({ caseId, onClose }) => {
         .subscribe();
 
       return () => {
-        supabaseClient.removeChannel(channel);
+        supabase.removeChannel(channel);
       };
     }
   }, [caseId, loading]);
