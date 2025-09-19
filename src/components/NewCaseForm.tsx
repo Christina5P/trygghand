@@ -30,7 +30,7 @@ const NewCaseForm = ({ onCaseCreated }: { onCaseCreated?: () => void }) => {
         customer_id: customer.id,
         title: title.trim(),
         status: 'pending',
-        description: description.trim() || null
+        description: description.trim() || ''
       })
     setLoading(false)
     if (error) {
