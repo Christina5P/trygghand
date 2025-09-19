@@ -263,10 +263,14 @@ const AdminPortal = () => {
                 Hantera ärenden och kunder
               </p>
             </div>
-            <Button onClick={signOut} variant="outline" size="sm">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logga ut
-            </Button>
+            <Button 
+  onClick={() => signOut({ redirectTo: '/' })} 
+  variant="outline" 
+  size="sm"
+>
+  <LogOut className="w-4 h-4 mr-2" />
+  Logga ut
+</Button>
           </div>
         </div>
       </header>
