@@ -2,7 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import ComingSoon from "./pages/ComingSoon";
+import ComingSoon from "./pages/ComingSoon.tsx";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -14,6 +14,7 @@ const isDev = import.meta.env.MODE === "development";
 
 root.render(
   <React.StrictMode>
-    <App />
+    {isMaintenance && !isDev ? <ComingSoon /> : <App />}
   </React.StrictMode>
 );
+
