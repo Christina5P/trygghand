@@ -179,7 +179,7 @@ const AdminPortal = () => {
         customer_id: formData.get("customer_id") as string,
         service_type_id: formData.get("service_type_id") as string,
         title: (formData.get("title") as string)?.toString().trim(),
-        description: ((formData.get("description") as string) || "").toString().trim() || null,
+        description: ((formData.get("description") as string) || '').toString().trim() || '',
         status: ((formData.get("status") as string) || "pending") as string,
         priority: (formData.get("priority") as string) || null,
         scheduled_date: (formData.get("scheduled_date") as string) || null,
