@@ -175,18 +175,37 @@ const AdminPortal = () => {
   const createCase = async (formData) => {
     // ... (same as before) ...
     try {
-      const caseData = {
+      const title = (formData.get("title") as string)?.toString().trim();
+      const description = ((formData.get("description") as string) || '').toString().trim();
+      const rawStatus = ((formData.get("status") as string) || '').toString();
+      const rawPriority = ((formData.get("priority") as string) || '').toString();
+      const allowedStatuses = ['pending','in_progress','completed','cancelled'];
+      const allowedPriorities = ['low','medium','high'];
+      const status = allowedStatuses.includes(rawStatus) ? rawStatus : undefined;
+      const priority = allowedPriorities.includes(rawPriority) ? rawPriority : undefined;
+
+      const caseData: any = {
         customer_id: formData.get("customer_id") as string,
         service_type_id: formData.get("service_type_id") as string,
-        title: (formData.get("title") as string)?.toString().trim(),
-        description: ((formData.get("description") as string) || '').toString().trim() || '',
-        status: ((formData.get("status") as string) || "pending") as string,
-        priority: (formData.get("priority") as string) || null,
-        scheduled_date: (formData.get("scheduled_date") as string) || null,
-        address: (formData.get("address") as string) || null,
-        total_price: Number(formData.get("total_price")) || null,
-        notes: (formData.get("notes") as string) || null,
+        title,
+        description,
       };
+      if (status) caseData.status = status;
+      
+
+      const scheduled_date = (formData.get("scheduled_date") as string) || '';
+      if (scheduled_date) caseData.scheduled_date = scheduled_date;
+
+      const address = (formData.get("address") as string) || '';
+      if (address) caseData.address = address;
+
+      const total_price_raw = (formData.get("total_price") as string) || '';
+      const total_price = total_price_raw ? Number(total_price_raw) : undefined;
+      if (total_price !== undefined && !Number.isNaN(total_price)) caseData.total_price = total_price;
+
+      const notes = (formData.get("notes") as string) || '';
+      if (notes) caseData.notes = notes;
+
       const { error } = await supabase.from("cases").insert(caseData);
       if (error) throw error;
       toast({
