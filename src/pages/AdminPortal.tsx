@@ -32,6 +32,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, LogOut, Loader2 } from "lucide-react";
 import EditCaseDialog from './EditCaseDialog'; // Ensure this path is correct
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 // --- Type Definitions ---
 interface Case {
@@ -176,10 +178,10 @@ const AdminPortal = () => {
       const caseData = {
         customer_id: formData.get("customer_id") as string,
         service_type_id: formData.get("service_type_id") as string,
-        title: formData.get("title") as string,
-        description: formData.get("description") as string,
-        status: formData.get("status") as string,
-        priority: formData.get("priority") as string,
+        title: (formData.get("title") as string)?.toString().trim(),
+        description: ((formData.get("description") as string) || "").toString().trim() || null,
+        status: ((formData.get("status") as string) || "pending") as string,
+        priority: (formData.get("priority") as string) || null,
         scheduled_date: (formData.get("scheduled_date") as string) || null,
         address: (formData.get("address") as string) || null,
         total_price: Number(formData.get("total_price")) || null,
@@ -322,7 +324,45 @@ const AdminPortal = () => {
                         </Select>
                       </div>
                     </div>
-                    {/* ... other form fields ... */}
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <Label htmlFor="title">Titel</Label>
+                        <Input id="title" name="title" required placeholder="Ange ärendets titel" />
+                      </div>
+                      <div>
+                        <Label htmlFor="description">Beskrivning</Label>
+                        <Textarea id="description" name="description" placeholder="Kort beskrivning" />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                          <Label htmlFor="status">Status</Label>
+                          <Select name="status" defaultValue="pending" required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Välj status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Väntande</SelectItem>
+                              <SelectItem value="in_progress">Pågår</SelectItem>
+                              <SelectItem value="completed">Avslutad</SelectItem>
+                              <SelectItem value="cancelled">Avbruten</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="priority">Prioritet</Label>
+                          <Select name="priority" defaultValue="medium">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Välj prioritet" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Låg</SelectItem>
+                              <SelectItem value="medium">Medel</SelectItem>
+                              <SelectItem value="high">Hög</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
                     <Button type="submit" className="w-full">
                       Skapa ärende
                     </Button>
