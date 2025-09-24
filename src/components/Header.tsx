@@ -16,6 +16,7 @@ const Header = () => {
         <nav className="hidden md:flex items-center space-x-8">
           <a href="#las-mer-tjanster" className="text-foreground hover:text-primary transition-colors">Tjänster</a>
           <a href="#about" className="text-foreground hover:text-primary transition-colors">Om oss</a>
+          <Link to="/fragor-tips" className="text-foreground hover:text-primary transition-colors">Frågor och Tips</Link>
           <a href="#contact" className="text-foreground hover:text-primary transition-colors">Kontakt</a>
         </nav>
 
@@ -46,6 +47,7 @@ const Header = () => {
                   <a href="#las-mer-tjanster" className="block py-2 text-foreground hover:bg-primary/10">Dödsbohantering</a>
                 </div>
               </details>
+              <Link to="/fragor-tips" className="block px-4 py-2 text-foreground hover:bg-primary/10">Frågor och Tips</Link>
               <a href="#contact" className="block px-4 py-2 text-foreground hover:bg-primary/10">Kontakt</a>
               <Link to="/portal" className="block px-4 py-2 text-foreground hover:bg-primary/10">Min sida</Link>
             </nav>
