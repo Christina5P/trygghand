@@ -82,7 +82,6 @@ const AuthLayout = () => {
               <TabsTrigger value="signin">Logga in</TabsTrigger>
               <TabsTrigger value="signup">Registrera</TabsTrigger>
             </TabsList>
-            
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
@@ -99,7 +98,6 @@ const AuthLayout = () => {
                 </Button>
               </form>
             </TabsContent>
-            
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
@@ -125,6 +123,9 @@ const AuthLayout = () => {
               </form>
             </TabsContent>
           </Tabs>
+          <div className="mt-6 text-center">
+            <a href="/" className="text-trust-blue hover:underline text-sm">&#8592; Tillbaka till startsidan</a>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -37,7 +37,7 @@ const Footer = () => {
             <ul className="space-y-2 text-sm text-background/80">
               <li>Om oss</li>
               <li>Våra värderingar</li>
-              <li>Partner</li>
+              <li>Partners</li>
               <li>Integritetspolicy</li>
               <li>Villkor</li>
             </ul>
