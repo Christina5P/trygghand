@@ -9,12 +9,13 @@ import {
   CheckCircle
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import PriceCalculator from "./PriceCalculator";
 
 const Services = () => {
   const seniorPackages = [
     {
       title: "BASPAKET SENIORFÖRÄNDRING",
-      price: "15 000 kr",
+      basePrice: 15000,
       rutAvdrag: true,
       included: [
         "Personlig livskoordinator som kontaktperson",
@@ -32,7 +33,7 @@ const Services = () => {
     },
     {
       title: "STANDARDPAKET SENIORFÖRÄNDRING",
-      price: "28 000 kr",
+      basePrice: 28000,
       rutAvdrag: true,
       included: [
         "Personlig livskoordinator som kontaktperson",
@@ -56,7 +57,7 @@ const Services = () => {
     },
     {
       title: "PREMIUMPAKET SENIORFÖRÄNDRING",
-      price: "45 000 kr",
+      basePrice: 45000,
       rutAvdrag: true,
       included: [
         "Personlig livskoordinator som kontaktperson",
@@ -91,7 +92,7 @@ const Services = () => {
   const dodsboPackages = [
     {
       title: "BASPAKET DÖDSBO",
-      price: "25 000 kr",
+      basePrice: 25000,
       rutAvdrag: false,
       included: [
         "Dödsboförvaltning (vi tar hand om allt praktiskt kring dödsboet)",
@@ -112,7 +113,7 @@ const Services = () => {
     },
     {
       title: "STANDARDPAKET DÖDSBO",
-      price: "42 000 kr",
+      basePrice: 42000,
       rutAvdrag: false,
       included: [
         "Dödsboförvaltning (vi tar hand om allt praktiskt kring dödsboet)",
@@ -138,7 +139,7 @@ const Services = () => {
     },
     {
       title: "PREMIUMPAKET DÖDSBO",
-      price: "65 000 kr",
+      basePrice: 65000,
       rutAvdrag: false,
       included: [
 
@@ -173,7 +174,7 @@ const Services = () => {
         <div className="space-y-2">
           <CardTitle className="text-xl font-bold">{pkg.title}</CardTitle>
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-primary">Från {pkg.price}</span>
+            <span className="text-2xl font-bold text-primary">Från {pkg.basePrice.toLocaleString('sv-SE')} kr</span>
             {pkg.rutAvdrag && (
               <Badge variant="secondary" className="bg-trust-green-light text-trust-green">
                 RUT-avdrag
@@ -209,6 +210,11 @@ const Services = () => {
             ))}
           </ul>
         </div>
+        
+        <PriceCalculator 
+          basePrice={pkg.basePrice}
+          packageName={pkg.title}
+        />
         
         <Button className="w-full mt-6 bg-gradient-to-r from-primary to-trust-blue-dark">
           Välj {pkg.title.split(' ')[0].toLowerCase()}
