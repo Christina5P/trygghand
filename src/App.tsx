@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import FragorTips from "./pages/FragorTips";
 
 // Dina services-sidor
 import Services from "./pages/services";
@@ -43,6 +44,9 @@ const App = () => (
 
           {/* Portal för kunder och admin */}
           <Route path="/portal" element={<Portal />} />
+
+          {/* Frågor och Tips */}
+          <Route path="/fragor-tips" element={<FragorTips />} />
 
           {/* Catch-all 404 */}
           <Route path="*" element={<NotFound />} />
