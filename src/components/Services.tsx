@@ -182,30 +182,18 @@ const Services = () => {
             )}
           </div>
         </div>
-        
-        <div className="space-y-3">
-          <h4 className="font-semibold text-foreground">Ingår alltid:</h4>
-          <ul className="space-y-1">
-            {pkg.included.map((item: string, index: number) => (
-              <li key={index} className="text-sm text-muted-foreground flex items-start">
-                <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
       </CardHeader>
       
       <CardContent className="space-y-4">
         <div>
           <h4 className="font-semibold text-foreground mb-2">
-            {pkg.allIncluded ? "Alla tjänster ingår:" : `Tjänster`}
+            Allt vi tar hand om
           </h4>
           <ul className="space-y-1">
-            {pkg.services.map((service: string, index: number) => (
+            {[...(pkg.included || []), ...(pkg.services || [])].map((item: string, index: number) => (
               <li key={index} className="text-sm text-muted-foreground flex items-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary mr-2 mt-2 flex-shrink-0"></div>
-                {service}
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-check-big h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg>
+                {item}
               </li>
             ))}
           </ul>
