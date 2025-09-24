@@ -61,7 +61,7 @@ const Contact = () => {
               <Card className="shadow-lg border-border/50" id="kontakt-form">
                 <CardHeader>
                   <CardTitle>Berätta om din situation</CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-foreground">
                     Vi återkommer inom 24 timmar med en skräddarsydd lösning
                   </CardDescription>
                 </CardHeader>
@@ -79,7 +79,7 @@ const Contact = () => {
                   <Button size="lg" className="w-full bg-gradient-to-r from-primary to-trust-blue-dark">
                     Skicka förfrågan
                   </Button>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-foreground text-center">
                     Genom att skicka denna förfrågan godkänner du att vi kontaktar dig angående våra tjänster.
                   </p>
                 </CardContent>
