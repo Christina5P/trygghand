@@ -214,6 +214,8 @@ const Services = () => {
         <PriceCalculator 
           basePrice={pkg.basePrice}
           packageName={pkg.title}
+          pricePerSqm={600}
+          totalLabel={type === 'senior' ? 'Totalt pris efter RUT-avdrag:' : 'Totalt pris:'}
         />
         
         <Button className="w-full mt-6 bg-gradient-to-r from-primary to-trust-blue-dark">

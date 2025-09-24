@@ -9,21 +9,25 @@ interface PriceCalculatorProps {
   baseSqm?: number;
   pricePerSqm?: number;
   packageName: string;
+  totalLabel?: string;
 }
 
 const PriceCalculator = ({ 
   basePrice, 
   baseSqm = 50, 
   pricePerSqm = 100, 
-  packageName 
+  packageName,
+  totalLabel = "Totalt"
 }: PriceCalculatorProps) => {
-  const [sqm, setSqm] = useState(baseSqm);
+  const [sqm, setSqm] = useState<string>(baseSqm.toString());
 
   const calculatePrice = () => {
-    if (sqm <= baseSqm) {
+    const sqmNumber = parseInt(sqm);
+    if (isNaN(sqmNumber) || sqmNumber < 1) return 0;
+    if (sqmNumber <= baseSqm) {
       return basePrice;
     }
-    const extraSqm = sqm - baseSqm;
+    const extraSqm = sqmNumber - baseSqm;
     return basePrice + (extraSqm * pricePerSqm);
   };
 
@@ -37,13 +41,13 @@ const PriceCalculator = ({
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="sqm-input" className="text-sm font-medium">
-            Yta (kvadratmeter)
+            Yta (kvm)
           </Label>
           <Input
             id="sqm-input"
             type="number"
             value={sqm}
-            onChange={(e) => setSqm(Math.max(1, parseInt(e.target.value) || baseSqm))}
+            onChange={(e) => setSqm(e.target.value)}
             min={1}
             className="w-full"
           />
@@ -52,29 +56,26 @@ const PriceCalculator = ({
         <Separator />
 
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Baspris ({baseSqm} kvm):</span>
-            <span className="font-medium">{basePrice.toLocaleString('sv-SE')} kr</span>
-          </div>
-          
-          {sqm > baseSqm && (
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Extra yta ({sqm - baseSqm} kvm × {pricePerSqm} kr):</span>
-              <span>+{((sqm - baseSqm) * pricePerSqm).toLocaleString('sv-SE')} kr</span>
-            </div>
-          )}
+       
         </div>
 
         <Separator />
 
         <div className="flex justify-between items-center">
-          <span className="font-semibold">Totalt pris:</span>
+          <div className="flex flex-col items-start">
+            {totalLabel.includes('efter RUT-avdrag') ? (
+              <>
+                <span className="font-semibold text-base">Totalt</span>
+                <span className="text-xs text-muted-foreground">efter RUT-avdrag</span>
+              </>
+            ) : (
+                <span className="font-semibold text-base">{totalLabel.replace('Totalt pris:', 'Totalt')}</span>
+            )}
+          </div>
           <span className="text-2xl font-bold text-primary">{formattedPrice} kr</span>
         </div>
 
-        <p className="text-xs text-muted-foreground mt-2">
-          Baserat på {baseSqm} kvm grundyta, därefter {pricePerSqm} kr/kvm
-        </p>
+       
       </CardContent>
     </Card>
   );
