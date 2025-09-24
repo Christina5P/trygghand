@@ -7,6 +7,9 @@ export default defineConfig({
   plugins: [react()],
   base: '/', // För custom domain
   // base: '/repository-namn/', // Om du inte har custom domain
+  server: {
+    port: 8080
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
