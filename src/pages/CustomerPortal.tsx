@@ -38,9 +38,20 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { LogOut, MessageSquare, Calendar, MapPin, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { sv } from 'date-fns/locale'
+
+import { useRef } from 'react';
 
 const CustomerPortal = () => {
+  // Add Tidio chatbot script on mount
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = "//code.tidio.co/vxtqmisxoxoilyri3a2arswtxddqr416.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
   const { customer, signOut } = useAuth()
   const [cases, setCases] = useState<Case[]>([])
   const [selectedCase, setSelectedCase] = useState<Case | null>(null)
