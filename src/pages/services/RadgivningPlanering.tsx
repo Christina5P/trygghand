@@ -72,10 +72,15 @@ const RadgivningPlanering = () => {
                     {[
                       "Initial behovsanalys",
                       "Planering av hela processen",
-                      "Tidslinje och milstolpar",
-                      "Koordinering av tjänster",
-                      "Myndighetskontakter",
-                      "Juridisk vägledning"
+                      "Information och stöd i olika boendealternativ ",
+                      "Kontakt med Landsting, Skatteverket, Abonnemangstjänster m.m.",
+                      "Hjälp att planera vita arkivet",
+                      "Information om framtidsfullmakt, god man och testamente",
+                      "Information om hjälpmedel och hur man får dem",
+                      "Digitalt stöd för att hålla kontakt med vänner och familj",
+                      "Hjälp att förstå och samordna kontakter med hemtjänst, vårdcentral, sjukhus, biståndshandläggare",
+                      "Råd kring juridiska frågor",
+                      "Stöd vid försäljning av bostad",
                     ].map((item, index) => (
                       <li key={index} className="flex items-start">
                         <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
@@ -89,7 +94,7 @@ const RadgivningPlanering = () => {
                   <h3 className="font-semibold text-foreground">Din kontaktperson:</h3>
                   <ul className="space-y-2">
                     {[
-                      "Personlig livskoordinator",
+                      "Personlig koordinator",
                       "Tillgänglig via telefon och e-post",
                       "Regelbunden uppföljning",
                       "Stöd genom hela processen",
@@ -133,7 +138,7 @@ const RadgivningPlanering = () => {
                 <UserCheck className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h3 className="font-semibold text-foreground mb-2">Personlig service</h3>
                 <p className="text-sm text-muted-foreground">
-                  Din dedikerade livskoordinator guidar dig genom varje steg av processen
+                  Din dedikerade koordinator guidar dig genom varje steg av processen
                 </p>
               </CardContent>
             </Card>
