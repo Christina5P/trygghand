@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Phone, Mail, User } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useRef } from "react";
+import Logo from "./HouseHandsLogo.jsx";
 
 const Header = () => {
   const location = useLocation();
@@ -34,7 +35,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <a href="#top" onClick={e => { e.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
-            <h1 className="text-2xl font-bold text-primary cursor-pointer">Trygg Hand</h1>
+            <Logo />
           </a>
         </div>
 
