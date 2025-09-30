@@ -49,52 +49,54 @@ const TomningBohag = () => {
         <div className="grid lg:grid-cols-2 gap-8">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Tömning dödsbo</CardTitle>
+              <CardTitle className="text-xl">Tömning av bohag – sortering och borttransport</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground leading-relaxed mb-6">
-                Tömning dödsbo innebär att vi tar hand om att tömma alla tillhörigheter från en bostad efter en person avlidit. 
-                Det inkluderar bortforsling av möbler, kläder, köksartiklar och annat, samt säkerställande av att inga värdefulla 
-                eller personliga saker går förlorade i processen.
+                När det är dags att flytta från ett hem man bott länge i, eller när en anhörig gått bort, kan det kännas både tungt och överväldigande att ta hand om ett helt bohag.
+               <br /> Tömning av bohag innebär att vi tar hand om att tömma alla tillhörigheter från en bostad efter en person flyttat eller avlidit. 
+               Då ansvaret ligger hos oss minskar risken för konflikter och missförstånd mellan anhöriga.
+                <br /><br />
+
+                 <p className="font-medium text-trust-green mb-2">Miljömedveten hantering – vi prioriterar återbruk och minimerar avfall!
+                 </p>
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Slänga & återvinna</CardTitle>
+              <CardTitle className="text-xl">Våra tjänster för tömning av bohag inkluderar:</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground leading-relaxed">
-                I samband med din flytt kan vi även hjälpa dig med återvinning av de saker som du inte längre har någon 
-                användning för. Med vår tjänst slänga och återvinna vill vi göra det så enkelt och smidigt som möjligt för dig. 
-                Vi vet nämligen att du har nog att tänka på ändå.
-              </p>
-              
-              <p className="text-muted-foreground leading-relaxed">
-                Vid planeringsmötet av din flytt går vi igenom och märker upp vad som ska slängas och vad som ska gå till återvinning. 
-                Vi har flera fina samarbetspartners i Borås med närområde.
-              </p>
-
-              <div className="bg-trust-green-light/20 rounded-lg p-4 mt-6">
-                <p className="font-medium text-trust-green mb-2">Tillsammans kan vi göra skillnad för miljön!</p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-foreground mb-3">I återvinningen ingår:</h3>
-                <ul className="space-y-2">
-                  {[
-                    "Upphämtning av det du önskar bli av med",
-                    "Transport av det som går att återbruka till second hand-butiker/loppis",
-                    "Transport av övrigt till återvinningscentral"
-                  ].map((item, index) => (
-                    <li key={index} className="flex items-start">
-                      <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-muted-foreground text-sm">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            <CardContent>
+                <h3 className="font-semibold text-foreground mb-3">I tömning av bohag ingår:</h3>
+<ul>
+  {[
+    "Planeringsmöte där vi går igenom vad som ska sparas, återbrukas eller slängas",
+    "Transport av återbrukbart till second hand/loppis",
+    "Transport av övrigt till återvinningscentral",
+  ].map((item, index) => (
+    <li key={index} className="flex items-start">
+      <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+      <span className="text-muted-foreground text-sm">{item}</span>
+    </li>
+  ))}
+</ul>
+<br />
+<h3 className="font-semibold text-foreground mb-3">Som tillval kan du få hjälp med:</h3>
+<ul>
+  {[
+    "Packning och bärhjälp",
+    "Sortering av minnessaker och viktiga dokument",
+    "Magasinering eller transport till ny adress",
+    "Dokumentation (t.ex. foton av föremål innan bortforsling)"
+  ].map((item, index) => (
+    <li key={index} className="flex items-start">
+      <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+      <span className="text-muted-foreground text-sm">{item}</span>
+    </li>
+  ))}
+</ul>
             </CardContent>
           </Card>
         </div>

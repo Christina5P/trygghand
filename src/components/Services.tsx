@@ -18,7 +18,7 @@ const Services = () => {
       basePrice: 15000,
       rutAvdrag: true,
       included: [
-        "Personlig livskoordinator som kontaktperson",
+        "Personlig koordinator som kontaktperson",
         "Koordinering av tjänster"
       ],
       services: [
@@ -36,7 +36,7 @@ const Services = () => {
       basePrice: 28000,
       rutAvdrag: true,
       included: [
-        "Personlig livskoordinator som kontaktperson",
+        "Personlig koordinator som kontaktperson",
         "Utökad projektledning och koordinering",
         "Stöd vid myndighetskontakter"
       ],
@@ -60,7 +60,7 @@ const Services = () => {
       basePrice: 45000,
       rutAvdrag: true,
       included: [
-        "Personlig livskoordinator som kontaktperson",
+        "Personlig koordinator som kontaktperson",
         "Utökad projektledning och koordinering",
         "Stöd vid myndighetskontakter"
       ],
@@ -219,7 +219,7 @@ const Services = () => {
         <div className="text-center space-y-4 mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground">Servicepaket</h2>
           <p className="text-xl text-foreground max-w-3xl mx-auto">
-            Livskoordinator för Seniorflytt och Dödsbohantering. <br />
+            koordinator för Seniorflytt och Dödsbohantering. <br />
             Vi erbjuder kompletta servicepaket med fasta priser, eller skräddarsytt efter dina speciella behov.
           </p>
         </div>
