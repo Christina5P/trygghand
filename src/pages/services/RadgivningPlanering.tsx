@@ -55,7 +55,7 @@ const RadgivningPlanering = () => {
         </div>
 
         <div className="max-w-4xl mx-auto">
-          <Card className="mb-8">
+          <Card className="mb-8 transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
               <CardTitle className="text-xl">Personlig vägledning hela vägen</CardTitle>
             </CardHeader>
@@ -113,7 +113,7 @@ const RadgivningPlanering = () => {
           </Card>
 
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <Card>
+            <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
               <CardContent className="pt-6 text-center">
                 <MessageSquare className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h3 className="font-semibold text-foreground mb-2">Snabba svar</h3>
@@ -123,7 +123,7 @@ const RadgivningPlanering = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
               <CardContent className="pt-6 text-center">
                 <Clock className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h3 className="font-semibold text-foreground mb-2">Följ processen</h3>
@@ -133,7 +133,7 @@ const RadgivningPlanering = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
               <CardContent className="pt-6 text-center">
                 <UserCheck className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h3 className="font-semibold text-foreground mb-2">Personlig service</h3>
