@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, ArrowLeft, CheckCircle, Heart } from "lucide-react";
+import { Shield, ArrowLeft, CheckCircle, Heart, MapPin } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 const Magasinering = () => {
@@ -54,7 +54,13 @@ const Magasinering = () => {
               <p className="text-muted-foreground leading-relaxed text-lg">
                 Vi erbjuder magasinering av föremål som inte har en given plats för tillfället.
               </p>
-
+                <div className="bg-muted/30 rounded-lg p-6 mt-8">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Perfekt för tillfälliga behov</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Magasinering är den ideala lösningen när du behöver tid att bestämma vad som ska hända med viktiga föremål, 
+                  när du är mellan bostäder, eller när du helt enkelt behöver mer plats. Vi tar hand om dina saker med största omsorg.
+                </p>
+              </div>
               <div className="grid md:grid-cols-2 gap-6 mt-8">
                 <div className="space-y-4">
                   <h3 className="font-semibold text-foreground">Vad vi kan magasinera:</h3>
@@ -80,7 +86,6 @@ const Magasinering = () => {
                   <ul className="space-y-2">
                     {[
                       "Klimatkontrollerade lokaler",
-                      "Säkerhet dygnet runt",
                       "Försäkringsskydd",
                       "Flexibla avtalsperioder",
                       "Enkel åtkomst",
@@ -95,20 +100,15 @@ const Magasinering = () => {
                 </div>
               </div>
 
-              <div className="bg-muted/30 rounded-lg p-6 mt-8">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Perfekt för tillfälliga behov</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Magasinering är den ideala lösningen när du behöver tid att bestämma vad som ska hända med viktiga föremål, 
-                  när du är mellan bostäder, eller när du helt enkelt behöver mer plats. Vi tar hand om dina saker med största omsorg.
-                </p>
-              </div>
+             
 
               <div className="grid md:grid-cols-3 gap-4 mt-8">
                 <div className="text-center p-4 bg-primary/5 rounded-lg">
-                  <Shield className="h-8 w-8 text-primary mx-auto mb-2" />
-                  <h4 className="font-medium text-foreground">Säkert</h4>
-                  <p className="text-sm text-muted-foreground">Övervakade lokaler</p>
+                  <MapPin className="h-8 w-8 text-primary mx-auto mb-2" />
+                  <h4 className="font-medium text-foreground">Lättillgängligt</h4>
+                  <p className="text-sm text-muted-foreground">Enkelt att nå</p>
                 </div>
+
                 <div className="text-center p-4 bg-primary/5 rounded-lg">
                   <CheckCircle className="h-8 w-8 text-primary mx-auto mb-2" />
                   <h4 className="font-medium text-foreground">Försäkrat</h4>
@@ -117,7 +117,7 @@ const Magasinering = () => {
                 <div className="text-center p-4 bg-primary/5 rounded-lg">
                   <Heart className="h-8 w-8 text-primary mx-auto mb-2" />
                   <h4 className="font-medium text-foreground">Omsorgsfullt</h4>
-                  <p className="text-sm text-muted-foreground">Professionell hantering</p>
+                 
                 </div>
               </div>
             </CardContent>

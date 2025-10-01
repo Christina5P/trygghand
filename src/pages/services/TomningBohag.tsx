@@ -66,10 +66,10 @@ const TomningBohag = () => {
 
           <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
-              <CardTitle className="text-xl">Våra tjänster för tömning av bohag inkluderar:</CardTitle>
+              <CardTitle className="text-xl">Det här ingår i våra tjänster för tömning av bohag:</CardTitle>
             </CardHeader>
             <CardContent>
-                <h3 className="font-semibold text-foreground mb-3">I tömning av bohag ingår:</h3>
+              
 <ul>
   {[
     "Planeringsmöte där vi går igenom vad som ska sparas, återbrukas eller slängas",

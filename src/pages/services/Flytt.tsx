@@ -62,7 +62,7 @@ const Flytt = () => {
 
           <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
-              <CardTitle className="text-xl">Omtanke för både dig och miljön</CardTitle>
+              <CardTitle className="text-xl">Omtanke för både dig och miljönn</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
