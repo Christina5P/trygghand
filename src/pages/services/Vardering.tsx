@@ -45,7 +45,7 @@ const Vardering = () => {
         </div>
 
         <div className="max-w-4xl mx-auto">
-          <Card>
+          <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
               <CardTitle className="text-xl">Professionell värdering</CardTitle>
             </CardHeader>

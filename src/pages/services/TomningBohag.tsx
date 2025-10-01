@@ -47,7 +47,7 @@ const TomningBohag = () => {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          <Card>
+          <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
               <CardTitle className="text-xl">Tömning av bohag – sortering och borttransport</CardTitle>
             </CardHeader>
@@ -64,7 +64,7 @@ const TomningBohag = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
               <CardTitle className="text-xl">Våra tjänster för tömning av bohag inkluderar:</CardTitle>
             </CardHeader>

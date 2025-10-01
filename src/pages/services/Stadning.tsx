@@ -45,7 +45,7 @@ const Stadning = () => {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          <Card>
+          <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
               <CardTitle className="text-xl">Detta ingår i vårt flyttstäd:</CardTitle>
             </CardHeader>
@@ -93,7 +93,7 @@ const Stadning = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
               <CardTitle className="text-xl">Att tänka på innan vi kommer och städar:</CardTitle>
             </CardHeader>

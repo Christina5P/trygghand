@@ -48,46 +48,54 @@ const Flytt = () => {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          <Card>
+          <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
-              <CardTitle className="text-xl">Flytt</CardTitle>
+              <CardTitle className="text-xl">Flytthjälp</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground leading-relaxed mb-6">
-                Tömning dödsbo innebär att vi tar hand om att tömma alla tillhörigheter från en bostad efter en person avlidit. 
-                Det inkluderar bortforsling av möbler, kläder, köksartiklar och annat, samt säkerställande av att inga värdefulla 
-                eller personliga saker går förlorade i processen.
-              </p>
-            </CardContent>
+              Att flytta innebär en nystart – men själva flytten kan kännas både tidskrävande och stressig.
+              Vår flyttjänst är ett tryggt och smidigt alternativ där vi hjälper dig hela vägen – från planering till att dina saker står på plats i ditt nya hem.
+              <br />  I denna tjänst väljer du själv hur mycket hjälp du vill ha- från enbart transport till även packning och förberedelse av nytt hem.</p>
+            <br />Kostnaden varierar beroende på bohagets storlek, tillgänglighet och tillval. <br />Prisindikation flytt per m² : ca 100-200 kr/m2 efter RUT, inom Sundsvall </CardContent>
           </Card>
 
-          <Card>
+          <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
-              <CardTitle className="text-xl">Slänga & återvinna</CardTitle>
+              <CardTitle className="text-xl">Omtanke för både dig och miljön</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
-                I samband med din flytt kan vi även hjälpa dig med återvinning av de saker som du inte längre har någon 
-                användning för. Med vår tjänst slänga och återvinna vill vi göra det så enkelt och smidigt som möjligt för dig. 
-                Vi vet nämligen att du har nog att tänka på ändå.
+               Vi arbetar alltid med hållbara lösningar: våra flyttkartonger kan hyras och återanvändas, emballage sorteras och återvinns, och vi strävar efter att minimera onödiga transporter. På så sätt blir din flytt inte bara enklare, utan även mer skonsam för miljön.
               </p>
               
-              <p className="text-muted-foreground leading-relaxed">
-                Vid planeringsmötet av din flytt går vi igenom och märker upp vad som ska slängas och vad som ska gå till återvinning. 
-                Vi har flera fina samarbetspartners i Borås med närområde.
-              </p>
-
-              <div className="bg-trust-green-light/20 rounded-lg p-4 mt-6">
-                <p className="font-medium text-trust-green mb-2">Tillsammans kan vi göra skillnad för miljön!</p>
-              </div>
-
+                        
               <div>
-                <h3 className="font-semibold text-foreground mb-3">I återvinningen ingår:</h3>
+                <h3 className="font-semibold text-foreground mb-3">I flytthjälpen ingår:</h3>
                 <ul className="space-y-2">
                   {[
-                    "Upphämtning av det du önskar bli av med",
-                    "Transport av det som går att återbruka till second hand-butiker/loppis",
-                    "Transport av övrigt till återvinningscentral"
+                    "Bärhjälp och transport från bostad till ny adress",
+                    "Lastning och lossning av bohag",
+                    "Ansvarsförsäkring för bohaget under transporten",
+                    "Trevlig och serviceinriktad personal som ser till att flytten blir smidig",
+                  ].map((item, index) => (
+                    <li key={index} className="flex items-start">
+                      <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground text-sm">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+                <div>
+                <h3 className="font-semibold text-foreground mb-3">Tillval till flytthjälpen:</h3>
+                <ul className="space-y-2">
+                  {[
+                    "Uthyrning eller köp av flyttkartonger och emballage",
+                    "Hjälp med packning och uppackning",
+                    "Montering av möbler",
+                    "Ned- och uppackning av kök, porslin och ömtåliga föremål",
+                    "Bortforsling av emballage och skräp efter flytten"
                   ].map((item, index) => (
                     <li key={index} className="flex items-start">
                       <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
