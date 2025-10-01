@@ -10,12 +10,15 @@ const FragorTips = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
   const articles = [
     {
       id: 1,
       title: "Får man tömma ett dödsbo innan bouppteckning?",
       icon: <AlertCircle className="h-6 w-6" />,
       category: "Juridik",
+      imagePrompt: "En respektfull bild av ett tomt vardagsrum med lådor, juridiska dokument på ett bord, mjukt ljus.",
+      imageUrl: "/images/bouppteckning.jpg",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -50,6 +53,8 @@ const FragorTips = () => {
       title: "När får man RUT-avdrag för dödsbohantering?",
       icon: <Calculator className="h-6 w-6" />,
       category: "Skatt",
+      imagePrompt: "Illustration av en kalkylator, kvitton och en checklista bredvid flyttlådor, stilren och enkel.",
+      imageUrl: "/images/rutavdrag.jpg",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -87,6 +92,8 @@ const FragorTips = () => {
       title: "Döstädning - Varför det är värt att börja tidigt",
       icon: <Archive className="h-6 w-6" />,
       category: "Tips",
+      imagePrompt: "Ett städat, ljust hem med ordnade lådor och märkta kartonger, varm ton.",
+      imageUrl: "/images/dostadning.jpg",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -127,6 +134,8 @@ const FragorTips = () => {
       title: "Ordna arkivet - En hjälp för anhöriga",
       icon: <FileText className="h-6 w-6" />,
       category: "Planering",
+      imagePrompt: "Ett organiserat arkiv med pärmar, dokument och etiketter, ljus och harmonisk ton.",
+      imageUrl: "/images/arkiv.jpg",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -163,6 +172,8 @@ const FragorTips = () => {
       title: "Skatt för dödsbo - Vad gäller?",
       icon: <Calculator className="h-6 w-6" />,
       category: "Skatt",
+      imagePrompt: "En bokföringsmiljö med papper, laptop och kalkylator, professionell och tydlig.",
+      imageUrl: "/images/skatt.jpg",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -199,6 +210,8 @@ const FragorTips = () => {
       title: "Checklista vid dödsfall",
       icon: <ClipboardList className="h-6 w-6" />,
       category: "Planering",
+      imagePrompt: "En organiserad checklista med anteckningar, pennor och lugn miljö, varm ton.",
+      imageUrl: "/images/checklista.jpg",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -252,7 +265,21 @@ const FragorTips = () => {
           {/* Articles */}
           <div className="space-y-8">
             {articles.map((article, index) => (
-              <Card key={article.id} className="border-border">
+              <Card 
+                key={article.id} 
+                className="border-border overflow-hidden transition-transform duration-300 hover:shadow-xl hover:scale-[1.02] rounded-2xl"
+              >
+                {/* Bild */}
+                {article.imageUrl && (
+                  <div className="w-full h-64 bg-muted overflow-hidden">
+                    <img 
+                      src={article.imageUrl} 
+                      alt={article.title} 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                )}
+
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
@@ -285,7 +312,7 @@ const FragorTips = () => {
           </div>
 
           {/* Contact CTA */}
-          <Card className="mt-12 bg-primary/5 border-primary/20">
+          <Card className="mt-12 bg-primary/5 border-primary/20 rounded-2xl">
             <CardContent className="text-center py-8">
               <h3 className="text-2xl font-semibold text-foreground mb-4">
                 Har du fler frågor?

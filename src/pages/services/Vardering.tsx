@@ -39,7 +39,7 @@ const Vardering = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground">Värdering</h1>
-              <p className="text-xl text-muted-foreground">Professionell värdering av bohag</p>
+              <p className="text-xl text-muted-foreground">Värdering av bohag</p>
             </div>
           </div>
         </div>
@@ -47,20 +47,25 @@ const Vardering = () => {
         <div className="max-w-4xl mx-auto">
           <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
-              <CardTitle className="text-xl">Professionell värdering</CardTitle>
+              <CardTitle className="text-xl">Värdering – för ett rättvist och tryggt beslut</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <p className="text-muted-foreground leading-relaxed">
-                Vi erbjuder professionell värdering av alla typer av föremål som kan ingå i ett dödsbo.
+                När man står inför en flytt eller tömning av ett hem kan det vara svårt att veta vad som har ekonomiskt värde, och vad som bäst lämnas till återbruk eller återvinning. Med vår värderingstjänst får du hjälp att ta beslut som både är rättvisa och hållbara.
+                <br />Utifrån vår värdering kan vi även köpa värdeföremål som konst, möbler, smycken och andra ägodelar.
+                Vi använder marknadsvärdet, vilket är försäljningspriset på andrahandsmarknaden
               </p>
 
               <div className="bg-muted/30 rounded-lg p-6">
                 <h3 className="text-xl font-semibold text-foreground mb-4">Enkel och säker process</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Vi vet att det kan vara känslosamt och tidskrävande att sälja hela bohag eller ta hand om ett dödsbo. 
-                  Vårt mål är att göra processen så enkel och trygg som möjligt. Vi hjälper dig med allt från inledande 
-                  inventering av lösöre i dödsbo till transport och administration. Om det finns föremål som har högt 
-                  värdering används en värderingsexpert.
+                Med vår värderingstjänst får du hjälp att ta beslut som både är rättvisa och hållbara.
+                Med denna tjänst kan du känna dig trygg med att inget av värde går förlorat, samtidigt som saker får en chans till ett nytt liv.
+                <br /><br />Vi hjälper till med värdering utifrån foton,video eller personligt besök.
+                <br />
+                Vid värdefulla föremål kan vi ta hjälp av en värderingsexpert.
+
+
                 </p>
               </div>
 
@@ -79,10 +84,8 @@ const Vardering = () => {
                 <div className="space-y-4">
                   <h4 className="font-semibold text-foreground">Vår process:</h4>
                   <ul className="space-y-2 text-muted-foreground">
-                    <li>• Kostnadsfri konsultation</li>
                     <li>• Professionell inventering</li>
-                    <li>• Expertbedömning</li>
-                    <li>• Detaljerad värderingsrapport</li>
+                    <li>• Eventuell Expertbedömning</li>
                     <li>• Rådgivning kring försäljning</li>
                   </ul>
                 </div>
