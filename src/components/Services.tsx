@@ -290,7 +290,7 @@ const Services = () => {
           </div>
           <div></div>
           
-            <a href="#kontakt">
+            <a href="#contact">
               <Button id="boka-kostnadsfri" size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark">
                 Boka kostnadsfri konsultation
               </Button>
