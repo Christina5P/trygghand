@@ -283,7 +283,7 @@ const Services = () => {
 
           <div className="text-lg max-w-2xl mx-auto text-foreground">
               <h3 id="skraddarsydda-losningar" className="text-xl font-semibold text-foreground mb-4">Skräddarsydda lösningar</h3>
-              <p className="leading-relaxed">
+              <p id="las-mer-tjanster"className="leading-relaxed">
                 Behöver du hjälp med specifika tjänster utanför våra paket? Vi erbjuder även individuella tjänster och skräddarsydda lösningar anpassade efter dina unika behov.
               </p>
               <p className="text-sm text-muted-foreground">Kontakta oss för en kostnadsfri konultation så diskuterar vi hur bäst vi kan hjälpa dig.</p>
@@ -297,7 +297,7 @@ const Services = () => {
             </a>
          
 
-          <ServicesGrid />
+          <ServicesGrid  />
         </div>
       </div>
       
@@ -307,7 +307,7 @@ const Services = () => {
 
 function ServicesGrid() {
   return (
-    <div id="las-mer-tjanster" className="mt-16" >
+    <div className="mt-16" >
   
        <h3 
   

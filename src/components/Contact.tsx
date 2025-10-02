@@ -102,7 +102,16 @@ const Contact = () => {
                           </div>
                           <div className="space-y-1">
                             <h4 className="font-semibold text-foreground">{info.title}</h4>
-                            <p className="text-foreground font-medium">{info.value}</p>
+                            {info.title === "E-post" ? (
+                              <a 
+                                href="mailto:info@trygghand.se"
+                                className="text-foreground font-medium underline hover:text-primary transition-colors"
+                              >
+                                {info.value}
+                              </a>
+                            ) : (
+                              <p className="text-foreground font-medium">{info.value}</p>
+                            )}
                             <p className="text-sm text-muted-foreground">{info.description}</p>
                           </div>
                         </div>
