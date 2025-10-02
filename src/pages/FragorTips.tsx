@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle, AlertCircle, FileText, Calculator, Archive, ClipboardList } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const FragorTips = () => {
   useEffect(() => {
@@ -17,8 +17,7 @@ const FragorTips = () => {
       title: "Får man tömma ett dödsbo innan bouppteckning?",
       icon: <AlertCircle className="h-6 w-6" />,
       category: "Juridik",
-      imagePrompt: "En respektfull bild av ett tomt vardagsrum med lådor, juridiska dokument på ett bord, mjukt ljus.",
-      imageUrl: "/images/bouppteckning.jpg",
+      imageUrl: "/images/bouppteckning.png",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -54,7 +53,7 @@ const FragorTips = () => {
       icon: <Calculator className="h-6 w-6" />,
       category: "Skatt",
       imagePrompt: "Illustration av en kalkylator, kvitton och en checklista bredvid flyttlådor, stilren och enkel.",
-      imageUrl: "/images/rutavdrag.jpg",
+      imageUrl: "/images/rutavdrag.png",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -92,8 +91,7 @@ const FragorTips = () => {
       title: "Döstädning - Varför det är värt att börja tidigt",
       icon: <Archive className="h-6 w-6" />,
       category: "Tips",
-      imagePrompt: "Ett städat, ljust hem med ordnade lådor och märkta kartonger, varm ton.",
-      imageUrl: "/images/dostadning.jpg",
+      imageUrl: "/images/dostadning.png",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -134,8 +132,7 @@ const FragorTips = () => {
       title: "Ordna arkivet - En hjälp för anhöriga",
       icon: <FileText className="h-6 w-6" />,
       category: "Planering",
-      imagePrompt: "Ett organiserat arkiv med pärmar, dokument och etiketter, ljus och harmonisk ton.",
-      imageUrl: "/images/arkiv.jpg",
+      imageUrl: "/images/arkiv.png",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -172,8 +169,7 @@ const FragorTips = () => {
       title: "Skatt för dödsbo - Vad gäller?",
       icon: <Calculator className="h-6 w-6" />,
       category: "Skatt",
-      imagePrompt: "En bokföringsmiljö med papper, laptop och kalkylator, professionell och tydlig.",
-      imageUrl: "/images/skatt.jpg",
+      imageUrl: "/images/skatt.png",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -210,8 +206,7 @@ const FragorTips = () => {
       title: "Checklista vid dödsfall",
       icon: <ClipboardList className="h-6 w-6" />,
       category: "Planering",
-      imagePrompt: "En organiserad checklista med anteckningar, pennor och lugn miljö, varm ton.",
-      imageUrl: "/images/checklista.jpg",
+      imageUrl: "/images/checklista.png",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
@@ -251,7 +246,6 @@ const FragorTips = () => {
   return (
     <div className="min-h-screen">
       <Header />
-      
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -263,52 +257,80 @@ const FragorTips = () => {
           </div>
 
           {/* Articles */}
-          <div className="space-y-8">
-            {articles.map((article, index) => (
-              <Card 
-                key={article.id} 
-                className="border-border overflow-hidden transition-transform duration-300 hover:shadow-xl hover:scale-[1.02] rounded-2xl"
-              >
-                {/* Bild */}
-                {article.imageUrl && (
-                  <div className="w-full h-64 bg-muted overflow-hidden">
-                    <img 
-                      src={article.imageUrl} 
-                      alt={article.title} 
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-                )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {articles.map((article, index) => {
+              const [imgWidth, setImgWidth] = useState<number | undefined>(undefined);
+              const imgRef = useRef<HTMLImageElement>(null);
 
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                        {article.icon}
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl text-foreground">
-                          {article.title}
-                        </CardTitle>
-                        <Badge variant="secondary" className="mt-2">
-                          {article.category}
-                        </Badge>
+              const handleImgLoad = () => {
+                if (imgRef.current) {
+                  setImgWidth(imgRef.current.naturalWidth);
+                }
+              };
+
+              return (
+                <Card
+                  key={article.id}
+                  className={`border-border overflow-hidden transition-transform duration-300 hover:shadow-xl hover:scale-[1.02] rounded-2xl mx-auto`}
+                  style={imgWidth ? { width: imgWidth > 400 ? 400 : imgWidth } : undefined}
+                >
+                  {/* Bild */}
+                  {article.imageUrl && (
+                    <div
+                      className="w-full h-80 sm:h-96 flex items-center justify-center overflow-hidden relative px-2 py-2"
+                      style={{
+                        background: "linear-gradient(135deg, #e0e7ef 0%, #f3f4f6 100%)"
+                      }}
+                    >
+                      {/* Blurad bakgrundsbild */}
+                      <img
+                        src={article.imageUrl}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 w-full h-full object-cover blur-xl scale-105 z-0"
+                        style={{ filter: "blur(24px)", opacity: 0.5 }}
+                      />
+                      {/* Främre bild med extra padding och rundade hörn */}
+                      <img
+                        ref={imgRef}
+                        src={article.imageUrl}
+                        alt={article.title}
+                        onLoad={handleImgLoad}
+                        className="relative object-contain max-h-full max-w-full drop-shadow-lg z-10 p-4 rounded-2xl"
+                      />
+                      {/* Soft vignette effect */}
+                      <div className="absolute inset-0 pointer-events-none z-20"
+                        style={{
+                          background: "radial-gradient(circle at center, rgba(0,0,0,0.06) 0%, transparent 80%)"
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                          {article.icon}
+                        </div>
+                        <div>
+                          <CardTitle className="text-xl text-foreground">
+                            {article.title}
+                          </CardTitle>
+                          <Badge variant="secondary" className="mt-2">
+                            {article.category}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  {article.content}
-                </CardContent>
-                
-                {index < articles.length - 1 && (
-                  <div className="px-6 pb-6">
-                    <Separator />
-                  </div>
-                )}
-              </Card>
-            ))}
+                  </CardHeader>
+                  
+                  <CardContent>
+                    {article.content}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           {/* Contact CTA */}
