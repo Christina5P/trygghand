@@ -22,13 +22,13 @@ const Footer = () => {
           <div className="space-y-4">
             <h4 className="font-semibold">Tjänster</h4>
             <ul className="space-y-2 text-sm text-background/80">
-              <li><Link to="/services/radgivning-planering" className="hover:underline">Rådgivning & planering</Link></li>
-              <li><Link to="/services/stadning" className="hover:underline">Städning</Link></li>
+              <li><Link to="/services/RadgivningPlanering" className="hover:underline">Rådgivning & planering</Link></li>
+              <li><Link to="/services/Städning" className="hover:underline">Städning</Link></li>
               <li><Link to="/services/tomning-bohag" className="hover:underline">Tömning av bohag</Link></li>
-              <li><Link to="/services/flytt" className="hover:underline">Flytt</Link></li>
-              <li><Link to="/services/vardering" className="hover:underline">Värdering</Link></li>
-              <li><Link to="/services/forsaljning" className="hover:underline">Försäljning</Link></li>
-              <li><Link to="/services/magasinering" className="hover:underline">Magasinering</Link></li>
+              <li><Link to="/services/Flytt" className="hover:underline">Flytt</Link></li>
+              <li><Link to="/services/Värdering" className="hover:underline">Värdering</Link></li>
+              <li><Link to="/services/Försäljning" className="hover:underline">Försäljning</Link></li>
+              <li><Link to="/services/Magasinering" className="hover:underline">Magasinering</Link></li>
             </ul>
           </div>
 
@@ -51,12 +51,11 @@ const Footer = () => {
                 <span>070-175 35 85</span>
               </div>
               <div className="flex items-center space-x-2">
-               
                 <a href="mailto:info@trygghand.se" className="flex items-center space-x-1 hover:text-primary transition-colors">
-                              <Mail className="h-4 w-4" />
-                              <span>info@trygghand.se</span>
-                            </a>
-                </div>
+                  <Mail className="h-4 w-4" />
+                  <span>info@trygghand.se</span>
+                </a>
+              </div>
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
                 <span>Sundsvall, Sverige</span>

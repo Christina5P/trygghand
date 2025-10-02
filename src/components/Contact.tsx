@@ -48,7 +48,9 @@ const Contact = () => {
     <section id="contact" className="py-20 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center space-y-4 mb-16">
-          <h2 className="text-3xl lg:text-4xl font-bold text-foreground">Kontakta oss</h2>
+          <h2 id="kontakt" className="text-3xl lg:text-4xl font-bold text-foreground">
+            Kontakta oss
+          </h2>
           <p className="text-xl text-foreground max-w-3xl mx-auto">
             Låt oss hjälpa dig med din livsförändring. Boka en kostnadsfri konsultation idag.
           </p>
