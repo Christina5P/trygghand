@@ -56,6 +56,7 @@ interface Customer {
   email: string;
   phone?: string;
   is_admin?: boolean;
+  created_at: string;
 }
 
 interface ServiceType {
@@ -249,6 +250,15 @@ const AdminPortal = () => {
     );
   }
 
+  // Räkna nya förfrågningar (t.ex. senaste 24h)
+  const newContactRequests = contactRequests.filter(
+    (req) => new Date(req.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+  );
+  // Räkna nya kunder (t.ex. senaste 24h)
+  const newCustomers = customers.filter(
+    (c) => new Date(c.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+  );
+
   return (
     <div className="min-h-screen bg-soft-gray">
       {/* Header */}
@@ -279,8 +289,18 @@ const AdminPortal = () => {
         <Tabs defaultValue="cases" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="cases">Ärenden</TabsTrigger>
-            <TabsTrigger value="contacts">Kontakter</TabsTrigger>
-            <TabsTrigger value="customers">Kunder</TabsTrigger>
+            <TabsTrigger value="contact_requests">
+              Kontakter
+              {newContactRequests.length > 0 && (
+                <Badge variant="outline" className="ml-2">{newContactRequests.length} ny</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="customers">
+              Kunder
+              {newCustomers.length > 0 && (
+                <Badge variant="outline" className="ml-2">{newCustomers.length} ny</Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="subscriptions">Abonnemang</TabsTrigger>
           </TabsList>
 
@@ -419,8 +439,72 @@ const AdminPortal = () => {
             </div>
           </TabsContent>
 
-          {/* ... other tabs (contacts, customers, subscriptions) ... */}
+          {/* contact_requests Tab */}
+          <TabsContent value="contact_requests" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Kontakter</h2>
+            </div>
 
+            <div className="grid gap-4">
+              {contactRequests.map((request) => (
+                <Card key={request.id}>
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold text-lg">
+                      {request.name || "Okänd"}
+                    </h3>
+                    <p className="text-sm text-warm-gray">{request.email || "Ingen e-post"}</p>
+                    <p className="text-sm text-warm-gray">{request.message || "Ingen meddelande"}</p>
+                    {/* <p className="text-sm text-warm-gray">{request.phone && `📞 ${request.phone}`}</p> */}
+                    <p className="text-xs text-warm-gray">
+                      {new Date(request.created_at).toLocaleString("sv-SE")}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Customers Tab */}
+          <TabsContent value="customers" className="space-y-6">
+  <h2 className="text-2xl font-bold">Kunder</h2>
+  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    {customers.length === 0 ? (
+      <p className="text-warm-gray">Inga kunder hittades.</p>
+    ) : (
+      customers.map((customer) => (
+        <Card key={customer.id}>
+          <CardContent className="p-6">
+            <h3 className="font-semibold text-lg">{customer.name}</h3>
+            <p className="text-sm text-warm-gray">{customer.email}</p>
+            {customer.phone && (
+              <p className="text-sm text-warm-gray">📞 {customer.phone}</p>
+            )}
+          </CardContent>
+        </Card>
+      ))
+    )}
+  </div>
+</TabsContent>
+
+          {/* Subscriptions Tab */}
+          <TabsContent value="subscriptions" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Abonnemang</h2>
+            </div>
+
+            <div className="grid gap-4">
+              {subscriptions.map((subscription) => (
+                <Card key={subscription.id}>
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold text-lg">{subscription.category}</h3>
+                    <p className="text-sm text-warm-gray">
+                      Kund-ID: {subscription.customer_id}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
       

@@ -87,7 +87,7 @@ To design this website I proceeded from calm and confidence colours.
 
 - Logotype is created to simulate caring services with your home 
 
-  ![Logotype](public/favicon-192x192.png)
+-I have also made a "Satisfied customer" logo, generated from Gemini
 
 - Colors: 
  
@@ -107,20 +107,10 @@ I also load the favicon to work on different devices
 
 Image and content used from media:
 
-* https://stocksnap.io/
-* https://www.istockphoto.com/
-* https://www.alamy.com/stock-photo
-* https://clossue.com/eu/blog
-* http://almonds.ai  
-* https://urbanswall.com/luuxly-com-your-destination-for-luxury-fashion-and-lifestyle/
-* https://www.lifestyleasia.com/ind/style/fashion/second-hand-luxury-is-the-new-sustainable-trend/
-* https://us.vestiairecollective.com/ - I have borrowed product img from this second hand store
-* https://app.logomaster.ai/ - help making a logotype
-* https://www.colorhexa.com/ - Colorscheme
-* https://climatepartnerimpact.com/get-involved/ - derivation to a project for donation
-* http://lucid.app - Creating a concept Plan
+* https://smashinglogo.com/ - create my buisness logo
+* https://gemini.google.com/ - create satisfied logo
+* https://canva.com - create AI img to Frågor & Tips blog
 * https://fontawesome.com/ -font awesome icons
-* https://www.istockphoto.com/ -pictures
 
 
 
@@ -162,29 +152,28 @@ Store newsletter in an archive on the website
  
 
 -Delete
+### 💻 Technologies Used
+
+Denna applikation är byggd med följande teknologier och verktyg:
+
+#### Plattformer & Miljöer (Platforms & Environments)
+* **GitHub:** Används för versionshantering, källkodslagring och samarbete.
+* **VS Code:** (Visual Studio Code) Används som Integrated Development Environment (IDE) för utveckling.
+
+#### Programmeringsspråk (Languages)
+* **TypeScript:** Används för att skriva robust och skalbar kod, vilket är ett superset av JavaScript.
+* **JavaScript (JS):** Huvudsakligt skriptspråk för både frontend och backend-logik.
+* **HTML:** Används för att strukturera innehållet i applikationen.
+* **CSS:** Används för att definiera stil och layout.
+
+#### Ramverk & Bibliotek (Frameworks & Libraries)
+
+* **Tailwind CSS:** Ett verktygsorienterat CSS-ramverk för snabb och flexibel design av användargränssnittet (UI).
+* **Vent:** (Kategoriserat som ett frontend- eller utility-bibliotek/ramverk.) *
 
 
-### [Technologies Used](#technologies_used)
-
-#### Platforms
-* GitHub - Web-based platform to manage repository and collaboration tool.
-
-
-#### IDE
-* VS code
-#### Languages:
-* HTML
-* CSS
-* Typescript
-* JS
-
-#### Frameworks and libraries:
-* Django
-* Tailwind
-* Vent
-
-#### Databases:
-* Supabase
+#### Databaser & Backend-tjänster (Databases & Backend Services)
+* **Supabase:** Används som en molnbaserad backend-tjänst (BaaS), som inkluderar databas (PostgreSQL), autentisering och realtidsfunktioner.
 
 ### [Setup](#setup)
 

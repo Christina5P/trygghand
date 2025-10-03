@@ -257,7 +257,7 @@ const FragorTips = () => {
           </div>
 
           {/* Articles */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-64 gap-y-12">
             {articles.map((article, index) => {
               const [imgWidth, setImgWidth] = useState<number | undefined>(undefined);
               const imgRef = useRef<HTMLImageElement>(null);
@@ -271,7 +271,7 @@ const FragorTips = () => {
               return (
                 <Card
                   key={article.id}
-                  className={`border-border overflow-hidden transition-transform duration-300 hover:shadow-xl hover:scale-[1.02] rounded-2xl mx-auto`}
+                  className="border-border overflow-hidden transition-transform duration-300 hover:shadow-xl hover:scale-[1.02] rounded-2xl mx-auto p-4"
                   style={imgWidth ? { width: imgWidth > 400 ? 400 : imgWidth } : undefined}
                 >
                   {/* Bild */}
@@ -350,7 +350,7 @@ const FragorTips = () => {
                   Ring oss: 070-175 35 85
                 </a>
                 <a 
-                  href="mailto:info@trygghand.se"
+                  href="mailto:kontakt@trygghand.com"
                   className="inline-flex items-center justify-center px-6 py-3 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors"
                 >
                   Skicka e-post

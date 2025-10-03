@@ -54,6 +54,14 @@ const About = () => {
                   </div>
                 ))}
               </div>
+              {/* Nöjd kund-logo under benefits, lite större */}
+              <div className="flex justify-start mt-6">
+                <img
+                  src="src/assets/nojdkundlogo.png"
+                  alt="Nöjd kund garanti"
+                  className="h-36 w-auto"
+                />
+              </div>
             </div>
           </div>
 
