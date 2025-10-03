@@ -1,11 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
+import { supabase } from "@/lib/supabase"; // Du måste ha denna fil
 
 const Contact = () => {
+  const formRef = useRef<HTMLFormElement>(null);
+
   useEffect(() => {
     if (window.location.hash === '#kontakt-form') {
       setTimeout(() => {
@@ -17,6 +20,29 @@ const Contact = () => {
       }, 100);
     }
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = formRef.current;
+    if (!form) return;
+
+    const data = {
+      firstname: form.firstname.value,
+      lastname: form.lastname.value,
+      email: form.email.value,
+      phone: form.phone.value,
+      message: form.message.value,
+    };
+
+    const { error } = await supabase.from("contact_requests").insert([data]);
+    if (!error) {
+      alert("Tack för din förfrågan!");
+      form.reset();
+    } else {
+      alert("Något gick fel, försök igen.");
+    }
+  };
+
   const contactInfo = [
     {
       icon: Phone,
@@ -27,7 +53,7 @@ const Contact = () => {
     {
       icon: Mail,
       title: "E-post",
-      value: "info@trygghand.se",
+      value: "kontakt@trygghand.com",
       description: "Vi svarar inom 24 timmar"
     },
     {
@@ -68,22 +94,25 @@ const Contact = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <Input placeholder="Förnamn" />
-                    <Input placeholder="Efternamn" />
-                  </div>
-                  <Input placeholder="E-postadress" type="email" />
-                  <Input placeholder="Telefonnummer" type="tel" />
-                  <Textarea 
-                    placeholder="Beskriv kort din situation och vilken hjälp du behöver..."
-                    className="min-h-[120px]"
-                  />
-                  <Button size="lg" className="w-full bg-gradient-to-r from-primary to-trust-blue-dark">
-                    Skicka förfrågan
-                  </Button>
-                  <p className="text-xs text-foreground text-center">
-                    Genom att skicka denna förfrågan godkänner du att vi kontaktar dig angående våra tjänster.
-                  </p>
+                  <form ref={formRef} onSubmit={handleSubmit}>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <Input name="firstname" placeholder="Förnamn" required />
+                      <Input name="lastname" placeholder="Efternamn" />
+                    </div>
+                    <Input name="email" placeholder="E-postadress" type="email" />
+                    <Input name="phone" placeholder="Telefonnummer" type="tel" required />
+                    <Textarea 
+                      name="message"
+                      placeholder="Beskriv kort din situation och vilken hjälp du behöver..."
+                      className="min-h-[120px]"
+                    />
+                    <Button type="submit" size="lg" className="w-full bg-gradient-to-r from-primary to-trust-blue-dark">
+                      Skicka förfrågan
+                    </Button>
+                    <p className="text-xs text-foreground text-center">
+                      Genom att skicka denna förfrågan godkänner du att vi kontaktar dig angående våra tjänster.
+                    </p>
+                  </form>
                 </CardContent>
               </Card>
             </div>
@@ -106,7 +135,7 @@ const Contact = () => {
                             <h4 className="font-semibold text-foreground">{info.title}</h4>
                             {info.title === "E-post" ? (
                               <a 
-                                href="mailto:info@trygghand.se"
+                                href="mailto:kontakt@trygghand.com"
                                 className="text-foreground font-medium underline hover:text-primary transition-colors"
                               >
                                 {info.value}
