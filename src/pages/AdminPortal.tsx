@@ -34,6 +34,7 @@ import EditCaseDialog from './EditCaseDialog'; // Ensure this path is correct
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress"; // Om du har en Progress-komponent
 
 // --- Type Definitions ---
 interface Case {
@@ -117,6 +118,7 @@ const AdminPortal = () => {
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [providerValue, setProviderValue] = useState("");
   const [providerInput, setProviderInput] = useState("");
+  const [openOverview, setOpenOverview] = useState<"cases" | "subscriptions" | "comments" | null>(null);
 
   const fetchCases = async () => {
     try {
@@ -423,6 +425,17 @@ const AdminPortal = () => {
   const newCustomers = customers.filter(
     (c) => new Date(c.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
   );
+
+  // --- Statistik för vald kund ---
+  const customerCases = cases.filter(c => c.customer?.id === selectedCustomer?.id);
+  const customerSubscriptions = subscriptions.filter(s => s.customer_id === selectedCustomer?.id);
+  const customerComments = []; // Hämta från customer_comments-tabellen om du har det
+
+  const completedCases = customerCases.filter(c => c.status === "completed").length;
+  const completedSubscriptions = customerSubscriptions.filter(s => s.status === "completed").length;
+
+  const caseProgress = customerCases.length > 0 ? Math.round((completedCases / customerCases.length) * 100) : 0;
+  const subscriptionProgress = customerSubscriptions.length > 0 ? Math.round((completedSubscriptions / customerSubscriptions.length) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-soft-gray">
@@ -888,6 +901,47 @@ const AdminPortal = () => {
           Skapad: {new Date(selectedCustomer.created_at).toLocaleDateString("sv-SE")}
         </DialogDescription>
       </DialogHeader>
+
+      {/* Visualisering i kundkortet */}
+      <div className="mb-6">
+        <h3 className="text-lg font-bold mb-2">Projektöversikt</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <h4 className="font-semibold mb-1">Ärenden</h4>
+              <p className="text-sm mb-2">
+                {completedCases} av {customerCases.length} ärenden genomförda
+              </p>
+              <Progress value={caseProgress} className="h-2" />
+              <p className="text-xs text-warm-gray mt-1">{caseProgress}% klart</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <h4 className="font-semibold mb-1">Abonnemang</h4>
+              <p className="text-sm mb-2">
+                {completedSubscriptions} av {customerSubscriptions.length} avslutade
+              </p>
+              <Progress value={subscriptionProgress} className="h-2" />
+              <p className="text-xs text-warm-gray mt-1">{subscriptionProgress}% klart</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <h4 className="font-semibold mb-1">Meddelanden & kommentarer</h4>
+              <p className="text-sm mb-2">
+                {customerComments.length} meddelanden skickade
+              </p>
+              <ul className="text-xs text-warm-gray list-disc ml-4">
+                {customerComments.slice(-3).map((comment, idx) => (
+                  <li key={idx}>{comment.comment}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
       <h4 className="font-semibold mt-4 mb-2">Skapa nytt ärende för denna kund</h4>
       <form
         onSubmit={(e) => {
@@ -1091,6 +1145,55 @@ const AdminPortal = () => {
     </DialogContent>
   </Dialog>
 )}
+
+<Dialog open={openOverview !== null} onOpenChange={() => setOpenOverview(null)}>
+  <DialogContent>
+    {openOverview === "cases" && (
+      <>
+        <DialogHeader>
+          <DialogTitle>Alla ärenden</DialogTitle>
+        </DialogHeader>
+        <ul>
+          {customerCases.map((c) => (
+            <li key={c.id}>
+              <strong>{c.title}</strong> – {c.status}
+              <br />
+              {c.description}
+            </li>
+          ))}
+        </ul>
+      </>
+    )}
+    {openOverview === "subscriptions" && (
+      <>
+        <DialogHeader>
+          <DialogTitle>Alla abonnemang</DialogTitle>
+        </DialogHeader>
+        <ul>
+          {customerSubscriptions.map((s) => (
+            <li key={s.id}>
+              <strong>{s.category}</strong> – {s.status}
+              <br />
+              Leverantör: {s.provider}
+            </li>
+          ))}
+        </ul>
+      </>
+    )}
+    {openOverview === "comments" && (
+      <>
+        <DialogHeader>
+          <DialogTitle>Meddelanden & kommentarer</DialogTitle>
+        </DialogHeader>
+        <ul>
+          {customerComments.map((comment, idx) => (
+            <li key={idx}>{comment.comment}</li>
+          ))}
+        </ul>
+      </>
+    )}
+  </DialogContent>
+</Dialog>
     </div>
   );
 };
