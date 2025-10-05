@@ -115,6 +115,8 @@ const AdminPortal = () => {
   const { toast } = useToast();
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  const [providerValue, setProviderValue] = useState("");
+  const [providerInput, setProviderInput] = useState("");
 
   const fetchCases = async () => {
     try {
@@ -282,10 +284,15 @@ const AdminPortal = () => {
   const createSubscription = async (formData: FormData) => {
     try {
       const category = (formData.get("category") as string)?.trim();
-      const provider = (formData.get("provider") as string)?.trim();
+      // Hämta leverantör från select eller input
+      const providerSelect = (formData.get("provider_select") as string)?.trim();
+      const providerInput = (formData.get("provider") as string)?.trim();
+      const provider = providerSelect === "custom" ? providerInput : providerSelect;
       const customer_id = (formData.get("customer_id") as string)?.trim();
+      const status = (formData.get("status") as string)?.trim();
+      const notes = (formData.get("notes") as string)?.trim();
 
-      if (!category || !provider || !customer_id) {
+      if (!category || !provider || !customer_id || !status) {
         toast({
           title: "Fel",
           description: "Alla fält måste fyllas i",
@@ -298,20 +305,22 @@ const AdminPortal = () => {
         category,
         provider,
         customer_id,
+        status,
+        notes,
       });
 
       if (error) throw error;
 
       toast({
-        title: "Abonnemang skapat",
-        description: "Det nya abonnemanget har skapats",
+        title: "Abonnemang avslutat",
+        description: "Abonnemanget har markerats som avslutat",
       });
       fetchSubscriptions();
     } catch (error) {
       console.error("Error creating subscription:", error);
       toast({
         title: "Fel",
-        description: "Kunde inte skapa abonnemang",
+        description: "Kunde inte avsluta abonnemang",
         variant: "destructive",
       });
     }
@@ -319,7 +328,7 @@ const AdminPortal = () => {
 
   const updateContactRequestStatus = async (id: string, status: string) => {
     const { error } = await supabase
-      .from('contact_requests') // eller 'customers'
+      .from('contact_requests')
       .update({ status })
       .eq('id', id);
 
@@ -334,7 +343,7 @@ const AdminPortal = () => {
         title: "Status uppdaterad",
         description: "Kontaktens status har uppdaterats",
       });
-      fetchContactRequests(); // eller fetchCustomers()
+      await fetchContactRequests();
     }
   };
 
@@ -408,7 +417,7 @@ const AdminPortal = () => {
 
   // Räkna nya förfrågningar (t.ex. senaste 24h)
   const newContactRequests = contactRequests.filter(
-    (req) => new Date(req.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+    (req) => req.status === "new"
   );
   // Räkna nya kunder (t.ex. senaste 24h)
   const newCustomers = customers.filter(
@@ -510,7 +519,7 @@ const AdminPortal = () => {
                       <div>
                         <Label htmlFor="service_type_id">Tjänst</Label>
                         <Select name="service_type_id" required>
-                          <SelectTrigger>
+                          <SelectTrigger className="max-w-xs">
                             <SelectValue placeholder="Välj tjänst" />
                           </SelectTrigger>
                           <SelectContent>
@@ -732,7 +741,44 @@ const AdminPortal = () => {
                     </div>
                     <div>
                       <Label htmlFor="provider">Leverantör</Label>
-                      <Input id="provider" name="provider" required placeholder="Leverantör" />
+                      <Select
+                        name="provider_select"
+                        onValueChange={(value) => setProviderValue(value)}
+                        value={providerValue}
+                        required
+                      >
+                        <SelectTrigger className="max-w-xs">
+                          <SelectValue placeholder="Välj leverantör" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="custom">Skriv själv</SelectItem>
+                          <SelectItem value="Sundsvalls Energi">Sundsvalls Energi</SelectItem>
+                          <SelectItem value="Fortum">Fortum</SelectItem>
+                          <SelectItem value="Övrige elavtal">Övriga elavtal</SelectItem>
+                          <SelectItem value="MittSverigeVatten">MittSverigeVatten</SelectItem>
+                          <SelectItem value="Hemförsäkring">Hemförsäkring</SelectItem>
+                          <SelectItem value="Postkodslotteriet">Postkodslotteriet</SelectItem>
+                          <SelectItem value="Telia">Telia</SelectItem>
+                          <SelectItem value="Tele2">Tele2</SelectItem>
+                          <SelectItem value="Netflix">Netflix</SelectItem>
+                          <SelectItem value="Övrigt streaming abonnemang">Övrigt streaming abonnemang</SelectItem>
+                          <SelectItem value="Spotify">Spotify</SelectItem>
+                          <SelectItem value="Googlekonto">Googlekonto</SelectItem>
+                          <SelectItem value="Mail">Mail</SelectItem>
+                          <SelectItem value="Övrigt">Övrigt</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {providerValue === "custom" && (
+    <Input
+      id="provider"
+      name="provider"
+      required
+      placeholder="Skriv leverantör"
+      className="mt-2 max-w-xs"
+      onChange={e => setProviderInput(e.target.value)}
+      value={providerInput}
+    />
+  )}
                     </div>
                     <div>
                       <Label htmlFor="customer_id">Kund</Label>
@@ -856,7 +902,7 @@ const AdminPortal = () => {
         <div>
           <Label htmlFor="service_type_id">Tjänst</Label>
           <Select name="service_type_id" required>
-            <SelectTrigger>
+            <SelectTrigger className="max-w-xs">
               <SelectValue placeholder="Välj tjänst" />
             </SelectTrigger>
             <SelectContent>
@@ -947,7 +993,69 @@ const AdminPortal = () => {
   </div>
   <div>
     <Label htmlFor="provider">Leverantör</Label>
-    <Input id="provider" name="provider" required placeholder="Leverantör" />
+    <Select
+      name="provider_select"
+      onValueChange={(value) => setProviderValue(value)}
+      value={providerValue}
+      required
+    >
+      <SelectTrigger className="max-w-xs">
+        <SelectValue placeholder="Välj leverantör" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="custom">Skriv själv</SelectItem>
+        <SelectItem value="Sundsvalls Energi">Sundsvalls Energi</SelectItem>
+        <SelectItem value="Fortum">Fortum</SelectItem>
+        <SelectItem value="Övrige elavtal">Övriga elavtal</SelectItem>
+        <SelectItem value="MittSverigeVatten">MittSverigeVatten</SelectItem>
+        <SelectItem value="Hemförsäkring">Hemförsäkring</SelectItem>
+        <SelectItem value="Postkodslotteriet">Postkodslotteriet</SelectItem>
+        <SelectItem value="Telia">Telia</SelectItem>
+        <SelectItem value="Tele2">Tele2</SelectItem>
+        <SelectItem value="Netflix">Netflix</SelectItem>
+        <SelectItem value="Övrigt streaming abonnemang">Övrigt streaming abonnemang</SelectItem>
+        <SelectItem value="Spotify">Spotify</SelectItem>
+        <SelectItem value="Googlekonto">Googlekonto</SelectItem>
+        <SelectItem value="Mail">Mail</SelectItem>
+        <SelectItem value="Övrigt">Övrigt</SelectItem>
+      </SelectContent>
+    </Select>
+    {providerValue === "custom" && (
+    <Input
+      id="provider"
+      name="provider"
+      required
+      placeholder="Skriv leverantör"
+      className="mt-2 max-w-xs"
+      onChange={e => setProviderInput(e.target.value)}
+      value={providerInput}
+    />
+  )}
+  </div>
+  <div>
+    <Label htmlFor="customer_id">Kund</Label>
+    <Select name="customer_id" required>
+      <SelectTrigger>
+        <SelectValue placeholder="Välj kund" />
+      </SelectTrigger>
+      <SelectContent>
+        {customers.length > 0 ? (
+          customers.map((c) => (
+            <SelectItem key={c.id} value={c.id}>
+              {c.name} ({c.email})
+            </SelectItem>
+          ))
+        ) : (
+          <SelectItem value="none" disabled>
+            Inga kunder tillgängliga
+          </SelectItem>
+        )}
+      </SelectContent>
+    </Select>
+  </div>
+  <div>
+    <Label htmlFor="notes">Kommentar</Label>
+    <Textarea id="notes" name="notes" placeholder="Kommentar till avslut" />
   </div>
   <Button type="submit" className="w-full">
     Avsluta abonnemang
