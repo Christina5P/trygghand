@@ -81,6 +81,21 @@ interface Subscription {
   id: string;
   category: string;
   customer_id: string;
+  provider?: string;
+  notes?: string;
+  created_at?: string;
+}
+
+interface CaseSubscription {
+  id: string;
+  case_id: string;
+  subscription_id: string;
+  status: string;
+  cancellation_date?: string | null;
+  notes?: string | null;
+  created_at: string;
+  case?: Case;
+  subscription?: Subscription;
 }
 
 // --- AdminPortal Component ---
@@ -92,7 +107,10 @@ const AdminPortal = () => {
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [caseSubscriptions, setCaseSubscriptions] = useState<CaseSubscription[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
+  const [loadingCaseSubscriptions, setLoadingCaseSubscriptions] = useState(false);
   const { toast } = useToast();
 
   const fetchCases = async () => {
@@ -153,13 +171,41 @@ const AdminPortal = () => {
   };
 
   const fetchSubscriptions = async () => {
-    // ... (same as before) ...
+    setLoadingSubscriptions(true);
     const { data, error } = await supabase
       .from("subscriptions")
       .select("*")
-      .order("category", { ascending: true });
-    if (error) throw error;
-    setSubscriptions(data || []);
+      .order("created_at", { ascending: false });
+    if (error) {
+      toast({
+        title: "Fel",
+        description: "Kunde inte hämta abonnemang",
+        variant: "destructive",
+      });
+      console.error(error);
+    } else {
+      setSubscriptions(data || []);
+    }
+    setLoadingSubscriptions(false);
+  };
+  
+  const fetchCaseSubscriptions = async () => {
+    setLoadingCaseSubscriptions(true);
+    const { data, error } = await supabase
+      .from("case_subscriptions")
+      .select("*, case:case_id(*), subscription:subscription_id(*)")
+      .order("created_at", { ascending: false });
+    if (error) {
+      toast({
+        title: "Fel",
+        description: "Kunde inte hämta ärendeabonnemang",
+        variant: "destructive",
+      });
+      console.error(error);
+    } else {
+      setCaseSubscriptions(data || []);
+    }
+    setLoadingCaseSubscriptions(false);
   };
   
   useEffect(() => {
@@ -171,6 +217,7 @@ const AdminPortal = () => {
         fetchServiceTypes(),
         fetchContactRequests(),
         fetchSubscriptions(),
+        fetchCaseSubscriptions(), // Lägg till denna rad!
       ]);
       setLoading(false);
     };
@@ -229,6 +276,44 @@ const AdminPortal = () => {
     }
   };
 
+  const createSubscription = async (formData: FormData) => {
+    try {
+      const category = (formData.get("category") as string)?.trim();
+      const provider = (formData.get("provider") as string)?.trim();
+      const customer_id = (formData.get("customer_id") as string)?.trim();
+
+      if (!category || !provider || !customer_id) {
+        toast({
+          title: "Fel",
+          description: "Alla fält måste fyllas i",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase.from("subscriptions").insert({
+        category,
+        provider,
+        customer_id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Abonnemang skapat",
+        description: "Det nya abonnemanget har skapats",
+      });
+      fetchSubscriptions();
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      toast({
+        title: "Fel",
+        description: "Kunde inte skapa abonnemang",
+        variant: "destructive",
+      });
+    }
+  };
+
   const updateContactRequestStatus = async (id: string, status: string) => {
     const { error } = await supabase
       .from('contact_requests') // eller 'customers'
@@ -247,6 +332,27 @@ const AdminPortal = () => {
         description: "Kontaktens status har uppdaterats",
       });
       fetchContactRequests(); // eller fetchCustomers()
+    }
+  };
+
+  const updateCaseStatus = async (id: string, status: string) => {
+    const { error } = await supabase
+      .from("cases")
+      .update({ status })
+      .eq("id", id);
+
+    if (error) {
+      toast({
+        title: "Fel",
+        description: "Kunde inte uppdatera ärendestatus",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Status uppdaterad",
+        description: "Ärendets status har uppdaterats",
+      });
+      fetchCases();
     }
   };
 
@@ -451,7 +557,20 @@ const AdminPortal = () => {
                           {case_.customer?.name} • {case_.service_type?.name}
                         </p>
                       </div>
-                      <Badge>{case_.status}</Badge>
+                      <Select
+                        value={case_.status}
+                        onValueChange={(value) => updateCaseStatus(case_.id, value)}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Väntande</SelectItem>
+                          <SelectItem value="in_progress">Pågår</SelectItem>
+                          <SelectItem value="completed">Avslutad</SelectItem>
+                          <SelectItem value="cancelled">Avbruten</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <p className="text-sm mb-2">{case_.description}</p>
                     {case_.address && (
@@ -541,20 +660,105 @@ const AdminPortal = () => {
           <TabsContent value="subscriptions" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Abonnemang</h2>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Avsluta abonnemang
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Avsluta abonnemang</DialogTitle>
+                    <DialogDescription>
+                      Markera ett abonnemang som avslutat och lämna kommentar.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      createSubscription(new FormData(e.currentTarget));
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <Label htmlFor="status">Status</Label>
+                      <Select name="status" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Välj status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Aktiv</SelectItem>
+                          <SelectItem value="cancelled">Avslutad</SelectItem>
+                          <SelectItem value="completed">Klar</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="provider">Leverantör</Label>
+                      <Input id="provider" name="provider" required placeholder="Leverantör" />
+                    </div>
+                    <div>
+                      <Label htmlFor="customer_id">Kund</Label>
+                      <Select name="customer_id" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Välj kund" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {customers.length > 0 ? (
+                            customers.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.name} ({c.email})
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="none" disabled>
+                              Inga kunder tillgängliga
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="notes">Kommentar</Label>
+                      <Textarea id="notes" name="notes" placeholder="Kommentar till avslut" />
+                    </div>
+                    <Button type="submit" className="w-full">
+                      Avsluta abonnemang
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
-
-            <div className="grid gap-4">
-              {subscriptions.map((subscription) => (
-                <Card key={subscription.id}>
-                  <CardContent className="p-6">
-                    <h3 className="font-semibold text-lg">{subscription.category}</h3>
-                    <p className="text-sm text-warm-gray">
-                      Kund-ID: {subscription.customer_id}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {loadingSubscriptions ? (
+              <p>Laddar...</p>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {subscriptions.length === 0 ? (
+                  <p className="text-warm-gray">Inga abonnemang hittades.</p>
+                ) : (
+                  subscriptions.map((sub) => (
+                    <Card key={sub.id}>
+                      <CardContent className="p-6">
+                        <h3 className="font-semibold text-lg">{sub.category || "Ingen kategori"}</h3>
+                        {sub.provider && (
+                          <p className="text-sm text-warm-gray">Leverantör: {sub.provider}</p>
+                        )}
+                        <p className="text-sm text-warm-gray">Kund-ID: {sub.customer_id}</p>
+                        {sub.notes && (
+                          <p className="text-sm text-warm-gray">Kommentar: {sub.notes}</p>
+                        )}
+                        {sub.created_at && (
+                          <p className="text-xs text-warm-gray">
+                            Skapad: {new Date(sub.created_at).toLocaleDateString("sv-SE")}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
