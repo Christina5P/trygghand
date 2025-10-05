@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import FragorTips from "./pages/FragorTips";
+import AdminPortal from "./pages/AdminPortal";
 
 // Dina services-sidor
 import Services from "./pages/services";

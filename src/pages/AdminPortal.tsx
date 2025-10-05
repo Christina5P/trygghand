@@ -70,6 +70,11 @@ interface ContactRequest {
   email: string;
   message: string;
   created_at: string;
+  status: string; // Add status property
+  firstname?: string;
+  lastname?: string;
+  phone?: string;
+  service_interest?: string;
 }
 
 interface Subscription {
@@ -138,11 +143,11 @@ const AdminPortal = () => {
   };
 
   const fetchContactRequests = async () => {
-    // ... (same as before) ...
     const { data, error } = await supabase
       .from("contact_requests")
       .select("*")
       .order("created_at", { ascending: false });
+    console.log("Contact requests:", data, error);
     if (error) throw error;
     setContactRequests(data || []);
   };
@@ -221,6 +226,27 @@ const AdminPortal = () => {
         description: "Kunde inte skapa ärende",
         variant: "destructive",
       });
+    }
+  };
+
+  const updateContactRequestStatus = async (id: string, status: string) => {
+    const { error } = await supabase
+      .from('contact_requests') // eller 'customers'
+      .update({ status })
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Fel",
+        description: "Kunde inte uppdatera status",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Status uppdaterad",
+        description: "Kontaktens status har uppdaterats",
+      });
+      fetchContactRequests(); // eller fetchCustomers()
     }
   };
 
@@ -450,11 +476,36 @@ const AdminPortal = () => {
                 <Card key={request.id}>
                   <CardContent className="p-6">
                     <h3 className="font-semibold text-lg">
-                      {request.name || "Okänd"}
+                      {request.name?.trim() ||
+  `${request.firstname ?? ""} ${request.lastname ?? ""}`.trim() ||
+  "Okänd"}
                     </h3>
-                    <p className="text-sm text-warm-gray">{request.email || "Ingen e-post"}</p>
-                    <p className="text-sm text-warm-gray">{request.message || "Ingen meddelande"}</p>
-                    {/* <p className="text-sm text-warm-gray">{request.phone && `📞 ${request.phone}`}</p> */}
+                    <p className="text-sm text-warm-gray">
+                      {request.email?.trim() || "Ingen e-post"}
+                    </p>
+                    <p className="text-sm text-warm-gray">
+                      {request.message?.trim() || "Ingen meddelande"}
+                    </p>
+                    {request.phone && (
+                      <p className="text-sm text-warm-gray">📞 {request.phone}</p>
+                    )}
+                    {request.service_interest && (
+                      <p className="text-sm text-warm-gray">Intresse: {request.service_interest}</p>
+                    )}
+                    <Select
+                      value={request.status}
+                      onValueChange={(value) => updateContactRequestStatus(request.id, value)}
+                    >
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">Ny</SelectItem>
+                        <SelectItem value="in_progress">Pågående</SelectItem>
+                        <SelectItem value="completed">Klar</SelectItem>
+                        <SelectItem value="cancelled">Avbruten</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <p className="text-xs text-warm-gray">
                       {new Date(request.created_at).toLocaleString("sv-SE")}
                     </p>
