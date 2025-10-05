@@ -38,6 +38,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { LogOut, MessageSquare, Calendar, MapPin, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
+import { sv } from 'date-fns/locale'
 
 import { useRef } from 'react';
 
