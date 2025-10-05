@@ -84,6 +84,7 @@ interface Subscription {
   provider?: string;
   notes?: string;
   created_at?: string;
+  status?: string; // Add status property
 }
 
 interface CaseSubscription {
@@ -112,6 +113,8 @@ const AdminPortal = () => {
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
   const [loadingCaseSubscriptions, setLoadingCaseSubscriptions] = useState(false);
   const { toast } = useToast();
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
   const fetchCases = async () => {
     try {
@@ -173,7 +176,7 @@ const AdminPortal = () => {
   const fetchSubscriptions = async () => {
     setLoadingSubscriptions(true);
     const { data, error } = await supabase
-      .from("subscriptions")
+      .from("case_comments")
       .select("*")
       .order("created_at", { ascending: false });
     if (error) {
@@ -356,6 +359,27 @@ const AdminPortal = () => {
     }
   };
 
+  const updateSubscriptionStatus = async (id: string, status: string) => {
+    const { error } = await supabase
+      .from("subscriptions")
+      .update({ status })
+      .eq("id", id);
+
+    if (error) {
+      toast({
+        title: "Fel",
+        description: "Kunde inte uppdatera abonnemangsstatus",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Status uppdaterad",
+        description: "Abonnemangets status har uppdaterats",
+      });
+      fetchSubscriptions();
+    }
+  };
+
   if (!customer?.is_admin) {
     // ... (same as before) ...
     return (
@@ -508,6 +532,15 @@ const AdminPortal = () => {
                         <Label htmlFor="description">Beskrivning</Label>
                         <Textarea id="description" name="description" placeholder="Kort beskrivning" />
                       </div>
+                      <div>
+                        <Label htmlFor="scheduled_date">Datum</Label>
+                        <Input
+                          id="scheduled_date"
+                          name="scheduled_date"
+                          type="date"
+                          placeholder="Välj datum"
+                        />
+                      </div>
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                           <Label htmlFor="status">Status</Label>
@@ -642,13 +675,16 @@ const AdminPortal = () => {
       <p className="text-warm-gray">Inga kunder hittades.</p>
     ) : (
       customers.map((customer) => (
-        <Card key={customer.id}>
+        <Card key={customer.id} className="cursor-pointer" onClick={() => { setSelectedCustomer(customer); setShowCustomerDialog(true); }}>
           <CardContent className="p-6">
             <h3 className="font-semibold text-lg">{customer.name}</h3>
             <p className="text-sm text-warm-gray">{customer.email}</p>
             {customer.phone && (
               <p className="text-sm text-warm-gray">📞 {customer.phone}</p>
             )}
+            <Button variant="outline" size="sm" className="mt-2" onClick={(e) => { e.stopPropagation(); setSelectedCustomer(customer); setShowCustomerDialog(true); }}>
+              Öppna kundkort
+            </Button>
           </CardContent>
         </Card>
       ))
@@ -744,7 +780,32 @@ const AdminPortal = () => {
                         {sub.provider && (
                           <p className="text-sm text-warm-gray">Leverantör: {sub.provider}</p>
                         )}
-                        <p className="text-sm text-warm-gray">Kund-ID: {sub.customer_id}</p>
+                        <p className="text-sm text-warm-gray">
+                          Kund: <span className="font-semibold">
+                            {(() => {
+                              const cust = customers.find(c => c.id === sub.customer_id);
+                              return cust?.name || "Okänd kund";
+                            })()}
+                          </span>
+                          {(() => {
+                            const cust = customers.find(c => c.id === sub.customer_id);
+                            return cust?.email ? <> ({cust.email})</> : null;
+                          })()}
+                        </p>
+                        <Select
+      value={sub.status}
+      onValueChange={(value) => updateSubscriptionStatus(sub.id, value)}
+    >
+      <SelectTrigger className="w-[140px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="pending">Väntande</SelectItem>
+        <SelectItem value="in_progress">Pågår</SelectItem>
+        <SelectItem value="completed">Avslutad</SelectItem>
+        <SelectItem value="cancelled">Avbruten</SelectItem>
+      </SelectContent>
+    </Select>
                         {sub.notes && (
                           <p className="text-sm text-warm-gray">Kommentar: {sub.notes}</p>
                         )}
@@ -769,6 +830,159 @@ const AdminPortal = () => {
           onClose={() => setSelectedCaseId(null)}
         />
       )}
+
+      {showCustomerDialog && selectedCustomer && (
+  <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
+    <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Kundkort: {selectedCustomer.name}</DialogTitle>
+        <DialogDescription>
+          {selectedCustomer.email}<br />
+          {selectedCustomer.phone && <>📞 {selectedCustomer.phone}<br /></>}
+          Skapad: {new Date(selectedCustomer.created_at).toLocaleDateString("sv-SE")}
+        </DialogDescription>
+      </DialogHeader>
+      <h4 className="font-semibold mt-4 mb-2">Skapa nytt ärende för denna kund</h4>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+          formData.set("customer_id", selectedCustomer.id); // Sätt kund-id automatiskt
+          createCase(formData);
+          setShowCustomerDialog(false);
+        }}
+        className="space-y-4"
+      >
+        <div>
+          <Label htmlFor="service_type_id">Tjänst</Label>
+          <Select name="service_type_id" required>
+            <SelectTrigger>
+              <SelectValue placeholder="Välj tjänst" />
+            </SelectTrigger>
+            <SelectContent>
+              {serviceTypes
+                .filter((service) => service.name !== "Avslut av abonnemang")
+                .map((service) => (
+                  <SelectItem key={service.id} value={service.id}>
+                    {service.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="title">Titel</Label>
+          <Input id="title" name="title" required placeholder="Ange ärendets titel" />
+        </div>
+        <div>
+          <Label htmlFor="description">Beskrivning</Label>
+          <Textarea id="description" name="description" placeholder="Kort beskrivning" />
+        </div>
+        <div>
+          <Label htmlFor="scheduled_date">Datum</Label>
+          <Input
+            id="scheduled_date"
+            name="scheduled_date"
+            type="date"
+            placeholder="Välj datum"
+          />
+        </div>
+        <div>
+          <Label htmlFor="status">Status</Label>
+          <Select name="status" defaultValue="pending" required>
+            <SelectTrigger>
+              <SelectValue placeholder="Välj status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Väntande</SelectItem>
+              <SelectItem value="in_progress">Pågår</SelectItem>
+              <SelectItem value="completed">Avslutad</SelectItem>
+              <SelectItem value="cancelled">Avbruten</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="priority">Prioritet</Label>
+          <Select name="priority" defaultValue="medium">
+            <SelectTrigger>
+              <SelectValue placeholder="Välj prioritet" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Låg</SelectItem>
+              <SelectItem value="medium">Medel</SelectItem>
+              <SelectItem value="high">Hög</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button type="submit" className="w-full">
+          Skapa ärende
+        </Button>
+      </form>
+
+      {/* Avsluta abonnemang för denna kund */}
+      <h4 className="font-semibold mt-6 mb-2">Avsluta abonnemang för denna kund</h4>
+<form
+  onSubmit={(e) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    formData.set("customer_id", selectedCustomer.id); // Sätt kund-id automatiskt
+    createSubscription(formData);
+    setShowCustomerDialog(false);
+  }}
+  className="space-y-4"
+>
+  <div>
+    <Label htmlFor="status">Status</Label>
+    <Select name="status" required>
+      <SelectTrigger>
+        <SelectValue placeholder="Välj status" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="pending">Väntande</SelectItem>
+        <SelectItem value="in_progress">Pågår</SelectItem>
+        <SelectItem value="completed">Avslutad</SelectItem>
+        <SelectItem value="cancelled">Avbruten</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+  <div>
+    <Label htmlFor="provider">Leverantör</Label>
+    <Input id="provider" name="provider" required placeholder="Leverantör" />
+  </div>
+  <Button type="submit" className="w-full">
+    Avsluta abonnemang
+  </Button>
+</form>
+
+{/* Meddelande till kund - eget avsnitt */}
+
+<form
+  onSubmit={async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const comment = formData.get("customer_comment") as string;
+    // Spara kommentaren till t.ex. en "customer_comments"-tabell
+    const { error } = await supabase.from("customer_comments").insert({
+      customer_id: selectedCustomer.id,
+      comment,
+      created_at: new Date().toISOString(),
+    });
+    if (!error) {
+      toast({ title: "Meddelande skickat", description: "Meddelandet har sparats/skickats till kund." });
+      setShowCustomerDialog(false);
+    }
+  }}
+  className="space-y-4"
+>
+  <Label htmlFor="customer_comment">Meddelande till kund</Label>
+  <Textarea id="customer_comment" name="customer_comment" placeholder="Skriv ett meddelande till kunden här..." />
+  <Button type="submit" className="w-full">
+    Skicka meddelande
+  </Button>
+</form>
+    </DialogContent>
+  </Dialog>
+)}
     </div>
   );
 };
