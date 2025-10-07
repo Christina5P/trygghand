@@ -5,33 +5,38 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 interface PriceCalculatorProps {
-  basePrice: number;
+  rutGrundandeDel: number;
+  ejRutDel: number;
   baseSqm?: number;
   pricePerSqm?: number;
   packageName: string;
   totalLabel?: string;
 }
 
-const PriceCalculator = ({ 
-  basePrice, 
-  baseSqm = 50, 
-  pricePerSqm = 100, 
+const PriceCalculator = ({
+  rutGrundandeDel,
+  ejRutDel,
+  baseSqm = 50,
+  pricePerSqm = 100,
   packageName,
-  totalLabel = "Totalt"
+  totalLabel = "Totalt",
 }: PriceCalculatorProps) => {
   const [sqm, setSqm] = useState<string>(baseSqm.toString());
+  const VAT_RATE = 0.25;
 
-  const calculatePrice = () => {
-    const sqmNumber = parseInt(sqm);
-    if (isNaN(sqmNumber) || sqmNumber < 1) return 0;
-    if (sqmNumber <= baseSqm) {
-      return basePrice;
-    }
-    const extraSqm = sqmNumber - baseSqm;
-    return basePrice + (extraSqm * pricePerSqm);
-  };
+  // Dynamisk uträkning för större yta (bara på RUT-grundande del)
+  const sqmNumber = parseInt(sqm);
+  const extraSqm = !isNaN(sqmNumber) && sqmNumber > baseSqm ? sqmNumber - baseSqm : 0;
+  const rutDel = rutGrundandeDel + extraSqm * pricePerSqm;
+  const ejRut = ejRutDel;
 
-  const formattedPrice = calculatePrice().toLocaleString('sv-SE');
+  // Pris inkl moms innan RUT-avdrag
+  const prisFöreRut = Math.round(((rutDel + ejRut) * (1 + VAT_RATE)) / 10) * 10;
+
+  // Pris inkl moms efter RUT-avdrag
+  const rutAvdrag = rutDel * 0.5;
+  const totalEfterRutExMoms = (rutDel - rutAvdrag) + ejRut;
+  const totalEfterRutInklMoms = Math.round((totalEfterRutExMoms * (1 + VAT_RATE)) / 10) * 10;
 
   return (
     <Card className="mt-4 bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/20">
@@ -55,30 +60,32 @@ const PriceCalculator = ({
 
         <Separator />
 
-        <div className="space-y-2">
-       
-        </div>
-
-        <Separator />
-
         <div className="flex justify-between items-center">
           <div className="flex flex-col items-start">
-            {totalLabel.includes('efter RUT-avdrag') ? (
-              <>
-                <span className="font-semibold text-base">Totalt</span>
-                <span className="text-xs text-muted-foreground">efter RUT-avdrag</span>
-              </>
-            ) : (
-                <span className="font-semibold text-base">{totalLabel.replace('Totalt pris:', 'Totalt')}</span>
-            )}
+            <span className="font-semibold text-base">Uppskattat totalpris</span>
+            <span className="text-xs text-muted-foreground">efter RUT-avdrag, inkl. moms</span>
           </div>
-          <span className="text-2xl font-bold text-primary">{formattedPrice} kr</span>
+          <span className="text-2xl font-bold text-primary">{totalEfterRutInklMoms.toLocaleString("sv-SE")} kr</span>
         </div>
 
-       
+        <div className="text-xs text-muted-foreground mt-4 text-left">
+          Pris inkl. moms innan RUT-avdrag: {prisFöreRut.toLocaleString("sv-SE")} kr
+        </div>
       </CardContent>
     </Card>
   );
 };
 
 export default PriceCalculator;
+
+// Define example values for the constants
+const BAS_RUT_GRUNDANDE = 2000;
+const BAS_EJ_RUT = 500;
+
+<PriceCalculator
+  rutGrundandeDel={BAS_RUT_GRUNDANDE}
+  ejRutDel={BAS_EJ_RUT}
+  baseSqm={50}
+  pricePerSqm={90}
+  packageName="BASPAKET"
+/>
