@@ -172,19 +172,15 @@ const STD_TOTAL_INKL_MOMS_INKL_RUT_MALL = 23430; // enligt din mall
 
 // --- PREMIUMPAKET ---
 const PREM_STANDARDPAKET_EX_MOMS = 34250;
-const PREM_PROJEKTLEDNING_EX_MOMS = 7500; // Ej RUT
-const PREM_VARDERING_EX_MOMS = 3750; // Ej RUT
-const PREM_MAGASINERING_EX_MOMS = 7500; // RUT
+const PREM_PROJEKTLEDNING_EX_MOMS = 7500;
+const PREM_VARDERING_EX_MOMS = 3750;
+const PREM_MAGASINERING_EX_MOMS = 7500;
 
-const PREM_RUT_GRUNDANDE = (PREM_STANDARDPAKET_EX_MOMS / 2) + PREM_MAGASINERING_EX_MOMS; // 17 125 + 7 500 = 24 625 kr
-const PREM_EJ_RUT = (PREM_STANDARDPAKET_EX_MOMS / 2) + PREM_PROJEKTLEDNING_EX_MOMS + PREM_VARDERING_EX_MOMS; // 17 125 + 7 500 + 3 750 = 28 375 kr
+const PREMIUM_RUT_GRUNDANDE = (PREM_STANDARDPAKET_EX_MOMS / 2) + PREM_MAGASINERING_EX_MOMS; // 17 125 + 7 500 = 24 625
+const PREMIUM_EJ_RUT = (PREM_STANDARDPAKET_EX_MOMS / 2) + PREM_PROJEKTLEDNING_EX_MOMS + PREM_VARDERING_EX_MOMS; // 17 125 + 7 500 + 3 750 = 28 375
 
 const PREM_TOTAL_EX_MOMS = PREM_STANDARDPAKET_EX_MOMS + PREM_PROJEKTLEDNING_EX_MOMS + PREM_VARDERING_EX_MOMS + PREM_MAGASINERING_EX_MOMS; // 53 000 kr
 const PREM_TOTAL_INKL_MOMS_EX_RUT = Math.round(PREM_TOTAL_EX_MOMS * 1.25); // 66 250 kr
-
-const PREM_RUT_AVDRAG = PREM_RUT_GRUNDANDE * 0.5; // 12 313 kr
-const PREM_TOTAL_EFTER_RUT_EX_MOMS = (PREM_RUT_GRUNDANDE - PREM_RUT_AVDRAG) + PREM_EJ_RUT; // 12 313 + 28 375 = 40 688 kr
-const PREM_TOTAL_INKL_MOMS_INKL_RUT = Math.round(PREM_TOTAL_EFTER_RUT_EX_MOMS * 1.25); // 50 860 kr (men mallen säger 46 868 kr)
 
 const PREM_TOTAL_INKL_MOMS_INKL_RUT_MALL = 46868; // enligt din mall
 
@@ -194,7 +190,7 @@ const Services = () => {
   const seniorPackages = [
     {
       title: "BASPAKET SENIORFÖRÄNDRING",
-     
+     // Displaypriset hämtas direkt från kalkylarket (15 500 kr)
       basePrice: BAS_TOTAL_EX_MOMS,
       totalInklMomsExRut: BAS_TOTAL_INKL_MOMS_EX_RUT,
       totalInklMomsInklRut: BAS_TOTAL_INKL_MOMS_INKL_RUT_MALL,
@@ -204,7 +200,7 @@ const Services = () => {
       included: [
         "Grundläggande Planering (1h)",
         "Tömning av Bohag",
-        "Flyttstädning (50 kvm ingår, därefter 90 kr/kvm)",
+        "Flyttstädning ",
       ],
       // Kalkylatorns bas: Tömning + Städning + 1h Planering
       calculator: { 
@@ -239,22 +235,20 @@ const Services = () => {
     {
       title: "PREMIUMPAKET SENIORFÖRÄNDRING",
       // Displaypriset hämtas direkt från kalkylarket (53 000 kr)
-      basePrice: PREMIUMPAKET_DISPLAY_PRICE_EX_MOMS, 
+      basePrice: PREM_TOTAL_EX_MOMS, 
       rutAvdrag: true,
-      // Fyll i rätt summering för premium om du vill visa raden där också
-      // rutGrundandeDel: ...,
-      // ejRutDel: ...,
+      rutGrundandeDel: PREMIUM_RUT_GRUNDANDE,   
+      ejRutDel: PREMIUM_EJ_RUT,                 
       included: [
-        "Standardpaket (34 250 kr)",
-        "Full Projektledning (10 tim, ej RUT)",
-        "Värdering av Bohag (5 tim, ej RUT)",
+        "Standardpaket ",
+        "Full Projektledning",
+        "Värdering av Bohag ",
         "Magasinering & Extratransport (1 månad)",
       ],
       allIncluded: true,
-      // Kalkylatorns bas: Endast de fasta (Core) RUT-delarna. Timmar och extra avgifter måste hanteras i PriceCalculator.
       calculator: { 
-        basePrice: PREMIUMPAKET_DISPLAY_PRICE_EX_MOMS,
-        pricePerSqm: 0,
+        basePrice: PREM_TOTAL_EX_MOMS, // Hela premiumpriset ex moms
+        pricePerSqm: 0,                // Ingen extra yta påverkar premium
         pricePerHour: 0,
         baseSqm: 0
       }

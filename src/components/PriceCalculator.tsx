@@ -21,19 +21,27 @@ const PriceCalculator = ({
   packageName,
   totalLabel = "Totalt",
 }: PriceCalculatorProps) => {
-  const [sqm, setSqm] = useState<string>(baseSqm.toString());
+  const [sqm, setSqm] = useState<string>("50");
   const VAT_RATE = 0.25;
 
-  // Dynamisk uträkning för större yta (bara på RUT-grundande del)
+  // Sätt rätt pris per kvm beroende på paketnamn
+  let dynamicPricePerSqm = pricePerSqm;
+  if (packageName.toLowerCase().includes("bas")) {
+    dynamicPricePerSqm = 90;
+  } else if (
+    packageName.toLowerCase().includes("standard") ||
+    packageName.toLowerCase().includes("premium")
+  ) {
+    dynamicPricePerSqm = 240;
+  }
+
   const sqmNumber = parseInt(sqm);
-  const extraSqm = !isNaN(sqmNumber) && sqmNumber > baseSqm ? sqmNumber - baseSqm : 0;
-  const rutDel = rutGrundandeDel + extraSqm * pricePerSqm;
+  const extraSqm = !isNaN(sqmNumber) && sqmNumber > 50 ? sqmNumber - 50 : 0;
+  const rutDel = rutGrundandeDel + extraSqm * dynamicPricePerSqm;
   const ejRut = ejRutDel;
 
-  // Pris inkl moms innan RUT-avdrag
   const prisFöreRut = Math.round(((rutDel + ejRut) * (1 + VAT_RATE)) / 10) * 10;
 
-  // Pris inkl moms efter RUT-avdrag
   const rutAvdrag = rutDel * 0.5;
   const totalEfterRutExMoms = (rutDel - rutAvdrag) + ejRut;
   const totalEfterRutInklMoms = Math.round((totalEfterRutExMoms * (1 + VAT_RATE)) / 10) * 10;
@@ -77,15 +85,3 @@ const PriceCalculator = ({
 };
 
 export default PriceCalculator;
-
-// Define example values for the constants
-const BAS_RUT_GRUNDANDE = 2000;
-const BAS_EJ_RUT = 500;
-
-<PriceCalculator
-  rutGrundandeDel={BAS_RUT_GRUNDANDE}
-  ejRutDel={BAS_EJ_RUT}
-  baseSqm={50}
-  pricePerSqm={90}
-  packageName="BASPAKET"
-/>
