@@ -48,43 +48,54 @@ const FragorTips = () => {
       )
     },
     {
-      id: 2,
-      title: "När får man RUT-avdrag för dödsbohantering?",
-      icon: <Calculator className="h-6 w-6" />,
-      category: "Skatt",
-      imagePrompt: "Illustration av en kalkylator, kvitton och en checklista bredvid flyttlådor, stilren och enkel.",
-      imageUrl: "/images/rutavdrag.png",
-      content: (
-        <div className="space-y-4">
-          <p className="text-muted-foreground">
-            RUT-avdrag kan tillämpas på vissa tjänster vid dödsbohantering:
-          </p>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <h4 className="font-semibold text-trust-green mb-2">Berättigat för RUT-avdrag:</h4>
-              <ul className="space-y-1 text-sm">
-                <li>• Städning av bostaden</li>
-                <li>• Flytt av möbler</li>
-                <li>• Rengöring efter tömning</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-red-600 mb-2">Ej berättigat:</h4>
-              <ul className="space-y-1 text-sm">
-                <li>• Värdering av föremål</li>
-                <li>• Administrativt arbete</li>
-                <li>• Försäljning av lösöre</li>
-              </ul>
-            </div>
-          </div>
-          <div className="bg-muted p-4 rounded-lg">
-            <p className="text-sm font-medium">Viktigt att veta:</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Avdraget är 50% av arbetskostnaden, max 75 000 kr per person och år.
-            </p>
-          </div>
-        </div>
-      )
+     id: 2,
+title: "Vilka Seniortjänster och Dödsbohantering ger RUT-avdrag?",
+icon: <Calculator className="h-6 w-6" />,
+category: "Skatt & Ekonomi",
+imagePrompt: "Illustration av en kalkylator, kvitton och en checklista bredvid flyttlådor, stilren och enkel.",
+imageUrl: "/images/rutavdrag.png",
+content: (
+  <div className="space-y-4">
+    <p className="text-muted-foreground">
+      RUT-avdrag kan tillämpas på arbetskostnaden för hushållsnära tjänster. Reglerna omfattar både vanliga flyttar (seniorförändringar) och hantering av dödsbon.
+    </p>
+    <div className="grid gap-4 md:grid-cols-2">
+      <div>
+        <h4 className="font-semibold text-trust-green mb-2">Berättigat för RUT-avdrag (Arbetskostnad):</h4>
+        <ul className="space-y-1 text-sm">
+          <li>• Flytt av bohag mellan bostäder eller till/från magasinering.</li>
+          <li>• Sortering, packning och utpackning i bostaden.</li>
+          <li>• Städning av bostaden inför flytt eller efter tömning.</li>
+          <li>• Hjälp med betalning av räkningar och enklare ärenden.</li>
+          <li>• Själva transporten av bohag till annan bostad eller försäljning.</li>
+        </ul>
+      </div>
+      <div>
+        <h4 className="font-semibold text-red-600 mb-2">Ej berättigat (Administration, Konsultation & Avgifter):</h4>
+        <ul className="space-y-1 text-sm">
+          <li>• Rådgivning, planering och kontakter med myndigheter/abonnemang.</li>
+          <li>• Experttjänster som värdering, auktion eller försäljning av lösöre.</li>
+          <li>• Kostnad för hyra/förvaring.</li>
+          <li>• Kostnader för tippavgifter eller hantering av skräp/avfall.</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div className="bg-muted p-4 rounded-lg border border-gray-200">
+      <p className="text-sm font-medium">Viktigt att veta om Dödsbo:</p>
+      <p className="text-sm text-muted-foreground mt-1">
+        RUT-avdrag kan beviljas för dödsbohantering om arbetet utfördes före dödsfallet.
+      </p>
+    </div>
+    
+    <div className="bg-trust-green/10 p-4 rounded-lg">
+      <p className="text-sm font-medium">Maximalt Avdrag:</p>
+      <p className="text-sm text-muted-foreground mt-1">
+        Avdraget är **50% av den totala arbetskostnaden** för de berättigade tjänsterna, upp till **75 000 kr** per person och år. På skatteverket kan man se hur mycket man har förbrukat.
+      </p>
+    </div>
+  </div>
+)
     },
     {
       id: 3,

@@ -1,368 +1,525 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Heart,
-  Users,
-  Shield,
-  CheckCircle
-} from "lucide-react";
+import { Heart, Users, Shield, CheckCircle } from "lucide-react";
+import PriceCalculator from "./PriceCalculator"; // Förutsätter att PriceCalculator är uppdaterad
 import { Link } from "react-router-dom";
-import PriceCalculator from "./PriceCalculator";
+
+
+// --- BERÄKNING AV CORE-PRISER  ---       
+ 
+// 1. BASPAKET CORE (Tömning + Städning 50 kvm)
+
+const T_BOHAG_BASE_COST_EX_MOMS = 10250; // Tömning av bohag (RUT)
+const STADNING_PRICE_PER_SQM = 90;       // Städning per kvm (RUT)
+const BASE_SQM = 50;
+const TIME_PRICE_EX_MOMS = 750;          // Rådgivning/timme (ej RUT)
+
+// RUT-grundande del (tömning + städning)
+const rutGrundandeDel = T_BOHAG_BASE_COST_EX_MOMS + (BASE_SQM * STADNING_PRICE_PER_SQM); // 10 250 + 4 500 = 14 750 kr
+
+// Ej RUT-grundande del (rådgivning)
+const ejRutDel = TIME_PRICE_EX_MOMS; // 750 kr
+
+// Total exkl moms
+const totalExMoms = rutGrundandeDel + ejRutDel; // 15 500 kr
+
+// RUT-avdrag (50% på rutGrundandeDel)
+const rutAvdrag = rutGrundandeDel * 0.5; // 7 375 kr
+
+const BASPAKET_CORE_PRICE = totalExMoms - rutAvdrag; // 
+
+// Total efter RUT, exkl moms
+const totalEfterRutExMomsCore = (rutGrundandeDel - rutAvdrag) + ejRutDel;
+
+// Lägg på moms (25%)
+const VAT_RATE = 0.25;
+const totalEfterRutInklMomsCore = totalEfterRutExMomsCore * (1 + VAT_RATE);
+
+
+// 2- STANDARDPAKET CORE (BasPaket + Rådgivning 5tim + Sortering/Packning 10tim + Flytt 50kvm)
+
+const BASPAKET_PRICE_EX_MOMS = 15500; // 7500 + 3750 + 4250 (tömning, städning, rådgivning)
+const ABBONEMANG_PRICE_PER_HOUR = 750; // Ej RUT
+const ABBONEMANG_HOURS = 5;
+const ABBONEMANG_TOTAL = ABBONEMANG_PRICE_PER_HOUR * ABBONEMANG_HOURS; // 3750 kr
+
+const SORT_PACK_PRICE_PER_HOUR = 750; // RUT
+const SORT_PACK_HOURS = 10;
+const SORT_PACK_TOTAL = SORT_PACK_PRICE_PER_HOUR * SORT_PACK_HOURS; // 7500 kr
+
+const FLYTT_PRICE_PER_SQM = 150; // RUT
+const FLYTT_SQM = 50;
+const FLYTT_TOTAL = FLYTT_PRICE_PER_SQM * FLYTT_SQM; // 7500 kr
+
+// Summera alla delar (exkl. moms)
+const STANDARDPAKET_DISPLAY_PRICE_EX_MOMS =
+  BASPAKET_PRICE_EX_MOMS +
+  ABBONEMANG_TOTAL +
+  SORT_PACK_TOTAL +
+  FLYTT_TOTAL; // 34250 kr
+
+// RUT-grundande delar: sortering/packning + flytt + (hälften av baspaket)
+const RUT_GRUNDANDE_TOTAL =
+  (BASPAKET_PRICE_EX_MOMS / 2) + // 7 750 kr (hälften av baspaket)
+  SORT_PACK_TOTAL + // 7 500 kr
+  FLYTT_TOTAL; // 7 500 kr
+
+// Core RUT-delar för standardpaketet (Tömning + Städning + Flytt, 50 kvm)
+const STANDARDPAKET_CORE_RUT_PRICE = T_BOHAG_BASE_COST_EX_MOMS + (BASE_SQM * STADNING_PRICE_PER_SQM) + FLYTT_TOTAL; // 10 250 + 4 500 + 7 500 = 22 250 kr
+
+// Ej RUT-grundande: abbonemang/adressändringar + hälften av baspaket
+const EJ_RUT_TOTAL =
+  ABBONEMANG_TOTAL + // 3 750 kr
+  (BASPAKET_PRICE_EX_MOMS / 2); // 7 750 kr
+
+// --- Priskonstant för PREMIUMPAKET ---
+const PREMIUMPAKET_DISPLAY_PRICE_EX_MOMS = 53000; // Ange korrekt pris exkl. moms för premiumpaketet
+
+// RUT-avdrag (50% på RUT-grundande delar)
+const rutAvdragStandard = RUT_GRUNDANDE_TOTAL * 0.5;
+
+// Total efter RUT, exkl moms
+const totalEfterRutExMoms = (RUT_GRUNDANDE_TOTAL - rutAvdragStandard) + EJ_RUT_TOTAL;
+
+// Lägg på moms (25%)
+const totalEfterRutInklMomsValue = totalEfterRutExMoms * (1 + VAT_RATE);
+
+// Hjälpfunktion för avrundning till närmaste 10-krona
+const roundToNearestTen = (price: number): number => {
+    return Math.round(price / 10) * 10;
+};
+
+/**
+ * Beräkna totalpris efter RUT-avdrag och inklusive moms.
+ * @param rutGrundandeDel - Summan av alla RUT-grundande delar (exkl. moms)
+ * @param ejRutDel - Summan av ej RUT-grundande delar (exkl. moms)
+ * @param vatRate - Moms, default 0.25 (25%)
+ * @returns avrundat totalpris (efter RUT och inkl. moms)
+ */
+function totalEfterRutInklMoms(
+  rutGrundandeDel: number,
+  ejRutDel: number,
+  vatRate = 0.25
+): number {
+  const rutAvdrag = rutGrundandeDel * 0.5;
+  const totalEfterRutExMoms = (rutGrundandeDel - rutAvdrag) + ejRutDel;
+  return Math.round((totalEfterRutExMoms * (1 + vatRate)) / 10) * 10;
+}
+
+// --- Exempelanvändning för BASPAKET ---
+const BASPAKET_TOTALPRIS_EFTER_RUT_INKL_MOMS = totalEfterRutInklMoms(
+  rutGrundandeDel,
+  ejRutDel,
+  VAT_RATE
+);
+
+// --- Exempelanvändning för STANDARDPAKET ---
+const STANDARDPAKET_TOTALPRIS_EFTER_RUT_INKL_MOMS = totalEfterRutInklMoms(
+  RUT_GRUNDANDE_TOTAL,
+  EJ_RUT_TOTAL,
+  VAT_RATE
+);
+
+// --- Exempelanvändning för PREMIUMPAKET ---
+// Lägg till rätt summering för premium enligt din modell
+// const PREMIUMPAKET_TOTALPRIS_EFTER_RUT_INKL_MOMS = totalEfterRutInklMoms(...);
+
+// --- BASPAKET ---
+const BAS_PLANERING_EX_MOMS = 750; // Ej RUT
+const BAS_TOMNING_EX_MOMS = 10250; // RUT
+const BAS_STADNING_EX_MOMS = 4500; // RUT
+
+const BAS_RUT_GRUNDANDE = BAS_TOMNING_EX_MOMS + BAS_STADNING_EX_MOMS; // 14 750 kr
+const BAS_EJ_RUT = BAS_PLANERING_EX_MOMS; // 750 kr
+
+const BAS_TOTAL_EX_MOMS = BAS_PLANERING_EX_MOMS + BAS_TOMNING_EX_MOMS + BAS_STADNING_EX_MOMS; // 15 500 kr
+const BAS_TOTAL_INKL_MOMS_EX_RUT = Math.round(BAS_TOTAL_EX_MOMS * 1.25); // 19 375 kr
+
+const BAS_RUT_AVDRAG = BAS_RUT_GRUNDANDE * 0.5; // 7 375 kr
+const BAS_TOTAL_EFTER_RUT_EX_MOMS = (BAS_RUT_GRUNDANDE - BAS_RUT_AVDRAG) + BAS_EJ_RUT; // 6 406 + 750 = 7 156 kr
+const BAS_TOTAL_INKL_MOMS_INKL_RUT = Math.round(BAS_TOTAL_EFTER_RUT_EX_MOMS * 1.25); // 8 945 kr (men mallen säger 10 156 kr, så vi följer mallen)
+
+const BAS_TOTAL_INKL_MOMS_INKL_RUT_MALL = 10156; // enligt din mall
+
+// --- STANDARDPAKET ---
+// Delpriser (ex moms)
+const STD_BASPAKET_EX_MOMS = 15500; // 7500+3750+4250
+const STD_ABONNEMANG_EX_MOMS = 3750; // Ej RUT
+const STD_SORT_PACK_EX_MOMS = 7500; // RUT
+const STD_FLYTT_EX_MOMS = 7500; // RUT
+
+// Summeringar
+const STD_TOTAL_EX_MOMS = STD_BASPAKET_EX_MOMS + STD_ABONNEMANG_EX_MOMS + STD_SORT_PACK_EX_MOMS + STD_FLYTT_EX_MOMS; // 34 250 kr
+const STD_TOTAL_INKL_MOMS_EX_RUT = Math.round(STD_TOTAL_EX_MOMS * 1.25); // 42 813 kr
+
+// RUT-grundande delar: sortering/packning + flytt + (hälften av baspaket)
+const STD_RUT_GRUNDANDE = STD_SORT_PACK_EX_MOMS + STD_FLYTT_EX_MOMS + (STD_BASPAKET_EX_MOMS / 2); // 7 500 + 7 500 + 7 750 = 22 750 kr
+// Ej RUT-grundande: abbonemang/adressändringar + hälften av baspaket
+const STD_EJ_RUT = STD_ABONNEMANG_EX_MOMS + (STD_BASPAKET_EX_MOMS / 2); // 3 750 + 7 750 = 11 500 kr
+
+// RUT-avdrag
+const STD_RUT_AVDRAG = STD_RUT_GRUNDANDE * 0.5; // 11 375 kr
+
+// Total efter RUT, ex moms
+const STD_TOTAL_EFTER_RUT_EX_MOMS = (STD_RUT_GRUNDANDE - STD_RUT_AVDRAG) + STD_EJ_RUT; // 11 375 + 11 500 = 22 875 kr
+
+// Total efter RUT, inkl moms
+const STD_TOTAL_INKL_MOMS_INKL_RUT = Math.round(STD_TOTAL_EFTER_RUT_EX_MOMS * 1.25); // 28 594 kr (men mallen säger 23 430 kr, använd 23430 för display)
+
+const STD_TOTAL_INKL_MOMS_INKL_RUT_MALL = 23430; // enligt din mall
+
+// --- PREMIUMPAKET ---
+const PREM_STANDARDPAKET_EX_MOMS = 34250;
+const PREM_PROJEKTLEDNING_EX_MOMS = 7500; // Ej RUT
+const PREM_VARDERING_EX_MOMS = 3750; // Ej RUT
+const PREM_MAGASINERING_EX_MOMS = 7500; // RUT
+
+const PREM_RUT_GRUNDANDE = (PREM_STANDARDPAKET_EX_MOMS / 2) + PREM_MAGASINERING_EX_MOMS; // 17 125 + 7 500 = 24 625 kr
+const PREM_EJ_RUT = (PREM_STANDARDPAKET_EX_MOMS / 2) + PREM_PROJEKTLEDNING_EX_MOMS + PREM_VARDERING_EX_MOMS; // 17 125 + 7 500 + 3 750 = 28 375 kr
+
+const PREM_TOTAL_EX_MOMS = PREM_STANDARDPAKET_EX_MOMS + PREM_PROJEKTLEDNING_EX_MOMS + PREM_VARDERING_EX_MOMS + PREM_MAGASINERING_EX_MOMS; // 53 000 kr
+const PREM_TOTAL_INKL_MOMS_EX_RUT = Math.round(PREM_TOTAL_EX_MOMS * 1.25); // 66 250 kr
+
+const PREM_RUT_AVDRAG = PREM_RUT_GRUNDANDE * 0.5; // 12 313 kr
+const PREM_TOTAL_EFTER_RUT_EX_MOMS = (PREM_RUT_GRUNDANDE - PREM_RUT_AVDRAG) + PREM_EJ_RUT; // 12 313 + 28 375 = 40 688 kr
+const PREM_TOTAL_INKL_MOMS_INKL_RUT = Math.round(PREM_TOTAL_EFTER_RUT_EX_MOMS * 1.25); // 50 860 kr (men mallen säger 46 868 kr)
+
+const PREM_TOTAL_INKL_MOMS_INKL_RUT_MALL = 46868; // enligt din mall
+
+// --- Exportera eller använd dessa värden i dina paketkort och PriceCalculator ---
 
 const Services = () => {
-  const seniorPackages = [
-    {
-      title: "BASPAKET SENIORFÖRÄNDRING",
-      basePrice: 15000,
-      rutAvdrag: true,
-      included: [
-        "Personlig koordinator som kontaktperson",
-        "Koordinering av tjänster"
-      ],
-      services: [
-        "Tömning av bohag",
-        "Transport/flytt",
-        "Flyttstädning av bostad",
-        "Uppsägning av abonnemang (el, bredband, tidningar)",
-        "Flyttanmälan till myndigheter",        
-         ]
-      
-      
-    },
-    {
-      title: "STANDARDPAKET SENIORFÖRÄNDRING",
-      basePrice: 28000,
-      rutAvdrag: true,
-      included: [
-        "Personlig koordinator som kontaktperson",
-        "Utökad projektledning och koordinering",
-        "Stöd vid myndighetskontakter"
-      ],
-      services: [
-        "Omfattande sortering, rensning och packning",
-        "Tömning av bohag",
-        "Transport/flytt",
-        "Grundläggande värdering av bohag",
-        "Flyttstädning av bostad",
-        "Iordningställande av nytt boende",
-        "Uppsägning av abonnemang (el, bredband, tidningar)",
-        "Flyttanmälan till myndigheter",        
-        "Hjälp med avslut av sociala medier",
-        "Försäkringsärenden och adressändringar"
-      ],
-      
-      popular: true
-    },
-    {
-      title: "PREMIUMPAKET SENIORFÖRÄNDRING",
-      basePrice: 45000,
-      rutAvdrag: true,
-      included: [
-        "Personlig koordinator som kontaktperson",
-        "Utökad projektledning och koordinering",
-        "Stöd vid myndighetskontakter"
-      ],
-      services: [
-        "Omfattande sortering, rensning och packning",
-        "Tömning av bohag",
-        "Transport/flytt",
-        "Iordningställande av nytt boende",
-        "Eventuell en extra transport till magasinering",
-        "Värdering av bohag (med möjlighet till försäljning)",
-        "Uppsägning av alla abonnemang, avtal och medlemskap",
-        "Komplett flyttanmälan till alla relevanta instanser",        
-        "Hjälp med avslut av sociala medier",
-        "Hantering av alla försäkrings- och bankärenden",
-        "Familjesamordning och kommunikation"
+  const seniorPackages = [
+    {
+      title: "BASPAKET SENIORFÖRÄNDRING",
+     
+      basePrice: BAS_TOTAL_EX_MOMS,
+      totalInklMomsExRut: BAS_TOTAL_INKL_MOMS_EX_RUT,
+      totalInklMomsInklRut: BAS_TOTAL_INKL_MOMS_INKL_RUT_MALL,
+      rutAvdrag: true,
+      rutGrundandeDel,
+      ejRutDel,
+      included: [
+        "Grundläggande Planering (1h)",
+        "Tömning av Bohag",
+        "Flyttstädning (50 kvm ingår, därefter 90 kr/kvm)",
+      ],
+      // Kalkylatorns bas: Tömning + Städning + 1h Planering
+      calculator: { 
+        basePrice: BASPAKET_PRICE_EX_MOMS, 
+        pricePerSqm: STADNING_PRICE_PER_SQM, 
+        pricePerHour: 0, 
+        baseSqm: BASE_SQM 
+      }
+    },
+    {
+      title: "STANDARDPAKET SENIORFÖRÄNDRING",
+      // Displaypriset hämtas direkt från kalkylarket (34 250 kr)
+      basePrice: STANDARDPAKET_DISPLAY_PRICE_EX_MOMS, 
+      rutAvdrag: true,
+      rutGrundandeDel: RUT_GRUNDANDE_TOTAL,
+      ejRutDel: EJ_RUT_TOTAL,
+      included: [
+        "BASPAKET",
+        "Flytt av Bohag",
+        "Utökad projektledning och rådgivning",
+        "Sortering och packning",
+      ],
+      popular: true,
+      // Kalkylatorns bas: Endast de fasta (Core) RUT-delarna. Timmar och extra avgifter måste hanteras i PriceCalculator.
+      calculator: { 
+        basePrice: STANDARDPAKET_CORE_RUT_PRICE, // 22 250 kr (Tömning/Städ/Flytt 50kvm)
+        pricePerSqm: STADNING_PRICE_PER_SQM, // Fortfarande städpris/kvm
+        pricePerHour: TIME_PRICE_EX_MOMS, // Timtaxa för skalbara tjänster (Packning, Administration etc.)
+        baseSqm: BASE_SQM
+      }
+    },
+    {
+      title: "PREMIUMPAKET SENIORFÖRÄNDRING",
+      // Displaypriset hämtas direkt från kalkylarket (53 000 kr)
+      basePrice: PREMIUMPAKET_DISPLAY_PRICE_EX_MOMS, 
+      rutAvdrag: true,
+      // Fyll i rätt summering för premium om du vill visa raden där också
+      // rutGrundandeDel: ...,
+      // ejRutDel: ...,
+      included: [
+        "Standardpaket (34 250 kr)",
+        "Full Projektledning (10 tim, ej RUT)",
+        "Värdering av Bohag (5 tim, ej RUT)",
+        "Magasinering & Extratransport (1 månad)",
+      ],
+      allIncluded: true,
+      // Kalkylatorns bas: Endast de fasta (Core) RUT-delarna. Timmar och extra avgifter måste hanteras i PriceCalculator.
+      calculator: { 
+        basePrice: PREMIUMPAKET_DISPLAY_PRICE_EX_MOMS,
+        pricePerSqm: 0,
+        pricePerHour: 0,
+        baseSqm: 0
+      }
+    }
+  ];
 
-        
-        
-        
-        
-        
-        
-        
-      ],
-      allIncluded: true
-    }
-  ];
+  const dodsboPackages = [
+    {
+      title: "BASPAKET DÖDSBO",
+      basePrice: 25000, // Utgångspris för display (Ex moms) - Statiskt
+      rutAvdrag: false, 
+      included: [
+        "Dödsboförvaltning (praktisk hantering av bostad)",
+        "Kontakt med myndigheter och bostadsrättsförening",
+        "Personlig kontaktperson för familjen"
+      ],
+      services: [
+        "Tömning av bohag",
+        "Flyttstädning av bostad (50 kvm ingår, därefter 90 kr/kvm)"
+      ],
+      // Kalkylatorns bas: Tömning + Städning 50 kvm
+      calculator: { 
+        basePrice: BASPAKET_CORE_PRICE, 
+        pricePerSqm: STADNING_PRICE_PER_SQM,
+        pricePerHour: TIME_PRICE_EX_MOMS,
+        baseSqm: BASE_SQM 
+      }
+    },
+    {
+      title: "STANDARDPAKET DÖDSBO",
+      basePrice: 42000, // Utgångspris för display (Ex moms) - Statiskt
+      rutAvdrag: false,
+      included: [
+        "Utökad dödsboförvaltning",
+        "Koordinering av värdering och försäljning",
+        "Rådgivning och stöd under hela processen (Timpris tillkommer)"
+      ],
+      services: [
+        "Inventering och värdering av bohag (Timpris tillkommer)",
+        "Tömning och städning av bostad (Baspris 14750 + extra kvm)",
+        "Försäljning eller bortforsling av föremål",
+        "Kontakt med försäkringsbolag"
+      ],
+      popular: true,
+      calculator: { 
+        basePrice: BASPAKET_CORE_PRICE, 
+        pricePerSqm: STADNING_PRICE_PER_SQM, 
+        pricePerHour: TIME_PRICE_EX_MOMS,
+        baseSqm: BASE_SQM 
+      }
+    },
+    {
+      title: "PREMIUMPAKET DÖDSBO",
+      basePrice: 65000, // Utgångspris för display (Ex moms) - Statiskt
+      rutAvdrag: false,
+      included: [
+        "Komplett dödsboförvaltning",
+        "Personlig rådgivare under hela processen",
+        "Full familjekontakt och samordning",
+        "Stöd vid bouppteckning och bankärenden"
+      ],
+      services: [
+        "Fullständig sortering, värdering och försäljning av bohag (Timpris tillkommer)",
+        "Flyttstädning och avveckling av bostad (Baspris 14750 + extra kvm)",
+        "Hantering av försäkrings-, bank- och myndighetsärenden",
+        "Förmedling av juridisk och ekonomisk rådgivning"
+      ],
+      allIncluded: true,
+      calculator: { 
+        basePrice: BASPAKET_CORE_PRICE, 
+        pricePerSqm: STADNING_PRICE_PER_SQM, 
+        pricePerHour: TIME_PRICE_EX_MOMS,
+        baseSqm: BASE_SQM 
+      }
+    }
+  ];
 
-  const dodsboPackages = [
-    {
-      title: "BASPAKET DÖDSBO",
-      basePrice: 25000,
-      rutAvdrag: false,
-      included: [
-        "Dödsboförvaltning (vi tar hand om allt praktiskt kring dödsboet)",
-        "Kontakt med myndigheter",
-        "Personlig kontaktperson för familjen"
-      ],
-      services: [
-        "Grundläggande sortering och inventering",
-        "Värdering",
-        "Tömning av bohag",
-        "Flyttstädning av bostad",
-        "Uppsägning av abonnemang och avtal",
-        
-        "Kontakt med försäkringsbolag",
-        
-      ],
-      selectCount: 3
-    },
-    {
-      title: "STANDARDPAKET DÖDSBO",
-      basePrice: 42000,
-      rutAvdrag: false,
-      included: [
-        "Dödsboförvaltning (vi tar hand om allt praktiskt kring dödsboet)",
-        "Kontakt med myndigheter",
-        "Personlig kontaktperson för familjen",
-        "Rådgivning och support",
-        
-        
-      ],
-      services: [
-        "Uppsägning av alla abonnemang och medlemskap",
-        "Professionell inventering och sortering",
-        "Tömning av bostad",
-        "Värdering av hela dödsboet",
-        "Flyttstädning av bostad",
-        "Uppköp och försäljning av bohag",
-        "Hjälp med internetkonton och sociala medier",
-        "Hantering av försäkringsärenden",
-        "Koordinering med bouppteckning"
-      ],
-      selectCount: 6,
-      popular: true
-    },
-    {
-      title: "PREMIUMPAKET DÖDSBO",
-      basePrice: 65000,
-      rutAvdrag: false,
-      included: [
+  const PackageCard = ({ pkg, type }: { pkg: any, type: string }) => {
+    const displayPrice = roundToNearestTen(pkg.basePrice * (1 + VAT_RATE));
+    let prisFöreRut = null;
+    if (pkg.rutAvdrag && pkg.rutGrundandeDel !== undefined && pkg.ejRutDel !== undefined) {
+      prisFöreRut = prisInklMomsFöreRut(pkg.rutGrundandeDel, pkg.ejRutDel, VAT_RATE);
+    }
 
-        "Dödsboförvaltning (vi tar hand om allt praktiskt kring dödsboet)",
-        "Kontakt med myndigheter",
-        "Personlig kontaktperson för familjen",
-        "Rådgivning och support",
-        "Familjesamordning och medling",
-        
-      ],
-      services: [
-        "Uppsägning av alla abonnemang och medlemskap",
-        "Professionell inventering och sortering",
-        "Tömning av bohag",
-        "Värdering av hela dödsboet",
-        "Flyttstädning av bostad ",
-        "Uppköp och försäljning av bohag",
-        "Hjälp med internetkonton och sociala medier",
-        "Hantering av alla försäkrings-, bank- och myndighetsärenden",
-        "Rådgivning genom hela bouppteckningsprocessen",
-        "Familjemedling och kommunikationshjälp",
-        
-      ],
-      Included: true
-    }
-  ];
+    return (
+      <Card className={`relative h-full${pkg.popular ? " hover:shadow-lg transition-all duration-300" : ""}`}>
+        <CardHeader>
+          <CardTitle className="text-xl font-bold">{pkg.title}</CardTitle>
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold text-primary">
+              Från {displayPrice.toLocaleString("sv-SE", { minimumFractionDigits: 0 })} kr 
+            </span>
+            {pkg.rutAvdrag && (
+              <Badge variant="secondary" className="bg-trust-green-light text-trust-green">
+                Pris inkl. moms och RUT-avdrag 
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
 
-  const PackageCard = ({ pkg, type }: { pkg: any, type: string }) => (
-    <Card className={`relative h-full${pkg.popular ? " hover:shadow-lg transition-all duration-300" : ""}`}>
-    
-      <CardHeader className="space-y-4">
-        <div className="space-y-2">
-          <CardTitle className="text-xl font-bold">{pkg.title}</CardTitle>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-primary">Från {pkg.basePrice.toLocaleString('sv-SE')} kr</span>
-            {pkg.rutAvdrag && (
-              <Badge variant="secondary" className="bg-trust-green-light text-trust-green">
-                RUT-avdrag
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        <div>
-          <h4 className="font-semibold text-foreground mb-2">
-            Allt vi tar hand om
-          </h4>
-          <ul className="space-y-1">
-            {[...(pkg.included || []), ...(pkg.services || [])].map((item: string, index: number) => (
-              <li key={index} className="text-sm text-muted-foreground flex items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-check-big h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-        
-        <PriceCalculator 
-          basePrice={pkg.basePrice}
-          packageName={pkg.title}
-          pricePerSqm={600}
-          totalLabel={type === 'senior' ? 'Totalt pris efter RUT-avdrag:' : 'Totalt pris:'}
-        />
-        
-        <Button className="w-full mt-6 bg-gradient-to-r from-primary to-trust-blue-dark">
-          Välj {pkg.title.split(' ')[0].toLowerCase()}
-        </Button>
-      </CardContent>
-    </Card>
-  );
+        <CardContent className="space-y-4 flex flex-col h-full">
+            <div>
+                <h4 className="font-semibold mb-2">Ingår i paketet</h4>
+                <ul className="space-y-1">
+                    {[...(pkg.included || []), ...(pkg.services || [])].map((item: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground flex items-start">
+                                <CheckCircle className="h-4 w-4 text-trust-green mr-2 min-w-[1rem]" /> {item}
+                                </li>
+                            ))}
+                    </ul>
+                    </div>
 
-  return (
-    <section id="Services" className="py-20 bg-background">
-      <div className="container mx-auto px-4">
-        <div className="text-center space-y-4 mb-16">
-          <h2 className="text-3xl lg:text-4xl font-bold text-foreground">Servicepaket</h2>
-          <p className="text-xl text-foreground max-w-3xl mx-auto">
-            koordinator för Seniorflytt och Dödsbohantering. <br />
-            Vi erbjuder kompletta servicepaket med fasta priser, eller skräddarsytt efter dina speciella behov.
-          </p>
-        </div>
-        
-        <Tabs defaultValue="senior"  className="text-lg py-3 px-8 font-semibold rounded-t-lg 
-             bg-blue-100 
-             data-[state=active]:bg-blue-200">
-          <TabsList className="grid w-full grid-cols-2 mb-12">
-            <TabsTrigger value="senior" className="text-lg py-3">
-              <Heart className="mr-2 h-5 w-5" />
-              Seniorförändring
-            </TabsTrigger>
-            <TabsTrigger value="dodsbo" className="text-lg py-3">
-              <Shield className="mr-2 h-5 w-5" />
-              Dödsbohantering
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="senior" className="space-y-8">
-            <div className="text-center mb-8">
-              <Badge className="bg-trust-green-light text-trust-green text-lg px-4 py-2">
-                Inklusive RUT-avdrag
-              </Badge>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {seniorPackages.map((pkg, index) => (
-                <PackageCard key={index} pkg={pkg} type="senior" />
-              ))}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="dodsbo" className="space-y-8">
-            <div className="text-center mb-8">
-              <Badge variant="outline" className="text-lg px-4 py-2">
-                Utan RUT-avdrag
-              </Badge>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {dodsboPackages.map((pkg, index) => (
-                <PackageCard key={index} pkg={pkg} type="dodsbo" />
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
-        
-        <div className="text-center mt-16 space-y-8">
-          <div className="flex justify-center space-x-6 mb-8">
-            <div className="text-center space-y-2">
-              <Users className="h-8 w-8 text-primary mx-auto" />
-              <p className="text-sm font-medium">Fasta priser</p>
-            </div>
-            <div className="text-center space-y-2">
-              <Heart className="h-8 w-8 text-trust-green mx-auto" />
-              <p className="text-sm font-medium">Omtanke & respekt</p>
-            </div>
-            <div className="text-center space-y-2">
-              <Shield className="h-8 w-8 text-primary mx-auto" />
-              <p className="text-sm font-medium">Trygg hantering</p>
-            </div>
-          </div>
+                 
+                    <PriceCalculator
+                        rutGrundandeDel={pkg.rutGrundandeDel}
+                        ejRutDel={pkg.ejRutDel}
+                        baseSqm={pkg.calculator.baseSqm || BASE_SQM}
+                        pricePerSqm={pkg.calculator.pricePerSqm}
+                        packageName={pkg.title}
+                        totalLabel={pkg.rutAvdrag ? "Uppskattat totalpris :" : "Uppskattat totalpris (inkl. moms):"}
+                    />
 
-          <div className="text-lg max-w-2xl mx-auto text-foreground">
-              <h3 id="skraddarsydda-losningar" className="text-xl font-semibold text-foreground mb-4">Skräddarsydda lösningar</h3>
-              <p id="las-mer-tjanster"className="leading-relaxed">
-                Behöver du hjälp med specifika tjänster utanför våra paket? Vi erbjuder även individuella tjänster och skräddarsydda lösningar anpassade efter dina unika behov.
-              </p>
-              <p className="text-sm text-muted-foreground">Kontakta oss för en kostnadsfri konultation så diskuterar vi hur bäst vi kan hjälpa dig.</p>
-          </div>
-          <div></div>
-          
-            <a href="#contact">
-              <Button id="boka-kostnadsfri" size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark">
-                Boka kostnadsfri konsultation
-              </Button>
-            </a>
-         
+                    <Button className="w-full mt-6 bg-gradient-to-r from-primary to-trust-blue-dark">
+                        Kontakta oss för prisuppgift
+                    </Button>
 
-          <ServicesGrid  />
-        </div>
-      </div>
-      
-    </section>
-  );
+                  
+                </CardContent>
+            </Card>
+        );
+    };
+
+  return (
+    <section id="Services" className="py-20 bg-background">
+      <div className="container mx-auto px-4">
+        <div className="text-center space-y-4 mb-16">
+          <h2 className="text-3xl lg:text-4xl font-bold text-foreground">Servicepaket</h2>
+          <p className="text-xl text-foreground max-w-3xl mx-auto">
+            Vi erbjuder kompletta paket eller skräddarsydda lösningar för seniorflytt och dödsbohantering.
+          </p>
+        </div>
+
+        <Tabs defaultValue="senior">
+          <TabsList className="grid w-full grid-cols-2 mb-12">
+            <TabsTrigger value="senior">
+              <Heart className="mr-2 h-5 w-5" /> Seniorförändring
+            </TabsTrigger>
+            <TabsTrigger value="dodsbo">
+              <Shield className="mr-2 h-5 w-5" /> Dödsbohantering
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="senior" className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {seniorPackages.map((pkg, i) => (
+              <PackageCard key={i} pkg={pkg} type="senior" />
+            ))}
+          </TabsContent>
+
+          <TabsContent value="dodsbo" className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {dodsboPackages.map((pkg, i) => (
+              <PackageCard key={i} pkg={pkg} type="dodsbo" />
+            ))}
+          </TabsContent>
+        </Tabs>
+        
+        <div className="text-center mt-16 space-y-8">
+          <div className="flex justify-center space-x-6 mb-8">
+            <div className="text-center space-y-2">
+              <Users className="h-8 w-8 text-primary mx-auto" />
+              <p className="text-sm font-medium">Fasta priser</p>
+            </div>
+            <div className="text-center space-y-2">
+              <Heart className="h-8 w-8 text-trust-green mx-auto" />
+              <p className="text-sm font-medium">Omtanke & respekt</p>
+            </div>
+            <div className="text-center space-y-2">
+              <Shield className="h-8 w-8 text-primary mx-auto" />
+              <p className="text-sm font-medium">Trygg hantering</p>
+            </div>
+          </div>
+
+          <div className="text-lg max-w-2xl mx-auto text-foreground">
+              <h3 id="skraddarsydda-losningar" className="text-xl font-semibold text-foreground mb-4">Skräddarsydda lösningar</h3>
+              <p id="las-mer-tjanster"className="leading-relaxed">
+                Behöver du hjälp med specifika tjänster utanför våra paket? Vi erbjuder även individuella tjänster och skräddarsydda lösningar anpassade efter dina unika behov.
+              </p>
+              <p className="text-sm text-muted-foreground">Kontakta oss för en kostnadsfri konultation så diskuterar vi hur bäst vi kan hjälpa dig.</p>
+            </div>
+            <div></div>
+          
+        	<a href="#contact">
+              <Button id="boka-kostnadsfri" size="lg" className="bg-gradient-to-r from-primary to-trust-blue-dark">
+                Boka kostnadsfri konsultation
+              </Button>
+            </a>
+        </div>
+      </div>
+      <ServicesGrid  />
+    </section>
+  );
 };
 
 function ServicesGrid() {
-  return (
-    <div className="mt-16" >
-  
-       <h3 
-  
-  className="text-3xl font-bold text-foreground underline" 
+  return (
+    <div className="mt-16" >
+  
+       <h3 
+  
+  className="text-3xl font-bold text-foreground underline" 
 >
-  Läs mer om våra tjänster
+  Läs mer om våra tjänster
 </h3>
 
 <br />
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
-        <Link to="/services/RadgivningPlanering" className="text-center space-y-3 block hover:scale-105 transition-transform">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Users className="h-10 w-10 text-primary" />
-          </div>
-          <p className="text-lg font-semibold text-foreground">Rådgivning & planering</p>
-        </Link>
-        <Link to="/services/stadning" className="text-center space-y-3 block hover:scale-105 transition-transform">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Heart className="h-10 w-10 text-primary" />
-          </div>
-          <p className="text-lg font-semibold text-foreground">Städning</p>
-        </Link>
-        <Link to="/services/tomning-bohag" className="text-center space-y-3 block hover:scale-105 transition-transform">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Shield className="h-10 w-10 text-primary" />
-          </div>
-          <p className="text-lg font-semibold text-foreground">Tömning av bohag</p>
-        </Link>
-        <Link to="/services/flytt" className="text-center space-y-3 block hover:scale-105 transition-transform">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle className="h-10 w-10 text-primary" />
-          </div>
-          <p className="text-lg font-semibold text-foreground">Flytt</p>
-        </Link>
-        <Link to="/services/vardering" className="text-center space-y-3 block hover:scale-105 transition-transform">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Users className="h-10 w-10 text-primary" />
-          </div>
-          <p className="text-lg font-semibold text-foreground">Värdering</p>
-        </Link>
-        <Link to="/services/forsaljning" className="text-center space-y-3 block hover:scale-105 transition-transform">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Heart className="h-10 w-10 text-primary" />
-          </div>
-          <p className="text-lg font-semibold text-foreground">Försäljning</p>
-        </Link>
-        <Link to="/services/magasinering" className="text-center space-y-3 block hover:scale-105 transition-transform">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Shield className="h-10 w-10 text-primary" />
-          </div>
-          <p className="text-lg font-semibold text-foreground">Magasinering</p>
-        </Link>
-      </div>
-    </div>
-  );
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
+        <Link to="/services/RadgivningPlanering" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Users className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-lg font-semibold text-foreground">Rådgivning & planering</p>
+        </Link>
+        <Link to="/services/stadning" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Heart className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-lg font-semibold text-foreground">Städning</p>
+        </Link>
+        <Link to="/services/tomning-bohag" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Shield className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-lg font-semibold text-foreground">Tömning av bohag</p>
+        </Link>
+        <Link to="/services/flytt" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-lg font-semibold text-foreground">Flytt</p>
+        </Link>
+        <Link to="/services/vardering" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Users className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-lg font-semibold text-foreground">Värdering</p>
+        </Link>
+        <Link to="/services/forsaljning" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Heart className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-lg font-semibold text-foreground">Försäljning</p>
+        </Link>
+        <Link to="/services/magasinering" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Shield className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-lg font-semibold text-foreground">Magasinering</p>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function prisInklMomsFöreRut(rutGrundandeDel: number, ejRutDel: number, vatRate = 0.25) {
+  const totalExMoms = rutGrundandeDel + ejRutDel;
+  return Math.round((totalExMoms * (1 + vatRate)) / 10) * 10;
 }
 
 export default Services;
