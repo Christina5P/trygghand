@@ -7,6 +7,7 @@ import PriceCalculator from "./PriceCalculator"; // Förutsätter att PriceCalcu
 import { Link } from "react-router-dom";
 
 
+
 // --- BERÄKNING AV CORE-PRISER  ---       
  
 // 1. BASPAKET CORE (Tömning + Städning 50 kvm)
@@ -182,7 +183,7 @@ const PREMIUM_EJ_RUT = (PREM_STANDARDPAKET_EX_MOMS / 2) + PREM_PROJEKTLEDNING_EX
 const PREM_TOTAL_EX_MOMS = PREM_STANDARDPAKET_EX_MOMS + PREM_PROJEKTLEDNING_EX_MOMS + PREM_VARDERING_EX_MOMS + PREM_MAGASINERING_EX_MOMS; // 53 000 kr
 const PREM_TOTAL_INKL_MOMS_EX_RUT = Math.round(PREM_TOTAL_EX_MOMS * 1.25); // 66 250 kr
 
-const PREM_TOTAL_INKL_MOMS_INKL_RUT_MALL = 46868; // enligt din mall
+const PREM_TOTAL_INKL_MOMS_INKL_RUT_MALL = 50860; // enligt din mall
 
 // --- Exportera eller använd dessa värden i dina paketkort och PriceCalculator ---
 
@@ -190,7 +191,7 @@ const Services = () => {
   const seniorPackages = [
     {
       title: "BASPAKET SENIORFÖRÄNDRING",
-     // Displaypriset hämtas direkt från kalkylarket (15 500 kr)
+   
       basePrice: BAS_TOTAL_EX_MOMS,
       totalInklMomsExRut: BAS_TOTAL_INKL_MOMS_EX_RUT,
       totalInklMomsInklRut: BAS_TOTAL_INKL_MOMS_INKL_RUT_MALL,
@@ -240,7 +241,7 @@ const Services = () => {
       rutGrundandeDel: PREMIUM_RUT_GRUNDANDE,   
       ejRutDel: PREMIUM_EJ_RUT,                 
       included: [
-        "Standardpaket ",
+        "STANDARDPAKET ",
         "Full Projektledning",
         "Värdering av Bohag ",
         "Magasinering & Extratransport (1 månad)",
@@ -326,11 +327,18 @@ const Services = () => {
     }
   ];
 
-  const PackageCard = ({ pkg, type }: { pkg: any, type: string }) => {
-    const displayPrice = roundToNearestTen(pkg.basePrice * (1 + VAT_RATE));
-    let prisFöreRut = null;
-    if (pkg.rutAvdrag && pkg.rutGrundandeDel !== undefined && pkg.ejRutDel !== undefined) {
+  const PackageCard = ({ pkg, type }: { pkg: any; type: string }) => {
+    // Visa "Från"-pris som pris efter RUT (inkl moms) när paketet har rutAvdrag.
+    let displayPrice: number;
+    let prisFöreRut: number | null = null;
+
+    if (pkg.rutAvdrag && pkg.rutGrundandeDel != null && pkg.ejRutDel != null) {
+      // totalEfterRutInklMoms returnerar avrundat värde (inkl moms, efter RUT)
+      displayPrice = totalEfterRutInklMoms(pkg.rutGrundandeDel, pkg.ejRutDel, VAT_RATE);
+      // Behåll även "pris före RUT" om du vill visa den raden
       prisFöreRut = prisInklMomsFöreRut(pkg.rutGrundandeDel, pkg.ejRutDel, VAT_RATE);
+    } else {
+      displayPrice = roundToNearestTen((pkg.basePrice ?? 0) * (1 + VAT_RATE));
     }
 
     return (
@@ -339,11 +347,11 @@ const Services = () => {
           <CardTitle className="text-xl font-bold">{pkg.title}</CardTitle>
           <div className="flex items-center gap-2">
             <span className="text-xl font-bold text-primary">
-              Från {displayPrice.toLocaleString("sv-SE", { minimumFractionDigits: 0 })} kr 
+              Från {displayPrice.toLocaleString("sv-SE", { minimumFractionDigits: 0 })} kr
             </span>
             {pkg.rutAvdrag && (
               <Badge variant="secondary" className="bg-trust-green-light text-trust-green">
-                Pris inkl. moms och RUT-avdrag 
+                Pris inkl. moms och RUT-avdrag
               </Badge>
             )}
           </div>
@@ -452,18 +460,13 @@ const Services = () => {
 };
 
 function ServicesGrid() {
-  return (
-    <div className="mt-16" >
-  
-       <h3 
-  
-  className="text-3xl font-bold text-foreground underline" 
->
-  Läs mer om våra tjänster
-</h3>
-
-<br />
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
+  return (
+    <div className="mt-16 text-center">
+      <h3 className="text-3xl font-bold text-foreground underline inline-block mb-6">
+        Läs mer om våra tjänster
+      </h3>
+ 
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
         <Link to="/services/RadgivningPlanering" className="text-center space-y-3 block hover:scale-105 transition-transform">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
             <Users className="h-10 w-10 text-primary" />

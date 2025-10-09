@@ -94,21 +94,29 @@ const Contact = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <form ref={formRef} onSubmit={handleSubmit}>
+                  <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
-                      <Input name="firstname" placeholder="Förnamn" required />
-                      <Input name="lastname" placeholder="Efternamn" />
+                      <Input name="firstname" placeholder="Förnamn" required className="w-full" />
+                      <Input name="lastname" placeholder="Efternamn" className="w-full" />
                     </div>
-                    <Input name="email" placeholder="E-postadress" type="email" />
-                    <Input name="phone" placeholder="Telefonnummer" type="tel" required />
-                    <Textarea 
-                      name="message"
-                      placeholder="Beskriv kort din situation och vilken hjälp du behöver..."
-                      className="min-h-[120px]"
-                    />
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <Input name="email" placeholder="E-postadress" type="email" className="w-full" />
+                      <Input name="phone" placeholder="Telefonnummer" type="tel" required className="w-full" />
+                    </div>
+
+                    <div>
+                      <Textarea
+                        name="message"
+                        placeholder="Beskriv kort din situation och vilken hjälp du behöver..."
+                        className="min-h-[120px] w-full"
+                      />
+                    </div>
+
                     <Button type="submit" size="lg" className="w-full bg-gradient-to-r from-primary to-trust-blue-dark">
                       Skicka förfrågan
                     </Button>
+
                     <p className="text-xs text-foreground text-center">
                       Genom att skicka denna förfrågan godkänner du att vi kontaktar dig angående våra tjänster.
                     </p>

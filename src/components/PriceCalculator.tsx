@@ -71,12 +71,12 @@ const PriceCalculator = ({
         <div className="flex justify-between items-center">
           <div className="flex flex-col items-start">
             <span className="font-semibold text-base">Uppskattat totalpris</span>
-            <span className="text-xs text-muted-foreground">efter RUT-avdrag, inkl. moms</span>
+            <span className="text-xs text-foreground">efter RUT-avdrag, inkl. moms</span>
           </div>
           <span className="text-2xl font-bold text-primary">{totalEfterRutInklMoms.toLocaleString("sv-SE")} kr</span>
         </div>
 
-        <div className="text-xs text-muted-foreground mt-4 text-left">
+        <div className="text-s foreground mt-4 text-left">
           Pris inkl. moms innan RUT-avdrag: {prisFöreRut.toLocaleString("sv-SE")} kr
         </div>
       </CardContent>
