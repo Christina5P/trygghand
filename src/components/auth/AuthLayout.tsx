@@ -107,6 +107,12 @@ const AuthLayout = () => {
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Logga in
                 </Button>
+
+                <div className="mt-2 text-right">
+                  <a href="/reset-password" className="text-sm text-trust-blue hover:underline">
+                    Glömt lösenord?
+                  </a>
+                </div>
               </form>
             </TabsContent>
             <TabsContent value="signup">
