@@ -379,9 +379,24 @@ const Services = () => {
                         totalLabel={pkg.rutAvdrag ? "Uppskattat totalpris :" : "Uppskattat totalpris (inkl. moms):"}
                     />
 
-                    <Button className="w-full mt-6 bg-gradient-to-r from-primary to-trust-blue-dark">
-                        Kontakta oss för prisuppgift
-                    </Button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const el = document.getElementById("kontakt-form");
+                        if (el) {
+                          el.scrollIntoView({ behavior: "smooth", block: "start" });
+                          setTimeout(() => {
+                            (el.querySelector("input,textarea,button") as HTMLElement)?.focus();
+                          }, 300);
+                        } else {
+                          // om kontaktdelen är på annan route, byt location.hash för att navigera
+                          window.location.hash = "#kontakt-form";
+                        }
+                      }}
+                      className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full mt-6 bg-gradient-to-r from-primary to-trust-blue-dark"
+                    >
+                      Kontakta oss för prisuppgift
+                    </button>
 
                   
                 </CardContent>

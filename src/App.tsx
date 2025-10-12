@@ -3,6 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ResetPassword from "@/components/ResetPassword";
+
+const ResetPasswordRoute = () => {
+  return <div>Reset Password</div>;
+};
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -48,6 +53,8 @@ const App = () => (
 
           {/* Frågor och Tips */}
           <Route path="/fragor-tips" element={<FragorTips />} />
+
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Catch-all 404 */}
           <Route path="*" element={<NotFound />} />
