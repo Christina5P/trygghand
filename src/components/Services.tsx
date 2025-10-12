@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Heart, Users, Shield, CheckCircle } from "lucide-react";
 import PriceCalculator from "./PriceCalculator"; // Förutsätter att PriceCalculator är uppdaterad
 import { Link } from "react-router-dom";
+import React from "react";
 
 
 
@@ -201,6 +202,7 @@ const Services = () => {
       included: [
         "Grundläggande Planering (1h)",
         "Tömning av Bohag",
+        "Bortforsling av icke-säljbara föremål",
         "Flyttstädning ",
       ],
       // Kalkylatorns bas: Tömning + Städning + 1h Planering
@@ -220,10 +222,10 @@ const Services = () => {
       ejRutDel: EJ_RUT_TOTAL,
       included: [
         "BASPAKET",
+        "Utökad projektledning och rådgivning",
+        "Sortering och packning",
         "Flytt av Bohag",
-        "Utökad projektledning och rådgivning",
-        "Sortering och packning",
-      ],
+         ],
       popular: true,
       // Kalkylatorns bas: Endast de fasta (Core) RUT-delarna. Timmar och extra avgifter måste hanteras i PriceCalculator.
       calculator: { 
@@ -242,7 +244,7 @@ const Services = () => {
       ejRutDel: PREMIUM_EJ_RUT,                 
       included: [
         "STANDARDPAKET ",
-        "Full Projektledning",
+        "Full projektledning och rådgivning",
         "Värdering av Bohag ",
         "Magasinering & Extratransport (1 månad)",
       ],
@@ -257,107 +259,100 @@ const Services = () => {
   ];
 
   const dodsboPackages = [
-    {
-      title: "BASPAKET DÖDSBO",
-      basePrice: 25000, // Utgångspris för display (Ex moms) - Statiskt
-      rutAvdrag: false, 
-      included: [
-        "Dödsboförvaltning (praktisk hantering av bostad)",
-        "Kontakt med myndigheter och bostadsrättsförening",
-        "Personlig kontaktperson för familjen"
-      ],
-      services: [
-        "Tömning av bohag",
-        "Flyttstädning av bostad (50 kvm ingår, därefter 90 kr/kvm)"
-      ],
-      // Kalkylatorns bas: Tömning + Städning 50 kvm
-      calculator: { 
-        basePrice: BASPAKET_CORE_PRICE, 
-        pricePerSqm: STADNING_PRICE_PER_SQM,
-        pricePerHour: TIME_PRICE_EX_MOMS,
-        baseSqm: BASE_SQM 
-      }
-    },
-    {
-      title: "STANDARDPAKET DÖDSBO",
-      basePrice: 42000, // Utgångspris för display (Ex moms) - Statiskt
-      rutAvdrag: false,
-      included: [
-        "Utökad dödsboförvaltning",
-        "Koordinering av värdering och försäljning",
-        "Rådgivning och stöd under hela processen (Timpris tillkommer)"
-      ],
-      services: [
-        "Inventering och värdering av bohag (Timpris tillkommer)",
-        "Tömning och städning av bostad (Baspris 14750 + extra kvm)",
-        "Försäljning eller bortforsling av föremål",
-        "Kontakt med försäkringsbolag"
-      ],
-      popular: true,
-      calculator: { 
-        basePrice: BASPAKET_CORE_PRICE, 
-        pricePerSqm: STADNING_PRICE_PER_SQM, 
-        pricePerHour: TIME_PRICE_EX_MOMS,
-        baseSqm: BASE_SQM 
-      }
-    },
-    {
-      title: "PREMIUMPAKET DÖDSBO",
-      basePrice: 65000, // Utgångspris för display (Ex moms) - Statiskt
-      rutAvdrag: false,
-      included: [
-        "Komplett dödsboförvaltning",
-        "Personlig rådgivare under hela processen",
-        "Full familjekontakt och samordning",
-        "Stöd vid bouppteckning och bankärenden"
-      ],
-      services: [
-        "Fullständig sortering, värdering och försäljning av bohag (Timpris tillkommer)",
-        "Flyttstädning och avveckling av bostad (Baspris 14750 + extra kvm)",
-        "Hantering av försäkrings-, bank- och myndighetsärenden",
-        "Förmedling av juridisk och ekonomisk rådgivning"
-      ],
-      allIncluded: true,
-      calculator: { 
-        basePrice: BASPAKET_CORE_PRICE, 
-        pricePerSqm: STADNING_PRICE_PER_SQM, 
-        pricePerHour: TIME_PRICE_EX_MOMS,
-        baseSqm: BASE_SQM 
-      }
-    }
-  ];
+    {
+      title: "BASPAKET DÖDSBO",
+      basePrice: 25000, // Utgångspris för display (Ex moms) - Statiskt
+      rutAvdrag: false, 
+      included: [
+        "Grundläggande Planering/Dödsboförvaltning (1h)", // Matchar Senior Bas Planering
+        "Personlig kontaktperson för familjen",
+        "Tömning av Bohag", 
+        "Bortforsling av icke-säljbara föremål",
+        "Flyttstädning",
+      ],
+
+      // Kalkylatorns bas: Tömning + Städning 50 kvm
+      calculator: { 
+        basePrice: BASPAKET_CORE_PRICE, 
+        pricePerSqm: STADNING_PRICE_PER_SQM,
+        pricePerHour: TIME_PRICE_EX_MOMS,
+        baseSqm: BASE_SQM 
+      }
+    },
+    {
+      title: "STANDARDPAKET DÖDSBO",
+      basePrice: 45000, // Justerat till 45000 (Ex moms)
+      rutAvdrag: false,
+      included: [
+        "BASPAKET", 
+        "Utökad projektledning och rådgivning", 
+        "Sortering och packning",
+        "Inventering och värdering av bohag", 
+        ],
+      popular: true,
+      calculator: { 
+        basePrice: BASPAKET_CORE_PRICE, 
+        pricePerSqm: STADNING_PRICE_PER_SQM, 
+        pricePerHour: TIME_PRICE_EX_MOMS,
+        baseSqm: BASE_SQM 
+      }
+    },
+    {
+      title: "PREMIUMPAKET DÖDSBO",
+      basePrice: 65000, // Utgångspris för display (Ex moms) - Statiskt
+      rutAvdrag: false,
+      included: [
+        "STANDARDPAKET", // Tydliggör att det bygger på Standard
+        "Full projektledning och rådgivning",
+        "Stöd vid bouppteckning",
+        "Hantering av försäkrings-, bank- och myndighetsärenden",
+        "Fullständig sortering, värdering och försäljning av bohag", 
+        "Magasinering & Extratransport (1 månad)",
+        ],
+      allIncluded: true,
+      calculator: { 
+        basePrice: BASPAKET_CORE_PRICE, 
+        pricePerSqm: STADNING_PRICE_PER_SQM, 
+        pricePerHour: TIME_PRICE_EX_MOMS,
+        baseSqm: BASE_SQM 
+      }
+    }
+  ];
 
   const PackageCard = ({ pkg, type }: { pkg: any; type: string }) => {
-    // Visa "Från"-pris som pris efter RUT (inkl moms) när paketet har rutAvdrag.
-    let displayPrice: number;
-    let prisFöreRut: number | null = null;
+  // Visa "Från"-pris som pris efter RUT (inkl moms) när paketet har rutAvdrag.
+  let displayPrice: number;
+  let prisFöreRut: number | null = null;
 
-    if (pkg.rutAvdrag && pkg.rutGrundandeDel != null && pkg.ejRutDel != null) {
-      // totalEfterRutInklMoms returnerar avrundat värde (inkl moms, efter RUT)
-      displayPrice = totalEfterRutInklMoms(pkg.rutGrundandeDel, pkg.ejRutDel, VAT_RATE);
-      // Behåll även "pris före RUT" om du vill visa den raden
-      prisFöreRut = prisInklMomsFöreRut(pkg.rutGrundandeDel, pkg.ejRutDel, VAT_RATE);
-    } else {
-      displayPrice = roundToNearestTen((pkg.basePrice ?? 0) * (1 + VAT_RATE));
-    }
+  if (pkg.rutAvdrag && pkg.rutGrundandeDel != null && pkg.ejRutDel != null) {
+    // totalEfterRutInklMoms returnerar avrundat värde (inkl moms, efter RUT)
+    displayPrice = totalEfterRutInklMoms(pkg.rutGrundandeDel, pkg.ejRutDel, VAT_RATE);
+    // Behåll även "pris före RUT" om du vill visa den raden
+    prisFöreRut = prisInklMomsFöreRut(pkg.rutGrundandeDel, pkg.ejRutDel, VAT_RATE);
+  } else {
+    displayPrice = roundToNearestTen((pkg.basePrice ?? 0) * (1 + VAT_RATE));
+  }
 
-    return (
-      <Card className={`relative h-full${pkg.popular ? " hover:shadow-lg transition-all duration-300" : ""}`}>
-        <CardHeader>
-          <CardTitle className="text-xl font-bold">{pkg.title}</CardTitle>
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-primary">
-              Från {displayPrice.toLocaleString("sv-SE", { minimumFractionDigits: 0 })} kr
-            </span>
-            {pkg.rutAvdrag && (
-              <Badge variant="secondary" className="bg-trust-green-light text-trust-green">
-                Pris inkl. moms och RUT-avdrag
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4 flex flex-col h-full">
+  return (
+    <Card className={`relative h-full${pkg.popular ? " hover:shadow-lg transition-all duration-300" : ""}`}>
+      <CardHeader>
+        <CardTitle className="text-xl font-bold">{pkg.title}</CardTitle>
+        <div className="flex items-center gap-2">
+          <span className="text-xl font-bold text-primary">
+            Från {displayPrice.toLocaleString("sv-SE", { minimumFractionDigits: 0 })} kr
+          </span>
+          {pkg.rutAvdrag ? (
+            <Badge variant="secondary" className="bg-trust-green-light text-trust-green">
+              Pris inkl. moms och RUT-avdrag
+            </Badge>
+          ) : type === "dodsbo" ? (
+            <Badge variant="secondary" className="bg-trust-green-light text-trust-green">
+              Pris inkl. moms
+            </Badge>
+          ) : null}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 flex flex-col h-full">
             <div>
                 <h4 className="font-semibold mb-2">Ingår i paketet</h4>
                 <ul className="space-y-1">
@@ -376,7 +371,8 @@ const Services = () => {
                         baseSqm={pkg.calculator.baseSqm || BASE_SQM}
                         pricePerSqm={pkg.calculator.pricePerSqm}
                         packageName={pkg.title}
-                        totalLabel={pkg.rutAvdrag ? "Uppskattat totalpris :" : "Uppskattat totalpris (inkl. moms):"}
+                        totalLabel={"Uppskattat totalpris"}
+                        applyRut={type !== "dodsbo"}
                     />
 
                     <button

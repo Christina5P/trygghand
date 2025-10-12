@@ -11,6 +11,7 @@ interface PriceCalculatorProps {
   pricePerSqm?: number;
   packageName: string;
   totalLabel?: string;
+  applyRut?: boolean; // när false: ingen RUT-avdrag, ingen extra text
 }
 
 const PriceCalculator = ({
@@ -20,6 +21,7 @@ const PriceCalculator = ({
   pricePerSqm = 100,
   packageName,
   totalLabel = "Totalt",
+  applyRut = true,
 }: PriceCalculatorProps) => {
   const [sqm, setSqm] = useState<string>("50");
   const VAT_RATE = 0.25;
@@ -42,9 +44,16 @@ const PriceCalculator = ({
 
   const prisFöreRut = Math.round(((rutDel + ejRut) * (1 + VAT_RATE)) / 10) * 10;
 
-  const rutAvdrag = rutDel * 0.5;
-  const totalEfterRutExMoms = (rutDel - rutAvdrag) + ejRut;
-  const totalEfterRutInklMoms = Math.round((totalEfterRutExMoms * (1 + VAT_RATE)) / 10) * 10;
+  // Om applyRut === true, applicera 50% RUT på rutDel.
+  // Om applyRut === false (t.ex. dödsbo) så använd rutDel+ejRut utan RUT.
+  let totalEfterRutInklMoms: number;
+  if (applyRut) {
+    const rutAvdrag = rutDel * 0.5;
+    const totalEfterRutExMoms = (rutDel - rutAvdrag) + ejRut;
+    totalEfterRutInklMoms = Math.round((totalEfterRutExMoms * (1 + VAT_RATE)) / 10) * 10;
+  } else {
+    totalEfterRutInklMoms = Math.round(((rutDel + ejRut) * (1 + VAT_RATE)) / 10) * 10;
+  }
 
   return (
     <Card className="mt-4 bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/20">
@@ -71,14 +80,18 @@ const PriceCalculator = ({
         <div className="flex justify-between items-center">
           <div className="flex flex-col items-start">
             <span className="font-semibold text-base">Uppskattat totalpris</span>
-            <span className="text-xs text-foreground">efter RUT-avdrag, inkl. moms</span>
+            {/* Visa undertext ENDAST om applyRut är true */}
+            {applyRut && <span className="text-xs text-foreground">efter RUT-avdrag, inkl. moms</span>}
           </div>
           <span className="text-2xl font-bold text-primary">{totalEfterRutInklMoms.toLocaleString("sv-SE")} kr</span>
         </div>
 
-        <div className="text-s foreground mt-4 text-left">
-          Pris inkl. moms innan RUT-avdrag: {prisFöreRut.toLocaleString("sv-SE")} kr
-        </div>
+        {/* Visa "Pris innan RUT" endast om applyRut är true */}
+        {applyRut && (
+          <div className="text-s foreground mt-4 text-left">
+            Pris inkl. moms innan RUT-avdrag: {prisFöreRut.toLocaleString("sv-SE")} kr
+          </div>
+        )}
       </CardContent>
     </Card>
   );
