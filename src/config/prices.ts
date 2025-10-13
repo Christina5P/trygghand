@@ -33,8 +33,8 @@ export const PRICES = {
       // Baserat på din kalkyl:
       rutGrundandeDel: 43000,  // Största RUT-delen
       ejRutDel: 10000,   // Största Ej RUT-delen
-      baseSqm: 0, 
-      pricePerSqm: 0, 
+      baseSqm: 50, 
+      pricePerSqm: 150, 
     },
   },
 
@@ -61,8 +61,8 @@ export const PRICES = {
       basePrice: 60500, // Total Ex Moms
       //rutGrundandeDel: 48000, // Hämtat från din kalkyl: 48 000 kr
       ejRutDel: 60500, // Hämtat från din kalkyl: 12 500 kr
-      baseSqm: 0, 
-      pricePerSqm: 0, 
+      baseSqm: 50, 
+      pricePerSqm: 150, 
     },
   },
 };
