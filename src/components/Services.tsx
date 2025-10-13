@@ -159,7 +159,7 @@ const PackageCard = ({ pkg, type }: { pkg: any; type: string }) => {
   //const prisFöreRut = prisInklMomsFöreRut(rutBase, ejRutBase, VAT_RATE); // Används i PriceCalculator
 
   return (
-    <Card className={`relative h-full${merged.popular ? " hover:shadow-lg transition-all duration-300" : ""}`}>
+    <Card className="relative h-full transform-gpu transition-transform transition-shadow duration-300 hover:-translate-y-2 hover:scale-105 hover:shadow-2xl">
       <CardHeader>
         <CardTitle className="text-xl font-bold">{merged.title}</CardTitle>
         <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ const Services = () => {
             <p id="las-mer-tjanster"className="leading-relaxed">
               Behöver du hjälp med specifika tjänster utanför våra paket? Vi erbjuder även individuella tjänster och skräddarsydda lösningar anpassade efter dina unika behov.
             </p>
-            <p className="text-sm text-muted-foreground">Kontakta oss för en kostnadsfri konultation så diskuterar vi hur bäst vi kan hjälpa dig.</p>
+            <p className="text-sm text-muted-foreground mb-8">Kontakta oss för en kostnadsfri konultation så diskuterar vi hur bäst vi kan hjälpa dig.</p>
           </div>
           
           <a href="#contact">

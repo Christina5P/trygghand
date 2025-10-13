@@ -59,7 +59,7 @@ const About = () => {
                 <img
                   src="src/assets/nojdkundlogo.png"
                   alt="Nöjd kund garanti"
-                  className="h-36 w-auto"
+                  className="h-24 w-auto"
                 />
               </div>
             </div>
