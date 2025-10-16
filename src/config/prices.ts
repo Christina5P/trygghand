@@ -58,9 +58,9 @@ export const PRICES = {
     },
     // PREMIUMPAKET DÖDSBO
     premium: { 
-      basePrice: 60500, // Total Ex Moms
+      basePrice: 56750, // Total Ex Moms
       //rutGrundandeDel: 48000, // Hämtat från din kalkyl: 48 000 kr
-      ejRutDel: 60500, // Hämtat från din kalkyl: 12 500 kr
+      ejRutDel: 56750, // Hämtat från din kalkyl: 12 500 kr
       baseSqm: 50, 
       pricePerSqm: 150, 
     },

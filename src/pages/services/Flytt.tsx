@@ -57,7 +57,7 @@ const Flytt = () => {
               Att flytta innebär en nystart – men själva flytten kan kännas både tidskrävande och stressig.
               Vår flyttjänst är ett tryggt och smidigt alternativ där vi hjälper dig hela vägen – från planering till att dina saker står på plats i ditt nya hem.
               <br />  I denna tjänst väljer du själv hur mycket hjälp du vill ha- från enbart transport till även packning och förberedelse av nytt hem.</p>
-            <br />Kostnaden varierar beroende på bohagets storlek, tillgänglighet och tillval. <br />Prisindikation flytt per m² : ca 100-200 kr/m2 efter RUT, inom Sundsvall </CardContent>
+            <br />Kostnaden varierar beroende på bohagets storlek, tillgänglighet och tillval. <br />Prisindikation flytt per m² : ca 100 kr/m2 efter RUT, inom Sundsvall </CardContent>
           </Card>
 
           <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">

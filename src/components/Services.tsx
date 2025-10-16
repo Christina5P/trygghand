@@ -56,7 +56,9 @@ const seniorPackages = [
     rutAvdrag: true,
     included: [
       "BASPAKET", // Tydliggör att det bygger på föregående
-      "Utökad projektledning och rådgivning",
+      "Hjälp med anmälan av Adressändring och Folkbokföring till Skatteverket",
+      "Översyn och uppsägning/flytt av abonnemang för El, Bredband, TV, Fast telefoni och andra löpande avtal",
+      "Rådgivning och assistans med att flytta eller teckna ny Hemförsäkring",
       "Sortering och packning",
       "Flytt av Bohag",
     ],
@@ -71,6 +73,9 @@ const seniorPackages = [
       "Full Projektledning",
       "Värdering av Bohag",
       "Magasinering & Extratransport (1 månad)",
+      "Inredningsassistans",
+      "Digital Installation",
+      "Första-natten service (Sängen bäddas, badrum görs i ordning med nödvändigheter)",
     ],
     allIncluded: true,
   }
@@ -94,12 +99,15 @@ const dodsboPackages = [
     key: 'standard', // Hämta priser från PRICES.dodsbo.standard
     rutAvdrag: false,
     included: [
-      "BASPAKET", // Tydliggör att det bygger på Bas
-      "Utökad projektledning och rådgivning (Timpris tillkommer)", 
-      "Sortering och packning", // Matchar Senior Standard
-      "Inventering och värdering (Timpris tillkommer)", // Matchar Senior Premium
-      "Försäljning eller bortforsling av föremål",
-      "Kontakt med försäkringsbolag"
+      "BASPAKET", 
+      "Uppsägning av hyreskontrakt, el, vatten, värme",
+      "Uppsägning av abonnemang för Mobiltelefoni, Bredband, TV-paket och andra löpande abonnemang",
+      "Beställa eftersändning av post",
+      "Kontakt med försäkringsbolag",
+      "Avsluta digitala konton",
+      "Sortering och packning", 
+      "Inventering och värdering", 
+      
     ],
     popular: true,
   },
@@ -108,12 +116,15 @@ const dodsboPackages = [
     key: 'premium', // Hämta priser från PRICES.dodsbo.premium
     rutAvdrag: false,
     included: [
-      "STANDARDPAKET", // Tydliggör att det bygger på Standard
-      "Full Projektledning", // Matchar Senior Premium
+      "STANDARDPAKET", 
+      "Full Projektledning", 
+      "Stöd vid bouppteckning och bankärenden",
+      "Samla in all nödvändig information och dokumentation till bouppteckning,",
+      "Identifiera och kontakta samtliga banker och samla in utdrag och frysa banktjänster,", 
+      "Beställa intyg på värdet av eventuella fonder, aktier, pensioner och försäkringar per dödsdagen.",
+      "Samla in pantbrev och andra fastighetsdokument för att underlätta försäljning eller överlåtelse.",
       "Fullständig sortering, värdering och försäljning av bohag", 
-      "Stöd vid bouppteckning och bankärenden", // Juridisk assistans
-      "Hantering av försäkrings-, bank- och myndighetsärenden",
-      "Magasinering & Extratransport (1 månad)", // Matchar Senior Premium
+      "Magasinering & Extratransport (1 månad)", 
     ],
     allIncluded: true,
   }
