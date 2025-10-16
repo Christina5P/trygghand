@@ -4,6 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ResetPassword from "@/components/ResetPassword";
+import CookieBanner from "@/components/CookieBanner";
+import CookiePolicy from "@/pages/CookiePolicy";
+import React, { useEffect } from "react";
 
 const ResetPasswordRoute = () => {
   return <div>Reset Password</div>;
@@ -28,44 +31,53 @@ import Portal from "./pages/Portal";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Startsida */}
-          <Route path="/" element={<Index />} />
+function App() {
+  useEffect(() => {
+    // initiera analytics här, t.ex. load script eller starta gtag
+  }, []);
 
-          {/* Services översikt */}
-          <Route path="/services" element={<Services />} />
+  return (
+    <>
+      <CookieBanner />
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <BrowserRouter>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              {/* Startsida */}
+              <Route path="/" element={<Index />} />
 
-          {/* Individuella tjänster */}
-          <Route path="/services/forsaljning" element={<Forsaljning />} />
-          <Route path="/services/stadning" element={<Stadning />} />
-          <Route path="/services/flytt" element={<Flytt />} />
-          <Route path="/services/tomning-bohag" element={<TomningBohag />} />
-          <Route path="/services/vardering" element={<Vardering />} />
-          <Route path="/services/magasinering" element={<Magasinering />} />
-          <Route path="/services/RadgivningPlanering" element={<RadgivningPlanering />} />
+              {/* Services översikt */}
+              <Route path="/services" element={<Services />} />
 
-          {/* Portal för kunder och admin */}
-          <Route path="/portal" element={<Portal />} />
+              {/* Individuella tjänster */}
+              <Route path="/services/forsaljning" element={<Forsaljning />} />
+              <Route path="/services/stadning" element={<Stadning />} />
+              <Route path="/services/flytt" element={<Flytt />} />
+              <Route path="/services/tomning-bohag" element={<TomningBohag />} />
+              <Route path="/services/vardering" element={<Vardering />} />
+              <Route path="/services/magasinering" element={<Magasinering />} />
+              <Route path="/services/RadgivningPlanering" element={<RadgivningPlanering />} />
 
-          {/* Frågor och Tips */}
-          <Route path="/fragor-tips" element={<FragorTips />} />
+              {/* Portal för kunder och admin */}
+              <Route path="/portal" element={<Portal />} />
 
-          <Route path="/reset-password" element={<ResetPassword />} />
+              {/* Frågor och Tips */}
+              <Route path="/fragor-tips" element={<FragorTips />} />
 
-          {/* Catch-all 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Toast & notifieringar */}
-        <Toaster />
-        <Sonner />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+              <Route path="/cookiepolicy" element={<CookiePolicy />} />
+
+              {/* Catch-all 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </>
+  );
+}
 
 export default App;
