@@ -39,8 +39,7 @@ const Footer = () => {
               <li>Våra värderingar</li>
               <li>Partners</li>
               <li>Integritetspolicy</li>
-              <li>Villkor</li>
-            </ul>
+              </ul>
           </div>
 
           <div className="space-y-4">
