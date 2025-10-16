@@ -38,7 +38,7 @@ const About = () => {
                 Varför välja Trygg Hand?
               </h2>
               <p className="text-lg text-foreground leading-relaxed">
-               När livet förändras kan det praktiska kännas överväldigande.<br></br>Vi finns där för att göra processen enklare – oavsett om det gäller flytt till ett nytt boende eller att ta hand om ett dödsbo.
+               När livet förändras kan det praktiska kännas överväldigande.<br></br>Vi finns där för att göra processen enklare – oavsett om det gäller förberedelse och ordning i hemmet, flytt till ett nytt boende  eller att ta hand om ett dödsbo.
 
 <br></br>Med personlig samordning, pålitliga partners och vår nöjd-kund-garanti kan du känna dig trygg i att allt blir ordnat på ett respektfullt och professionellt sätt.
               </p>
