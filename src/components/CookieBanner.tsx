@@ -45,8 +45,8 @@ export default function CookieBanner() {
       className="fixed left-4  bottom-6 z-50 max-w-3xl mx-auto"
     >
       <div
-        className="bg-[#eef6f9] text-gray-800 border border-[#d6e6ee] rounded-lg shadow-2xl p-5 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-        style={{ fontSize: "18px" }}
+        className="bg-[#d6dde0] text-gray-800 border border-[#d6e6ee] rounded-lg shadow-lg p-3 md:p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 max-w-xl mx-auto"
+        style={{ fontSize: "14px" }}
       >
         <div>
           <strong className="block text-lg mb-1">Vi använder cookies</strong>
