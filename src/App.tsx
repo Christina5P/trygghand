@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ResetPassword from "@/components/ResetPassword";
 import CookieBanner from "@/components/CookieBanner";
 import CookiePolicy from "@/pages/CookiePolicy";
+import ClearCookies from "@/pages/ClearCookies";
+import Privacy from "@/pages/Privacy";
 import React, { useEffect } from "react";
 
 const ResetPasswordRoute = () => {
@@ -69,6 +71,10 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
 
               <Route path="/cookiepolicy" element={<CookiePolicy />} />
+
+              <Route path="/clearcookies" element={<ClearCookies />} />
+
+              <Route path="/privacy" element={<Privacy />} />
 
               {/* Catch-all 404 */}
               <Route path="*" element={<NotFound />} />
