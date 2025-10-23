@@ -195,3 +195,57 @@ Denna applikation är byggd med följande teknologier och verktyg:
 ### [Acknowledgements](#acknowledgements)
 
 [Go to Top](#TryggHand)
+
+
+# Trygg Hand — utvecklingsrepo
+
+Kortfattat
+- Enkel React + Vite-app för Trygg Partner (lokala tjänster).
+- Innehåller cookie‑banner, integritetssida, clearcookies‑ruta och ett server‑endpoint‑stub för att revokera Supabase‑sessioner.
+
+Snabbstart (lokalt)
+1. Installera beroenden:
+   - npm install
+2. Starta dev‑server:
+   - npm run dev
+3. Öppna i webbläsaren:
+   - $BROWSER http://localhost:5173
+
+Viktiga filer och rutter
+- Frontend:
+  - src/components/CookieBanner.tsx — cookie‑banner (visar/ sparar trygghand_cookie_consent)
+  - src/pages/CookiePolicy.tsx — cookie‑policy
+  - src/pages/Privacy.tsx — integritetspolicy
+  - src/pages/ClearCookies.tsx — rensa cookie i användarens webbläsare (/clearcookies)
+- Server (server‑only):
+  - src/api/revokeSessions.ts — endpoint‑stub för att ogiltigförklara Supabase‑sessioner (måste köras server‑side)
+
+Miljövariabler (lägg i .env eller i din hosting)
+- SUPABASE_URL
+- SUPABASE_SERVICE_ROLE  (ANVÄND ENDAST PÅ SERVER, aldrig i frontend)
+- REVOKE_API_KEY         (intern nyckel för skydd av revokeSessions endpoint)
+
+Cookie / GDPR — kort
+- Banner sparar val i cookie: `trygghand_cookie_consent` (persistent).  
+- Statistik/analytics initieras bara efter samtycke (lyssnar på event "cookieConsentGiven").
+- Supportflöde: be användare öppna `/clearcookies` för att radera cookien i deras webbläsare.
+- För att tvinga utloggning/revocation: anropa server‑endpoint `/api/revokeSessions` med POST { userId } och header `x-revoke-key: <REVOKE_API_KEY>`. Endpointen måste skyddas och köras server‑side.
+
+Testa cookies i webbläsaren (Console → kör):
+```javascript
+console.log("document.cookie:", document.cookie);
+console.log("LocalStorage keys:", Object.keys(localStorage));
+```
+
+Deployment
+- Deploya frontend (Vercel/Netlify eller liknande). Se till att server‑endpoint (revokeSessions) ligger som serverless‑funktion eller backend med miljövariabler satta. SUPABASE_SERVICE_ROLE får aldrig exponeras i klientkod.
+
+Säkerhet & drift
+- Håll SUPABASE_SERVICE_ROLE och REVOKE_API_KEY hemliga.  
+- Granska och teckna DPA med Supabase via deras support om ni behandlar personuppgifter. Dokumentera rutiner för registerförfrågningar.
+
+Vanliga kommandon
+- npm run dev — starta utveckling
+- npm run build — bygg produktion
+- npm run preview — förhandsgranska build
+

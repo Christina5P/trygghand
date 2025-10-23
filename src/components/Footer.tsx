@@ -5,14 +5,14 @@ const Footer = () => {
   return (
     <footer className="bg-foreground text-background py-8 text-center text-sm text-muted-foreground">
       <div className="container mx-auto px-4">
-        <div className="grid md:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-4 gap-8 text-left">
           <div className="space-y-4">
             <h3 className="text-2xl font-bold">Trygg Hand</h3>
             <p className="text-background/80 text-sm leading-relaxed">
               Från beslut till nytt kapitel. Vi erbjuder helhetslösning för livsförändringar, 
               äldreflytt och hantering av dödsbo.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 mt-6">
               <Facebook className="h-5 w-5 text-background/80 hover:text-background cursor-pointer transition-colors" />
               <Linkedin className="h-5 w-5 text-background/80 hover:text-background cursor-pointer transition-colors" />
               <Instagram className="h-5 w-5 text-background/80 hover:text-background cursor-pointer transition-colors" />
