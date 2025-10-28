@@ -53,7 +53,11 @@ const Portal = () => {
         {/* Välkomsttext */}
         <div className="mb-2">
           <h2 className="text-xl font-semibold text-trust-blue">Trygg Hand</h2>
-          <p className="text-lg text-warm-gray font-medium">Välkommen Ny användare</p>
+        <p className="text-lg text-warm-gray font-medium">
+  Välkommen {customer?.name ?? "Ny användare"}
+</p>
+
+
         </div>
         {/* Rubrik och logga ut-knapp */}
         <div className="flex justify-between items-center mb-6">
