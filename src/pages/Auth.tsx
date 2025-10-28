@@ -11,7 +11,9 @@ import { toast } from "sonner";
 import { Mail, Lock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-const checkAdminStatus = async (email: string) => {
+const checkAdminStatus = async (email?: string) => {
+  if (!email) return false;
+
   const { data, error } = await supabase
     .from('customers')
     .select('is_admin')
