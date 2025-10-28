@@ -1,118 +1,94 @@
-import { useState, useEffect } from 'react'
-import { User } from '@supabase/supabase-js'
-import { Customer } from '@/lib/supabase'
-import { supabase } from '@/lib/supabase'
+import { useState, useEffect, createContext, useContext, ReactNode, createElement } from 'react';
+import { supabase, Customer } from '@/lib/supabase';
+import { Session, User } from '@supabase/supabase-js';
 
-export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null)
-  const [customer, setCustomer] = useState<Customer | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Hämta initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchCustomerData(session.user.id)
-      } else {
-        setLoading(false)
-      }
-    })
-
-    // Lyssna på auth-ändringar
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchCustomerData(session.user.id)
-      } else {
-        setCustomer(null)
-        setLoading(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-    // eslint-disable-next-line
-  }, [])
-
-  const fetchCustomerData = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching customer:', error)
-        setCustomer(null)
-      } else if (data) {
-        setCustomer(data)
-      } else {
-        setCustomer(null)
-      }
-    } catch (error) {
-      console.error('Error:', error)
-      setCustomer(null)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { data, error }
-  }
-
-  const signUp = async (email: string, password: string, name: string, phone?: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-
-    if (data.user && !error) {
-      const { error: profileError } = await supabase
-        .from('customers')
-        .insert({
-          id: data.user.id,
-          email,
-          name,
-          phone,
-          is_admin: false
-        })
-
-      if (profileError) {
-        console.error('Error creating profile:', profileError)
-      }
-    }
-
-    return { data, error }
-  }
- 
-  // KORRIGERAD signOut-funktion som hanterar omdirigering manuellt
-  const signOut = async (options?: { redirectTo?: string }) => {
-    const { error } = await supabase.auth.signOut()
-
-    if (!error) {
-      // Tvingar webbläsaren att omdirigera till den angivna URL:en
-      const redirectUrl = options?.redirectTo || '/'
-      window.location.href = redirectUrl
-    }
-
-    return { error }
-  }
-
-  const isAdmin = customer?.is_admin || false
-
-  return {
-    user,
-    customer,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    isAdmin
-  }
+// Definiera typen för Auth-kontexten
+interface AuthContextType {
+  user: User | null;
+  customer: Customer | null;
+  session: Session | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
 }
+
+// Skapa Auth-kontexten
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Skapa AuthProvider-komponenten
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
+
+    getSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchCustomerProfile = async () => {
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching customer profile:', error);
+          setCustomer(null);
+        } else {
+          setCustomer(data);
+        }
+      } else {
+        setCustomer(null);
+      }
+    };
+
+    fetchCustomerProfile();
+  }, [user]);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setCustomer(null);
+  };
+
+  const value = {
+    session,
+    user,
+    customer,
+    loading,
+    signOut,
+  };
+
+  return createElement(AuthContext.Provider, { value }, children);
+};
+
+// Skapa useAuth-hooken
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

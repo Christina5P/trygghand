@@ -1,7 +1,18 @@
-
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
+
+// Nya importer
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import ValueEstimator from '@/components/ValueEstimator'
+import { PlusCircle } from 'lucide-react';
 
 
 // Define types here if not exported elsewhere
@@ -40,8 +51,6 @@ import { LogOut, MessageSquare, Calendar, MapPin, DollarSign } from 'lucide-reac
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 
-import { useRef } from 'react';
-
 const CustomerPortal = () => {
   // Add Tidio chatbot script on mount
   useEffect(() => {
@@ -61,6 +70,7 @@ const CustomerPortal = () => {
   const [loading, setLoading] = useState(true)
   const [loadingComments, setLoadingComments] = useState(false)
   const { toast } = useToast()
+  const [isEstimatorOpen, setIsEstimatorOpen] = useState(false);
 
   useEffect(() => {
     if (customer?.id) {
@@ -213,11 +223,24 @@ const CustomerPortal = () => {
           {/* Cases List */}
           <div className="lg:col-span-2">
             <Card>
-              <CardHeader>
-                <CardTitle>Mina ärenden</CardTitle>
-                <CardDescription>
-                  Här ser du alla dina pågående och avslutade ärenden
-                </CardDescription>
+              <CardHeader className="flex flex-row justify-between items-center">
+                <div>
+                  <CardTitle>Mina ärenden</CardTitle>
+                  <CardDescription>
+                    Här ser du alla dina pågående och avslutade ärenden
+                  </CardDescription>
+                </div>
+                <Dialog open={isEstimatorOpen} onOpenChange={setIsEstimatorOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <PlusCircle className="w-4 h-4 mr-2" />
+                      Starta ny värdering
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl bg-transparent border-none shadow-none p-0">
+                     {customer && <ValueEstimator customerId={customer.id} onClose={() => setIsEstimatorOpen(false)} />}
+                  </DialogContent>
+                </Dialog>
               </CardHeader>
               <CardContent>
                 {cases.length === 0 ? (
@@ -286,7 +309,6 @@ const CustomerPortal = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* Comments */}
                   <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
                     {loadingComments ? (
                       <div className="text-center text-warm-gray">Laddar kommentarer...</div>
