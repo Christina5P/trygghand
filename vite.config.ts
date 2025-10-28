@@ -9,4 +9,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+  server: {
+    proxy: {
+      // forward /api/* requests to local proxy server
+      "/api": {
+        target: "http://localhost:5174",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });

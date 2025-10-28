@@ -13,8 +13,7 @@ export const Route = {
   ComponentProps: {} as ComponentProps,
 };
 
-import { createClient } from "../lib/supabase.server";
-
+import { supabase } from "../lib/supabase";
 
 const Index = () => {
   return (
@@ -51,3 +50,7 @@ export function Home({ loaderData }: ComponentProps) {
     </>
   );
 }
+function createClient(request: Request): { supabase: any; } {
+  throw new Error("Function not implemented.");
+}
+

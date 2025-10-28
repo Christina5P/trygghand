@@ -1,8 +1,9 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
+import App from "../App";
+import { AuthProvider } from "@/hooks/useAuth";
 import "./index.css";
-import ComingSoon from "./pages/ComingSoon.tsx";
+import ComingSoon from "./pages/ComingSoon";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -14,7 +15,9 @@ const isDev = import.meta.env.MODE === "development";
 
 root.render(
   <React.StrictMode>
-    {isMaintenance && !isDev ? <ComingSoon /> : <App />}
+    <AuthProvider>
+      {isMaintenance && !isDev ? <ComingSoon /> : <App />}
+    </AuthProvider>
   </React.StrictMode>
 );
 
