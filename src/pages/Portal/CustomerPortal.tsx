@@ -1,21 +1,19 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
-// Nya importer
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import ValueEstimator from '@/components/ValueEstimator'
-import { PlusCircle } from 'lucide-react';
+import EstimatorCard from '@/components/EstimatorCard'
+import Tidio from "@/components/Tidio";
 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/hooks/use-toast'
+import { LogOut, MessageSquare, Calendar, MapPin, DollarSign } from 'lucide-react'
+import { format } from 'date-fns'
+import { sv } from 'date-fns/locale'
 
-// Define types here if not exported elsewhere
 type Case = {
   id: string
   title: string
@@ -42,26 +40,7 @@ type CaseComment = {
   }
 }
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '@/hooks/use-toast'
-import { LogOut, MessageSquare, Calendar, MapPin, DollarSign } from 'lucide-react'
-import { format } from 'date-fns'
-import { sv } from 'date-fns/locale'
-
-const CustomerPortal = () => {
-  // Add Tidio chatbot script on mount
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = "//code.tidio.co/vxtqmisxoxoilyri3a2arswtxddqr416.js";
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+const CustomerPortal: React.FC = () => {
   const { customer, signOut } = useAuth()
   const [cases, setCases] = useState<Case[]>([])
   const [selectedCase, setSelectedCase] = useState<Case | null>(null)
@@ -70,7 +49,6 @@ const CustomerPortal = () => {
   const [loading, setLoading] = useState(true)
   const [loadingComments, setLoadingComments] = useState(false)
   const { toast } = useToast()
-  const [isEstimatorOpen, setIsEstimatorOpen] = useState(false);
 
   useEffect(() => {
     if (customer?.id) {
@@ -205,44 +183,39 @@ const CustomerPortal = () => {
 
   return (
     <div className="min-h-screen bg-soft-gray">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-           
-            <Button onClick={handleSignOut} variant="outline" size="sm">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logga ut
-            </Button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <Tidio />
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b mb-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div>
+                <h2 className="text-lg font-semibold text-trust-blue">Trygg Hand</h2>
+                <p className="text-sm text-warm-gray">Mina ärenden</p>
+              </div>
+              <Button onClick={handleSignOut} variant="outline" size="sm">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logga ut
+              </Button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Cases List */}
-          <div className="lg:col-span-2">
-            <Card>
+        {/* Layout: EstimatorCard + Cases (left) and Details (right) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+          {/* Left column: EstimatorCard and Cases */}
+          <div className="lg:col-span-2 flex flex-col">
+            {customer && <EstimatorCard customerId={customer.id} onSaved={() => { /* refresh if needed */ }} />}
+
+            <Card className="flex-1 flex flex-col">
               <CardHeader className="flex flex-row justify-between items-center">
                 <div>
                   <CardTitle>Mina ärenden</CardTitle>
-                  <CardDescription>
-                    Här ser du alla dina pågående och avslutade ärenden
-                  </CardDescription>
+                  <CardDescription>Här ser du alla dina pågående och avslutade ärenden</CardDescription>
                 </div>
-                <Dialog open={isEstimatorOpen} onOpenChange={setIsEstimatorOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <PlusCircle className="w-4 h-4 mr-2" />
-                      Starta ny värdering
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl bg-transparent border-none shadow-none p-0">
-                     {customer && <ValueEstimator customerId={customer.id} onClose={() => setIsEstimatorOpen(false)} />}
-                  </DialogContent>
-                </Dialog>
               </CardHeader>
-              <CardContent>
+
+              <CardContent className="flex-1 overflow-y-auto">
                 {cases.length === 0 ? (
                   <p className="text-center text-warm-gray py-8">Inga ärenden än</p>
                 ) : (
@@ -251,8 +224,8 @@ const CustomerPortal = () => {
                       <div
                         key={case_.id}
                         className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                          selectedCase?.id === case_.id 
-                            ? 'border-trust-blue bg-trust-blue/5' 
+                          selectedCase?.id === case_.id
+                            ? 'border-trust-blue bg-trust-blue/5'
                             : 'border-gray-200 hover:border-trust-blue/50'
                         }`}
                         onClick={() => {
@@ -295,21 +268,20 @@ const CustomerPortal = () => {
             </Card>
           </div>
 
-          {/* Case Details & Comments */}
-          <div>
+          {/* Right column: Details & Comments — match height with left */}
+          <div className="flex">
             {selectedCase ? (
-              <Card>
+              <Card className="flex-1 flex flex-col">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <MessageSquare className="w-5 h-5 mr-2" />
                     Kommentarer
                   </CardTitle>
-                  <CardDescription>
-                    Kommunicera om ärendet: {selectedCase.title}
-                  </CardDescription>
+                  <CardDescription>Kommunicera om ärendet: {selectedCase.title}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+
+                <CardContent className="flex-1 flex flex-col">
+                  <div className="space-y-4 mb-6 overflow-y-auto flex-1">
                     {loadingComments ? (
                       <div className="text-center text-warm-gray">Laddar kommentarer...</div>
                     ) : (
@@ -317,8 +289,8 @@ const CustomerPortal = () => {
                         <div
                           key={comment.id}
                           className={`p-3 rounded-lg ${
-                            comment.author_type === 'customer' 
-                              ? 'bg-trust-blue/10 ml-4' 
+                            comment.author_type === 'customer'
+                              ? 'bg-trust-blue/10 ml-4'
                               : 'bg-gray-100 mr-4'
                           }`}
                         >
@@ -336,7 +308,6 @@ const CustomerPortal = () => {
                     )}
                   </div>
 
-                  {/* Add Comment */}
                   <div className="space-y-3">
                     <Textarea
                       placeholder="Skriv en kommentar..."
@@ -344,8 +315,8 @@ const CustomerPortal = () => {
                       onChange={(e) => setNewComment(e.target.value)}
                       className="min-h-[80px]"
                     />
-                    <Button 
-                      onClick={addComment} 
+                    <Button
+                      onClick={addComment}
                       disabled={!newComment.trim() || loadingComments}
                       className="w-full"
                     >
@@ -355,8 +326,8 @@ const CustomerPortal = () => {
                 </CardContent>
               </Card>
             ) : (
-              <Card>
-                <CardContent className="flex items-center justify-center h-40">
+              <Card className="flex-1 flex">
+                <CardContent className="flex-1 flex items-center justify-center">
                   <p className="text-warm-gray">Välj ett ärende för att se detaljer</p>
                 </CardContent>
               </Card>

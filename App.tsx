@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import React, { useEffect } from "react";
+import "@/index.css";
 
 // 🧩 Komponenter & sidor
 import ResetPassword from "@/components/ResetPassword";
@@ -14,8 +15,8 @@ import Privacy from "@/pages/Privacy";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import FragorTips from "@/pages/FragorTips";
-import AdminPortal from "@/pages/AdminPortal";
-import Portal from "@/pages/Portal";
+import AdminPortal from "@/pages/Portal/AdminPortal";
+import Portal from "@/pages/Portal/Portal";
 
 // 💼 Services
 import Services from "@/pages/services";
