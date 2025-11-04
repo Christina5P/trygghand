@@ -1,5 +1,5 @@
 import { useAuth } from '@/hooks/useAuth'
-import AuthLayout from '@/components/auth/AuthLayout'
+import AuthLayout from '@/pages/Portal/AuthLayout'
 import CustomerPortal from './CustomerPortal'
 import AdminPortal from './AdminPortal'
 import { useEffect, useState } from "react";
@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CircularProgressbar } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
-import ValueEstimator from '@/components/ValueEstimator';
-import { Link } from "react-router-dom";
+// ValueEstimator moved to EstimatorCard inside CustomerPortal/AdminPortal
+
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500",
@@ -28,7 +28,6 @@ const statusLabels: Record<string, string> = {
 
 const Portal = () => {
   const { user, customer, loading } = useAuth();
-  const [showEstimator, setShowEstimator] = useState(false);
 
   if (loading) {
     return (
@@ -42,7 +41,13 @@ const Portal = () => {
   }
 
   if (!user) {
-    return <AuthLayout />;
+    return (
+      <div className="min-h-screen bg-soft-gray flex items-center justify-center">
+        <div className="w-full max-w-md px-4">
+          <AuthLayout />
+        </div>
+      </div>
+    );
   }
 
   // Visa kundportal för icke-admin
@@ -57,36 +62,10 @@ const Portal = () => {
           </p>
         </div>
 
-        {/* Knapp för att öppna ValueEstimator */}
-        <div className="mb-4">
-          <button
-            onClick={() => setShowEstimator(true)}
-            className="px-4 py-2 bg-trust-blue text-white rounded"
-          >
-            Värdera bilder
-          </button>
-        </div>
-
-        {showEstimator && customerId && (
-          <div className="mt-4">
-            <ValueEstimator
-              {...({ customerId, onClose: () => setShowEstimator(false) } as any)}
-            />
-          </div>
-        )}
-
         {/* Resten av kundportalen */}
         <CustomerPortal />
 
-        {/* Portal actions / buttons */}
-        <div className="mt-6">
-          <Link
-            to="/vardering-ai"
-            className="block bg-purple-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-purple-700 transition"
-          >
-            Starta AI-värdering
-          </Link>
-        </div>
+       
       </div>
     );
   }

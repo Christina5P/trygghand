@@ -31,13 +31,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, LogOut, Loader2 } from "lucide-react";
-import EditCaseDialog from './EditCaseDialog';
+import EditCaseDialog from '../EditCaseDialog';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ValueEstimator } from "../components/ValueEstimator";
+import EstimatorCard from "@/components/EstimatorCard";
 import { Link } from "react-router-dom";
+import Tidio from "@/components/Tidio";
 
 // --- Type Definitions ---
 // (Interface definitions remain the same)
@@ -287,6 +288,7 @@ const AdminPortal: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-soft-gray">
+      <Tidio />
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -303,6 +305,8 @@ const AdminPortal: React.FC = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Estimator för admin — t.ex. site-wide eller per-kund */}
+        <EstimatorCard customerId={customer?.id ?? user?.id} onSaved={() => fetchValuations()} />
         <Tabs defaultValue="cases" className="space-y-6">
           <TabsList className="grid w-full grid-cols-5"> {/* Ändra till 5 kolumner */}
             <TabsTrigger value="cases">Ärenden</TabsTrigger>
@@ -384,47 +388,7 @@ const AdminPortal: React.FC = () => {
           <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>{/* ... befintlig kod ... */}</Dialog>
       )}
 
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Adminportal</h1>
-          <button
-            onClick={() => setShowEstimator(true)}
-            className="px-3 py-2 bg-trust-blue text-white rounded"
-          >
-            Snabb värdering
-          </button>
-        </div>
-
-        {/* Modal för ValueEstimator */}
-        {customerId && (
-          <Dialog open={showEstimator} onOpenChange={(open) => setShowEstimator(open)}>
-            <DialogContent className="max-w-3xl w-full">
-              <DialogHeader>
-                <DialogTitle>Värdera bilder</DialogTitle>
-                <DialogDescription>Analysera bilder och spara värdering</DialogDescription>
-              </DialogHeader>
-              <div className="mt-4">
-                <ValueEstimator
-                  customerId={customerId}
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        <div className="flex items-center gap-3">
-          {/* ...other action buttons... */}
-
-          <Link
-            to="/vardering-ai"
-            className="block bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition"
-          >
-            Öppna AI-värdering
-          </Link>
-        </div>
-
-        {/* ...resterande admin-UI... */}
-      </div>
+ 
     </div>
   );
 };

@@ -3,7 +3,12 @@ import defaultTheme from 'tailwindcss/defaultTheme'; // Importera standardtemat
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+ content: [
+  "./src/pages/**/*.{ts,tsx}",       // Täcker alla sidor, inklusive Portal
+  "./src/components/**/*.{ts,tsx}",  // Alla komponenter
+  "./src/app/**/*.{ts,tsx}",         // Om du har app-specifikt
+],
+
   prefix: "",
   theme: {
     container: {
