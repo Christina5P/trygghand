@@ -1,19 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from "@supabase/supabase-js";
 
-// CORRECTED: Reverted to using import.meta.env, which is the standard way Vite
-// exposes environment variables to the client-side code. Using process.env
-// caused a runtime error because it's not available in the browser.
-// FIX: Cast `import.meta` to `any` to prevent TypeScript errors when `vite/client` types are not available.
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Debug: visa om env-variabler finns (visar inte nyckel i klartext)
+console.log("DEBUG: Supabase env - URL exists:", !!SUPABASE_URL, "ANON exists:", !!SUPABASE_ANON_KEY);
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  // Provide a more helpful error message for the user.
-  throw new Error("Supabase URL and Anon Key are required. Make sure you have a .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY variables set.");
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- NEW VALUATION FUNCTIONS ---
 
@@ -23,10 +16,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * @returns A promise that resolves to an array of public image URLs.
  */
 export async function uploadImages(files: File[]): Promise<string[]> {
-  const uploadPromises = files.map(file => {
+  const uploadPromises = files.map((file) => {
     // Create a unique file name to avoid collisions
-    const fileName = `public/${Date.now()}-${file.name.replace(/\s/g, '_')}`;
-    return supabase.storage.from('images').upload(fileName, file);
+    const fileName = `public/${Date.now()}-${file.name.replace(/\s/g, "_")}`;
+    return supabase.storage.from("images").upload(fileName, file);
   });
 
   const uploadResults = await Promise.all(uploadPromises);
@@ -34,10 +27,10 @@ export async function uploadImages(files: File[]): Promise<string[]> {
   const urls: string[] = [];
   for (const result of uploadResults) {
     if (result.error) {
-      console.error('Error uploading image:', result.error);
+      console.error("Error uploading image:", result.error);
       throw result.error;
     }
-    const { data } = supabase.storage.from('images').getPublicUrl(result.data.path);
+    const { data } = supabase.storage.from("images").getPublicUrl(result.data.path);
     urls.push(data.publicUrl);
   }
 
@@ -50,23 +43,27 @@ export async function uploadImages(files: File[]): Promise<string[]> {
  * @param imageUrls The array of public URLs for the uploaded images.
  * @param customerId The ID of the customer creating the valuation.
  */
-export async function saveValuation(analysisResult: string, imageUrls: string[], customerId: string) {
+export async function saveValuation(
+  analysisResult: string,
+  imageUrls: string[],
+  customerId: string
+) {
   const { data, error } = await supabase
-    .from('valuations')
+    .from("valuations")
     .insert([
-      { 
-        analysis_result: analysisResult, 
+      {
+        analysis_result: analysisResult,
         image_urls: imageUrls,
-        customer_id: customerId 
+        customer_id: customerId,
       },
     ])
     .select();
 
   if (error) {
-    console.error('Error saving valuation:', error);
+    console.error("Error saving valuation:", error);
     throw error;
   }
-  
+
   return data;
 }
 
@@ -76,112 +73,112 @@ export async function saveValuation(analysisResult: string, imageUrls: string[],
  */
 export async function getValuations() {
   const { data, error } = await supabase
-    .from('valuations')
-    .select('*, customer:customers(name, email)')
-    .order('created_at', { ascending: false });
+    .from("valuations")
+    // join mot auth.users eftersom FK pekar dit
+    .select("*,customer:auth.users(id,email,raw_user_meta_data)")
+    .order("created_at", { ascending: false });
 
   if (error) {
-    console.error('Error fetching valuations:', error);
+    console.error("Error fetching valuations:", error);
     throw error;
   }
   return data || [];
 }
 
-
 // --- EXISTING DATABASE TYPES ---
 
 export interface Customer {
-  id: string
-  email: string
-  name: string
-  phone?: string
-  address?: string
-  created_at: string
-  is_admin: boolean
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  created_at: string;
+  is_admin: boolean;
 }
 
 export interface ServiceType {
-  id: string
-  name: string
-  description: string
-  base_price?: number
-  created_at: string
+  id: string;
+  name: string;
+  description: string;
+  base_price?: number;
+  created_at: string;
 }
 
 export interface Subscription {
-  id: string
-  name: string
-  provider: string
-  category: string
-  created_at: string
+  id: string;
+  name: string;
+  provider: string;
+  category: string;
+  created_at: string;
 }
 
 export interface Case {
-  id: string
-  customer_id: string
-  service_type_id: string
-  title: string
-  description: string
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
-  priority: 'low' | 'medium' | 'high'
-  scheduled_date?: string
-  completion_date?: string
-  total_price?: number
-  address?: string
-  notes?: string
-  created_at: string
-  updated_at: string
+  id: string;
+  customer_id: string;
+  service_type_id: string;
+  title: string;
+  description: string;
+  status: "pending" | "in_progress" | "completed" | "cancelled";
+  priority: "low" | "medium" | "high";
+  scheduled_date?: string;
+  completion_date?: string;
+  total_price?: number;
+  address?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
   // Relations
-  customer?: Customer
-  service_type?: ServiceType
+  customer?: Customer;
+  service_type?: ServiceType;
 }
 
 export interface CaseSubscription {
-  id: string
-  case_id: string
-  subscription_id: string
-  status: 'active' | 'cancelled' | 'completed'
-  cancellation_date?: string
-  notes?: string
-  created_at: string
+  id: string;
+  case_id: string;
+  subscription_id: string;
+  status: "active" | "cancelled" | "completed";
+  cancellation_date?: string;
+  notes?: string;
+  created_at: string;
   // Relations
-  subscription?: Subscription
+  subscription?: Subscription;
 }
 
 export interface ContactRequest {
-  id: string
-  name: string
-  email: string
-  phone?: string
-  service_interest?: string
-  message: string
-  status: 'new' | 'contacted' | 'quoted' | 'converted' | 'closed'
-  admin_notes?: string
-  created_at: string
-  updated_at: string
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  service_interest?: string;
+  message: string;
+  status: "new" | "contacted" | "quoted" | "converted" | "closed";
+  admin_notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CaseComment {
-  id: string
-  case_id: string
-  author_id: string
-  author_type: 'customer' | 'admin'
-  content: string
-  created_at: string
+  id: string;
+  case_id: string;
+  author_id: string;
+  author_type: "customer" | "admin";
+  content: string;
+  created_at: string;
   // Relations
-  author?: Customer
+  author?: Customer;
 }
 
 export interface StorageItem {
-  id: string
-  case_id: string
-  item_name: string
-  description?: string
-  quantity: number
-  storage_location?: string
-  status: 'stored' | 'retrieved' | 'disposed'
-  stored_date: string
-  retrieved_date?: string
-  monthly_cost?: number
-  created_at: string
+  id: string;
+  case_id: string;
+  item_name: string;
+  description?: string;
+  quantity: number;
+  storage_location?: string;
+  status: "stored" | "retrieved" | "disposed";
+  stored_date: string;
+  retrieved_date?: string;
+  monthly_cost?: number;
+  created_at: string;
 }

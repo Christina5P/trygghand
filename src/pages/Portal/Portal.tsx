@@ -1,30 +1,9 @@
-import { useAuth } from '@/hooks/useAuth'
-import AuthLayout from '@/pages/Portal/AuthLayout'
-import CustomerPortal from './CustomerPortal'
-import AdminPortal from './AdminPortal'
+import { useAuth } from "@/hooks/useAuth";
+import AuthLayout from "@/pages/Portal/AuthLayout";
+import CustomerPortal from "./CustomerPortal";
+import AdminPortal from "./AdminPortal";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { CircularProgressbar } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css';
-// ValueEstimator moved to EstimatorCard inside CustomerPortal/AdminPortal
-
-
-const statusColors: Record<string, string> = {
-  pending: "bg-yellow-500",
-  in_progress: "bg-blue-500",
-  completed: "bg-green-500",
-  cancelled: "bg-gray-500",
-};
-
-const statusLabels: Record<string, string> = {
-  pending: "Väntar",
-  in_progress: "Pågår",
-  completed: "Avslutad",
-  cancelled: "Avbruten",
-};
+import ValueEstimator from "@/components/ValueEstimator";
 
 const Portal = () => {
   const { user, customer, loading } = useAuth();
@@ -40,38 +19,19 @@ const Portal = () => {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-soft-gray flex items-center justify-center">
-        <div className="w-full max-w-md px-4">
-          <AuthLayout />
-        </div>
-      </div>
-    );
+  if (!user) return <AuthLayout />;
+
+  // Kundportal
+  if (customer && !customer.is_admin) {
+    return <CustomerPortal />;
   }
 
-  // Visa kundportal för icke-admin
-  if (!customer?.is_admin) {
-    const customerId = customer?.id ?? user?.id;
-    return (
-      <div className="max-w-3xl mx-auto py-8">
-        <div className="mb-2">
-          <h2 className="text-xl font-semibold text-trust-blue">Trygg Hand</h2>
-          <p className="text-lg text-warm-gray font-medium">
-            Välkommen {customer?.name ?? user?.user_metadata?.full_name ?? user?.email ?? "Ny användare"}
-          </p>
-        </div>
-
-        {/* Resten av kundportalen */}
-        <CustomerPortal />
-
-       
-      </div>
-    );
+  // Adminportal
+  if (customer?.is_admin) {
+    return <AdminPortal />;
   }
 
-  // Adminportal som vanligt
-  return <AdminPortal />;
+  return <AuthLayout />;
 };
 
 export default Portal;
