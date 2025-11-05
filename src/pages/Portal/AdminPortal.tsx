@@ -36,9 +36,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import EstimatorCard from "@/components/EstimatorCard";
-import { Link } from "react-router-dom";
-import Tidio from "@/components/Tidio";
+import ValueEstimator from "@/components/ValueEstimator";
 
 // --- Type Definitions ---
 // (Interface definitions remain the same)
@@ -118,7 +116,7 @@ interface Valuation {
 }
 
 // --- AdminPortal Component ---
-const AdminPortal: React.FC = () => {
+export const AdminPortal: React.FC = () => {
   const { user, customer, signOut } = useAuth();
   const [cases, setCases] = useState<Case[]>([]);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
@@ -136,6 +134,10 @@ const AdminPortal: React.FC = () => {
   const [providerValue, setProviderValue] = useState("");
   const [providerInput, setProviderInput] = useState("");
   const [showEstimator, setShowEstimator] = useState(false);
+  // Kontrollera huvudfliken i Tabs (nu kontrollerbar)
+  const [mainTab, setMainTab] = useState<
+    "cases" | "contact_requests" | "customers" | "subscriptions" | "valuations"
+  >("cases");
 
   const customerId = customer?.id ?? user?.id;
 
@@ -146,19 +148,52 @@ const AdminPortal: React.FC = () => {
   const fetchSubscriptions = async () => { /* ... (no changes) ... */ };
   const fetchCaseSubscriptions = async () => { /* ... (no changes) ... */ };
   
-  // NY FUNKTION för att hämta värderingar
+  // NY FUNKTION för att hämta värderingar (robust: försök extern helper, fallback till Supabase direkt)
   const fetchValuations = async () => {
     setLoadingValuations(true);
     try {
-      const data = await getValuations();
-      setValuations(data);
+      // 1) Försök via helper/getValuations
+      try {
+        const data = await getValuations();
+        if (Array.isArray(data) && data.length > 0) {
+          console.debug("fetchValuations: got data from getValuations helper", data.length);
+          // normalize similar to previous logic
+          const normalized: Valuation[] = data
+            .filter((item: any) => item && typeof item === "object" && !("error" in item))
+            .map((v: any) => {
+              const id = typeof v.id === "number" ? v.id : parseInt(String(v.id || "0"), 10) || 0;
+              const created_at = v.created_at ?? v.createdAt ?? String(v.created_at ?? "");
+              const analysis_result = v.analysis_result ?? v.analysis ?? v.result ?? "";
+              const image_urls: string[] = Array.isArray(v.image_urls)
+                ? v.image_urls
+                : Array.isArray(v.images)
+                ? v.images.map((i: any) => i.url).filter(Boolean)
+                : [];
+              const customer =
+                v.customer && typeof v.customer === "object"
+                  ? { name: v.customer.name ?? v.customer.full_name ?? "", email: v.customer.email ?? "" }
+                  : undefined;
+              return { id, created_at, analysis_result, image_urls, customer };
+            });
+          setValuations(normalized);
+          return normalized;
+        }
+        console.debug("fetchValuations: helper returned no data or empty array, falling back to Supabase");
+      } catch (helperErr) {
+        console.warn("fetchValuations: getValuations helper failed, falling back to Supabase:", helperErr);
+      }
+
+      // 2) Fallback: hämta direkt från Supabase (använder existing fetchValuationsFromSupabase logic)
+      await fetchValuationsFromSupabase();
+      return valuations;
     } catch (error) {
-      console.error("Error fetching valuations:", error);
+      console.error("Error fetching valuations (final):", error);
       toast({
         title: "Fel",
         description: "Kunde inte hämta värderingar",
         variant: "destructive",
       });
+      return [];
     } finally {
       setLoadingValuations(false);
     }
@@ -200,7 +235,9 @@ const AdminPortal: React.FC = () => {
       const resp = await fetch("/api/gemini", { method: "POST", body: form });
       if (!resp.ok) throw new Error("Gemini-proxy returned " + resp.status);
       const json = await resp.json();
-      const analysis = (json && json.analysis) || json?.result || "";
+      // Se till att analysis sparas som en string (JSON när det är ett objekt)
+      const rawAnalysis = (json && json.analysis) ?? json?.result ?? "";
+      const analysis = typeof rawAnalysis === "string" ? rawAnalysis : JSON.stringify(rawAnalysis);
 
       // 2) Ladda upp bilder till ditt storage (om du har en uploadImages helper)
       let imageUrls: string[] = [];
@@ -213,6 +250,7 @@ const AdminPortal: React.FC = () => {
 
       // 3) Normalisera customerId och spara värdering
       const custToSend = !customerId || customerId === "_UNKNOWN_" ? null : customerId;
+      // analysis är nu alltid en string (säker för DB-kolumn)
       await saveValuation(custToSend, analysis, imageUrls);
 
       // 4) uppdatera lokalt state
@@ -288,7 +326,7 @@ const AdminPortal: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-soft-gray">
-      <Tidio />
+      {/* Tidio chat removed: no client-side component available in this context */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -305,9 +343,56 @@ const AdminPortal: React.FC = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Estimator för admin — t.ex. site-wide eller per-kund */}
-        <EstimatorCard customerId={customer?.id ?? user?.id} onSaved={() => fetchValuations()} />
-        <Tabs defaultValue="cases" className="space-y-6">
+        {/* Knappval för Ny / Sparade värderingar */}
+        <div className="mb-6 flex gap-3">
+          <button
+            className={`px-4 py-2 rounded ${mainTab === "cases" ? "bg-trust-blue text-white" : "bg-white border"}`}
+            onClick={() => {
+              setMainTab("cases");
+              setShowEstimator(true);
+            }}
+          >
+            Ny värdering
+          </button>
+          <button
+            className={`px-4 py-2 rounded ${mainTab === "valuations" ? "bg-trust-blue text-white" : "bg-white border"}`}
+            onClick={() => {
+              setMainTab("valuations");
+              setShowEstimator(false);
+              // ladda valuations när man öppnar sparade
+              fetchValuations();
+            }}
+          >
+            Sparade värderingar
+          </button>
+        </div>
+
+        {/* Estimator visas bara när "Ny" är aktiv */}
+        {showEstimator && (
+          <ValueEstimator
+            customerId={customer?.id ?? user?.id}
+            onSaved={async () => {
+              await fetchValuations();
+              setMainTab("valuations");
+              setShowEstimator(false);
+            }}
+          />
+        )}
+
+        <Tabs
+          value={mainTab}
+          onValueChange={(value: string) =>
+            setMainTab(
+              value as
+                | "cases"
+                | "contact_requests"
+                | "customers"
+                | "subscriptions"
+                | "valuations"
+            )
+          }
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-5"> {/* Ändra till 5 kolumner */}
             <TabsTrigger value="cases">Ärenden</TabsTrigger>
             <TabsTrigger value="contact_requests">
@@ -384,13 +469,13 @@ const AdminPortal: React.FC = () => {
         />
       )}
 
-      {showCustomerDialog && selectedCustomer && (
-          <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>{/* ... befintlig kod ... */}</Dialog>
-      )}
-
- 
-    </div>
-  );
-};
-
-export default AdminPortal;
+            {showCustomerDialog && selectedCustomer && (
+                <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>{/* ... befintlig kod ... */}</Dialog>
+            )}
+      
+            {/* Tabbar */}
+          </div>
+        );
+      };
+      
+      export default AdminPortal;
