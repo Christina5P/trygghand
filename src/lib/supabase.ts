@@ -72,17 +72,14 @@ export async function saveValuation(
  * @returns A promise that resolves to an array of valuation objects.
  */
 export async function getValuations() {
+  // Hämta endast valuations direkt — undvik att selekta från auth.users här (orsakar PGRST100)
   const { data, error } = await supabase
     .from("valuations")
-    // join mot auth.users eftersom FK pekar dit
-    .select("*,customer:auth.users(id,email,raw_user_meta_data)")
+    .select("*")
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Error fetching valuations:", error);
-    throw error;
-  }
-  return data || [];
+  if (error) throw error;
+  return data ?? [];
 }
 
 // --- EXISTING DATABASE TYPES ---

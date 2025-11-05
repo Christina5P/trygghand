@@ -22,6 +22,9 @@ import {
   Calendar,
   MapPin,
   DollarSign,
+  PlusCircle,
+  Save,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
@@ -188,6 +191,23 @@ const CustomerPortal = () => {
     }
   };
 
+  // Ta bort en värdering (kundvy)
+  const deleteValuation = async (id: number) => {
+    if (!window.confirm("Vill du verkligen ta bort denna värdering?")) return;
+    setLoadingVals(true);
+    try {
+      const { error } = await supabase.from("valuations").delete().eq("id", id);
+      if (error) throw error;
+      setValuations((prev) => prev.filter((v) => v.id !== id));
+      toast({ title: "Raderad", description: `Värdering #${String(id)} togs bort.` });
+    } catch (err: any) {
+      console.error("Delete valuation error:", err);
+      toast({ title: "Fel", description: String(err?.message ?? err), variant: "destructive" });
+    } finally {
+      setLoadingVals(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -289,26 +309,42 @@ const CustomerPortal = () => {
              ) : (
                <div className="grid gap-4">
                  {valuations.map((v) => (
-                   <div
-                     key={String(v.id)}
-                     className="p-4 border rounded bg-white"
-                   >
-                     <div className="text-sm font-medium">
-                       Värdering #{String(v.id)}
-                     </div>
-                     <div className="text-xs text-gray-600 mt-1">
-                       {v.analysis
-                         ? (() => {
-                             try {
-                               return (
-                                 JSON.parse(v.analysis).foremal_beskrivning ??
-                                 v.analysis
-                               );
-                             } catch {
-                               return v.analysis;
-                             }
-                           })()
-                         : ""}
+                   <div key={String(v.id)} className="p-4 border rounded bg-white">
+                     <div className="flex items-start gap-4">
+                       <div className="flex-shrink-0">
+                         <button
+                           onClick={() => deleteValuation(v.id)}
+                           className="text-gray-400 hover:text-red-600"
+                           title="Ta bort värdering"
+                         >
+                           <X className="w-4 h-4" />
+                         </button>
+                       </div>
+
+                       <div className="flex-1">
+                         <div className="text-sm font-medium">Värdering #{String(v.id)}</div>
+                         <div className="text-xs text-gray-500">
+                           {v.created_at ? new Date(v.created_at).toLocaleString("sv-SE") : ""}
+                         </div>
+                         <div className="mt-2 flex items-center gap-4">
+                           {v.image_urls && v.image_urls.length > 0 ? (
+                             <img src={v.image_urls[0]} alt={`val-${v.id}-img`} className="w-16 h-16 object-cover rounded-md border" />
+                           ) : (
+                             <div className="w-16 h-16 bg-gray-50 rounded-md flex items-center justify-center text-xs text-warm-gray">Ingen bild</div>
+                           )}
+                           <div className="text-xs text-gray-600">
+                             {(() => {
+                               const text = v.analysis_result ?? v.analysis ?? "";
+                               try {
+                                 const parsed = typeof text === "string" ? JSON.parse(text) : text;
+                                 return parsed?.foremal_beskrivning ?? parsed?.motivering ?? String(text);
+                               } catch {
+                                 return String(text);
+                               }
+                             })()}
+                           </div>
+                         </div>
+                       </div>
                      </div>
                    </div>
                  ))}
