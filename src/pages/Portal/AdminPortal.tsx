@@ -30,13 +30,16 @@ import {
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, LogOut, Loader2 } from "lucide-react";
+import { Plus, LogOut, Loader2, X } from "lucide-react";
 import EditCaseDialog from '../EditCaseDialog';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import ValueEstimator from "@/components/ValueEstimator";
+import Tidio from "@/components/Tidio";
+import { format } from "date-fns";
+import { sv } from "date-fns/locale";
 
 // --- Type Definitions ---
 // (Interface definitions remain the same)
@@ -262,38 +265,55 @@ export const AdminPortal: React.FC = () => {
   };
 
   // HÄR: hämta valuations + mappa customers lokalt (ingen FK-join i query)
-    const fetchValuationsFromSupabase = async () => {
-      setLoading(true);
-      try {
-        const { data: vals, error: vErr } = await supabase
-          .from("valuations")
-          .select("*")
-          .order("created_at", { ascending: false });
-  
-        if (vErr) throw vErr;
-        const valArr = vals ?? [];
-  
-        const customerIds = Array.from(
-          new Set(valArr.map((v: any) => v.customer_id).filter(Boolean))
-        );
-        let customers: any[] = [];
-        if (customerIds.length > 0) {
-          const { data: custData, error: cErr } = await supabase
-            .from("customers")
-            .select("id,name,email")
-            .in("id", customerIds);
-          if (cErr) console.warn("Could not fetch customers:", cErr);
-          customers = custData ?? [];
-        }
-        const custMap = new Map(customers.map((c: any) => [c.id, c]));
-        const merged = valArr.map((v: any) => ({ ...v, customer: custMap.get(v.customer_id) ?? null }));
-        setValuations(merged);
-      } catch (err) {
-        console.error("Error fetching valuations:", err);
-      } finally {
-        setLoading(false);
+  const fetchValuationsFromSupabase = async () => {
+    setLoading(true);
+    try {
+      const { data: vals, error: vErr } = await supabase
+        .from("valuations")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (vErr) throw vErr;
+      const valArr = vals ?? [];
+
+      const customerIds = Array.from(
+        new Set(valArr.map((v: any) => v.customer_id).filter(Boolean))
+      );
+      let customers: any[] = [];
+      if (customerIds.length > 0) {
+        const { data: custData, error: cErr } = await supabase
+          .from("customers")
+          .select("id,name,email")
+          .in("id", customerIds);
+        if (cErr) console.warn("Could not fetch customers:", cErr);
+        customers = custData ?? [];
       }
-    };
+      const custMap = new Map(customers.map((c: any) => [c.id, c]));
+      const merged = valArr.map((v: any) => ({ ...v, customer: custMap.get(v.customer_id) ?? null }));
+      setValuations(merged);
+    } catch (err) {
+      console.error("Error fetching valuations:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Ta bort en värdering
+  const deleteValuation = async (id: number) => {
+    if (!window.confirm("Vill du verkligen ta bort denna värdering?")) return;
+    setLoadingValuations(true);
+    try {
+      const { error } = await supabase.from("valuations").delete().eq("id", id);
+      if (error) throw error;
+      setValuations((prev) => prev.filter((v) => v.id !== id));
+      toast({ title: "Raderad", description: `Värdering #${String(id)} togs bort.` });
+    } catch (err: any) {
+      console.error("Delete valuation error:", err);
+      toast({ title: "Fel", description: String(err?.message ?? err), variant: "destructive" });
+    } finally {
+      setLoadingValuations(false);
+    }
+  };
 
   if (!customer?.is_admin) {
     return (
@@ -326,7 +346,7 @@ export const AdminPortal: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-soft-gray">
-      {/* Tidio chat removed: no client-side component available in this context */}
+        <Tidio />
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -425,33 +445,49 @@ export const AdminPortal: React.FC = () => {
             ) : valuations.length === 0 ? (
               <p className="text-warm-gray">Inga värderingar har skapats än.</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {valuations.map((valuation) => (
-                  <div key={valuation.id} className="bg-white rounded-2xl shadow-lg p-6 border flex flex-col gap-4">
-                    <div className="flex-shrink-0">
-                      <p className="font-semibold text-gray-800">{valuation.customer?.name || "Okänd kund"}</p>
-                      <p className="text-sm text-gray-500">{valuation.customer?.email}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(valuation.created_at).toLocaleString('sv-SE')}
-                      </p>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-2">
-                      {valuation.image_urls.slice(0, 3).map((url, index) => (
-                        <a href={url} target="_blank" rel="noopener noreferrer" key={index} className="relative group aspect-square">
-                          <img src={url} alt={`Valuation image ${index + 1}`} className="w-full h-full object-cover rounded-md group-hover:opacity-80 transition-opacity" />
-                        </a>
-                      ))}
-                      {valuation.image_urls.length > 3 && (
-                          <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center text-lg font-bold text-gray-500">
-                            +{valuation.image_urls.length - 3}
-                          </div>
-                      )}
+              <div className="space-y-4">
+                {valuations.map((v) => (
+                  <div key={String(v.id)} className="bg-white p-4 border rounded flex items-start gap-4 relative">
+                    <button
+                      onClick={() => deleteValuation(v.id)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
+                      title="Ta bort värdering"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+
+                    <div>
+                      <div className="text-sm font-medium">Värdering #{String(v.id)}</div>
+                      <div className="text-xs text-gray-500">
+                        {format(new Date(v.created_at), "dd MMM yyyy HH:mm", { locale: sv })}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">{v.customer?.name || v.customer?.email || "Okänd kund"}</div>
                     </div>
 
-                    <div className="flex-grow bg-gray-50 p-4 rounded-md border min-h-[200px] overflow-y-auto">
-                      <h3 className="font-bold text-lg mb-2 text-trust-blue">AI Analys</h3>
-                      <p className="text-gray-700 whitespace-pre-wrap text-sm">{valuation.analysis_result}</p>
+                    <div className="flex-1 flex items-center gap-4">
+                      {v.image_urls && v.image_urls.length > 0 ? (
+                        <img
+                          src={v.image_urls[0]}
+                          alt={`val-${v.id}-img`}
+                          className="w-16 h-16 object-cover rounded-md border"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-50 rounded-md flex items-center justify-center text-xs text-warm-gray">
+                          Ingen bild
+                        </div>
+                      )}
+
+                      <div className="text-xs text-gray-600">
+                        {(() => {
+                          const text = v.analysis_result ?? (v as any).analysis ?? "";
+                          try {
+                            const parsed = typeof text === "string" ? JSON.parse(text) : text;
+                            return parsed?.foremal_beskrivning ?? parsed?.motivering ?? String(text);
+                          } catch {
+                            return String(text);
+                          }
+                        })()}
+                      </div>
                     </div>
                   </div>
                 ))}

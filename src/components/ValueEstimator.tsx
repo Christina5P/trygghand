@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { analyzeImage } from "@/components/services/geminiService"; 
 import { uploadAndSaveValuation } from "@/lib/valuations"; 
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Save } from "lucide-react";
+import { PlusCircle, Save, Camera, Loader2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 // ✅ Gränssnitt för AI-resultatet
@@ -28,6 +28,7 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   // Förhandsgranskning av bilder
   useEffect(() => {
@@ -48,6 +49,21 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
   };
 
   const openFilePicker = () => inputRef.current?.click();
+
+  const openCameraPicker = () => cameraInputRef.current?.click();
+
+  const handleCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    const list = e.target.files ? Array.from(e.target.files) : [];
+    const images = list.filter((f) => f.type.startsWith("image/"));
+    // Kamera-capture brukar vara en fil — behåll samma state-hantering som handleFiles
+    if (images.length > 0) {
+      setFiles(images);
+      setAnalysisResult(null);
+    }
+    // nollställ värdet så samma fil kan väljas igen
+    e.target.value = "";
+  };
 
   const handleNewValuation = () => {
     // Reset current selection and analysis to start a new valuation
@@ -143,6 +159,7 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
 
   return (
     <div>
+      {/* Hidden inputs: vanlig fil och kamera-capture */}
       <input
         ref={inputRef}
         type="file"
@@ -151,7 +168,15 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
         onChange={handleFiles}
         className="hidden"
       />
-
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleCameraCapture}
+        className="hidden"
+      />
+      
       {/* Card: flyttat upp så även 'Välj bilder' finns inuti kortet */}
       <div className="w-full mt-2 bg-white border rounded-lg shadow p-4">
         {/* Rubrik + knappar för Ny värdering / Sparade värderingar */}
@@ -161,39 +186,84 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
             <p className="text-sm text-muted-foreground">Analysera bilder och spara värdering</p>
           </div>
           <div className="flex gap-2">
-             <Button onClick={openSavedValuations} className="px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
-               <Save className="w-4 h-4 mr-2" />
-               Sparade värderingar
-             </Button>
+            <Button onClick={openSavedValuations} className="px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+              <Save className="w-4 h-4 mr-2" />
+              Sparade värderingar
+            </Button>
           </div>
         </div>
 
         {/* Uppladdning och förhandsgranskning (nu inne i kortet) */}
-        <div className="mb-4 flex items-center gap-4">
-          <Button onClick={openFilePicker} className="px-4 py-2 bg-trust-blue text-white rounded hover:bg-trust-blue/90">
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Välj bilder ({files.length} valda)
-          </Button>
-
-          {files.length > 0 && (
-            <div className="flex items-center gap-3">
-              {previewUrls.slice(0,3).map((url, i) => (
-                <div key={i} className="w-12 h-12 bg-gray-50 rounded-md overflow-hidden border">
-                  <img src={url} alt={files[i]?.name ?? `preview-${i}`} className="w-full h-full object-cover"/>
-                </div>
-              ))}
-              {files.length > 3 && <span className="text-sm text-warm-gray">+{files.length - 3}</span>}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex gap-3">
-            <Button onClick={runAnalysis} disabled={loading || files.length === 0} className="bg-trust-green hover:bg-trust-green/90">
-              {loading ? "Analyserar..." : "Analysera"}
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={openFilePicker}
+              className="px-4 py-2 bg-trust-blue text-white rounded hover:bg-trust-blue/90 flex items-center"
+              aria-label="Välj bilder"
+              title="Välj bilder från enheten"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Välj ({files.length})
             </Button>
-            <Button onClick={handleSaveValuation} disabled={loading || !analysisResult} className="bg-trust-blue hover:bg-trust-blue/90">
-              {loading ? "Sparar..." : <><Save className="w-4 h-4 mr-2" /> Spara värdering</>}
+
+            <Button
+              onClick={openCameraPicker}
+              className="px-3 py-2 bg-white text-gray-700 border rounded hover:bg-gray-50 flex items-center"
+              aria-label="Öppna kamera"
+              title="Ta bild med kamera (mobil)"
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              Kamera
+            </Button>
+
+            {files.length > 0 && (
+              <div className="flex items-center gap-2">
+                {previewUrls.slice(0, 3).map((url, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    aria-label={`Förhandsgranskning ${i + 1}`}
+                    title={files[i]?.name ?? `preview-${i}`}
+                    className="w-12 h-12 rounded-md overflow-hidden border p-0 flex items-center justify-center bg-white"
+                  >
+                    <img
+                      src={url}
+                      alt={files[i]?.name ?? `preview-${i}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+
+                {files.length > 3 && (
+                  <div className="w-12 h-12 rounded-md bg-gray-100 flex items-center justify-center text-sm text-warm-gray border">
+                    +{files.length - 3}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={runAnalysis}
+              disabled={loading || files.length === 0}
+              className="px-4 py-2 bg-trust-green text-white rounded hover:bg-trust-green/90 flex items-center"
+              aria-label="Analysera bilder"
+              title="Analysera valda bilder"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {loading ? "Analyserar" : "Analysera"}
+            </Button>
+
+            <Button
+              onClick={handleSaveValuation}
+              disabled={loading || !analysisResult}
+              className="px-4 py-2 bg-trust-blue text-white rounded hover:bg-trust-blue/90 flex items-center"
+              aria-label="Spara värdering"
+              title="Spara värdering med bilder"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+              Spara
             </Button>
           </div>
         </div>
