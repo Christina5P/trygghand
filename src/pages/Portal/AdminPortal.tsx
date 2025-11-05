@@ -1,27 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { saveValuation } from "@/lib/valuations";
-import { uploadImages, supabase, getValuations } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import {
   Card,
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Tabs,
   TabsContent,
@@ -31,19 +15,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, LogOut, Loader2, X } from "lucide-react";
-import EditCaseDialog from '../EditCaseDialog';
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
-import ValueEstimator from "@/components/ValueEstimator";
+import EditCaseDialog from "../EditCaseDialog";
+import CustomerDialog from "../CustomerDialog";
+import ContactRequestDialog from "../ContactRequestDialog";
 import Tidio from "@/components/Tidio";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 
-// --- Type Definitions ---
-// (Interface definitions remain the same)
-interface Case {
+export interface Case {
   id: string;
   title: string;
   description: string;
@@ -57,34 +36,31 @@ interface Case {
   service_type?: ServiceType;
 }
 
-interface Customer {
+export interface Customer {
   id: string;
   name: string;
   email: string;
   phone?: string;
   is_admin?: boolean;
-  created_at: string;
+  created_at?: string;
 }
 
-interface ServiceType {
+export interface ServiceType {
   id: string;
   name: string;
 }
 
-interface ContactRequest {
+export interface ContactRequest {
   id: string;
   name: string;
   email: string;
   message: string;
   created_at: string;
   status: string;
-  firstname?: string;
-  lastname?: string;
-  phone?: string;
-  service_interest?: string;
+  admin_notes?: string;
 }
 
-interface Subscription {
+export interface Subscription {
   id: string;
   category: string;
   customer_id: string;
@@ -94,20 +70,7 @@ interface Subscription {
   status?: string;
 }
 
-interface CaseSubscription {
-  id: string;
-  case_id: string;
-  subscription_id: string;
-  status: string;
-  cancellation_date?: string | null;
-  notes?: string | null;
-  created_at: string;
-  case?: Case;
-  subscription?: Subscription;
-}
-
-// NY TYP FÖR VÄRDERINGAR
-interface Valuation {
+export interface Valuation {
   id: number;
   created_at: string;
   analysis_result: string;
@@ -118,201 +81,130 @@ interface Valuation {
   };
 }
 
-// --- AdminPortal Component ---
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "pending":
+      return "bg-yellow-100 text-yellow-800";
+    case "in_progress":
+      return "bg-blue-100 text-blue-800";
+    case "completed":
+      return "bg-green-100 text-green-800";
+    case "cancelled":
+      return "bg-red-100 text-red-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+};
+
 export const AdminPortal: React.FC = () => {
   const { user, customer, signOut } = useAuth();
-  const [cases, setCases] = useState<Case[]>([]);
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
-  const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [caseSubscriptions, setCaseSubscriptions] = useState<CaseSubscription[]>([]);
-  const [valuations, setValuations] = useState<Valuation[]>([]); // Ny state för värderingar
+  const { toast } = useToast();
+
   const [loading, setLoading] = useState(true);
   const [loadingValuations, setLoadingValuations] = useState(false);
-  const { toast } = useToast();
+  const [cases, setCases] = useState<Case[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [valuations, setValuations] = useState<Valuation[]>([]);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
-  const [providerValue, setProviderValue] = useState("");
-  const [providerInput, setProviderInput] = useState("");
-  const [showEstimator, setShowEstimator] = useState(false);
-  // Kontrollera huvudfliken i Tabs (nu kontrollerbar)
+  const [selectedRequest, setSelectedRequest] = useState<ContactRequest | null>(null);
+
   const [mainTab, setMainTab] = useState<
     "cases" | "contact_requests" | "customers" | "subscriptions" | "valuations"
   >("cases");
 
-  const customerId = customer?.id ?? user?.id;
-
-  const fetchCases = async () => { /* ... (no changes) ... */ };
-  const fetchCustomers = async () => { /* ... (no changes) ... */ };
-  const fetchServiceTypes = async () => { /* ... (no changes) ... */ };
-  const fetchContactRequests = async () => { /* ... (no changes) ... */ };
-  const fetchSubscriptions = async () => { /* ... (no changes) ... */ };
-  const fetchCaseSubscriptions = async () => { /* ... (no changes) ... */ };
-  
-  // NY FUNKTION för att hämta värderingar (robust: försök extern helper, fallback till Supabase direkt)
-  const fetchValuations = async () => {
-    setLoadingValuations(true);
-    try {
-      // 1) Försök via helper/getValuations
-      try {
-        const data = await getValuations();
-        if (Array.isArray(data) && data.length > 0) {
-          console.debug("fetchValuations: got data from getValuations helper", data.length);
-          // normalize similar to previous logic
-          const normalized: Valuation[] = data
-            .filter((item: any) => item && typeof item === "object" && !("error" in item))
-            .map((v: any) => {
-              const id = typeof v.id === "number" ? v.id : parseInt(String(v.id || "0"), 10) || 0;
-              const created_at = v.created_at ?? v.createdAt ?? String(v.created_at ?? "");
-              const analysis_result = v.analysis_result ?? v.analysis ?? v.result ?? "";
-              const image_urls: string[] = Array.isArray(v.image_urls)
-                ? v.image_urls
-                : Array.isArray(v.images)
-                ? v.images.map((i: any) => i.url).filter(Boolean)
-                : [];
-              const customer =
-                v.customer && typeof v.customer === "object"
-                  ? { name: v.customer.name ?? v.customer.full_name ?? "", email: v.customer.email ?? "" }
-                  : undefined;
-              return { id, created_at, analysis_result, image_urls, customer };
-            });
-          setValuations(normalized);
-          return normalized;
-        }
-        console.debug("fetchValuations: helper returned no data or empty array, falling back to Supabase");
-      } catch (helperErr) {
-        console.warn("fetchValuations: getValuations helper failed, falling back to Supabase:", helperErr);
-      }
-
-      // 2) Fallback: hämta direkt från Supabase (använder existing fetchValuationsFromSupabase logic)
-      await fetchValuationsFromSupabase();
-      return valuations;
-    } catch (error) {
-      console.error("Error fetching valuations (final):", error);
-      toast({
-        title: "Fel",
-        description: "Kunde inte hämta värderingar",
-        variant: "destructive",
-      });
-      return [];
-    } finally {
-      setLoadingValuations(false);
-    }
+  // ---- FETCH HELPERS ----
+  const fetchCases = async () => {
+    const { data, error } = await supabase
+      .from("cases")
+      .select("*, customer:customer_id(*), service_type:service_type_id(*)")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    setCases(data || []);
   };
 
+  const fetchCustomers = async () => {
+    const { data, error } = await supabase
+      .from("customers")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    setCustomers(data || []);
+  };
+
+  const fetchContactRequests = async () => {
+    const { data, error } = await supabase
+      .from("contact_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    setContactRequests(data || []);
+  };
+
+  const fetchSubscriptions = async () => {
+    const { data, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    setSubscriptions(data || []);
+  };
+
+  const fetchValuations = async () => {
+    setLoadingValuations(true);
+    const { data, error } = await supabase
+      .from("valuations")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    const arr = (data || []).map((v: any) => ({
+      id: v.id,
+      created_at: v.created_at,
+      analysis_result: v.analysis_result ?? v.analysis ?? "",
+      image_urls: Array.isArray(v.image_urls) ? v.image_urls : [],
+    }));
+    setValuations(arr);
+    setLoadingValuations(false);
+  };
+
+  // ---- INIT ----
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchCases(),
-        fetchCustomers(),
-        fetchServiceTypes(),
-        fetchContactRequests(),
-        fetchSubscriptions(),
-        fetchCaseSubscriptions(),
-        fetchValuations(), // Lägg till anropet här
-      ]);
-      setLoading(false);
+      try {
+        await Promise.allSettled([
+          fetchCases(),
+          fetchCustomers(),
+          fetchContactRequests(),
+          fetchSubscriptions(),
+          fetchValuations(),
+        ]);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchAll();
   }, []);
-  
-  const createCase = async (formData: FormData) => { /* ... (no changes) ... */ };
-  const createSubscription = async (formData: FormData) => { /* ... (no changes) ... */ };
-  const updateContactRequestStatus = async (id: string, status: string) => { /* ... (no changes) ... */ };
-  const updateCaseStatus = async (id: string, status: string) => { /* ... (no changes) ... */ };
-  const updateSubscriptionStatus = async (id: string, status: string) => { /* ... (no changes) ... */ };
 
-  // HÄR: intern analys- + spara-funktion i portalen
-  const analyzeAndSave = async (files: File[]) => {
-    if (!files || files.length === 0) throw new Error("Inga filer valda");
-    if (!customerId) throw new Error("customerId saknas!");
-
-    setLoading(true);
-    try {
-      // 1) Skicka bilder till server-proxy /api/gemini
-      const form = new FormData();
-      files.forEach((f, i) => form.append(`file${i}`, f));
-      const resp = await fetch("/api/gemini", { method: "POST", body: form });
-      if (!resp.ok) throw new Error("Gemini-proxy returned " + resp.status);
-      const json = await resp.json();
-      // Se till att analysis sparas som en string (JSON när det är ett objekt)
-      const rawAnalysis = (json && json.analysis) ?? json?.result ?? "";
-      const analysis = typeof rawAnalysis === "string" ? rawAnalysis : JSON.stringify(rawAnalysis);
-
-      // 2) Ladda upp bilder till ditt storage (om du har en uploadImages helper)
-      let imageUrls: string[] = [];
-      if (typeof uploadImages === "function") {
-        imageUrls = await uploadImages(files); // förväntas returnera string[]
-      } else {
-        // fallback: temporära object URLs (ej permanenta)
-        imageUrls = files.map((f) => URL.createObjectURL(f));
-      }
-
-      // 3) Normalisera customerId och spara värdering
-      const custToSend = !customerId || customerId === "_UNKNOWN_" ? null : customerId;
-      // analysis är nu alltid en string (säker för DB-kolumn)
-      await saveValuation(custToSend, analysis, imageUrls);
-
-      // 4) uppdatera lokalt state
-      await fetchValuations();
-      return analysis;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // HÄR: hämta valuations + mappa customers lokalt (ingen FK-join i query)
-  const fetchValuationsFromSupabase = async () => {
-    setLoading(true);
-    try {
-      const { data: vals, error: vErr } = await supabase
-        .from("valuations")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (vErr) throw vErr;
-      const valArr = vals ?? [];
-
-      const customerIds = Array.from(
-        new Set(valArr.map((v: any) => v.customer_id).filter(Boolean))
-      );
-      let customers: any[] = [];
-      if (customerIds.length > 0) {
-        const { data: custData, error: cErr } = await supabase
-          .from("customers")
-          .select("id,name,email")
-          .in("id", customerIds);
-        if (cErr) console.warn("Could not fetch customers:", cErr);
-        customers = custData ?? [];
-      }
-      const custMap = new Map(customers.map((c: any) => [c.id, c]));
-      const merged = valArr.map((v: any) => ({ ...v, customer: custMap.get(v.customer_id) ?? null }));
-      setValuations(merged);
-    } catch (err) {
-      console.error("Error fetching valuations:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Ta bort en värdering
+  // ---- DELETE VALUATION ----
   const deleteValuation = async (id: number) => {
     if (!window.confirm("Vill du verkligen ta bort denna värdering?")) return;
-    setLoadingValuations(true);
-    try {
-      const { error } = await supabase.from("valuations").delete().eq("id", id);
-      if (error) throw error;
+    const { error } = await supabase.from("valuations").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Fel", description: "Kunde inte ta bort värdering", variant: "destructive" });
+    } else {
       setValuations((prev) => prev.filter((v) => v.id !== id));
-      toast({ title: "Raderad", description: `Värdering #${String(id)} togs bort.` });
-    } catch (err: any) {
-      console.error("Delete valuation error:", err);
-      toast({ title: "Fel", description: String(err?.message ?? err), variant: "destructive" });
-    } finally {
-      setLoadingValuations(false);
+      toast({ title: "Raderad", description: `Värdering #${id} togs bort.` });
     }
+  };
+
+  // ---- UPDATE CASE STATE ----
+  const handleCaseUpdated = (updatedCase: Case) => {
+    setCases((prev) =>
+      prev.map((c) => (c.id === updatedCase.id ? updatedCase : c))
+    );
   };
 
   if (!customer?.is_admin) {
@@ -339,14 +231,9 @@ export const AdminPortal: React.FC = () => {
     );
   }
 
-  const newContactRequests = contactRequests.filter((req) => req.status === "new");
-  const newCustomers = customers.filter(c => new Date(c.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000));
-  const customerCases = cases.filter(c => c.customer?.id === selectedCustomer?.id);
-  const customerSubscriptions = subscriptions.filter(s => s.customer_id === selectedCustomer?.id);
-  
   return (
     <div className="min-h-screen bg-soft-gray">
-        <Tidio />
+      <Tidio />
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -363,155 +250,195 @@ export const AdminPortal: React.FC = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Knappval för Ny / Sparade värderingar */}
-        <div className="mb-6 flex gap-3">
-          <button
-            className={`px-4 py-2 rounded ${mainTab === "cases" ? "bg-trust-blue text-white" : "bg-white border"}`}
-            onClick={() => {
-              setMainTab("cases");
-              setShowEstimator(true);
-            }}
-          >
-            Ny värdering
-          </button>
-          <button
-            className={`px-4 py-2 rounded ${mainTab === "valuations" ? "bg-trust-blue text-white" : "bg-white border"}`}
-            onClick={() => {
-              setMainTab("valuations");
-              setShowEstimator(false);
-              // ladda valuations när man öppnar sparade
-              fetchValuations();
-            }}
-          >
-            Sparade värderingar
-          </button>
-        </div>
-
-        {/* Estimator visas bara när "Ny" är aktiv */}
-        {showEstimator && (
-          <ValueEstimator
-            customerId={customer?.id ?? user?.id}
-            onSaved={async () => {
-              await fetchValuations();
-              setMainTab("valuations");
-              setShowEstimator(false);
-            }}
-          />
-        )}
-
         <Tabs
           value={mainTab}
-          onValueChange={(value: string) =>
+          onValueChange={(v) =>
             setMainTab(
-              value as
-                | "cases"
-                | "contact_requests"
-                | "customers"
-                | "subscriptions"
-                | "valuations"
+              v as "cases" | "contact_requests" | "customers" | "subscriptions" | "valuations"
             )
           }
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-5"> {/* Ändra till 5 kolumner */}
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="cases">Ärenden</TabsTrigger>
-            <TabsTrigger value="contact_requests">
-              Kontakter
-              {newContactRequests.length > 0 && (
-                <Badge variant="outline" className="ml-2">{newContactRequests.length} ny</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="customers">
-              Kunder
-              {newCustomers.length > 0 && (
-                <Badge variant="outline" className="ml-2">{newCustomers.length} ny</Badge>
-              )}
-            </TabsTrigger>
+            <TabsTrigger value="contact_requests">Kontakter</TabsTrigger>
+            <TabsTrigger value="customers">Kunder</TabsTrigger>
             <TabsTrigger value="subscriptions">Abonnemang</TabsTrigger>
-            <TabsTrigger value="valuations">Värderingar</TabsTrigger> {/* Ny flik */}
+            <TabsTrigger value="valuations">Värderingar</TabsTrigger>
           </TabsList>
 
-          {/* Ärenden, Kontakter, Kunder, Abonnemang flikar (inga ändringar i JSX) */}
-          <TabsContent value="cases" className="space-y-6">{/* ... befintlig kod ... */}</TabsContent>
-          <TabsContent value="contact_requests" className="space-y-6">{/* ... befintlig kod ... */}</TabsContent>
-          <TabsContent value="customers" className="space-y-6">{/* ... befintlig kod ... */}</TabsContent>
-          <TabsContent value="subscriptions" className="space-y-6">{/* ... befintlig kod ... */}</TabsContent>
-
-          {/* NY FLIKINNEHÅLL FÖR VÄRDERINGAR */}
-          <TabsContent value="valuations" className="space-y-6">
-            <h2 className="text-2xl font-bold">Inkomna Värderingar</h2>
-            {loadingValuations ? (
-              <div className="text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto" /></div>
-            ) : valuations.length === 0 ? (
-              <p className="text-warm-gray">Inga värderingar har skapats än.</p>
+          {/* === ÄRENDEN === */}
+          <TabsContent value="cases" className="space-y-6">
+            <h2 className="text-2xl font-bold">Ärenden</h2>
+            {cases.length === 0 ? (
+              <p>Inga ärenden hittades.</p>
             ) : (
-              <div className="space-y-4">
-                {valuations.map((v) => (
-                  <div key={String(v.id)} className="bg-white p-4 border rounded flex items-start gap-4 relative">
-                    <button
-                      onClick={() => deleteValuation(v.id)}
-                      className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
-                      title="Ta bort värdering"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-
-                    <div>
-                      <div className="text-sm font-medium">Värdering #{String(v.id)}</div>
-                      <div className="text-xs text-gray-500">
-                        {format(new Date(v.created_at), "dd MMM yyyy HH:mm", { locale: sv })}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">{v.customer?.name || v.customer?.email || "Okänd kund"}</div>
-                    </div>
-
-                    <div className="flex-1 flex items-center gap-4">
-                      {v.image_urls && v.image_urls.length > 0 ? (
-                        <img
-                          src={v.image_urls[0]}
-                          alt={`val-${v.id}-img`}
-                          className="w-16 h-16 object-cover rounded-md border"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 bg-gray-50 rounded-md flex items-center justify-center text-xs text-warm-gray">
-                          Ingen bild
+              <div className="grid gap-4">
+                {cases.map((c) => (
+                  <Card
+                    key={c.id}
+                    className="cursor-pointer hover:shadow-md transition"
+                    onClick={() => setSelectedCaseId(c.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold">{c.title}</h3>
+                          <p
+                            className="text-sm text-gray-500 underline cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (c.customer) setSelectedCustomer(c.customer);
+                            }}
+                          >
+                            {c.customer?.name ?? "Okänd kund"}
+                          </p>
+                          <p className="text-sm text-gray-400">{c.service_type?.name}</p>
                         </div>
-                      )}
-
-                      <div className="text-xs text-gray-600">
-                        {(() => {
-                          const text = v.analysis_result ?? (v as any).analysis ?? "";
-                          try {
-                            const parsed = typeof text === "string" ? JSON.parse(text) : text;
-                            return parsed?.foremal_beskrivning ?? parsed?.motivering ?? String(text);
-                          } catch {
-                            return String(text);
-                          }
-                        })()}
+                        <Badge className={`${getStatusColor(c.status)} capitalize`}>
+                          {c.status}
+                        </Badge>
                       </div>
-                    </div>
-                  </div>
+                      <p className="text-sm mt-2">{c.description}</p>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
           </TabsContent>
 
+          {/* === KUNDER === */}
+          <TabsContent value="customers">
+            <h2 className="text-2xl font-bold mb-3">Kunder</h2>
+            {customers.length === 0 ? (
+              <p>Inga kunder hittades.</p>
+            ) : (
+              <div className="space-y-2">
+                {customers.map((c) => (
+                  <Card key={c.id} className="cursor-pointer" onClick={() => setSelectedCustomer(c)}>
+                    <CardContent className="p-3">
+                      <p className="font-medium">{c.name}</p>
+                      <p className="text-sm text-gray-500">{c.email}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* === KONTAKTER === */}
+          <TabsContent value="contact_requests">
+            <h2 className="text-2xl font-bold mb-3">Kontaktförfrågningar</h2>
+            {contactRequests.length === 0 ? (
+              <p>Inga kontaktförfrågningar.</p>
+            ) : (
+              <div className="space-y-2">
+                {contactRequests.map((r) => (
+                  <Card
+                    key={r.id}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => setSelectedRequest(r)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex justify-between">
+                        <div>
+                          <p className="font-medium">{r.name}</p>
+                          <p className="text-sm text-gray-500">{r.email}</p>
+                        </div>
+                        <Badge className={getStatusColor(r.status)}>{r.status}</Badge>
+                      </div>
+                      <p className="text-sm mt-2">{r.message}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* === ABONNEMANG === */}
+          <TabsContent value="subscriptions">
+            <h2 className="text-2xl font-bold">Abonnemang</h2>
+            {subscriptions.length === 0 ? (
+              <p>Inga abonnemang hittades.</p>
+            ) : (
+              <div className="space-y-2">
+                {subscriptions.map((s) => (
+                  <Card key={s.id}>
+                    <CardContent className="p-3">
+                      <p className="font-medium">{s.category}</p>
+                      <p className="text-sm text-gray-500">{s.customer_id}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* === VÄRDERINGAR === */}
+          <TabsContent value="valuations" className="space-y-6">
+            <h2 className="text-2xl font-bold">Värderingar</h2>
+            {loadingValuations ? (
+              <div className="text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
+            ) : valuations.length === 0 ? (
+              <p>Inga värderingar skapade ännu.</p>
+            ) : (
+              <div className="space-y-3">
+                {valuations.map((v) => (
+                  <div key={v.id} className="bg-white p-4 border rounded relative">
+                    <button
+                      onClick={() => deleteValuation(v.id)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div>
+                      <p className="font-medium text-sm">#{v.id}</p>
+                      <p className="text-xs text-gray-500">
+                        {format(new Date(v.created_at), "dd MMM yyyy HH:mm", { locale: sv })}
+                      </p>
+                    </div>
+                    {v.image_urls.length > 0 && (
+                      <img
+                        src={v.image_urls[0]}
+                        alt="valuation"
+                        className="w-20 h-20 object-cover rounded mt-2"
+                      />
+                    )}
+                    <p className="text-sm mt-2 whitespace-pre-wrap">
+                      {v.analysis_result}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
-      
+
       {selectedCaseId && (
         <EditCaseDialog
           caseId={selectedCaseId}
           onClose={() => setSelectedCaseId(null)}
+          onCaseUpdated={handleCaseUpdated}
         />
       )}
 
-            {showCustomerDialog && selectedCustomer && (
-                <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>{/* ... befintlig kod ... */}</Dialog>
-            )}
-      
-            {/* Tabbar */}
-          </div>
-        );
-      };
-      
-      export default AdminPortal;
+      {selectedCustomer && (
+        <CustomerDialog
+          customer={selectedCustomer}
+          onClose={() => setSelectedCustomer(null)}
+        />
+      )}
+
+      {selectedRequest && (
+        <ContactRequestDialog
+          request={selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          onUpdated={fetchContactRequests}
+        />
+      )}
+    </div>
+  );
+};
+
+export default AdminPortal;
