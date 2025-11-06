@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Customer } from "../types";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -84,16 +85,8 @@ export async function getValuations() {
 
 // --- EXISTING DATABASE TYPES ---
 
-export interface Customer {
-  id: string;
-  email: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  created_at: string;
-  is_admin: boolean;
-}
-
+// Reuse shared types to avoid duplicate incompatible definitions
+// (Customer type is imported above from src/types.ts)
 export interface ServiceType {
   id: string;
   name: string;

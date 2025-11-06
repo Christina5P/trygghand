@@ -4,6 +4,7 @@ import { Phone, Mail, User } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import Logo from "./HouseHandsLogo.jsx";
+import type { Customer } from "../types";
 
 const Header = () => {
   const location = useLocation();

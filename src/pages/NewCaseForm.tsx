@@ -2,18 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { Button, Textarea } from "@/components/ui"; // Justera importvägen efter din projektstruktur
-
-interface Customer { id: string; name: string; }
-// Lägg till enkel Case-typ så TS vet vad caseToEdit innehåller
-interface Case {
-  id: string;
-  title?: string;
-  description?: string | null;
-  customer_id?: string | null;
-  created_at?: string | null;
-  deadline?: string | null;
-  status?: string | null;
-}
+import type { Customer, Case } from "../types";
 
 interface NewCaseFormProps {
   customers: Customer[];
