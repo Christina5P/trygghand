@@ -1,440 +1,491 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, LogOut, Loader2, X } from "lucide-react";
-import EditCaseDialog from "../EditCaseDialog";
-import CustomerDialog from "../CustomerDialog";
-import ContactRequestDialog from "../ContactRequestDialog";
+import { Plus, LogOut, X, MessageSquare } from "lucide-react";
+import NewCaseForm from "../NewCaseForm";
 import Tidio from "@/components/Tidio";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
-export interface Case {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  priority?: string;
-  scheduled_date?: string | null;
-  address?: string | null;
-  total_price?: number | null;
-  notes?: string | null;
-  customer?: Customer;
-  service_type?: ServiceType;
-}
+// --- INTERFACES ---
+interface Customer { id: string; name: string; email?: string; personal_number?: string; }
+interface ServiceType { id: string; name: string; }
+interface Case { id: string; title: string; description: string; status: string; customer_id?: string; service_type: ServiceType | null; created_at: string; deadline?: string | null; }
+interface ContactRequest { id: string; name: string; email: string; message: string; created_at: string; status: string; }
+interface Subscription { id: string; category: string; customer_id?: string; provider?: string; notes?: string; valid_until?: string; status?: string; }
+interface Valuation { id: number; created_at: string; name?: string; analysis_result: string; image_urls: string[]; customer_id: string; customer_name?: string; }
+interface CustomerComment { id: number; customer_id: string; comment: string; created_at: string; }
+interface CaseEditShape { id: string; title: string; description: string; status: string; customer_id?: string; created_at?: string; deadline?: string | null; service_type?: ServiceType | null; }
 
-export interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  is_admin?: boolean;
-  created_at?: string;
-}
-
-export interface ServiceType {
-  id: string;
-  name: string;
-}
-
-export interface ContactRequest {
-  id: string;
-  name: string;
-  email: string;
-  message: string;
-  created_at: string;
-  status: string;
-  admin_notes?: string;
-}
-
-export interface Subscription {
-  id: string;
-  category: string;
-  customer_id: string;
-  provider?: string;
-  notes?: string;
-  created_at?: string;
-  status?: string;
-}
-
-export interface Valuation {
-  id: number;
-  created_at: string;
-  analysis_result: string;
-  image_urls: string[];
-  customer?: {
-    name: string;
-    email: string;
-  };
-}
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "pending":
-      return "bg-yellow-100 text-yellow-800";
-    case "in_progress":
-      return "bg-blue-100 text-blue-800";
-    case "completed":
-      return "bg-green-100 text-green-800";
-    case "cancelled":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
+// --- Hjälpfunktion ---
+const getStatusBadge = (status: string) => {
+  const normalized = (status || '').toLowerCase().trim();
+  switch(normalized){
+    case 'pending': case 'nytt': return { text: 'Nytt', colorClass: 'bg-blue-500 hover:bg-blue-600 text-white' };
+    case 'in_progress': case 'pågående': return { text: 'Pågående', colorClass: 'bg-yellow-500 hover:bg-yellow-600 text-black' };
+    case 'completed': case 'avslutat': return { text: 'Avslutat', colorClass: 'bg-green-500 hover:bg-green-600 text-white' };
+    case 'waiting': case 'väntar': return { text: 'Väntar', colorClass: 'bg-red-500 hover:bg-red-600 text-white' };
+    case 'cancelled': return { text: 'Avbrutet', colorClass: 'bg-gray-600 hover:bg-gray-700 text-white' };
+    default: return { text: status || 'Okänd', colorClass: 'bg-gray-400 hover:bg-gray-500 text-white' };
   }
 };
 
-export const AdminPortal: React.FC = () => {
-  const { user, customer, signOut } = useAuth();
+// --- ADMIN PORTAL ---
+const AdminPortal: React.FC = () => {
+  const { customer, signOut } = useAuth();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [loadingValuations, setLoadingValuations] = useState(false);
+
+  // DATA STATES
   const [cases, setCases] = useState<Case[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [valuations, setValuations] = useState<Valuation[]>([]);
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [selectedRequest, setSelectedRequest] = useState<ContactRequest | null>(null);
+  // Kommentarstråd för valt ärende (samma tabell som i CustomerPortal)
+  const [caseComments, setCaseComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
 
-  const [mainTab, setMainTab] = useState<
-    "cases" | "contact_requests" | "customers" | "subscriptions" | "valuations"
-  >("cases");
+  // DIALOG STATES
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null); // behåll om du behöver referens
+  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+  const [showCaseDialog, setShowCaseDialog] = useState(false);
+  const [showNewCase, setShowNewCase] = useState(false);
+  const [newCaseForCustomerId, setNewCaseForCustomerId] = useState<string | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
-  // ---- FETCH HELPERS ----
-  const fetchCases = async () => {
-    const { data, error } = await supabase
-      .from("cases")
-      .select("*, customer:customer_id(*), service_type:service_type_id(*)")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    setCases(data || []);
+  // EDIT CASE state (EN implementation)
+  const [editCaseId, setEditCaseId] = useState<string | null>(null);
+  const [editCase, setEditCase] = useState<Case | null>(null);
+
+  // Öppna ett ärende för redigering + ladda kommentarstråd
+  const openCaseForEdit = async (c: Case) => {
+    setEditCaseId(c.id);
+    setEditCase(c);
+    setNewCaseForCustomerId(c.customer_id ?? null);
+    // ladda kommentarstråd innan vi visar formuläret så NewCaseForm får dem direkt
+    try {
+      if (c.id) await fetchCaseComments(c.id);
+    } catch (err) {
+      console.error("Failed to fetch comments before opening edit:", err);
+    }
+    setSelectedCase(c);
+    setSelectedCaseId(c.id);
+    setShowNewCase(true);
   };
 
-  const fetchCustomers = async () => {
-    const { data, error } = await supabase
-      .from("customers")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    setCustomers(data || []);
+  // Öppna dialog för att visa ärende och kommentarer
+  const openCaseDialog = (c: Case) => {
+    setSelectedCase(c);
+    setSelectedCaseId(c.id);
+    fetchCaseComments(c.id);
+    setShowCaseDialog(true);
+  };
+  const closeCaseDialog = () => {
+    setShowCaseDialog(false);
+    setSelectedCase(null);
+    setSelectedCaseId(null);
+    setCaseComments([]);
   };
 
-  const fetchContactRequests = async () => {
-    const { data, error } = await supabase
-      .from("contact_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    setContactRequests(data || []);
-  };
+  // State för att skicka meddelande till kund (dialog)
+  const [showCustomerMessageDialog, setShowCustomerMessageDialog] = useState(false);
+  const [customerMessageText, setCustomerMessageText] = useState<string>("");
 
-  const fetchSubscriptions = async () => {
-    const { data, error } = await supabase
-      .from("subscriptions")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    setSubscriptions(data || []);
-  };
+  // TAB STATE
+  const [mainTab, setMainTab] = useState<"cases" | "subscriptions" | "valuations" | "customers" | "contact_requests">("cases");
 
-  const fetchValuations = async () => {
-    setLoadingValuations(true);
-    const { data, error } = await supabase
-      .from("valuations")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    const arr = (data || []).map((v: any) => ({
-      id: v.id,
-      created_at: v.created_at,
-      analysis_result: v.analysis_result ?? v.analysis ?? "",
-      image_urls: Array.isArray(v.image_urls) ? v.image_urls : [],
-    }));
-    setValuations(arr);
-    setLoadingValuations(false);
-  };
+  // Map för snabb uppslagning av kunder
+  const customerMap = useMemo(() => customers.reduce((acc, c) => { acc[c.id] = c; return acc; }, {} as Record<string, Customer>), [customers]);
 
-  // ---- INIT ----
-  useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        await Promise.allSettled([
-          fetchCases(),
-          fetchCustomers(),
-          fetchContactRequests(),
-          fetchSubscriptions(),
-          fetchValuations(),
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
+  // Derived aktuell vald kund från id (kan vara null)
+  const selectedCustomer = selectedCustomerId ? customerMap[selectedCustomerId] : null;
+
+  // --- FETCH FUNCTIONS ---
+  const fetchCustomers = useCallback(async () => {
+    const { data, error } = await supabase.from("customers").select("*").order("name", { ascending: false });
+    if (error) console.error(error); else setCustomers(data || []);
   }, []);
 
-  // ---- DELETE VALUATION ----
-  const deleteValuation = async (id: number) => {
-    if (!window.confirm("Vill du verkligen ta bort denna värdering?")) return;
-    const { error } = await supabase.from("valuations").delete().eq("id", id);
-    if (error) {
-      toast({ title: "Fel", description: "Kunde inte ta bort värdering", variant: "destructive" });
-    } else {
-      setValuations((prev) => prev.filter((v) => v.id !== id));
-      toast({ title: "Raderad", description: `Värdering #${id} togs bort.` });
+  const fetchCases = useCallback(async () => {
+    const { data, error } = await supabase.from("cases").select("*, service_type:service_type_id(*)").order("created_at", { ascending: false });
+    if (error) console.error(error); else setCases(data || []);
+  }, []);
+
+  const fetchSubscriptions = useCallback(async () => {
+    const { data, error } = await supabase.from("subscriptions").select("*").order("created_at", { ascending: false });
+    if (error) console.error(error); else setSubscriptions(data || []);
+  }, []);
+
+  const fetchValuations = useCallback(async () => {
+    const { data, error } = await supabase.from("valuations").select("*").order("created_at", { ascending: false });
+    if (error) console.error(error); else setValuations(data || []);
+  }, []);
+
+  const fetchContactRequests = useCallback(async () => {
+    const { data, error } = await supabase.from("contact_requests").select("*").order("created_at", { ascending: false });
+    if (error) console.error(error); else setContactRequests(data || []);
+  }, []);
+
+  const fetchCaseComments = async (caseId: string) => {
+    setLoadingComments(true);
+    try {
+      const { data, error } = await supabase
+        .from("case_comments")
+        .select(`
+          *,
+          author:customers(name)
+        `)
+        .eq("case_id", caseId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      setCaseComments(data || []);
+    } catch (err) {
+      console.error("Error fetching comments:", err);
+      setCaseComments([]);
+    } finally {
+      setLoadingComments(false);
     }
   };
 
-  // ---- UPDATE CASE STATE ----
-  const handleCaseUpdated = (updatedCase: Case) => {
-    setCases((prev) =>
-      prev.map((c) => (c.id === updatedCase.id ? updatedCase : c))
-    );
+  const addComment = async () => {
+    if (!newComment.trim() || !selectedCase) return;
+    try {
+      const { error } = await supabase
+        .from("case_comments")
+        .insert({
+          case_id: selectedCase.id,
+          author_id: null,
+          author_type: "admin",
+          content: newComment.trim(),
+        });
+
+      if (error) throw error;
+      setNewComment("");
+      await fetchCaseComments(selectedCase.id);
+      toast({ title: "Kommentar tillagd", description: "Kommentaren har skickats" });
+    } catch (err: any) {
+      console.error("Error adding comment:", err);
+      toast({ title: "Fel", description: "Kunde inte skicka kommentar", variant: "destructive" });
+    }
   };
 
-  if (!customer?.is_admin) {
-    return (
-      <div className="min-h-screen bg-soft-gray flex items-center justify-center">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-semibold mb-2">Ingen åtkomst</h2>
-            <p className="text-warm-gray">Du har inte admin-behörighet.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      await Promise.all([fetchCustomers(), fetchCases(), fetchSubscriptions(), fetchValuations(), fetchContactRequests()]);
+      setLoading(false);
+    };
+    fetchAll();
+  }, [fetchCustomers, fetchCases, fetchSubscriptions, fetchValuations, fetchContactRequests]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-soft-gray flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 text-trust-blue animate-spin mx-auto mb-4" />
-          <p className="text-warm-gray">Laddar admin-panel...</p>
-        </div>
-      </div>
-    );
-  }
+  // --- NEW CASE ---
+  const openNewCaseForm = (customerId?: string) => { if(customerId) setNewCaseForCustomerId(customerId); setShowNewCase(true); };
+  const closeNewCaseForm = () => { setShowNewCase(false); setNewCaseForCustomerId(null); setEditCaseId(null); setEditCase(null); };
+
+  const handleNewCaseFromCustomer = (customerId: string) => { openNewCaseForm(customerId); };
+
+  // --- STATUS UPDATES ---
+  const updateCaseStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("cases").update({ status }).eq("id", id);
+    if (error) toast({ title: "Fel", description: "Kunde inte uppdatera status", variant: "destructive" });
+    else fetchCases();
+  };
+  const updateSubscriptionStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("subscriptions").update({ status }).eq("id", id);
+    if (error) toast({ title: "Fel", description: "Kunde inte uppdatera abonnemang", variant: "destructive" });
+    else fetchSubscriptions();
+  };
+  const updateContactRequestStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("contact_requests").update({ status }).eq("id", id);
+    if (error) toast({ title: "Fel", description: "Kunde inte uppdatera kontakt", variant: "destructive" });
+    else fetchContactRequests();
+  };
+
+  const openCustomerMessageDialog = (customerId?: string) => {
+    if (customerId) setSelectedCustomerId(customerId);
+    setCustomerMessageText("");
+    setShowCustomerMessageDialog(true);
+  };
+  const closeCustomerMessageDialog = () => {
+    setShowCustomerMessageDialog(false);
+    setCustomerMessageText("");
+  };
+
+  const handleSendCustomerMessage = async () => {
+    if (!selectedCustomerId) {
+      toast({ title: "Fel", description: "Ingen kund vald", variant: "destructive" });
+      return;
+    }
+    if (!customerMessageText.trim()) {
+      toast({ title: "Fel", description: "Meddelandet får inte vara tomt", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.from("customer_comments").insert({
+      customer_id: selectedCustomerId,
+      comment: customerMessageText.trim(),
+      created_at: new Date().toISOString(),
+    });
+    if (error) {
+      toast({ title: "Fel", description: "Kunde inte skicka meddelande", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Skickat", description: "Meddelandet skickades till kunden." });
+    closeCustomerMessageDialog();
+    // inget automatiskt case-comments-upprop här (det är en annan tabell). Om du vill ladda något, kalla explicit.
+  };
 
   return (
-    <div className="min-h-screen bg-soft-gray">
+    <div className="min-h-screen bg-gray-50">
       <Tidio />
+
+      {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div>
-              <h1 className="text-xl font-semibold text-trust-blue">Admin Panel - Trygg Hand</h1>
-              <p className="text-sm text-warm-gray">Hantera ärenden och kunder</p>
-            </div>
-            <Button onClick={() => signOut()} variant="outline" size="sm">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logga ut
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+          <h1 className="text-xl font-bold text-blue-600">Admin Portal</h1>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-700">Inloggad som: {customer?.email ?? "Ingen inloggad"}</span>
+            <Button onClick={signOut} size="sm" variant="ghost">
+              <LogOut className="w-4 h-4 mr-2" /> Logga ut
             </Button>
           </div>
         </div>
       </header>
 
+      {/* Huvudinnehåll */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs
-          value={mainTab}
-          onValueChange={(v) =>
-            setMainTab(
-              v as "cases" | "contact_requests" | "customers" | "subscriptions" | "valuations"
-            )
-          }
-          className="space-y-6"
-        >
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="cases">Ärenden</TabsTrigger>
-            <TabsTrigger value="contact_requests">Kontakter</TabsTrigger>
-            <TabsTrigger value="customers">Kunder</TabsTrigger>
-            <TabsTrigger value="subscriptions">Abonnemang</TabsTrigger>
-            <TabsTrigger value="valuations">Värderingar</TabsTrigger>
+        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 bg-white shadow-md rounded-lg p-1">
+            <TabsTrigger value="cases">Ärenden ({cases.length})</TabsTrigger>
+            <TabsTrigger value="subscriptions">Abonnemang ({subscriptions.length})</TabsTrigger>
+            <TabsTrigger value="valuations">Värderingar ({valuations.length})</TabsTrigger>
+            <TabsTrigger value="customers">Kunder ({customers.length})</TabsTrigger>
+            <TabsTrigger value="contact_requests">Kontakt ({contactRequests.length})</TabsTrigger>
           </TabsList>
 
-          {/* === ÄRENDEN === */}
-          <TabsContent value="cases" className="space-y-6">
-            <h2 className="text-2xl font-bold">Ärenden</h2>
-            {cases.length === 0 ? (
-              <p>Inga ärenden hittades.</p>
-            ) : (
-              <div className="grid gap-4">
-                {cases.map((c) => (
-                  <Card
-                    key={c.id}
-                    className="cursor-pointer hover:shadow-md transition"
-                    onClick={() => setSelectedCaseId(c.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">{c.title}</h3>
-                          <p
-                            className="text-sm text-gray-500 underline cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (c.customer) setSelectedCustomer(c.customer);
-                            }}
-                          >
-                            {c.customer?.name ?? "Okänd kund"}
-                          </p>
-                          <p className="text-sm text-gray-400">{c.service_type?.name}</p>
+          {/* Ärenden */}
+          <TabsContent value="cases">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Ärenden</h2>
+              <Button onClick={() => openNewCaseForm()} className="px-3 py-2 bg-blue-600 text-white rounded">Nytt ärende</Button>
+            </div>
+            {cases.length === 0 ? <p>Inga ärenden hittades.</p> :
+              <div className="flex gap-6">
+                {/* Lista (vänster) */}
+                <div className="flex-1 grid gap-4">
+                  {cases.map(c => {
+                    const badge = getStatusBadge(c.status);
+                    return (
+                      <Card key={c.id} className="hover:shadow-lg cursor-pointer" onClick={() => openCaseForEdit(c)}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold">{c.title}</h3>
+                              <p className="text-sm text-gray-500">Kund: {c.customer_id ? (customerMap[c.customer_id]?.name ?? 'Okänd') : 'Okänd'}</p>
+                            </div>
+                            <Badge className={badge.colorClass}>{badge.text}</Badge>
+                          </div>
+                          <p className="text-sm mt-2 line-clamp-2">{c.description}</p>
+                          {/* Om du har knappar inuti kort som ska hantera egna handlingar, lägg på
+                              onClick={(e) => { e.stopPropagation(); // egen handling }} för att inte trigga kort‑click */}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                {/* Sidopanel (höger) — visar selectedCase och kommentarer */}
+                <div className="w-1/3">
+                  {selectedCase ? (
+                    <Card className="flex flex-col h-full">
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <MessageSquare className="w-5 h-5 mr-2" />
+                          Kommentarer
+                        </CardTitle>
+                        <CardDescription>Kommunicera om ärendet: {selectedCase.title}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex-1 flex flex-col">
+                        <div className="space-y-4 mb-6 overflow-auto flex-1">
+                          {loadingComments ? (
+                            <div className="text-center text-warm-gray">Laddar kommentarer...</div>
+                          ) : (
+                            caseComments.map((comment) => (
+                              <div key={comment.id} className={`p-3 rounded-lg ${comment.author_type === "customer" ? "bg-trust-blue/10 ml-4" : "bg-gray-100 mr-4"}`}>
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="text-sm font-medium">
+                                    {comment.author_type === "customer" ? (comment.author?.name ?? "Kund") : "Trygg Hand"}
+                                  </span>
+                                  <span className="text-xs text-warm-gray">
+                                    {comment.created_at ? format(new Date(comment.created_at), "dd MMM HH:mm", { locale: sv }) : ""}
+                                  </span>
+                                </div>
+                                <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                              </div>
+                            ))
+                          )}
                         </div>
-                        <Badge className={`${getStatusColor(c.status)} capitalize`}>
-                          {c.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm mt-2">{c.description}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* === KUNDER === */}
-          <TabsContent value="customers">
-            <h2 className="text-2xl font-bold mb-3">Kunder</h2>
-            {customers.length === 0 ? (
-              <p>Inga kunder hittades.</p>
-            ) : (
-              <div className="space-y-2">
-                {customers.map((c) => (
-                  <Card key={c.id} className="cursor-pointer" onClick={() => setSelectedCustomer(c)}>
-                    <CardContent className="p-3">
-                      <p className="font-medium">{c.name}</p>
-                      <p className="text-sm text-gray-500">{c.email}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* === KONTAKTER === */}
-          <TabsContent value="contact_requests">
-            <h2 className="text-2xl font-bold mb-3">Kontaktförfrågningar</h2>
-            {contactRequests.length === 0 ? (
-              <p>Inga kontaktförfrågningar.</p>
-            ) : (
-              <div className="space-y-2">
-                {contactRequests.map((r) => (
-                  <Card
-                    key={r.id}
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => setSelectedRequest(r)}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex justify-between">
-                        <div>
-                          <p className="font-medium">{r.name}</p>
-                          <p className="text-sm text-gray-500">{r.email}</p>
+                        <div className="space-y-3">
+                          <Textarea placeholder="Skriv en kommentar..." value={newComment} onChange={(e) => setNewComment(e.target.value)} className="min-h-[80px]" />
+                          <Button onClick={addComment} disabled={!newComment.trim() || loadingComments} className="w-full">Skicka kommentar</Button>
                         </div>
-                        <Badge className={getStatusColor(r.status)}>{r.status}</Badge>
-                      </div>
-                      <p className="text-sm mt-2">{r.message}</p>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card>
+                      <CardContent className="flex items-center justify-center">
+                        <p className="text-warm-gray">Välj ett ärende för att se kommentarer</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               </div>
-            )}
+            }
           </TabsContent>
 
-          {/* === ABONNEMANG === */}
+          {/* Abonnemang */}
           <TabsContent value="subscriptions">
-            <h2 className="text-2xl font-bold">Abonnemang</h2>
-            {subscriptions.length === 0 ? (
-              <p>Inga abonnemang hittades.</p>
-            ) : (
-              <div className="space-y-2">
-                {subscriptions.map((s) => (
-                  <Card key={s.id}>
-                    <CardContent className="p-3">
-                      <p className="font-medium">{s.category}</p>
-                      <p className="text-sm text-gray-500">{s.customer_id}</p>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Abonnemang</h2>
+            </div>
+            {subscriptions.length === 0 ? <p>Inga abonnemang hittades.</p> :
+              <div className="grid gap-4">
+                {subscriptions.map(s => {
+                  const customerName = s.customer_id ? customerMap[s.customer_id]?.name : 'Okänd kund';
+                  return (
+                    <Card key={s.id} className="cursor-pointer hover:shadow-lg">
+                      <CardContent className="p-4 flex flex-col gap-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold">{s.category}</p>
+                            <p className="text-sm text-gray-500">Kund: {customerName}</p>
+                            {s.provider && <p className="text-xs text-gray-500">Leverantör: {s.provider}</p>}
+                          </div>
+                          <Badge variant="secondary">{s.status}</Badge>
+                        </div>
+                        <Select value={s.status} onValueChange={(v) => { updateSubscriptionStatus(s.id, v); }}>
+                          <SelectTrigger className="mt-2 w-[140px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Väntande</SelectItem>
+                            <SelectItem value="in_progress">Pågår</SelectItem>
+                            <SelectItem value="completed">Avslutad</SelectItem>
+                            <SelectItem value="cancelled">Avbruten</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button size="sm" variant="outline" onClick={() => openNewCaseForm(s.customer_id)}>Nytt ärende för kund</Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            }
+          </TabsContent>
+
+          {/* Värderingar */}
+          <TabsContent value="valuations">
+            <h2 className="text-2xl font-bold mb-4">Värderingar</h2>
+            {valuations.length === 0 ? <p>Inga värderingar skapade ännu.</p> :
+              <div className="grid gap-4">
+                {valuations.map(v => (
+                  <Card key={v.id} className="p-4 relative">
+                    <button className="absolute top-2 right-2 text-gray-400 hover:text-red-600"><X className="w-4 h-4"/></button>
+                    <p className="font-medium">{v.name || 'Namnlös värdering'}</p>
+                    <p className="text-sm text-gray-500">{format(new Date(v.created_at), "dd MMM yyyy HH:mm", { locale: sv })}</p>
+                    <p className="text-sm mt-1">Kund: {v.customer_name}</p>
+                    {v.image_urls.length > 0 && (
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {v.image_urls.map((url, i) => <img key={i} src={url} alt={`Bild ${i+1}`} className="w-16 h-16 object-cover rounded-md border" />)}
+                      </div>
+                    )}
+                    <p className="text-sm mt-2 whitespace-pre-wrap">{v.analysis_result}</p>
+                  </Card>
+                ))}
+              </div>
+            }
+          </TabsContent>
+
+          {/* Kunder */}
+          <TabsContent value="customers">
+            <h2 className="text-2xl font-bold mb-4">Kunder</h2>
+            {customers.length === 0 ? <p>Inga kunder hittades.</p> :
+              <div className="grid gap-4">
+                {customers.map(c => (
+                  <Card key={c.id} className="cursor-pointer hover:shadow-lg flex justify-between items-center">
+                    <CardContent className="flex justify-between items-center w-full">
+                      <div>
+                        <p className="font-semibold">{c.name}</p>
+                        <p className="text-sm">{c.email}</p>
+                        {c.personal_number && <p className="text-sm">Personnummer: {c.personal_number}</p>}
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => handleNewCaseFromCustomer(c.id)}>
+                        <Plus className="w-4 h-4 mr-1"/> Ärende
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
               </div>
-            )}
+            }
           </TabsContent>
 
-          {/* === VÄRDERINGAR === */}
-          <TabsContent value="valuations" className="space-y-6">
-            <h2 className="text-2xl font-bold">Värderingar</h2>
-            {loadingValuations ? (
-              <div className="text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
-            ) : valuations.length === 0 ? (
-              <p>Inga värderingar skapade ännu.</p>
-            ) : (
-              <div className="space-y-3">
-                {valuations.map((v) => (
-                  <div key={v.id} className="bg-white p-4 border rounded relative">
-                    <button
-                      onClick={() => deleteValuation(v.id)}
-                      className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <div>
-                      <p className="font-medium text-sm">#{v.id}</p>
-                      <p className="text-xs text-gray-500">
-                        {format(new Date(v.created_at), "dd MMM yyyy HH:mm", { locale: sv })}
-                      </p>
-                    </div>
-                    {v.image_urls.length > 0 && (
-                      <img
-                        src={v.image_urls[0]}
-                        alt="valuation"
-                        className="w-20 h-20 object-cover rounded mt-2"
-                      />
-                    )}
-                    <p className="text-sm mt-2 whitespace-pre-wrap">
-                      {v.analysis_result}
-                    </p>
-                  </div>
-                ))}
+          {/* Kontakt */}
+          <TabsContent value="contact_requests">
+            <h2 className="text-2xl font-bold mb-4">Kontaktförfrågningar</h2>
+            {contactRequests.length === 0 ? <p>Inga kontaktförfrågningar.</p> :
+              <div className="grid gap-4">
+                {contactRequests.map(r => {
+                  const badge = getStatusBadge(r.status);
+                  return (
+                    <Card key={r.id} className="cursor-pointer hover:shadow-lg">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold">{r.name}</p>
+                            <p className="text-sm text-gray-500">{r.email}</p>
+                          </div>
+                          <Badge className={badge.colorClass}>{badge.text}</Badge>
+                        </div>
+                        <p className="text-sm mt-2 line-clamp-2">{r.message}</p>
+                        <Select value={r.status} onValueChange={(v) => { updateContactRequestStatus(r.id, v); }}>
+                          <SelectTrigger className="mt-2 w-[140px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Väntande</SelectItem>
+                            <SelectItem value="in_progress">Pågår</SelectItem>
+                            <SelectItem value="completed">Avslutad</SelectItem>
+                            <SelectItem value="cancelled">Avbruten</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
-            )}
+            }
           </TabsContent>
         </Tabs>
       </div>
 
-      {selectedCaseId && (
-        <EditCaseDialog
-          caseId={selectedCaseId}
-          onClose={() => setSelectedCaseId(null)}
-          onCaseUpdated={handleCaseUpdated}
-        />
-      )}
-
-      {selectedCustomer && (
-        <CustomerDialog
-          customer={selectedCustomer}
-          onClose={() => setSelectedCustomer(null)}
-        />
-      )}
-
-      {selectedRequest && (
-        <ContactRequestDialog
-          request={selectedRequest}
-          onClose={() => setSelectedRequest(null)}
-          onUpdated={fetchContactRequests}
+      {/* === DIALOGS === */}
+      {mainTab === "cases" && showNewCase && (
+        <NewCaseForm 
+          customers={customers}
+          defaultCustomerId={newCaseForCustomerId}
+          caseToEdit={editCase ?? undefined}
+          caseComments={caseComments}
+          fetchCaseComments={fetchCaseComments}
+          onCaseSaved={async () => { await fetchCases(); closeNewCaseForm(); }}
+          onCancel={closeNewCaseForm}
         />
       )}
     </div>

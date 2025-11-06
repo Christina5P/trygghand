@@ -1,42 +1,37 @@
 import React, { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { ContactRequest } from "./AdminPortal";
 import { useToast } from "@/hooks/use-toast";
 
 interface ContactRequestDialogProps {
-  request: ContactRequest;
+  contact: {
+    id: string;
+    name: string;
+    email: string;
+    message: string;
+    status: string;
+  };
   onClose: () => void;
-  onUpdated: () => void;
+  onUpdate?: () => void;
 }
 
-const statusOptions = ["new", "contacted", "quoted", "converted", "closed"];
-
-const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({ request, onClose, onUpdated }) => {
+const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({ contact, onClose, onUpdate }) => {
   const { toast } = useToast();
-  const [status, setStatus] = useState(request.status);
-  const [adminNotes, setAdminNotes] = useState(request.admin_notes ?? "");
+  const [status, setStatus] = useState(contact.status);
+  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const saveChanges = async () => {
+  const handleSave = async () => {
     setSaving(true);
     try {
       const { error } = await supabase
         .from("contact_requests")
-        .update({ status, admin_notes: adminNotes })
-        .eq("id", request.id);
+        .update({ status, admin_notes: notes })
+        .eq("id", contact.id);
       if (error) throw error;
       toast({ title: "Uppdaterad", description: "Kontaktförfrågan uppdaterad." });
-      onUpdated();
+      if (onUpdate) onUpdate();
       onClose();
     } catch (err) {
       console.error(err);
@@ -48,48 +43,35 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({ request, on
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Kontaktförfrågan: {request.name}</DialogTitle>
-          <DialogDescription>
-            E-post: {request.email} <br />
-            Skapad: {request.created_at ? new Date(request.created_at).toLocaleString("sv-SE") : "-"}
-          </DialogDescription>
+          <DialogTitle>Kontaktförfrågan</DialogTitle>
         </DialogHeader>
-
-        <div className="mt-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Meddelande</label>
-            <Textarea value={request.message} readOnly className="bg-gray-100" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full border rounded px-2 py-1"
-            >
-              {statusOptions.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
+        <div className="space-y-2">
+          <p><strong>Namn:</strong> {contact.name}</p>
+          <p><strong>Email:</strong> {contact.email}</p>
+          <p><strong>Meddelande:</strong> {contact.message}</p>
+          <label className="block">
+            Status:
+            <select value={status} onChange={e => setStatus(e.target.value)} className="w-full mt-1 border rounded px-2 py-1">
+              <option value="new">Ny</option>
+              <option value="contacted">Kontaktad</option>
+              <option value="quoted">Offert</option>
+              <option value="converted">Konverterad</option>
+              <option value="closed">Stängd</option>
             </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Admin-anteckningar</label>
-            <Textarea
-              value={adminNotes}
-              onChange={(e) => setAdminNotes(e.target.value)}
-              placeholder="Skriv anteckningar..."
+          </label>
+          <label className="block">
+            Anteckningar:
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              className="w-full mt-1 border rounded px-2 py-1"
             />
-          </div>
-
-          <div className="flex justify-end space-x-2">
+          </label>
+          <div className="flex justify-end space-x-2 mt-4">
             <Button variant="outline" onClick={onClose}>Avbryt</Button>
-            <Button onClick={saveChanges} disabled={saving}>
-              {saving ? "Sparar..." : "Spara"}
-            </Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? "Sparar..." : "Spara"}</Button>
           </div>
         </div>
       </DialogContent>

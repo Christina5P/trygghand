@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .from('customers')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
     if (!error) setCustomer(data);
     else setCustomer(null);

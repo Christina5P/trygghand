@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         author_id: authorId,
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error saving comment from function:', error);
