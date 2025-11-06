@@ -16,16 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-// --- INTERFACES ---
-interface Customer { id: string; name: string; email?: string; personal_number?: string; }
-interface ServiceType { id: string; name: string; }
-interface Case { id: string; title: string; description: string; status: string; customer_id?: string; service_type: ServiceType | null; created_at: string; deadline?: string | null; }
-interface ContactRequest { id: string; name: string; email: string; message: string; created_at: string; status: string; }
-interface Subscription { id: string; category: string; customer_id?: string; provider?: string; notes?: string; valid_until?: string; status?: string; }
-interface Valuation { id: number; created_at: string; name?: string; analysis_result: string; image_urls: string[]; customer_id: string; customer_name?: string; }
-interface CustomerComment { id: number; customer_id: string; comment: string; created_at: string; }
-interface CaseEditShape { id: string; title: string; description: string; status: string; customer_id?: string; created_at?: string; deadline?: string | null; service_type?: ServiceType | null; }
+import type { Customer, Case, ServiceType, ContactRequest, Subscription, Valuation } from '../../types'; // <-- add this (adjust path if you use aliases)
 
 // --- Hjälpfunktion ---
 const getStatusBadge = (status: string) => {
@@ -62,6 +53,7 @@ const AdminPortal: React.FC = () => {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null); // behåll om du behöver referens
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [showCaseDialog, setShowCaseDialog] = useState(false);
+  const [showEditInOverlay, setShowEditInOverlay] = useState(false);
   const [showNewCase, setShowNewCase] = useState(false);
   const [newCaseForCustomerId, setNewCaseForCustomerId] = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
@@ -73,10 +65,10 @@ const AdminPortal: React.FC = () => {
 
   // Öppna ett ärende för redigering + ladda kommentarstråd
   const openCaseForEdit = async (c: Case) => {
+    console.log('[AdminPortal] openCaseForEdit called id=', c?.id);
     setEditCaseId(c.id);
     setEditCase(c);
     setNewCaseForCustomerId(c.customer_id ?? null);
-    // ladda kommentarstråd innan vi visar formuläret så NewCaseForm får dem direkt
     try {
       if (c.id) await fetchCaseComments(c.id);
     } catch (err) {
@@ -93,12 +85,14 @@ const AdminPortal: React.FC = () => {
     setSelectedCaseId(c.id);
     fetchCaseComments(c.id);
     setShowCaseDialog(true);
+    setShowEditInOverlay(false);
   };
   const closeCaseDialog = () => {
     setShowCaseDialog(false);
     setSelectedCase(null);
     setSelectedCaseId(null);
     setCaseComments([]);
+    setShowEditInOverlay(false);
   };
 
   // State för att skicka meddelande till kund (dialog)
@@ -222,7 +216,7 @@ const AdminPortal: React.FC = () => {
     if (error) toast({ title: "Fel", description: "Kunde inte uppdatera abonnemang", variant: "destructive" });
     else fetchSubscriptions();
   };
-  const updateContactRequestStatus = async (id: string, status: string) => {
+  const updateContactRequestStatus = async (id: string, status?: string) => {
     const { error } = await supabase.from("contact_requests").update({ status }).eq("id", id);
     if (error) toast({ title: "Fel", description: "Kunde inte uppdatera kontakt", variant: "destructive" });
     else fetchContactRequests();
@@ -261,8 +255,9 @@ const AdminPortal: React.FC = () => {
     // inget automatiskt case-comments-upprop här (det är en annan tabell). Om du vill ladda något, kalla explicit.
   };
 
-  // debug: se vad som styr render av NewCaseForm
-  console.log("[AdminPortal] render states:", { mainTab, showNewCase, editCaseId, editCase });
+  useEffect(() => {
+    if (showCustomerDialog) console.log('[AdminPortal] showCustomerDialog for selectedCustomerId=', selectedCustomerId);
+  }, [showCustomerDialog, selectedCustomerId]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -415,20 +410,23 @@ const AdminPortal: React.FC = () => {
             <h2 className="text-2xl font-bold mb-4">Värderingar</h2>
             {valuations.length === 0 ? <p>Inga värderingar skapade ännu.</p> :
               <div className="grid gap-4">
-                {valuations.map(v => (
-                  <Card key={v.id} className="p-4 relative">
-                    <button className="absolute top-2 right-2 text-gray-400 hover:text-red-600"><X className="w-4 h-4"/></button>
-                    <p className="font-medium">{v.name || 'Namnlös värdering'}</p>
-                    <p className="text-sm text-gray-500">{format(new Date(v.created_at), "dd MMM yyyy HH:mm", { locale: sv })}</p>
-                    <p className="text-sm mt-1">Kund: {v.customer_name}</p>
-                    {v.image_urls.length > 0 && (
-                      <div className="flex gap-2 mt-2 flex-wrap">
-                        {v.image_urls.map((url, i) => <img key={i} src={url} alt={`Bild ${i+1}`} className="w-16 h-16 object-cover rounded-md border" />)}
-                      </div>
-                    )}
-                    <p className="text-sm mt-2 whitespace-pre-wrap">{v.analysis_result}</p>
-                  </Card>
-                ))}
+                {valuations.map(v => {
+                  const date = v.created_at ? new Date(v.created_at) : null;
+                  return (
+                    <Card key={v.id} className="p-4 relative">
+                      <button className="absolute top-2 right-2 text-gray-400 hover:text-red-600"><X className="w-4 h-4"/></button>
+                      <p className="font-medium">{v.name || 'Namnlös värdering'}</p>
+                      <p className="text-sm text-gray-500">{date ? format(date, "dd MMM yyyy HH:mm", { locale: sv }) : '—'}</p>
+                      <p className="text-sm mt-1">Kund: {v.customer_name}</p>
+                      {v.image_urls.length > 0 && (
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {v.image_urls.map((url, i) => <img key={i} src={url} alt={`Bild ${i+1}`} className="w-16 h-16 object-cover rounded-md border" />)}
+                        </div>
+                      )}
+                      <p className="text-sm mt-2 whitespace-pre-wrap">{v.analysis}</p>
+                    </Card>
+                  );
+                })}
               </div>
             }
           </TabsContent>
@@ -450,9 +448,7 @@ const AdminPortal: React.FC = () => {
                         <p className="text-sm">{c.email}</p>
                         {c.personal_number && <p className="text-sm">Personnummer: {c.personal_number}</p>}
                       </div>
-                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleNewCaseFromCustomer(c.id); }}>
-                        <Plus className="w-4 h-4 mr-1"/> Ärende
-                      </Button>
+                      {/* Ärendeknappen borttagen */}
                     </CardContent>
                   </Card>
                 ))}
@@ -478,7 +474,7 @@ const AdminPortal: React.FC = () => {
                           <Badge className={badge.colorClass}>{badge.text}</Badge>
                         </div>
                         <p className="text-sm mt-2 line-clamp-2">{r.message}</p>
-                        <Select value={r.status} onValueChange={(v) => { updateContactRequestStatus(r.id, v); }}>
+                        <Select value={r.status} onValueChange={(v) => { updateContactRequestStatus(r.id, v ?? ''); }}>
                           <SelectTrigger className="mt-2 w-[140px]"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="pending">Väntande</SelectItem>
@@ -504,7 +500,85 @@ const AdminPortal: React.FC = () => {
           onClose={() => { setShowCustomerDialog(false); setSelectedCustomerId(null); }}
           onCustomerUpdated={async () => { await fetchCustomers(); setShowCustomerDialog(false); }}
           onNewCase={(customerId: string) => { handleNewCaseFromCustomer(customerId); }}
+          onOpenCase={openCaseDialog}   // öppna ärende som overlay ovanpå kundkortet
         />
+      )}
+
+      {/* Case overlay (visas ovanpå kunddialogen) */}
+      {showCaseDialog && selectedCase && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-xl font-bold">{selectedCase.title}</h3>
+                <p className="text-sm text-gray-500">Kund: {selectedCase.customer_id ? (customerMap[selectedCase.customer_id]?.name ?? 'Okänd') : 'Okänd'}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => { setShowEditInOverlay(true); setEditCase(selectedCase); }}>Redigera</Button>
+                <button onClick={closeCaseDialog} className="text-gray-500 hover:text-gray-800">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {showEditInOverlay && editCase ? (
+              <div className="max-h-[70vh] overflow-auto">
+                <NewCaseForm
+                  customers={customers}
+                  defaultCustomerId={editCase.customer_id ?? undefined}
+                  caseToEdit={editCase}
+                  caseComments={caseComments}
+                  fetchCaseComments={fetchCaseComments}
+                  onCaseSaved={async () => {
+                    await fetchCases();
+                    // uppdatera kommentarer och view
+                    if (editCase.id) await fetchCaseComments(editCase.id);
+                    setShowEditInOverlay(false);
+                  }}
+                  onCancel={() => setShowEditInOverlay(false)}
+                />
+              </div>
+            ) : (
+             <div className="max-h-[60vh] overflow-auto space-y-4">
+               <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedCase.description}</p>
+
+               <div>
+                 <h4 className="font-medium mb-2">Kommentarer</h4>
+                 {loadingComments ? (
+                   <p className="text-sm text-gray-500">Laddar kommentarer...</p>
+                 ) : caseComments.length === 0 ? (
+                   <p className="text-sm text-gray-500">Inga kommentarer</p>
+                 ) : (
+                   <div className="space-y-3">
+                     {caseComments.map((comment) => (
+                       <div key={comment.id} className={`p-3 rounded-lg ${comment.author_type === "customer" ? "bg-trust-blue/10 ml-4" : "bg-gray-100 mr-4"}`}>
+                         <div className="flex justify-between items-start mb-2">
+                           <span className="text-sm font-medium">
+                             {comment.author_type === "customer" ? (comment.author?.name ?? "Kund") : "Trygg Hand"}
+                           </span>
+                           <span className="text-xs text-warm-gray">
+                             {comment.created_at ? format(new Date(comment.created_at), "dd MMM HH:mm", { locale: sv }) : ""}
+                           </span>
+                         </div>
+                         <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+                <div className="mt-4">
+                  <Textarea placeholder="Skriv en kommentar..." value={newComment} onChange={(e) => setNewComment(e.target.value)} className="min-h-[80px]" />
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button onClick={addComment} disabled={!newComment.trim() || loadingComments}>Skicka kommentar</Button>
+                  </div>
+                </div>
+               </div>
+             </div>
+            )}
+            <div className="mt-4 flex gap-2 justify-end">
+              <Button variant="ghost" onClick={closeCaseDialog}>Stäng</Button>
+            </div>
+          </div>
+        </div>
       )}
       {mainTab === "cases" && showNewCase && (
         <NewCaseForm 
