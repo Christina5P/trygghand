@@ -192,8 +192,20 @@ const AdminPortal: React.FC = () => {
   }, [fetchCustomers, fetchCases, fetchSubscriptions, fetchValuations, fetchContactRequests]);
 
   // --- NEW CASE ---
-  const openNewCaseForm = (customerId?: string) => { if(customerId) setNewCaseForCustomerId(customerId); setShowNewCase(true); };
-  const closeNewCaseForm = () => { setShowNewCase(false); setNewCaseForCustomerId(null); setEditCaseId(null); setEditCase(null); };
+  // Öppna nytt ärende — rensa edit/state så formuläret verkligen blir CREATE (inte edit)
+  const openNewCaseForm = (customerId?: string) => {
+    console.log("[AdminPortal] openNewCaseForm called, customerId=", customerId);
+    // säkerställ att vi står i Ärenden-fliken
+    setMainTab("cases");
+    setEditCaseId(null);
+    setEditCase(null);
+    setSelectedCase(null);
+    setSelectedCaseId(null);
+    setCaseComments([]);
+    setNewCaseForCustomerId(customerId ?? null);
+    setShowNewCase(true);
+  };
+  const closeNewCaseForm = () => { setShowNewCase(false); setNewCaseForCustomerId(null); setEditCaseId(null); setEditCase(null); setSelectedCase(null); setSelectedCaseId(null); setCaseComments([]); };
 
   const handleNewCaseFromCustomer = (customerId: string) => { openNewCaseForm(customerId); };
 
@@ -247,6 +259,9 @@ const AdminPortal: React.FC = () => {
     // inget automatiskt case-comments-upprop här (det är en annan tabell). Om du vill ladda något, kalla explicit.
   };
 
+  // debug: se vad som styr render av NewCaseForm
+  console.log("[AdminPortal] render states:", { mainTab, showNewCase, editCaseId, editCase });
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Tidio />
@@ -279,7 +294,7 @@ const AdminPortal: React.FC = () => {
           <TabsContent value="cases">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">Ärenden</h2>
-              <Button onClick={() => openNewCaseForm()} className="px-3 py-2 bg-blue-600 text-white rounded">Nytt ärende</Button>
+              <Button type="button" onClick={(e) => { e.stopPropagation(); openNewCaseForm(); }} className="px-3 py-2 bg-blue-600 text-white rounded">Nytt ärende</Button>
             </div>
             {cases.length === 0 ? <p>Inga ärenden hittades.</p> :
               <div className="flex gap-6">
