@@ -20,15 +20,20 @@ import ContactRequestDialog from "../ContactRequestDialog"; // justera sökväg 
 import type { Customer, Case, ServiceType, ContactRequest, Subscription, Valuation } from '../../types'; // <-- add this (adjust path if you use aliases)
 
 // --- Hjälpfunktion ---
-const getStatusBadge = (status: string) => {
-  const normalized = (status || '').toLowerCase().trim();
+const getStatusBadge = (status?: string) => {
+  const normalized = (status ?? '').toLowerCase().trim();
   switch(normalized){
-    case 'pending': case 'nytt': return { text: 'Nytt', colorClass: 'bg-blue-500 hover:bg-blue-600 text-white' };
-    case 'in_progress': case 'pågående': return { text: 'Pågående', colorClass: 'bg-yellow-500 hover:bg-yellow-600 text-black' };
+    // kontaktförfrågnings‑värden (DB canonical)
+    case 'new': case 'ny': case 'nytt': return { text: 'Ny', colorClass: 'bg-blue-500 hover:bg-blue-600 text-white' };
+    case 'contacted': case 'kontaktad': return { text: 'Kontaktad', colorClass: 'bg-yellow-500 hover:bg-yellow-600 text-black' };
+    case 'converted': case 'kund': return { text: 'Kund', colorClass: 'bg-green-500 hover:bg-green-600 text-white' };
+    case 'closed': case 'stängd': return { text: 'Stängd', colorClass: 'bg-gray-600 hover:bg-gray-700 text-white' };
+    // legacy / other cases (keep existing mappings)
+    case 'pending': case 'in_progress': case 'pågående': return { text: 'Pågående', colorClass: 'bg-yellow-500 hover:bg-yellow-600 text-black' };
     case 'completed': case 'avslutat': return { text: 'Avslutat', colorClass: 'bg-green-500 hover:bg-green-600 text-white' };
     case 'waiting': case 'väntar': return { text: 'Väntar', colorClass: 'bg-red-500 hover:bg-red-600 text-white' };
-    case 'cancelled': return { text: 'Avbrutet', colorClass: 'bg-gray-600 hover:bg-gray-700 text-white' };
-    default: return { text: status || 'Okänd', colorClass: 'bg-gray-400 hover:bg-gray-500 text-white' };
+    case 'cancelled': case 'avbrutet': return { text: 'Avbrutet', colorClass: 'bg-gray-600 hover:bg-gray-700 text-white' };
+    default: return { text: status ?? 'Okänd', colorClass: 'bg-gray-400 hover:bg-gray-500 text-white' };
   }
 };
 
@@ -272,6 +277,59 @@ const AdminPortal: React.FC = () => {
     if (showCustomerDialog) console.log('[AdminPortal] showCustomerDialog for selectedCustomerId=', selectedCustomerId);
   }, [showCustomerDialog, selectedCustomerId]);
 
+  // --- KONVERTERA KONTAKT TILL KUND ---
+  const convertContactToCustomer = async (c: ContactRequest) => {
+    try {
+      console.log("[AdminPortal] convertContactToCustomer", c.id);
+      // bygg endast payload med kolumner som faktiskt finns i customers
+      const payload: any = {
+        id: crypto?.randomUUID?.() ?? Date.now().toString(), // generate client UUID
+        name: c.name ?? '',
+        email: c.email ?? ''
+      };
+      if (c.phone) payload.phone = c.phone;
+      if (c.address) payload.address = c.address;
+      // använd personal_number only if present on contact
+      if ((c as any).personal_number) payload.personal_number = (c as any).personal_number;
+
+      const { data: newCustomer, error: insertErr } = await supabase
+        .from("customers")
+        .insert([payload])
+        .select()
+        .single();
+
+      if (insertErr) {
+        console.error("Failed to create customer from contact:", insertErr);
+        toast({ title: "Fel", description: "Kunde inte skapa kund", variant: "destructive" });
+        return;
+      }
+
+      // uppdatera kontaktens status till ett DB-giltigt värde
+      const { error: updErr } = await supabase
+        .from("contact_requests")
+        .update({ status: "completed" }) // 'completed' är i ditt CHECK
+        .eq("id", c.id);
+
+      if (updErr) {
+        console.error("Failed to update contact status:", updErr);
+        toast({ title: "Fel", description: "Kunde inte uppdatera kontaktens status", variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Konverterad", description: "Kontakt konverterad till kund" });
+      await fetchCustomers();
+      await fetchContactRequests();
+
+      if (newCustomer?.id) {
+        setSelectedCustomerId(newCustomer.id);
+        setShowCustomerDialog(true);
+      }
+    } catch (err) {
+      console.error("convertContactToCustomer error:", err);
+      toast({ title: "Fel", description: "Konvertering misslyckades", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Tidio />
@@ -491,13 +549,13 @@ const AdminPortal: React.FC = () => {
                           <Badge className={badge.colorClass}>{badge.text}</Badge>
                         </div>
                         <p className="text-sm mt-2 line-clamp-2">{r.message}</p>
-                        <Select value={r.status} onValueChange={(v) => { updateContactRequestStatus(r.id, v ?? ''); }}>
+                        <Select value={r.status ?? 'new'} onValueChange={(v) => { updateContactRequestStatus(r.id, v ?? 'new'); }}>
                           <SelectTrigger className="mt-2 w-[140px]"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="pending">Väntande</SelectItem>
-                            <SelectItem value="in_progress">Pågår</SelectItem>
-                            <SelectItem value="completed">Avslutad</SelectItem>
-                            <SelectItem value="cancelled">Avbruten</SelectItem>
+                            <SelectItem value="new">Ny</SelectItem>
+                            <SelectItem value="contacted">Kontaktad</SelectItem>
+                            <SelectItem value="converted">Kund</SelectItem>
+                            <SelectItem value="closed">Stängd</SelectItem>
                           </SelectContent>
                         </Select>
                       </CardContent>
@@ -613,6 +671,12 @@ const AdminPortal: React.FC = () => {
           contact={selectedContact as any}
           onClose={closeContactDialog}
           onUpdate={async () => { await fetchContactRequests(); closeContactDialog(); }}
+          onConvert={async (contact) => {
+            // reuse your convertContactToCustomer helper
+            await convertContactToCustomer(contact);
+            closeContactDialog();
+            // optionally refresh lists here (fetchContactRequests(), fetchCustomers(), etc.)
+          }}
         />
       )}
     </div>
