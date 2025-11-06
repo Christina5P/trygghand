@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       content: newComment,
       author_id: authorId,
       author_type: 'admin', // Eftersom detta är admin-panelen
-    }).single();
+    }).maybeSingle();
 
     if (error) {
       console.error('Supabase insert error:', error.message);
