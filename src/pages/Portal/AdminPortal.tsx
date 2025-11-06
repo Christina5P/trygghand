@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import ContactRequestDialog from "../ContactRequestDialog"; // justera sökväg om du använder alias
 import type { Customer, Case, ServiceType, ContactRequest, Subscription, Valuation } from '../../types'; // <-- add this (adjust path if you use aliases)
 
 // --- Hjälpfunktion ---
@@ -58,6 +59,8 @@ const AdminPortal: React.FC = () => {
   const [newCaseForCustomerId, setNewCaseForCustomerId] = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  const [showContactDialog, setShowContactDialog] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<ContactRequest | null>(null);
 
   // EDIT CASE state (EN implementation)
   const [editCaseId, setEditCaseId] = useState<string | null>(null);
@@ -253,6 +256,16 @@ const AdminPortal: React.FC = () => {
     toast({ title: "Skickat", description: "Meddelandet skickades till kunden." });
     closeCustomerMessageDialog();
     // inget automatiskt case-comments-upprop här (det är en annan tabell). Om du vill ladda något, kalla explicit.
+  };
+
+  const openContactDialog = (c: ContactRequest) => {
+    console.log("[AdminPortal] openContactDialog", c?.id);
+    setSelectedContact(c);
+    setShowContactDialog(true);
+  };
+  const closeContactDialog = () => {
+    setShowContactDialog(false);
+    setSelectedContact(null);
   };
 
   useEffect(() => {
@@ -464,7 +477,11 @@ const AdminPortal: React.FC = () => {
                 {contactRequests.map(r => {
                   const badge = getStatusBadge(r.status);
                   return (
-                    <Card key={r.id} className="cursor-pointer hover:shadow-lg">
+                   <Card
+                    key={r.id}
+                    className="cursor-pointer hover:shadow-lg"
+                    onClick={() => openContactDialog(r)} // 👈 öppnar dialogen
+                    >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">
                           <div>
@@ -589,6 +606,13 @@ const AdminPortal: React.FC = () => {
           fetchCaseComments={fetchCaseComments}
           onCaseSaved={async () => { await fetchCases(); closeNewCaseForm(); }}
           onCancel={closeNewCaseForm}
+        />
+      )}
+      {showContactDialog && selectedContact && (
+        <ContactRequestDialog
+          contact={selectedContact as any}
+          onClose={closeContactDialog}
+          onUpdate={async () => { await fetchContactRequests(); closeContactDialog(); }}
         />
       )}
     </div>

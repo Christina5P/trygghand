@@ -24,12 +24,17 @@ export interface Case {
 
 export interface ContactRequest {
   id: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-  message?: string;
+  name: string;        // required
+  email: string | null;      // required
+  phone?: string 
+  company?: string | null;
+  address?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  message: string;     // required
   status?: 'new' | 'handled' | string;
   created_at?: string | null;
+  admin_notes?: string | null;
 }
 
 export interface Subscription {
