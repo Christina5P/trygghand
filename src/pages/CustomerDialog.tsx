@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Customer } from "../types";
+import type { Customer, Case } from "../types";
 import { supabase } from "@/lib/supabase";
 
 // Exempel på nödvändiga interfaces, dessa måste vara definierade eller importerade
@@ -13,10 +13,11 @@ interface CustomerDialogProps {
   onClose: () => void;
   onCustomerUpdated: () => Promise<void>;
   onNewCase: (customerId: string) => void;
+  onOpenCase?: (c: Case) => void;
 }
 
 // Antag att denna funktion är din huvudkomponent
-const CustomerDialog: React.FC<CustomerDialogProps> = ({ customer, onClose, onCustomerUpdated, onNewCase }) => {
+const CustomerDialog: React.FC<CustomerDialogProps> = ({ customer, onClose, onCustomerUpdated, onNewCase, onOpenCase }) => {
   const [isEditing, setIsEditing] = useState(false);
 
   // snapshot of original data (kept so we can show "före" after save)
@@ -25,11 +26,34 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({ customer, onClose, onCu
   const [editedCustomer, setEditedCustomer] = useState<Customer>(customer);
   // after saving we can show a before/after comparison
   const [showComparison, setShowComparison] = useState(false);
+  const [customerCases, setCustomerCases] = useState<Case[]>([]);
+  const [loadingCases, setLoadingCases] = useState(false);
 
   useEffect(() => {
     // update local copies if prop changes
     setOriginalCustomer(customer);
     setEditedCustomer(customer);
+    // load customer's cases
+    const load = async () => {
+      if (!customer?.id) { setCustomerCases([]); return; }
+      setLoadingCases(true);
+      try {
+        const { data, error } = await supabase
+          .from("cases")
+          .select("*, service_type:service_type_id(*)")
+          .eq("customer_id", customer.id)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        console.log("[CustomerDialog] fetched cases for customer", customer.id, "count=", data?.length, data);
+        setCustomerCases(data || []);
+      } catch (err) {
+        console.error("[CustomerDialog] fetch cases error:", err);
+        setCustomerCases([]);
+      } finally {
+        setLoadingCases(false);
+      }
+    };
+    load();
   }, [customer]);
 
   const handleSave = async () => {
@@ -106,6 +130,37 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({ customer, onClose, onCu
           <>
             <p className="mt-4">Email: {originalCustomer.email}</p>
             {originalCustomer.personal_number && <p>Personnummer: {originalCustomer.personal_number}</p>}
+            <div className="mt-4">
+              <h4 className="font-medium">Ärenden</h4>
+              {loadingCases ? (
+                <p className="text-sm text-gray-500">Laddar ärenden...</p>
+              ) : customerCases.length === 0 ? (
+                <p className="text-sm text-gray-500">Inga ärenden</p>
+              ) : (
+                <div className="mt-2 space-y-2">
+                  {customerCases.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        console.log('[CustomerDialog] case clicked id=', c.id);
+                        if (typeof onOpenCase === "function") onOpenCase(c);
+                        // do not call onClose() here — keep kunddialogen öppnad under ärende‑modalen
+                      }}
+                      className="w-full text-left p-2 rounded border hover:shadow-sm"
+                      title={c.description}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="font-medium">{c.title}</div>
+                          <div className="text-xs text-gray-500">{c.service_type?.name ?? ''}</div>
+                        </div>
+                        <div className="text-xs text-gray-500">{c.status}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         )}
 
