@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, LogOut, X, MessageSquare } from "lucide-react";
 import NewCaseForm from "../NewCaseForm";
+import CustomerDialog from "../CustomerDialog";
 import Tidio from "@/components/Tidio";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
@@ -64,6 +65,7 @@ const AdminPortal: React.FC = () => {
   const [showNewCase, setShowNewCase] = useState(false);
   const [newCaseForCustomerId, setNewCaseForCustomerId] = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
   // EDIT CASE state (EN implementation)
   const [editCaseId, setEditCaseId] = useState<string | null>(null);
@@ -437,14 +439,18 @@ const AdminPortal: React.FC = () => {
             {customers.length === 0 ? <p>Inga kunder hittades.</p> :
               <div className="grid gap-4">
                 {customers.map(c => (
-                  <Card key={c.id} className="cursor-pointer hover:shadow-lg flex justify-between items-center">
+                  <Card
+                    key={c.id}
+                    className="cursor-pointer hover:shadow-lg flex justify-between items-center"
+                    onClick={() => { setSelectedCustomerId(c.id); setShowCustomerDialog(true); }}
+                  >
                     <CardContent className="flex justify-between items-center w-full">
                       <div>
                         <p className="font-semibold">{c.name}</p>
                         <p className="text-sm">{c.email}</p>
                         {c.personal_number && <p className="text-sm">Personnummer: {c.personal_number}</p>}
                       </div>
-                      <Button size="sm" variant="outline" onClick={() => handleNewCaseFromCustomer(c.id)}>
+                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleNewCaseFromCustomer(c.id); }}>
                         <Plus className="w-4 h-4 mr-1"/> Ärende
                       </Button>
                     </CardContent>
@@ -492,6 +498,14 @@ const AdminPortal: React.FC = () => {
       </div>
 
       {/* === DIALOGS === */}
+      {showCustomerDialog && selectedCustomer && (
+        <CustomerDialog
+          customer={selectedCustomer}
+          onClose={() => { setShowCustomerDialog(false); setSelectedCustomerId(null); }}
+          onCustomerUpdated={async () => { await fetchCustomers(); setShowCustomerDialog(false); }}
+          onNewCase={(customerId: string) => { handleNewCaseFromCustomer(customerId); }}
+        />
+      )}
       {mainTab === "cases" && showNewCase && (
         <NewCaseForm 
           customers={customers}

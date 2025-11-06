@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-// Importera nödvändiga hooks och komponenter
-// ...
+import type { Customer } from "../types";
+import { supabase } from "@/lib/supabase";
 
 // Exempel på nödvändiga interfaces, dessa måste vara definierade eller importerade
-interface Customer {
-  id: string; name: string; email: string; phone?: string; is_admin?: boolean; created_at?: string; personal_number?: string;
-}
+// interface Customer {
+//   id: string; name: string; email: string; phone?: string; is_admin?: boolean; created_at?: string; personal_number?: string;
+// }
 
 // *** HUVUD-FIX: Lägg till onCustomerUpdated och onNewCase här ***
 interface CustomerDialogProps {
   customer: Customer;
   onClose: () => void;
-  onCustomerUpdated: () => Promise<void>; // Lade till den saknade prop:en
-  onNewCase: (customerId: string) => void; // Lade till den saknade prop:en
+  onCustomerUpdated: () => Promise<void>;
+  onNewCase: (customerId: string) => void;
 }
 
 // Antag att denna funktion är din huvudkomponent
@@ -34,22 +34,45 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({ customer, onClose, onCu
 
   const handleSave = async () => {
     // ... logik för att spara kunddata
-    // Här ska du anropa ditt API / save-funktion. För nu sparar vi lokalt och visar comparison.
     const previous = originalCustomer;
     try {
-      // TODO: kalla API för att spara editedCustomer och invänta resultat.
-      // Exempel: await updateCustomer(editedCustomer);
-      // När API-spara lyckas, visas jämförelse och parent uppdateras.
-      setShowComparison(true);
-      // leave originalCustomer as snapshot of previous
-      // setUpdated will be shown from editedCustomer
-      await onCustomerUpdated();
-    } catch (err) {
-      console.error("Kunde inte spara kund:", err);
-      // Hantera fel (toast etc.)
-    } finally {
-      setIsEditing(false);
-    }
+      console.log("[CustomerDialog] saving customer id=", customer?.id, "payload=", {
+        name: editedCustomer.name,
+        email: editedCustomer.email,
+        phone: editedCustomer.phone,
+        personal_number: editedCustomer.personal_number,
+      });
+      const { data, error } = await supabase
+        .from("customers")
+        .update({
+          name: editedCustomer.name,
+          email: editedCustomer.email,
+          phone: editedCustomer.phone,
+          personal_number: editedCustomer.personal_number,
+        })
+        .eq("id", customer.id)
+        .select()
+        .maybeSingle(); // <-- använd maybeSingle så vi inte får PGRST116 när 0 rader returneras
+ 
+       if (error) throw error;
+      if (!data) {
+        // update träffade ingen rad — sannolikt permissions eller fel id
+        console.warn("[CustomerDialog] update returned no rows for id=", customer.id);
+        throw new Error("Ingen kund uppdaterades (kontrollera permissions / id).");
+      }
+ 
+       // Uppdatera lokala snapshots med svaret från DB
+       setOriginalCustomer(data as Customer);
+       setEditedCustomer(data as Customer);
+       setShowComparison(true);
+       // Låt parent ladda om listor / stänga dialog om den vill
+       await onCustomerUpdated();
+     } catch (err) {
+       console.error("Kunde inte spara kund:", err);
+       // Hantera fel (toast etc.)
+     } finally {
+       setIsEditing(false);
+     }
   };
 
   const handleCreateNewCase = () => {
@@ -97,10 +120,10 @@ const CustomerDialog: React.FC<CustomerDialogProps> = ({ customer, onClose, onCu
             </div>
             <div>
               <h4 className="text-sm font-medium text-gray-600">Redigera</h4>
-              <input className="w-full mt-2 p-2 border rounded" value={editedCustomer.name} onChange={(e) => updateField("name", e.target.value)} />
-              <input className="w-full mt-2 p-2 border rounded" value={editedCustomer.email} onChange={(e) => updateField("email", e.target.value)} />
-              <input className="w-full mt-2 p-2 border rounded" value={editedCustomer.phone ?? ""} onChange={(e) => updateField("phone", e.target.value)} />
-              <input className="w-full mt-2 p-2 border rounded" value={editedCustomer.personal_number ?? ""} onChange={(e) => updateField("personal_number", e.target.value)} />
+              <input placeholder="Namn" className="w-full mt-2 p-2 border rounded" value={editedCustomer.name ?? ""} onChange={(e) => updateField("name", e.target.value)} />
+              <input placeholder="Email" className="w-full mt-2 p-2 border rounded" value={editedCustomer.email ?? ""} onChange={(e) => updateField("email", e.target.value)} />
+              <input placeholder="Telefon" className="w-full mt-2 p-2 border rounded" value={editedCustomer.phone ?? ""} onChange={(e) => updateField("phone", e.target.value)} />
+              <input placeholder="Personnummer" className="w-full mt-2 p-2 border rounded" value={editedCustomer.personal_number ?? ""} onChange={(e) => updateField("personal_number", e.target.value)} />
             </div>
           </div>
         )}
