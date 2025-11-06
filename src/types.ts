@@ -26,15 +26,18 @@ export interface ContactRequest {
   id: string;
   name: string;        // required
   email: string | null;      // required
-  phone?: string 
+  phone?: string | null;
   company?: string | null;
   address?: string | null;
   city?: string | null;
   postal_code?: string | null;
-  message: string;     // required
-  status?: 'new' | 'handled' | string;
+  message: string;         // required
+  status?: 'new' | 'contacted' | 'converted' | 'closed' | string;
   created_at?: string | null;
   admin_notes?: string | null;
+
+  // add service_type if contact requests can include it
+  service_type?: string | null;
 }
 
 export interface Subscription {

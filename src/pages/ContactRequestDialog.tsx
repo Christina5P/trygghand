@@ -4,30 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import type { ContactRequest } from '@/types'; // adjust path if you don't use '@' alias
 
-interface ContactRequestDialogProps {
-  contact: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string | null;
-    company?: string | null;
-    address?: string | null;
-    city?: string | null;
-    postal_code?: string | null;
-    service_type?: string | null;
-    message: string;
-    status: string;
-    created_at?: string;
-    admin_notes?: string | null;
-  };
+type ContactRequestDialogProps = {
+  contact: ContactRequest;
   onClose: () => void;
-  onUpdate?: () => void;
-}
+  onUpdate?: () => Promise<void>;
+  onConvert?: (contact: ContactRequest) => Promise<void>;
+};
 
-const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({ contact, onClose, onUpdate }) => {
+const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({ contact, onClose, onUpdate, onConvert }) => {
   const { toast } = useToast();
-  const [status, setStatus] = useState(contact.status);
+  // default to DB-canonical "new" when missing
+  const [status, setStatus] = useState<string>(contact.status ?? "new");
   const [notes, setNotes] = useState(contact.admin_notes ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -50,6 +39,11 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({ contact, on
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleConvert = async () => {
+    if (!onConvert) return;
+    await onConvert(contact);
   };
 
   return (
@@ -80,16 +74,16 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({ contact, on
 
           <div>
             <label className="block text-sm font-medium mb-1">Status</label>
+            {/* Values must match DB constraint; labels shown in Swedish */}
             <select
               value={status}
               onChange={e => setStatus(e.target.value)}
               className="w-full border rounded px-2 py-1 text-sm"
             >
               <option value="new">Ny</option>
-              <option value="contacted">Kontaktad</option>
-              <option value="quoted">Offert skickad</option>
-              <option value="converted">Konverterad</option>
-              <option value="closed">Stängd</option>
+              <option value="in_progress">Kontaktad / Pågående</option>
+              <option value="completed">Avslutad</option>
+              <option value="cancelled">Stängd</option>
             </select>
           </div>
 
@@ -103,13 +97,17 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({ contact, on
             />
           </div>
 
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={onClose}>
-              Avbryt
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Sparar..." : "Spara"}
-            </Button>
+          <div className="flex gap-2 justify-end pt-3">
+            {typeof onConvert === "function" && (
+              <Button
+                variant="outline"
+                onClick={handleConvert}
+              >
+                Konvertera till kund
+              </Button>
+            )}
+            <Button onClick={handleSave} disabled={saving}>{saving ? "Sparar..." : "Spara"}</Button>
+            <Button variant="ghost" onClick={onClose}>Stäng</Button>
           </div>
         </div>
       </DialogContent>
