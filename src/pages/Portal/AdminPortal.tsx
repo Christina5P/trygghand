@@ -1,3 +1,4 @@
+// src/components/admin/AdminPortal.tsx
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
@@ -17,17 +18,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import ContactRequestDialog from "../ContactRequestDialog"; // justera sökväg om du använder alias
-import type { Customer, Case, ServiceType, ContactRequest, Subscription, Valuation } from '../../types'; // <-- add this (adjust path if you use aliases)
+import type { Customer, Case, ServiceType, ContactRequest, Subscription, Valuation } from '../../types'; 
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import ValueEstimator from "@/components/ValueEstimator";
 
-// --- Hjälpfunktion ---
+
+
+// --- Status kundförfrågan ---
 const getStatusBadge = (status?: string) => {
   const normalized = (status ?? '').toLowerCase().trim();
   switch(normalized){
-    // kontaktförfrågnings‑värden (DB canonical)
     case 'new': case 'ny': case 'nytt': return { text: 'Ny', colorClass: 'bg-blue-500 hover:bg-blue-600 text-white' };
     case 'contacted': case 'kontaktad': return { text: 'Kontaktad', colorClass: 'bg-yellow-500 hover:bg-yellow-600 text-black' };
+    case 'declined': case 'avböjd': return { text: 'Avböjd', colorClass: 'bg-gray-600 hover:bg-gray-700 text-white' };
     case 'converted': case 'kund': return { text: 'Kund', colorClass: 'bg-green-500 hover:bg-green-600 text-white' };
-    case 'closed': case 'stängd': return { text: 'Stängd', colorClass: 'bg-gray-600 hover:bg-gray-700 text-white' };
+    //case 'closed': case 'stängd': return { text: 'Stängd', colorClass: 'bg-gray-600 hover:bg-gray-700 text-white' };
     // legacy / other cases (keep existing mappings)
     case 'pending': case 'in_progress': case 'pågående': return { text: 'Pågående', colorClass: 'bg-yellow-500 hover:bg-yellow-600 text-black' };
     case 'completed': case 'avslutat': return { text: 'Avslutat', colorClass: 'bg-green-500 hover:bg-green-600 text-white' };
@@ -50,13 +56,13 @@ const AdminPortal: React.FC = () => {
   const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [valuations, setValuations] = useState<Valuation[]>([]);
-  // Kommentarstråd för valt ärende (samma tabell som i CustomerPortal)
+  const [loadingVals, setLoadingVals] = useState(false);
   const [caseComments, setCaseComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
 
   // DIALOG STATES
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null); // behåll om du behöver referens
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [showCaseDialog, setShowCaseDialog] = useState(false);
   const [showEditInOverlay, setShowEditInOverlay] = useState(false);
@@ -67,11 +73,12 @@ const AdminPortal: React.FC = () => {
   const [showContactDialog, setShowContactDialog] = useState(false);
   const [selectedContact, setSelectedContact] = useState<ContactRequest | null>(null);
 
+  
   // EDIT CASE state (EN implementation)
   const [editCaseId, setEditCaseId] = useState<string | null>(null);
   const [editCase, setEditCase] = useState<Case | null>(null);
 
-  // Öppna ett ärende för redigering + ladda kommentarstråd
+  // Öppna ärendet för redigering + ladda kommentarstråd
   const openCaseForEdit = async (c: Case) => {
     console.log('[AdminPortal] openCaseForEdit called id=', c?.id);
     setEditCaseId(c.id);
@@ -98,9 +105,7 @@ const AdminPortal: React.FC = () => {
   const closeCaseDialog = () => {
     setShowCaseDialog(false);
     setSelectedCase(null);
-    setSelectedCaseId(null);
-    setCaseComments([]);
-    setShowEditInOverlay(false);
+    setEditCaseId(null);
   };
 
   // State för att skicka meddelande till kund (dialog)
@@ -108,7 +113,7 @@ const AdminPortal: React.FC = () => {
   const [customerMessageText, setCustomerMessageText] = useState<string>("");
 
   // TAB STATE
-  const [mainTab, setMainTab] = useState<"cases" | "subscriptions" | "valuations" | "customers" | "contact_requests">("cases");
+    const [mainTab, setMainTab] = useState<"cases" | "subscriptions" | "valuations" | "customers" | "contact_requests" | "new" | "saved">("cases");
 
   // Map för snabb uppslagning av kunder
   const customerMap = useMemo(() => customers.reduce((acc, c) => { acc[c.id] = c; return acc; }, {} as Record<string, Customer>), [customers]);
@@ -132,10 +137,59 @@ const AdminPortal: React.FC = () => {
     if (error) console.error(error); else setSubscriptions(data || []);
   }, []);
 
-  const fetchValuations = useCallback(async () => {
+  // Hämta alla värderingar
+
+  const fetchAllValuations = useCallback(async () => {
     const { data, error } = await supabase.from("valuations").select("*").order("created_at", { ascending: false });
     if (error) console.error(error); else setValuations(data || []);
   }, []);
+
+// Värderingsfunktionen
+
+    const fetchCustomerValuations = async () => {
+      if (!customer?.id) return;
+      setLoadingVals(true);
+      try {
+        const { data, error } = await supabase
+          .from("valuations")
+          .select("*")
+          .eq("customer_id", customer.id)
+          .order("created_at", { ascending: false });
+  
+        if (error) throw error;
+        setValuations(data || []);
+      } catch (error) {
+        console.error("Error fetching valuations:", error);
+        setValuations([]);
+        toast({
+          title: "Fel",
+          description: "Kunde inte hämta värderingar",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingVals(false);
+      }
+    };
+  
+    // Ta bort en värdering 
+        const deleteValuation = async (id: string | number) => {
+          if (!window.confirm("Vill du verkligen ta bort denna värdering?")) return;
+          setLoadingVals(true);
+          try {
+            // pass the id as-is (string or number) to Supabase; normalization is done for local state filtering
+            const { error } = await supabase.from("valuations").delete().eq("id", id);
+            if (error) throw error;
+            // Normalize both sides to string to avoid comparing incompatible types (number vs string)
+            setValuations((prev) => prev.filter((v) => String(v.id) !== String(id)));
+            toast({ title: "Raderad", description: `Värdering #${String(id)} togs bort.` });
+          } catch (err: any) {
+            console.error("Delete valuation error:", err);
+            toast({ title: "Fel", description: String(err?.message ?? err), variant: "destructive" });
+          } finally {
+            setLoadingVals(false);
+          }
+        };
+  
 
   const fetchContactRequests = useCallback(async () => {
     const { data, error } = await supabase.from("contact_requests").select("*").order("created_at", { ascending: false });
@@ -189,17 +243,14 @@ const AdminPortal: React.FC = () => {
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
-      await Promise.all([fetchCustomers(), fetchCases(), fetchSubscriptions(), fetchValuations(), fetchContactRequests()]);
+      await Promise.all([fetchCustomers(), fetchCases(), fetchSubscriptions(), fetchAllValuations(), fetchContactRequests()]);
       setLoading(false);
     };
     fetchAll();
-  }, [fetchCustomers, fetchCases, fetchSubscriptions, fetchValuations, fetchContactRequests]);
+  }, [fetchCustomers, fetchCases, fetchSubscriptions, fetchAllValuations, fetchContactRequests]);
 
   // --- NEW CASE ---
-  // Öppna nytt ärende — rensa edit/state så formuläret verkligen blir CREATE (inte edit)
   const openNewCaseForm = (customerId?: string) => {
-    console.log("[AdminPortal] openNewCaseForm called, customerId=", customerId);
-    // säkerställ att vi står i Ärenden-fliken
     setMainTab("cases");
     setEditCaseId(null);
     setEditCase(null);
@@ -260,11 +311,9 @@ const AdminPortal: React.FC = () => {
     }
     toast({ title: "Skickat", description: "Meddelandet skickades till kunden." });
     closeCustomerMessageDialog();
-    // inget automatiskt case-comments-upprop här (det är en annan tabell). Om du vill ladda något, kalla explicit.
   };
 
   const openContactDialog = (c: ContactRequest) => {
-    console.log("[AdminPortal] openContactDialog", c?.id);
     setSelectedContact(c);
     setShowContactDialog(true);
   };
@@ -277,20 +326,21 @@ const AdminPortal: React.FC = () => {
     if (showCustomerDialog) console.log('[AdminPortal] showCustomerDialog for selectedCustomerId=', selectedCustomerId);
   }, [showCustomerDialog, selectedCustomerId]);
 
-  // --- KONVERTERA KONTAKT TILL KUND ---
+  // --- KONVERTERA KONTAKT TILL KUND (insert -> delete contact row) ---
   const convertContactToCustomer = async (c: ContactRequest) => {
     try {
       console.log("[AdminPortal] convertContactToCustomer", c.id);
-      // bygg endast payload med kolumner som faktiskt finns i customers
+      // Build payload mapping contact fields to customers table
       const payload: any = {
-        id: crypto?.randomUUID?.() ?? Date.now().toString(), // generate client UUID
-        name: c.name ?? '',
-        email: c.email ?? ''
+        name: ( (c as any).name ) || `${(c as any).firstname ?? ""} ${(c as any).lastname ?? ""}`.trim() || '',
+        email: (c as any).email ?? null,
+        phone: (c as any).phone ?? null,
+        address: (c as any).address ?? null,
+        personal_number: (c as any).personal_number ?? null,
+        created_at: new Date().toISOString(),
+        // optional: source_contact_id to trace origin (if you add column to customers)
+        // source_contact_id: c.id,
       };
-      if (c.phone) payload.phone = c.phone;
-      if (c.address) payload.address = c.address;
-      // använd personal_number only if present on contact
-      if ((c as any).personal_number) payload.personal_number = (c as any).personal_number;
 
       const { data: newCustomer, error: insertErr } = await supabase
         .from("customers")
@@ -304,21 +354,23 @@ const AdminPortal: React.FC = () => {
         return;
       }
 
-      // uppdatera kontaktens status till ett DB-giltigt värde
-      const { error: updErr } = await supabase
+      // Remove the contact request row after successful creation
+      const { error: deleteErr } = await supabase
         .from("contact_requests")
-        .update({ status: "completed" }) // 'completed' är i ditt CHECK
+        .delete()
         .eq("id", c.id);
 
-      if (updErr) {
-        console.error("Failed to update contact status:", updErr);
-        toast({ title: "Fel", description: "Kunde inte uppdatera kontaktens status", variant: "destructive" });
-        return;
+      if (deleteErr) {
+        console.error("Failed to delete contact request after conversion:", deleteErr);
+        // Not fatal for customer creation, but inform admin
+        toast({ title: "Varning", description: "Kunden skapades men kontakten kunde inte tas bort.", variant: "default" });
+      } else {
+        // Refresh contact list
+        await fetchContactRequests();
       }
 
       toast({ title: "Konverterad", description: "Kontakt konverterad till kund" });
       await fetchCustomers();
-      await fetchContactRequests();
 
       if (newCustomer?.id) {
         setSelectedCustomerId(newCustomer.id);
@@ -345,7 +397,84 @@ const AdminPortal: React.FC = () => {
             </Button>
           </div>
         </div>
-      </header>
+        </header>
+        
+          {/*VÄRDERINGSFUNKTION */}
+                    
+                    {mainTab === "new" ? (
+                      <div className="mb-6">
+                        <ValueEstimator
+                          customerId={customer?.id}
+                          onSaved={() => {
+                            setMainTab("valuations");
+                            fetchAllValuations();
+                          }}
+                          onOpenSaved={() => {
+                            setMainTab("valuations");
+                            fetchAllValuations();
+                          }}
+                          onNew={() => {
+                            setMainTab("new");
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="mb-6">
+                        <div className="mb-3">
+                          <Button onClick={() => setMainTab("new")} variant="outline" size="sm">
+                            Tillbaka
+                          </Button>
+                        </div>
+                        {loadingVals ? (
+                           <p className="text-warm-gray">Laddar sparade värderingar…</p>
+                         ) : valuations.length === 0 ? (
+                           <p className="text-warm-gray">Inga sparade värderingar.</p>
+                         ) : (
+                           <div className="grid gap-4">
+                             {valuations.map((v) => (
+                               <div key={String(v.id)} className="p-4 border rounded bg-white">
+                                 <div className="flex items-start gap-4">
+                                   <div className="flex-shrink-0">
+                                     <button
+                                       onClick={() => deleteValuation(v.id)}
+                                       className="text-gray-400 hover:text-red-600"
+                                       title="Ta bort värdering"
+                                     >
+                                       <X className="w-4 h-4" />
+                                     </button>
+                                   </div>
+            
+                                   <div className="flex-1">
+                                     <div className="text-sm font-medium">Värdering #{String(v.id)}</div>
+                                     <div className="text-xs text-gray-500">
+                                       {v.created_at ? new Date(v.created_at).toLocaleString("sv-SE") : ""}
+                                     </div>
+                                     <div className="mt-2 flex items-center gap-4">
+                                       {v.image_urls && v.image_urls.length > 0 ? (
+                                         <img src={v.image_urls[0]} alt={`val-${v.id}-img`} className="w-16 h-16 object-cover rounded-md border" />
+                                       ) : (
+                                         <div className="w-16 h-16 bg-gray-50 rounded-md flex items-center justify-center text-xs text-warm-gray">Ingen bild</div>
+                                       )}
+                                       <div className="text-xs text-gray-600">
+                                         {(() => {
+                                           const text = (v as any).analysis_result ?? (v as any).analysis ?? "";
+                                           try {
+                                             const parsed = typeof text === "string" ? JSON.parse(text) : text;
+                                             return parsed?.foremal_beskrivning ?? parsed?.motivering ?? String(text);
+                                           } catch {
+                                             return String(text);
+                                           }
+                                         })()}
+                                       </div>
+                                     </div>
+                                   </div>
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         )}
+                       </div>
+                     )}
 
       {/* Huvudinnehåll */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -371,7 +500,13 @@ const AdminPortal: React.FC = () => {
                   {cases.map(c => {
                     const badge = getStatusBadge(c.status);
                     return (
-                      <Card key={c.id} className="hover:shadow-lg cursor-pointer" onClick={() => openCaseForEdit(c)}>
+                      <Card key={c.id} className="hover:shadow-lg cursor-pointer" onClick={() => {
+                        // reuse your open/edit flow
+                        setSelectedCase(c);
+                        setSelectedCaseId(c.id);
+                        fetchCaseComments(c.id);
+                        setShowNewCase(true);
+                      }}>
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start">
                             <div>
@@ -381,8 +516,6 @@ const AdminPortal: React.FC = () => {
                             <Badge className={badge.colorClass}>{badge.text}</Badge>
                           </div>
                           <p className="text-sm mt-2 line-clamp-2">{c.description}</p>
-                          {/* Om du har knappar inuti kort som ska hantera egna handlingar, lägg på
-                              onClick={(e) => { e.stopPropagation(); // egen handling }} för att inte trigga kort‑click */}
                         </CardContent>
                       </Card>
                     );
@@ -483,18 +616,19 @@ const AdminPortal: React.FC = () => {
               <div className="grid gap-4">
                 {valuations.map(v => {
                   const date = v.created_at ? new Date(v.created_at) : null;
+                  const images = v.image_urls ?? [];
                   return (
                     <Card key={v.id} className="p-4 relative">
                       <button className="absolute top-2 right-2 text-gray-400 hover:text-red-600"><X className="w-4 h-4"/></button>
-                      <p className="font-medium">{v.name || 'Namnlös värdering'}</p>
+                      <p className="font-medium">{v.name || ''}</p> {/* Removed "Namnlös värdering" label per request */}
                       <p className="text-sm text-gray-500">{date ? format(date, "dd MMM yyyy HH:mm", { locale: sv }) : '—'}</p>
-                      <p className="text-sm mt-1">Kund: {v.customer_name}</p>
-                      {v.image_urls.length > 0 && (
+                      <p className="text-sm mt-1">Kund: {v.customer_name ?? 'Okänd kund'}</p>
+                      {images.length > 0 && (
                         <div className="flex gap-2 mt-2 flex-wrap">
-                          {v.image_urls.map((url, i) => <img key={i} src={url} alt={`Bild ${i+1}`} className="w-16 h-16 object-cover rounded-md border" />)}
+                          {images.map((url, i) => <img key={i} src={url} alt={`Bild ${i+1}`} className="w-16 h-16 object-cover rounded-md border" />)}
                         </div>
                       )}
-                      <p className="text-sm mt-2 whitespace-pre-wrap">{v.analysis}</p>
+                      <p className="text-sm mt-2 whitespace-pre-wrap">{(v as any).analysis_result ?? (v as any).analysis ?? ''}</p>
                     </Card>
                   );
                 })}
@@ -517,9 +651,8 @@ const AdminPortal: React.FC = () => {
                       <div>
                         <p className="font-semibold">{c.name}</p>
                         <p className="text-sm">{c.email}</p>
-                        {c.personal_number && <p className="text-sm">Personnummer: {c.personal_number}</p>}
+                        {(c as any).personal_number && <p className="text-sm">Personnummer: {(c as any).personal_number}</p>}
                       </div>
-                      {/* Ärendeknappen borttagen */}
                     </CardContent>
                   </Card>
                 ))}
@@ -538,17 +671,18 @@ const AdminPortal: React.FC = () => {
                    <Card
                     key={r.id}
                     className="cursor-pointer hover:shadow-lg"
-                    onClick={() => openContactDialog(r)} // 👈 öppnar dialogen
+                    onClick={() => openContactDialog(r)} // öppnar dialogen
                     >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-semibold">{r.name}</p>
-                            <p className="text-sm text-gray-500">{r.email}</p>
+                            {/* show firstname/lastname if present, else name */}
+                            <p className="font-semibold">{(r as any).name ? (r as any).name : `${(r as any).firstname ?? ''} ${(r as any).lastname ?? ''}`.trim()}</p>
+                            <p className="text-sm text-gray-500">{r.email ?? ''}</p>
                           </div>
                           <Badge className={badge.colorClass}>{badge.text}</Badge>
                         </div>
-                        <p className="text-sm mt-2 line-clamp-2">{r.message}</p>
+                        <p className="text-sm mt-2 line-clamp-2">{r.message ?? ''}</p>
                         <Select value={r.status ?? 'new'} onValueChange={(v) => { updateContactRequestStatus(r.id, v ?? 'new'); }}>
                           <SelectTrigger className="mt-2 w-[140px]"><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -575,11 +709,15 @@ const AdminPortal: React.FC = () => {
           onClose={() => { setShowCustomerDialog(false); setSelectedCustomerId(null); }}
           onCustomerUpdated={async () => { await fetchCustomers(); setShowCustomerDialog(false); }}
           onNewCase={(customerId: string) => { handleNewCaseFromCustomer(customerId); }}
-          onOpenCase={openCaseDialog}   // öppna ärende som overlay ovanpå kundkortet
+          onOpenCase={ (c: Case) => {
+            // optional: open case overlay from within customer dialog
+            setSelectedCase(c);
+            setShowCaseDialog(true);
+          }}
         />
       )}
 
-      {/* Case overlay (visas ovanpå kunddialogen) */}
+      {/* Case overlay (visas ovanpå kunddialogen) 712-789 är utmarkerad och ska tas bort om den nya fungerar
       {showCaseDialog && selectedCase && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]">
           <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl">
@@ -590,7 +728,9 @@ const AdminPortal: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" onClick={() => { setShowEditInOverlay(true); setEditCase(selectedCase); }}>Redigera</Button>
-                <button onClick={closeCaseDialog} className="text-gray-500 hover:text-gray-800">
+                <button onClick={() => {
+                  closeCaseDialog();
+                }} className="text-gray-500 hover:text-gray-800">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -606,7 +746,6 @@ const AdminPortal: React.FC = () => {
                   fetchCaseComments={fetchCaseComments}
                   onCaseSaved={async () => {
                     await fetchCases();
-                    // uppdatera kommentarer och view
                     if (editCase.id) await fetchCaseComments(editCase.id);
                     setShowEditInOverlay(false);
                   }}
@@ -655,6 +794,142 @@ const AdminPortal: React.FC = () => {
           </div>
         </div>
       )}
+*/}
+
+{ /*795-926 är ersatt med overlay edit case and comment  */}
+<AnimatePresence>
+  {showCaseDialog && selectedCase && createPortal(
+    <motion.div
+      key="case-dialog"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative"
+      >
+        {/* Header */}
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-xl font-bold">{selectedCase.title}</h3>
+            <p className="text-sm text-gray-500">
+              Kund: {selectedCase.customer_id
+                ? (customerMap[selectedCase.customer_id]?.name ?? "Okänd")
+                : "Okänd"}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditInOverlay(true);
+                setEditCase(selectedCase);
+              }}
+            >
+              Redigera
+            </Button>
+            <button
+              onClick={closeCaseDialog}
+              className="text-gray-500 hover:text-gray-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        {showEditInOverlay && editCase ? (
+          <div className="max-h-[70vh] overflow-auto">
+            <NewCaseForm
+              customers={customers}
+              defaultCustomerId={editCase.customer_id ?? undefined}
+              caseToEdit={editCase}
+              caseComments={caseComments}
+              fetchCaseComments={fetchCaseComments}
+              onCaseSaved={async () => {
+                await fetchCases();
+                if (editCase.id) await fetchCaseComments(editCase.id);
+                setShowEditInOverlay(false);
+              }}
+              onCancel={() => setShowEditInOverlay(false)}
+            />
+          </div>
+        ) : (
+          <div className="max-h-[60vh] overflow-auto space-y-4">
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+              {selectedCase.description}
+            </p>
+
+            <div>
+              <h4 className="font-medium mb-2">Kommentarer</h4>
+              {loadingComments ? (
+                <p className="text-sm text-gray-500">Laddar kommentarer...</p>
+              ) : caseComments.length === 0 ? (
+                <p className="text-sm text-gray-500">Inga kommentarer</p>
+              ) : (
+                <div className="space-y-3">
+                  {caseComments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className={`p-3 rounded-lg ${
+                        comment.author_type === "customer"
+                          ? "bg-trust-blue/10 ml-4"
+                          : "bg-gray-100 mr-4"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm font-medium">
+                          {comment.author_type === "customer"
+                            ? comment.author?.name ?? "Kund"
+                            : "Trygg Hand"}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {comment.created_at
+                            ? format(new Date(comment.created_at), "dd MMM HH:mm", { locale: sv })
+                            : ""}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Add comment */}
+              <div className="mt-4">
+                <Textarea
+                  placeholder="Skriv en kommentar..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="min-h-[80px]"
+                />
+                <div className="flex justify-end gap-2 mt-2">
+                  <Button onClick={addComment} disabled={!newComment.trim() || loadingComments}>
+                    Skicka kommentar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="mt-4 flex gap-2 justify-end">
+          <Button variant="ghost" onClick={closeCaseDialog}>
+            Stäng
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
+  )}
+</AnimatePresence>
+
       {mainTab === "cases" && showNewCase && (
         <NewCaseForm 
           customers={customers}
@@ -666,16 +941,15 @@ const AdminPortal: React.FC = () => {
           onCancel={closeNewCaseForm}
         />
       )}
+
       {showContactDialog && selectedContact && (
         <ContactRequestDialog
           contact={selectedContact as any}
           onClose={closeContactDialog}
           onUpdate={async () => { await fetchContactRequests(); closeContactDialog(); }}
           onConvert={async (contact) => {
-            // reuse your convertContactToCustomer helper
             await convertContactToCustomer(contact);
             closeContactDialog();
-            // optionally refresh lists here (fetchContactRequests(), fetchCustomers(), etc.)
           }}
         />
       )}
