@@ -56,10 +56,11 @@ const AdminPortal: React.FC = () => {
   const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [valuations, setValuations] = useState<Valuation[]>([]);
-  const [loadingVals, setLoadingVals] = useState(false);
-  const [caseComments, setCaseComments] = useState<any[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [loadingComments, setLoadingComments] = useState(false);
+  const [customerValuations, setCustomerValuations] = useState<Valuation[]>([]);
+   const [loadingVals, setLoadingVals] = useState(false);
+   const [caseComments, setCaseComments] = useState<any[]>([]);
+   const [newComment, setNewComment] = useState("");
+   const [loadingComments, setLoadingComments] = useState(false);
 
   // DIALOG STATES
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
@@ -144,10 +145,13 @@ const AdminPortal: React.FC = () => {
     if (error) console.error(error); else setValuations(data || []);
   }, []);
 
-// Värderingsfunktionen
+  // Värderingsfunktionen
 
     const fetchCustomerValuations = async () => {
-      if (!customer?.id) return;
+      if (!customer?.id) {
+        setCustomerValuations([]);
+        return;
+      }
       setLoadingVals(true);
       try {
         const { data, error } = await supabase
@@ -155,12 +159,12 @@ const AdminPortal: React.FC = () => {
           .select("*")
           .eq("customer_id", customer.id)
           .order("created_at", { ascending: false });
-  
+
         if (error) throw error;
-        setValuations(data || []);
+        setCustomerValuations(data || []);
       } catch (error) {
-        console.error("Error fetching valuations:", error);
-        setValuations([]);
+        console.error("Error fetching customer valuations:", error);
+        setCustomerValuations([]);
         toast({
           title: "Fel",
           description: "Kunde inte hämta värderingar",
@@ -176,11 +180,11 @@ const AdminPortal: React.FC = () => {
           if (!window.confirm("Vill du verkligen ta bort denna värdering?")) return;
           setLoadingVals(true);
           try {
-            // pass the id as-is (string or number) to Supabase; normalization is done for local state filtering
             const { error } = await supabase.from("valuations").delete().eq("id", id);
             if (error) throw error;
-            // Normalize both sides to string to avoid comparing incompatible types (number vs string)
+            // Uppdatera både listan med alla värderingar och kundens lista om den finns
             setValuations((prev) => prev.filter((v) => String(v.id) !== String(id)));
+            setCustomerValuations((prev) => prev.filter((v) => String(v.id) !== String(id)));
             toast({ title: "Raderad", description: `Värdering #${String(id)} togs bort.` });
           } catch (err: any) {
             console.error("Delete valuation error:", err);
@@ -399,82 +403,75 @@ const AdminPortal: React.FC = () => {
         </div>
         </header>
         
-          {/*VÄRDERINGSFUNKTION */}
-                    
-                    {mainTab === "new" ? (
-                      <div className="mb-6">
-                        <ValueEstimator
-                          customerId={customer?.id}
-                          onSaved={() => {
-                            setMainTab("valuations");
-                            fetchAllValuations();
-                          }}
-                          onOpenSaved={() => {
-                            setMainTab("valuations");
-                            fetchAllValuations();
-                          }}
-                          onNew={() => {
-                            setMainTab("new");
-                          }}
-                        />
+      {/* VÄRDERINGSFUNKTION (kundspecifika värderingar högst upp; "Alla värderingar" visas endast i tabben Värderingar) */}
+      <div className="mb-6">
+        {mainTab === "new" ? (
+          <ValueEstimator
+            customerId={customer?.id}
+            onSaved={() => {
+              setMainTab("valuations");
+              fetchAllValuations();
+            }}
+            onOpenSaved={() => {
+              setMainTab("valuations");
+              fetchAllValuations();
+            }}
+            onNew={() => {
+              setMainTab("new");
+            }}
+          />
+        ) : customer?.id ? (
+          // Visa kundens egna sparade värderingar i toppen (eller tom state)
+          <div>
+            <div className="mb-3">
+              <Button onClick={() => setMainTab("new")} variant="outline" size="sm">
+                Ny värdering
+              </Button>
+            </div>
+
+            {customerValuations.map((v) => (
+              <div key={String(v.id)} className="p-4 border rounded bg-white">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteValuation(v.id); }}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
+                      title="Ta bort värdering"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">Värdering #{String(v.id)}</div>
+                    <div className="text-xs text-gray-500">
+                      {v.created_at ? new Date(v.created_at).toLocaleString("sv-SE") : ""}
+                    </div>
+                    <div className="mt-2 flex items-center gap-4">
+                      {v.image_urls && v.image_urls.length > 0 ? (
+                        <img src={v.image_urls[0]} alt={`val-${v.id}-img`} className="w-16 h-16 object-cover rounded-md border" />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-50 rounded-md flex items-center justify-center text-xs text-warm-gray">Ingen bild</div>
+                      )}
+                      <div className="text-xs text-gray-600">
+                        {(() => {
+                          const text = (v as any).analysis_result ?? (v as any).analysis ?? "";
+                          try {
+                            const parsed = typeof text === "string" ? JSON.parse(text) : text;
+                            return parsed?.foremal_beskrivning ?? parsed?.motivering ?? String(text);
+                          } catch {
+                            return String(text);
+                          }
+                        })()}
                       </div>
-                    ) : (
-                      <div className="mb-6">
-                        <div className="mb-3">
-                          <Button onClick={() => setMainTab("new")} variant="outline" size="sm">
-                            Tillbaka
-                          </Button>
-                        </div>
-                        {loadingVals ? (
-                           <p className="text-warm-gray">Laddar sparade värderingar…</p>
-                         ) : valuations.length === 0 ? (
-                           <p className="text-warm-gray">Inga sparade värderingar.</p>
-                         ) : (
-                           <div className="grid gap-4">
-                             {valuations.map((v) => (
-                               <div key={String(v.id)} className="p-4 border rounded bg-white">
-                                 <div className="flex items-start gap-4">
-                                   <div className="flex-shrink-0">
-                                     <button
-                                       onClick={() => deleteValuation(v.id)}
-                                       className="text-gray-400 hover:text-red-600"
-                                       title="Ta bort värdering"
-                                     >
-                                       <X className="w-4 h-4" />
-                                     </button>
-                                   </div>
-            
-                                   <div className="flex-1">
-                                     <div className="text-sm font-medium">Värdering #{String(v.id)}</div>
-                                     <div className="text-xs text-gray-500">
-                                       {v.created_at ? new Date(v.created_at).toLocaleString("sv-SE") : ""}
-                                     </div>
-                                     <div className="mt-2 flex items-center gap-4">
-                                       {v.image_urls && v.image_urls.length > 0 ? (
-                                         <img src={v.image_urls[0]} alt={`val-${v.id}-img`} className="w-16 h-16 object-cover rounded-md border" />
-                                       ) : (
-                                         <div className="w-16 h-16 bg-gray-50 rounded-md flex items-center justify-center text-xs text-warm-gray">Ingen bild</div>
-                                       )}
-                                       <div className="text-xs text-gray-600">
-                                         {(() => {
-                                           const text = (v as any).analysis_result ?? (v as any).analysis ?? "";
-                                           try {
-                                             const parsed = typeof text === "string" ? JSON.parse(text) : text;
-                                             return parsed?.foremal_beskrivning ?? parsed?.motivering ?? String(text);
-                                           } catch {
-                                             return String(text);
-                                           }
-                                         })()}
-                                       </div>
-                                     </div>
-                                   </div>
-                                 </div>
-                               </div>
-                             ))}
-                           </div>
-                         )}
-                       </div>
-                     )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       {/* Huvudinnehåll */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -619,7 +616,13 @@ const AdminPortal: React.FC = () => {
                   const images = v.image_urls ?? [];
                   return (
                     <Card key={v.id} className="p-4 relative">
-                      <button className="absolute top-2 right-2 text-gray-400 hover:text-red-600"><X className="w-4 h-4"/></button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteValuation(v.id); }}
+                        className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
+                        title="Ta bort värdering"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                       <p className="font-medium">{v.name || ''}</p> {/* Removed "Namnlös värdering" label per request */}
                       <p className="text-sm text-gray-500">{date ? format(date, "dd MMM yyyy HH:mm", { locale: sv }) : '—'}</p>
                       <p className="text-sm mt-1">Kund: {v.customer_name ?? 'Okänd kund'}</p>
@@ -716,87 +719,8 @@ const AdminPortal: React.FC = () => {
           }}
         />
       )}
-
-      {/* Case overlay (visas ovanpå kunddialogen) 712-789 är utmarkerad och ska tas bort om den nya fungerar
-      {showCaseDialog && selectedCase && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-bold">{selectedCase.title}</h3>
-                <p className="text-sm text-gray-500">Kund: {selectedCase.customer_id ? (customerMap[selectedCase.customer_id]?.name ?? 'Okänd') : 'Okänd'}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => { setShowEditInOverlay(true); setEditCase(selectedCase); }}>Redigera</Button>
-                <button onClick={() => {
-                  closeCaseDialog();
-                }} className="text-gray-500 hover:text-gray-800">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {showEditInOverlay && editCase ? (
-              <div className="max-h-[70vh] overflow-auto">
-                <NewCaseForm
-                  customers={customers}
-                  defaultCustomerId={editCase.customer_id ?? undefined}
-                  caseToEdit={editCase}
-                  caseComments={caseComments}
-                  fetchCaseComments={fetchCaseComments}
-                  onCaseSaved={async () => {
-                    await fetchCases();
-                    if (editCase.id) await fetchCaseComments(editCase.id);
-                    setShowEditInOverlay(false);
-                  }}
-                  onCancel={() => setShowEditInOverlay(false)}
-                />
-              </div>
-            ) : (
-             <div className="max-h-[60vh] overflow-auto space-y-4">
-               <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedCase.description}</p>
-
-               <div>
-                 <h4 className="font-medium mb-2">Kommentarer</h4>
-                 {loadingComments ? (
-                   <p className="text-sm text-gray-500">Laddar kommentarer...</p>
-                 ) : caseComments.length === 0 ? (
-                   <p className="text-sm text-gray-500">Inga kommentarer</p>
-                 ) : (
-                   <div className="space-y-3">
-                     {caseComments.map((comment) => (
-                       <div key={comment.id} className={`p-3 rounded-lg ${comment.author_type === "customer" ? "bg-trust-blue/10 ml-4" : "bg-gray-100 mr-4"}`}>
-                         <div className="flex justify-between items-start mb-2">
-                           <span className="text-sm font-medium">
-                             {comment.author_type === "customer" ? (comment.author?.name ?? "Kund") : "Trygg Hand"}
-                           </span>
-                           <span className="text-xs text-warm-gray">
-                             {comment.created_at ? format(new Date(comment.created_at), "dd MMM HH:mm", { locale: sv }) : ""}
-                           </span>
-                         </div>
-                         <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
-                       </div>
-                     ))}
-                   </div>
-                 )}
-                <div className="mt-4">
-                  <Textarea placeholder="Skriv en kommentar..." value={newComment} onChange={(e) => setNewComment(e.target.value)} className="min-h-[80px]" />
-                  <div className="flex justify-end gap-2 mt-2">
-                    <Button onClick={addComment} disabled={!newComment.trim() || loadingComments}>Skicka kommentar</Button>
-                  </div>
-                </div>
-               </div>
-             </div>
-            )}
-            <div className="mt-4 flex gap-2 justify-end">
-              <Button variant="ghost" onClick={closeCaseDialog}>Stäng</Button>
-            </div>
-          </div>
-        </div>
-      )}
-*/}
-
-{ /*795-926 är ersatt med overlay edit case and comment  */}
+  
+     
 <AnimatePresence>
   {showCaseDialog && selectedCase && createPortal(
     <motion.div
