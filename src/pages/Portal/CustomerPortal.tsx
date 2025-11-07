@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-
 import Tidio from "@/components/Tidio";
 import ValueEstimator from "@/components/ValueEstimator";
-
 import {
   Card,
   CardContent,
@@ -28,34 +26,9 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
+import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscription, Valuation } from '../../types'; 
 
-type Case = {
-  id: string;
-  title: string;
-  status: string;
-  service_type?: {
-    name: string;
-    description?: string;
-  };
-  scheduled_date?: string;
-  address?: string;
-  total_price?: number;
-  [key: string]: any;
-};
-
-type CaseComment = {
-  id: string;
-  case_id: string;
-  author_id: string;
-  author_type: string;
-  content: string;
-  created_at: string;
-  author?: {
-    name: string;
-  };
-};
-
-const CustomerPortal = () => {
+  const CustomerPortal = () => {
   const { customer, signOut } = useAuth();
   const [cases, setCases] = useState<Case[]>([]);
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
@@ -275,9 +248,8 @@ const CustomerPortal = () => {
           </div>
         </header>
 
-        {/* NOTE: Top-level toggles removed. ValueEstimator renders its own "Ny värdering" / "Sparade värderingar" buttons.
-            Pass callbacks so those buttons can switch this page's mainTab. */}
-        {/* Innehåll per vy */}
+        {/*Värderingsfunktion */}
+        
         {mainTab === "new" ? (
           <div className="mb-6">
             <ValueEstimator

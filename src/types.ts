@@ -17,10 +17,29 @@ export interface Case {
   description?: string; // optional to match DB / Supabase rows
   status: string;
   customer_id?: string;
-  service_type?: ServiceType | null;
+   service_type?: {
+    name: string;
+    description?: string;
+  };
   created_at: string;
   deadline?: string | null;
+  scheduled_date?: string;
+  address?: string;
+  total_price?: number;
+  [key: string]: any;
 }
+
+export interface CaseComment {
+  id: string;
+  case_id: string;
+  author_id: string;
+  author_type: string;
+  content: string;
+  created_at: string;
+  author?: {
+    name: string;
+  };
+};
 
 export interface ContactRequest {
   id: string;
