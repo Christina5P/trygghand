@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks/useAuth'
 import AuthLayout from './AuthLayout'
+import Auth from './Auth'
 import CustomerPortal from './CustomerPortal'
 import AdminPortal from './AdminPortal'
 import { useEffect, useState } from "react";
