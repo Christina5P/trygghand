@@ -35,19 +35,52 @@ const Portal = () => {
     let mounted = true;
     const fetchStats = async () => {
       try {
-        // Hämta ärenden (id + status) och räkna "completed"
-        const { data: casesData, error: casesError } = await supabase.from("cases").select("id,status");
+        // CASES: hämta status/created_at och räkna avslutade
+        const { data: casesData, error: casesError } = await supabase
+          .from("cases")
+          .select("id,status,created_at");
         if (casesError) throw casesError;
         const totalCases = casesData?.length ?? 0;
-        const completedCases = casesData?.filter((c) => (c.status ?? "").toLowerCase() === "completed").length ?? 0;
+        const completedCases = (casesData ?? []).filter((c: any) => {
+          const s = (c.status ?? "").toString().toLowerCase();
+          return ["completed", "avslutad", "done", "finished"].includes(s);
+        }).length;
         const casePct = totalCases > 0 ? Math.round((completedCases / totalCases) * 100) : 0;
 
-        // Hämta abonnemang (id + status) och räkna "active" (anpassa logiken efter ditt schema)
-        const { data: subsData, error: subsError } = await supabase.from("subscriptions").select("id,status");
-        if (subsError) throw subsError;
-        const totalSubs = subsData?.length ?? 0;
-        const activeSubs = subsData?.filter((s) => (s.status ?? "").toLowerCase() === "active").length ?? 0;
-        const subsPct = totalSubs > 0 ? Math.round((activeSubs / totalSubs) * 100) : 0;
+        // SUBSCRIPTIONS: försök använda status om kolumn finns, annars fallback -> räkna som "skapade/aktiva"
+        let subsPct = 0;
+        try {
+          // Försök läsa status-kolumn (kan ge 42703 om kolumn saknas)
+          const { data: subsData, error: subsError } = await supabase
+            .from("subscriptions")
+            .select("id,status,created_at");
+          if (subsError) throw subsError;
+
+          // Om posten innehåller statusfält, beräkna andel aktiva
+          const hasStatus = (subsData && subsData.length > 0 && Object.prototype.hasOwnProperty.call(subsData[0], "status"));
+          if (hasStatus) {
+            const totalSubs = subsData.length;
+            const inactiveSubs = (subsData ?? []).filter((s: any) => {
+              const st = (s.status ?? "").toString().toLowerCase();
+              return ["cancelled", "ended", "inactive", "cancelled_by_user"].includes(st);
+            }).length;
+            const activeSubs = totalSubs - inactiveSubs;
+            subsPct = totalSubs > 0 ? Math.round((activeSubs / totalSubs) * 100) : 0;
+          } else {
+            // Ingen status-kolumn: behandla alla som "skapade/aktiva" (100% om det finns abonnemang)
+            const { data: subsOnly, error: subsOnlyErr } = await supabase.from("subscriptions").select("id");
+            if (!subsOnlyErr) {
+              subsPct = (subsOnly?.length ?? 0) > 0 ? 100 : 0;
+            } else {
+              subsPct = 0;
+            }
+          }
+        } catch (err: any) {
+          // Fallback vid SQL-fel (t.ex. column does not exist)
+          console.warn("Fel vid läsning av subscriptions.status — använder fallback:", err);
+          const { data: subsOnly } = await supabase.from("subscriptions").select("id");
+          subsPct = (subsOnly?.length ?? 0) > 0 ? 100 : 0;
+        }
 
         if (!mounted) return;
         setCaseProgress(casePct);
