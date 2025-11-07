@@ -23,11 +23,11 @@ const Footer = () => {
             <h4 className="font-semibold">Tjänster</h4>
             <ul className="space-y-2 text-sm text-background/80">
               <li><Link to="/services/RadgivningPlanering" className="hover:underline">Rådgivning & planering</Link></li>
-              <li><Link to="/services/Städning" className="hover:underline">Städning</Link></li>
+              <li><Link to="/services/Stadning" className="hover:underline">Städning</Link></li>
               <li><Link to="/services/tomning-bohag" className="hover:underline">Tömning av bohag</Link></li>
               <li><Link to="/services/Flytt" className="hover:underline">Flytt</Link></li>
-              <li><Link to="/services/Värdering" className="hover:underline">Värdering</Link></li>
-              <li><Link to="/services/Försäljning" className="hover:underline">Försäljning</Link></li>
+              <li><Link to="/services/Vardering" className="hover:underline">Värdering</Link></li>
+              <li><Link to="/services/Forsaljning" className="hover:underline">Försäljning</Link></li>
               <li><Link to="/services/Magasinering" className="hover:underline">Magasinering</Link></li>
             </ul>
           </div>

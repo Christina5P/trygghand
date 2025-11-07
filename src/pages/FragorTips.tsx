@@ -57,7 +57,7 @@ imageUrl: "/images/rutavdrag.png",
 content: (
   <div className="space-y-4">
     <p className="text-muted-foreground">
-      RUT-avdrag kan tillämpas på arbetskostnaden för hushållsnära tjänster. Reglerna omfattar både vanliga flyttar (seniorförändringar) och hantering av dödsbon.
+      RUT-avdrag kan tillämpas på arbetskostnaden för hushållsnära tjänster. Reglerna omfattar både vanliga flyttar (seniorförändringar) och hantering av dödsbon innan bortgång. <br></br>Då RUT-avdrag endast gäller för betalande kund i sin bostad fungerar det tyvärr att använda vid tömning/städ av dödsbo.
     </p>
     <div className="grid gap-4 md:grid-cols-2">
       <div>
@@ -112,6 +112,10 @@ content: (
             <h4 className="font-semibold">Fördelar med döstädning:</h4>
             <ul className="space-y-2">
               <li className="flex items-start">
+                <li className="flex items-start">
+                <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-1 flex-shrink-0" />
+                <span>Du får använda RUT-avdrag vid köp av hjälp av servicetjänster som hjälp</span>
+              </li>
                 <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-1 flex-shrink-0" />
                 <span>Minskar stress för familjen efter dödsfallet</span>
               </li>
@@ -132,7 +136,8 @@ content: (
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm font-medium">Praktiskt tips:</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Börja med en kategori i taget - kläder, böcker, papper. Ta pauser och få hjälp vid behov.
+              Börja med en kategori i taget - kläder, böcker, papper. Ta pauser och få hjälp vid behov.<br></br>
+              Det här kan vara en  gruvsam och känslomässig process, som du kan få hjälp med som en servicetjänst av oss.
             </p>
           </div>
         </div>
@@ -154,14 +159,16 @@ content: (
             <div className="grid gap-2 md:grid-cols-2">
               <ul className="space-y-1 text-sm">
                 <li>• Testamente</li>
-                <li>• Försäkringshandlingar</li>
+                <li>• Gåvobrev: Om det finns gåvor som har getts under livstiden som kan påverka arvet.</li>
+                <li>• Försäkringshandling</li>
                 <li>• Bankuppgifter</li>
                 <li>• Pensionsbesked</li>
               </ul>
               <ul className="space-y-1 text-sm">
                 <li>• Aktieportfölj</li>
+                
                 <li>• Fastighetshandlingar</li>
-                <li>• Kontaktuppgifter till rådgivare</li>
+                <li>• Kontaktuppgifter till ev.bankman, jurist, försäkringsagent, läkare, nära vänner</li>
                 <li>• Digitala lösenord</li>
               </ul>
             </div>
@@ -170,6 +177,12 @@ content: (
             <p className="text-sm font-medium">Smart lösning:</p>
             <p className="text-sm text-muted-foreground mt-1">
               Skapa en "viktig pärm" med alla centrala dokument och berätta för närmast anhörig var den finns.
+            </p>
+          </div>
+          <div className="bg-muted p-4 rounded-lg">
+            <p className="text-sm font-medium">Tips:</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Om du redan har fyllt i Grav/Begravningsönskemål på en begravningsbyrå är det viktigt att ange <i>var</i> önskemålen finns. 
             </p>
           </div>
         </div>
@@ -228,8 +241,8 @@ content: (
               <h4 className="font-semibold mb-2">Första veckan:</h4>
               <ul className="space-y-1 text-sm text-muted-foreground">
                 <li>□ Anmäl dödsfall till Skatteverket</li>
+                <li>□ Kontakta arbetsgivare</li>
                 <li>□ Kontakta begravningsbyrå</li>
-                <li>□ Hitta testamente</li>
                 <li>□ Informera bank och försäkringsbolag</li>
               </ul>
             </div>
@@ -238,7 +251,7 @@ content: (
               <ul className="space-y-1 text-sm text-muted-foreground">
                 <li>□ Bouppteckning (inom 3 månader)</li>
                 <li>□ Ansök om dödsbevis</li>
-                <li>□ Kontakta arbetsgivare</li>
+                <li>□ Hitta testamente</li>
                 <li>□ Säg upp abonnemang</li>
               </ul>
             </div>
