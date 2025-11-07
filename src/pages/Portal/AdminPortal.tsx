@@ -47,6 +47,44 @@ const getStatusBadge = (status?: string) => {
 const AdminPortal: React.FC = () => {
   const { customer, signOut } = useAuth();
   const { toast } = useToast();
+  
+  // Header: visa vem som är inloggad och knapp till startsidan / utloggning
+  const Header = () => (
+    <header className="bg-white shadow-sm border-b mb-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 pt-2">
+          <div>
+            <h2 className="text-lg font-semibold text-trust-blue">Admin</h2>
+            <p className="text-sm text-gray-700 mt-1 mb-2">
+              Inloggad som: <span className="font-medium">{customer?.name ?? customer?.email ?? "Okänd"}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              className="inline-flex items-center px-3 py-1.5 border rounded text-sm text-trust-blue hover:bg-gray-50"
+              onClick={() => { window.location.href = "/"; }}
+            >
+              Startsida
+            </button>
+            <button
+              className="inline-flex items-center px-3 py-1.5 border rounded text-sm"
+              onClick={async () => {
+                try {
+                  await signOut();
+                } catch (err) {
+                  console.error("Sign out error:", err);
+                } finally {
+                  window.location.href = "/";
+                }
+              }}
+            >
+              Logga ut
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
 
   const [loading, setLoading] = useState(true);
 
@@ -391,17 +429,7 @@ const AdminPortal: React.FC = () => {
       <Tidio />
 
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-blue-600">Admin Portal</h1>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-700">Inloggad som: {customer?.email ?? "Ingen inloggad"}</span>
-            <Button onClick={signOut} size="sm" variant="ghost">
-              <LogOut className="w-4 h-4 mr-2" /> Logga ut
-            </Button>
-          </div>
-        </div>
-        </header>
+      <Header />
         
       {/* VÄRDERINGSFUNKTION (kundspecifika värderingar högst upp; "Alla värderingar" visas endast i tabben Värderingar) */}
       <div className="mb-6">
@@ -476,12 +504,26 @@ const AdminPortal: React.FC = () => {
       {/* Huvudinnehåll */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-white shadow-md rounded-lg p-1">
-            <TabsTrigger value="cases">Ärenden ({cases.length})</TabsTrigger>
-            <TabsTrigger value="subscriptions">Abonnemang ({subscriptions.length})</TabsTrigger>
-            <TabsTrigger value="valuations">Värderingar ({valuations.length})</TabsTrigger>
-            <TabsTrigger value="customers">Kunder ({customers.length})</TabsTrigger>
-            <TabsTrigger value="contact_requests">Kontakt ({contactRequests.length})</TabsTrigger>
+          {/* Gör tabb-raden flex så tabb-knapparna fördelas och krymps för små skärmar.
+              På riktigt små skärmar använder vi w-1/3 så flikarna kan gå över två rader (3 + 2). */}
+          <TabsList className="w-full bg-white shadow-md rounded-lg p-1 flex flex-wrap gap-1">
+            {/* Mobil: 3 kolumner (w-1/3) så flikarna kan fördelas på två rader (3 + 2).
+                Små/ större skärmar (sm+) använder flex-1 för en rad. */}
+            <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="cases">
+              Ärenden ({cases.length})
+            </TabsTrigger>
+            <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="subscriptions">
+              Abonnemang ({subscriptions.length})
+            </TabsTrigger>
+            <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="valuations">
+              Värderingar ({valuations.length})
+            </TabsTrigger>
+            <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="customers">
+              Kunder ({customers.length})
+            </TabsTrigger>
+            <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="contact_requests">
+              Kontakt ({contactRequests.length})
+            </TabsTrigger>
           </TabsList>
 
           {/* Ärenden */}
@@ -542,7 +584,7 @@ const AdminPortal: React.FC = () => {
                                     {comment.author_type === "customer" ? (comment.author?.name ?? "Kund") : "Trygg Hand"}
                                   </span>
                                   <span className="text-xs text-warm-gray">
-                                    {comment.created_at ? format(new Date(comment.created_at), "dd MMM HH:mm", { locale: sv }) : ""}
+                                    {comment.created_at ? new Date(comment.created_at).toLocaleString("sv-SE") : ""}
                                   </span>
                                 </div>
                                 <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
@@ -615,7 +657,7 @@ const AdminPortal: React.FC = () => {
                   const date = v.created_at ? new Date(v.created_at) : null;
                   const images = v.image_urls ?? [];
                   return (
-                    <Card key={v.id} className="p-4 relative">
+                    <Card key={v.id} className="p-4 relative overflow-visible">
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteValuation(v.id); }}
                         className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
@@ -631,7 +673,7 @@ const AdminPortal: React.FC = () => {
                           {images.map((url, i) => <img key={i} src={url} alt={`Bild ${i+1}`} className="w-16 h-16 object-cover rounded-md border" />)}
                         </div>
                       )}
-                      <p className="text-sm mt-2 whitespace-pre-wrap">{(v as any).analysis_result ?? (v as any).analysis ?? ''}</p>
+                      <p className="text-sm mt-2 whitespace-pre-wrap break-words max-w-full">{(v as any).analysis_result ?? (v as any).analysis ?? ''}</p>
                     </Card>
                   );
                 })}

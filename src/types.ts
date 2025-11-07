@@ -4,6 +4,7 @@ export interface Customer {
   email?: string;
   personal_number?: string;
   phone?: string; // <-- add this optional field
+  is_admin?: boolean; 
 }
 
 export interface ServiceType {

@@ -212,7 +212,14 @@ import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscrip
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch (err) {
+      console.error("Sign out error:", err);
+    } finally {
+      // Navigera tillbaka till startsidan efter utloggning
+      window.location.href = "/";
+    }
   };
 
   if (loading) {
@@ -227,24 +234,22 @@ import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscrip
   }
 
   return (
-    <div className="min-h-screen bg-soft-gray">
+    <div className="bg-soft-gray">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Tidio />
         {/* Header */}
-        <header className="bg-white shadow-sm border-b mb-6">
+        <header >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div>
-                <h2 className="text-lg font-semibold text-trust-blue">
-                  Trygg Hand
-                </h2>
-                <p className="text-sm text-warm-gray">Mina ärenden</p>
-              </div>
-              <Button onClick={handleSignOut} variant="outline" size="sm">
-                <LogOut className="w-4 h-4 mr-2" />
-                Logga ut
-              </Button>
-            </div>
+            <div className="flex justify-between items-center h-16 pt-2">
+               <div>
+                                 
+               </div>
+               <div className="flex items-center gap-3">
+                 <Button onClick={handleSignOut} variant="outline" size="sm">
+                   <LogOut className="w-4 h-4 mr-2" />
+                   Logga ut
+                 </Button>
+               </div>
+             </div>
           </div>
         </header>
 
@@ -474,6 +479,11 @@ import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscrip
             )}
           </div>
         </div>
+      </div>
+
+      {/* Tidio som en liten fixed widget längst ner till höger så den syns och inte blir helskärm */}
+      <div className="fixed bottom-4 right-4 z-50 pointer-events-auto">
+        <Tidio />
       </div>
     </div>
   );
