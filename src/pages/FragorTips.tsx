@@ -99,17 +99,17 @@ content: (
     },
     {
       id: 3,
-      title: "Döstädning - Varför det är värt att börja tidigt",
+      title: "Framtidsorganisering - Varför det är värt att börja tidigt",
       icon: <Archive className="h-6 w-6" />,
       category: "Tips",
       imageUrl: "/images/dostadning.png",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            Döstädning innebär att i god tid rensa bland sina ägodelar för att underlätta för anhöriga.
+            Många kallar det 'dödstädning', men vi ser det som Omtänksam Överlämning eller Framtidsorganisering.
           </p>
           <div className="space-y-3">
-            <h4 className="font-semibold">Fördelar med döstädning:</h4>
+            <h4 className="font-semibold">Fördelar med Framtidsorganisering:</h4>
             <ul className="space-y-2">
               <li className="flex items-start">
                 <li className="flex items-start">
@@ -145,7 +145,7 @@ content: (
     },
     {
       id: 4,
-      title: "Ordna arkivet - En hjälp för anhöriga",
+      title: "Skapa Trygghetspärmen / Arkivet - En hjälp för anhöriga",
       icon: <FileText className="h-6 w-6" />,
       category: "Planering",
       imageUrl: "/images/arkiv.png",

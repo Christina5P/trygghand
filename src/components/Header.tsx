@@ -63,7 +63,7 @@ const Header = () => {
                 <summary className="px-4 py-2 cursor-pointer text-foreground hover:bg-primary/10 rounded">Tjänster</summary>
                 <div className="pl-4">
                   <Link to="/#las-mer-tjanster" className="block py-2 text-primary font-semibold" onClick={closeMobileMenu}>Läs mer om våra tjänster</Link>
-                  <a href="/services/RadgivningPlanering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Rådgivning & planering</a>
+                  <a href="/services/radgivning-planering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Rådgivning & planering</a>
                   <a href="/services/stadning" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Städning</a>
                   <a href="/services/tomning-bohag" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Tömning av bohag</a>
                   <a href="/services/flytt" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Flytt</a>
