@@ -10,10 +10,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
-    "paths": {
+  "paths": {
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "app", "App.tsx"],
+  "include": ["src", "app"],
   "exclude": ["node_modules", "dist"]
 }

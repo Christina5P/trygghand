@@ -29,7 +29,7 @@ import TomningBohag from "@/pages/services/TomningBohag";
 import Vardering from "@/pages/services/vardering-ai";
 import Magasinering from "@/pages/services/Magasinering";
 import RadgivningPlanering from "@/pages/services/RadgivningPlanering";
-import juridikguide from "@/pages/services/juridikguide";
+import Juridikguide from "@/pages/services/Juridikguide";
 
 // 🧠 AI-värdering (ny)
 
@@ -78,7 +78,7 @@ function App() {
               <Route path="/cookiepolicy" element={<CookiePolicy />} />
               <Route path="/clearcookies" element={<ClearCookies />} />
               <Route path="/privacy" element={<Privacy />} />
-              <Route path="/services/juridikguide" element={<juridikguide />} />
+              <Route path="/services/Juridikguide" element={<Juridikguide />} />
 
               {/* 🚫 404 */}
               <Route path="*" element={<NotFound />} />
