@@ -316,7 +316,7 @@ function ServicesGrid() {
       </h3>
   
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
-        <Link to="/services/RadgivningPlanering" className="text-center space-y-3 block hover:scale-105 transition-transform">
+        <Link to="/services/radgivning-planering" className="text-center space-y-3 block hover:scale-105 transition-transform">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
             <Users className="h-10 w-10 text-primary" />
           </div>

@@ -9,6 +9,8 @@ import "@/index.css";
 // 🧩 Komponenter & sidor
 import ResetPassword from "@/components/ResetPassword";
 import CookieBanner from "@/components/CookieBanner";
+import About from "@/components/About";
+
 import CookiePolicy from "@/pages/CookiePolicy";
 import ClearCookies from "@/pages/ClearCookies";
 import Privacy from "@/pages/Privacy";
@@ -50,17 +52,20 @@ function App() {
               {/* 🌍 Startsida */}
               <Route path="/" element={<Index />} />
 
-              {/* 💼 Tjänster */}
+              {/* About */}
+              <Route path="/about" element={<About />} />
+
+              {/* Services översikt */}
               <Route path="/services" element={<Services />} />
               <Route path="/services/forsaljning" element={<Forsaljning />} />
               <Route path="/services/stadning" element={<Stadning />} />
               <Route path="/services/flytt" element={<Flytt />} />
               <Route path="/services/tomning-bohag" element={<TomningBohag />} />
-              <Route path="/services/vardering" element={<Vardering />} />
+              {/*<Route path="/services/vardering" element={<Vardering />} />*/}
               <Route path="/services/magasinering" element={<Magasinering />} />
-              <Route path="/services/radgivning-planering" element={<RadgivningPlanering />} />
+              <Route path="/services/RadgivningPlanering" element={<RadgivningPlanering />} />
 
-              {/* 🧠 AI Värdering */}
+        
               {/* 🧠 AI Värdering */}
               <Route path="/vardering-ai" element={<Vardering />} />
               {/* 🧑‍💼 Portaler */}
@@ -73,6 +78,7 @@ function App() {
               <Route path="/cookiepolicy" element={<CookiePolicy />} />
               <Route path="/clearcookies" element={<ClearCookies />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/services/juridikguide" element={<juridikguide />} />
 
               {/* 🚫 404 */}
               <Route path="*" element={<NotFound />} />

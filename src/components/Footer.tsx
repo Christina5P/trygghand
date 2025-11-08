@@ -22,7 +22,7 @@ const Footer = () => {
           <div className="space-y-4">
             <h4 className="font-semibold">Tjänster</h4>
             <ul className="space-y-2 text-sm text-background/80">
-              <li><Link to="/services/RadgivningPlanering" className="hover:underline">Rådgivning & planering</Link></li>
+              <li><Link to="/services/radgivning-planering" className="hover:underline">Rådgivning & planering</Link></li>
               <li><Link to="/services/Stadning" className="hover:underline">Städning</Link></li>
               <li><Link to="/services/tomning-bohag" className="hover:underline">Tömning av bohag</Link></li>
               <li><Link to="/services/Flytt" className="hover:underline">Flytt</Link></li>
@@ -36,6 +36,7 @@ const Footer = () => {
             <h4 className="font-semibold">Företag</h4>
             <ul className="space-y-2 text-sm text-background/80">
               <li><Link to="/about" className="hover:underline">Om oss</Link></li>
+              <li><Link to="/Juridikguide" className="hover:underline">Din Juridiska Guide i Fickan</Link></li>
               <li><Link to="/values" className="hover:underline">Våra värderingar</Link></li>
               <li><Link to="/partners" className="hover:underline">Partners</Link></li>
               <li><Link to="/privacy" className="hover:underline">Integritetspolicy</Link></li>
