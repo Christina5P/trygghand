@@ -83,11 +83,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn("supabase signOut error:", err);
+    }
+
+    // Ta bort kvarvarande Supabase/session-nycklar i localStorage/sessionStorage
+    try {
+      for (const key of Object.keys(localStorage)) {
+        if (key.includes("supabase") || key.includes("sb-") || key.includes("sb:")) {
+          localStorage.removeItem(key);
+        }
+      }
+      for (const key of Object.keys(sessionStorage)) {
+        if (key.includes("supabase") || key.includes("sb-") || key.includes("sb:")) {
+          sessionStorage.removeItem(key);
+        }
+      }
+    } catch (err) {
+      // ignore
+    }
+
     setUser(null);
     setCustomer(null);
     setSession(null);
-  };
+    setLoading(false);
+
+    // säkerställ att alla komponenter läser nytt auth-state
+    // gör en navigering eller reload som sista utväg
+    try {
+      window.requestAnimationFrame(() => window.location.reload());
+    } catch {}
+   };
 
   const value: AuthContextType = { user, customer, session, loading, signIn, signUp, signOut };
 
