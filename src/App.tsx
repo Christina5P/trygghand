@@ -30,7 +30,7 @@ import Vardering from "@/pages/services/vardering-ai";
 import Magasinering from "@/pages/services/Magasinering";
 import RadgivningPlanering from "@/pages/services/RadgivningPlanering";
 import Juridikguide from "@/pages/services/Juridikguide";
-
+import { AuthProvider } from "@/hooks/useAuth";
 // 🧠 AI-värdering (ny)
 
 const queryClient = new QueryClient();
@@ -41,7 +41,7 @@ function App() {
   }, []);
 
   return (
-    <>
+    <AuthProvider>
       <CookieBanner />
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
@@ -86,7 +86,7 @@ function App() {
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
-    </>
+    </AuthProvider>
   );
 }
 
