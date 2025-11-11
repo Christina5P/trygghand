@@ -27,8 +27,11 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
   const [analysisResult, setAnalysisResult] = useState<ValuationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [extraPrompt, setExtraPrompt] = useState<string>("");
   const inputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB per fil (ändra vid behov)
 
   // Förhandsgranskning av bilder
   useEffect(() => {
@@ -43,6 +46,12 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
     setError(null);
     const list = e.target.files ? Array.from(e.target.files) : [];
     const images = list.filter((f) => f.type.startsWith("image/"));
+    const tooLarge = images.filter((f) => f.size > MAX_FILE_SIZE);
+    if (tooLarge.length > 0) {
+      setError(`Filer överstiger maxstorlek (${Math.round(MAX_FILE_SIZE / (1024*1024))} MB). Ta bort stora filer eller minska storleken.`);
+      e.target.value = "";
+      return;
+    }
     setFiles(images);
     setAnalysisResult(null);
     e.target.value = ''; // tillåt samma fil igen
@@ -52,16 +61,20 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
 
   const openCameraPicker = () => cameraInputRef.current?.click();
 
+  // samma kontroll även för kamera-capture
   const handleCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     const list = e.target.files ? Array.from(e.target.files) : [];
     const images = list.filter((f) => f.type.startsWith("image/"));
-    // Kamera-capture brukar vara en fil — behåll samma state-hantering som handleFiles
+    if (images.some((f) => f.size > MAX_FILE_SIZE)) {
+      setError(`Filen överstiger maxstorlek (${Math.round(MAX_FILE_SIZE / (1024*1024))} MB).`);
+      e.target.value = "";
+      return;
+    }
     if (images.length > 0) {
       setFiles(images);
       setAnalysisResult(null);
     }
-    // nollställ värdet så samma fil kan väljas igen
     e.target.value = "";
   };
 
@@ -103,7 +116,8 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
     }
 
     try {
-      const jsonString = await analyzeImage(files);
+      // Skicka extraPrompt så modellen får kompletterande info från användaren
+      const jsonString = await analyzeImage(files, extraPrompt);
       const result: ValuationResult = JSON.parse(jsonString);
       setAnalysisResult(result);
     } catch (err) {
@@ -121,8 +135,11 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
   const handleSaveValuation = async () => {
     setError(null);
 
+    console.debug("handleSaveValuation start", { customerId, filesCount: files.length, analysisResult });
+
     if (!customerId) {
       setError("Missing customerId. Logga in eller kontakta support.");
+      console.warn("Missing customerId when saving valuation");
       return;
     }
     if (!analysisResult) {
@@ -137,13 +154,19 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
     setLoading(true);
     try {
       const analysisJsonString = JSON.stringify(analysisResult);
+      console.debug("Calling uploadAndSaveValuation", { customerId, filesCount: files.length });
       const saved = await uploadAndSaveValuation(customerId, analysisJsonString, files);
 
-      // Ensure id is a string before calling substring
-      const savedIdStr = saved && saved.id != null ? String(saved.id) : undefined;
+      console.debug("uploadAndSaveValuation response:", saved);
+
+      if (!saved || !saved.id) {
+        throw new Error(`Sparning misslyckades: ogiltigt svar från servern: ${JSON.stringify(saved)}`);
+      }
+
+      const savedIdStr = String(saved.id);
       toast({
         title: "Sparat",
-        description: `Värdering #${savedIdStr ? savedIdStr.substring(0, 8) : "okänd"} sparad.`
+        description: `Värdering #${savedIdStr.substring(0, 8)} sparad.`
       });
 
       setFiles([]);
@@ -151,144 +174,140 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
       onSaved?.();
     } catch (err) {
       console.error("Save error:", err);
-      setError(String(err instanceof Error ? err.message : "Misslyckades att spara värdering."));
+      const msg = err && (err as any).message ? (err as any).message : "Misslyckades att spara värdering.";
+      setError(msg);
+      toast({
+        title: "Kunde inte spara",
+        description: msg
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  // when sending files to backend, append extraPrompt to FormData
+  const uploadFiles = async (files: File[]) => {
+    const fd = new FormData();
+    files.forEach((f) => fd.append("files", f));
+    if (extraPrompt && extraPrompt.trim()) fd.append("extraPrompt", extraPrompt.trim());
+
+    const res = await fetch("/api/gemini", { method: "POST", body: fd });
+    const data = await res.json();
+    // handle response...
+  };
+
   return (
-    <div>
-      {/* Hidden inputs: vanlig fil och kamera-capture */}
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        accept="image/*"
-        onChange={handleFiles}
-        className="hidden"
-      />
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleCameraCapture}
-        className="hidden"
-      />
-      
-      {/* Card: flyttat upp så även 'Välj bilder' finns inuti kortet */}
-      <div className="w-full mt-2 bg-white border rounded-lg shadow p-4">
-        {/* Rubrik + knappar för Ny värdering / Sparade värderingar */}
-        <div className="flex items-start justify-between mb-4">
-          <div>
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Hidden inputs */}
+      <input ref={inputRef} type="file" multiple accept="image/*" onChange={handleFiles} className="hidden" />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleCameraCapture} className="hidden" />
+
+      <div className="mt-6 bg-white border rounded-lg shadow p-4 md:p-6">
+        <div className="md:flex md:items-start md:justify-between gap-4">
+          <div className="flex-1 min-w-0">
             <h3 className="text-2xl font-semibold leading-none tracking-tight">Värdera bilder</h3>
-            <p className="text-sm text-muted-foreground">Analysera bilder och spara värdering</p>
+            <p className="text-sm text-muted-foreground mt-1">Analysera bilder och spara värdering med Gemini Flash</p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={openSavedValuations} className="px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+
+          <div className="mt-4 md:mt-0 flex-shrink-0 flex gap-2">
+            <Button onClick={openSavedValuations} className="px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 whitespace-nowrap">
               <Save className="w-4 h-4 mr-2" />
               Sparade värderingar
             </Button>
+            <Button onClick={handleNewValuation} className="px-3 py-2 bg-white text-gray-700 border rounded hover:bg-gray-50 whitespace-nowrap">
+              Ny värdering
+            </Button>
           </div>
         </div>
 
-        {/* Uppladdning och förhandsgranskning (nu inne i kortet) */}
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={openFilePicker}
-              className="px-4 py-2 bg-trust-blue text-white rounded hover:bg-trust-blue/90 flex items-center"
-              aria-label="Välj bilder"
-              title="Välj bilder från enheten"
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Välj ({files.length})
-            </Button>
+        {/* Controls + preview */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="col-span-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={openFilePicker} className="px-4 py-2 bg-trust-blue text-white rounded hover:bg-trust-blue/90 flex items-center w-full sm:w-auto">
+                  <PlusCircle className="w-4 h-4 mr-2" />
+                  Välj ({files.length})
+                </Button>
+                <Button onClick={openCameraPicker} className="px-3 py-2 bg-white text-gray-700 border rounded hover:bg-gray-50 flex items-center w-full sm:w-auto">
+                  <Camera className="w-4 h-4 mr-2" />
+                  Kamera
+                </Button>
+              </div>
 
-            <Button
-              onClick={openCameraPicker}
-              className="px-3 py-2 bg-white text-gray-700 border rounded hover:bg-gray-50 flex items-center"
-              aria-label="Öppna kamera"
-              title="Ta bild med kamera (mobil)"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              Kamera
-            </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  onClick={runAnalysis}
+                  disabled={loading || files.length === 0}
+                  className="px-4 py-2 bg-trust-green text-white rounded hover:bg-trust-green/90 flex-1 sm:flex-none"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {loading ? "Analyserar" : "Analysera"}
+                </Button>
+                <Button
+                  onClick={handleSaveValuation}
+                  disabled={loading || !analysisResult}
+                  className="px-4 py-2 bg-trust-blue text-white rounded hover:bg-trust-blue/90 flex-1 sm:flex-none"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                  Spara
+                </Button>
+              </div>
+            </div>
 
-            {files.length > 0 && (
-              <div className="flex items-center gap-2">
-                {previewUrls.slice(0, 3).map((url, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    aria-label={`Förhandsgranskning ${i + 1}`}
-                    title={files[i]?.name ?? `preview-${i}`}
-                    className="w-12 h-12 rounded-md overflow-hidden border p-0 flex items-center justify-center bg-white"
-                  >
-                    <img
-                      src={url}
-                      alt={files[i]?.name ?? `preview-${i}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
+            {/* Extra prompt */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium mb-2">Mer information (valfritt)</label>
+              <textarea
+                value={extraPrompt}
+                onChange={(e) => setExtraPrompt(e.target.value)}
+                placeholder="Beskriv ålder, material, skick eller andra detaljer som kan hjälpa analysen..."
+                className="w-full rounded-md border border-input p-2 min-h-[80px] text-sm"
+              />
+            </div>
 
-                {files.length > 3 && (
-                  <div className="w-12 h-12 rounded-md bg-gray-100 flex items-center justify-center text-sm text-warm-gray border">
-                    +{files.length - 3}
+            {error && <div className="text-red-600 mt-3 p-2 bg-red-100 border border-red-300 rounded text-sm whitespace-pre-wrap">{error}</div>}
+
+            {/* Resultat */}
+            <div className="mt-4">
+              {analysisResult ? (
+                <div className="w-full p-4 border border-trust-green bg-green-50 rounded-lg shadow-md">
+                  <h3 className="text-xl font-bold text-trust-green mb-3">AI Värderingsresultat</h3>
+                  <div className="text-2xl font-extrabold mb-4 border-b pb-2 text-primary">
+                    Uppskattat värde: {formatPrice(analysisResult.varde_min_sek)} - {formatPrice(analysisResult.varde_max_sek)}
                   </div>
-                )}
-              </div>
-            )}
+                  <div className="space-y-3 text-sm">
+                    <p><strong>Föremålsbeskrivning:</strong> {analysisResult.foremal_beskrivning}</p>
+                    <p><strong>Skick:</strong> {analysisResult.skick}</p>
+                    <p><strong>Motivering:</strong> {analysisResult.motivering}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full p-3 border rounded text-gray-500 h-32 flex items-center justify-center bg-white shadow-sm">
+                  {!loading && files.length > 0 ? "Klicka på 'Analysera' för att få en värdering." : "AI-värdering kommer att visas här."}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={runAnalysis}
-              disabled={loading || files.length === 0}
-              className="px-4 py-2 bg-trust-green text-white rounded hover:bg-trust-green/90 flex items-center"
-              aria-label="Analysera bilder"
-              title="Analysera valda bilder"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {loading ? "Analyserar" : "Analysera"}
-            </Button>
-
-            <Button
-              onClick={handleSaveValuation}
-              disabled={loading || !analysisResult}
-              className="px-4 py-2 bg-trust-blue text-white rounded hover:bg-trust-blue/90 flex items-center"
-              aria-label="Spara värdering"
-              title="Spara värdering med bilder"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-              Spara
-            </Button>
+          {/* Preview column */}
+          <div>
+            <div className="grid grid-cols-3 sm:grid-cols-1 md:grid-cols-1 gap-2">
+              {previewUrls.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2 md:grid-cols-1">
+                  {previewUrls.map((url, i) => (
+                    <div key={i} className="w-full h-24 md:h-32 rounded-md overflow-hidden border bg-white flex items-center justify-center">
+                      <img src={url} alt={files[i]?.name ?? `preview-${i}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="w-full h-32 rounded-md border border-dashed flex items-center justify-center text-sm text-gray-400 bg-gray-50">
+                  Förhandsgranskning visas här
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-
-        {error && <div className="text-red-600 mt-3 p-2 bg-red-100 border border-red-300 rounded text-sm whitespace-pre-wrap">{error}</div>}
-
-        <div className="mt-4">
-          {/* Resultat */}
-          {analysisResult ? (
-            <div className="w-full p-4 border border-trust-green bg-green-50 rounded-lg shadow-md">
-              <h3 className="text-xl font-bold text-trust-green mb-3">AI Värderingsresultat</h3>
-              <div className="text-2xl font-extrabold mb-4 border-b pb-2 text-primary">
-                Uppskattat värde: {formatPrice(analysisResult.varde_min_sek)} - {formatPrice(analysisResult.varde_max_sek)}
-              </div>
-              <div className="space-y-3 text-sm">
-                <p><strong>Föremålsbeskrivning:</strong> {analysisResult.foremal_beskrivning}</p>
-                <p><strong>Skick:</strong> {analysisResult.skick}</p>
-                <p><strong>Motivering:</strong> {analysisResult.motivering}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="w-full p-3 border rounded text-gray-500 h-32 flex items-center justify-center bg-white shadow-sm">
-              {!loading && files.length > 0 ? "Klicka på 'Analysera' för att få en värdering." : "AI-värdering kommer att visas här."}
-            </div>
-          )}
         </div>
       </div>
     </div>
