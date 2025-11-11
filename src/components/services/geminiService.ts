@@ -39,7 +39,7 @@ async function fileToGenerativePart(file: File): Promise<Part> {
 }
 
 // --- 3. Gemini API Anrop med JSON ---
-export async function analyzeImage(imageFiles: File[]): Promise<string> {
+export async function analyzeImage(imageFiles: File[], extraPrompt?: string): Promise<string> {
   if (imageFiles.length === 0) {
     throw new Error("No image files provided for analysis.");
   }
@@ -57,15 +57,17 @@ export async function analyzeImage(imageFiles: File[]): Promise<string> {
       imageFiles.map(file => fileToGenerativePart(file))
     );
 
-    const prompt = `Fyll i följande JSON-schema baserat på bilderna. Alltid svara exakt i detta format, inga extra kommentarer eller text utanför JSON-objektet:
-{
-    "foremal_beskrivning": "Detaljerad beskrivning av föremålet/föremålen.",
-    "skick": "Uppskattat skick (t.ex. 'Bra skick med normalt slitage').",
-    "varde_min_sek": 0,
-    "varde_max_sek": 0,
-    "motivering": "Kortfattad motivering för prisintervallet baserat på märke, ålder och marknadstrender."
-}
-`;
+    // Om extraPrompt finns, bifoga det som kompletterande information till modellen
+    const extraInfoText = extraPrompt && extraPrompt.trim() ? `\n\nYtterligare information från användaren: ${extraPrompt.trim()}` : "";
+    const prompt = `Fyll i följande JSON-schema baserat på bilderna. Alltid svara exakt i detta format, inga extra kommentarer eller text utanför JSON-objektet:${extraInfoText}
+ {
+     "foremal_beskrivning": "Detaljerad beskrivning av föremålet/föremålen.",
+     "skick": "Uppskattat skick (t.ex. 'Bra skick med normalt slitage').",
+     "varde_min_sek": 0,
+     "varde_max_sek": 0,
+     "motivering": "Kortfattad motivering för prisintervallet baserat på märke, ålder och marknadstrender."
+ }
+ `;
     const systemInstruction = "Du är en expert på andrahandsvärdering av lösöre. Ditt enda uppdrag är att returnera värderingen i det strikta JSON-format som specificeras i användarprompten.";
 
     const parts: Part[] = [
@@ -228,10 +230,11 @@ export async function analyzeImage(imageFiles: File[]): Promise<string> {
  */
 export async function analyzeAndSaveImages(
   files: File[],
-  customer_id: string | null
+  customer_id: string | null,
+  extraPrompt?: string
 ): Promise<any> {
   const customerIdToSend = !customer_id || customer_id === "_UNKNOWN_" ? null : customer_id;
-  const analysisResult = await analyzeImage(files); 
+  const analysisResult = await analyzeImage(files, extraPrompt); 
   const imageUrls = files.map((f) =>
     typeof f.name === "string" && f.name.startsWith("http") ? f.name : URL.createObjectURL(f)
   );
@@ -242,6 +245,8 @@ export async function analyzeAndSaveImages(
     console.error("Error saving valuation via saveValuation:", err);
     throw err;
   }
-}
-export { genAI };
-export const analyzeImages = analyzeImage;
+ }
+ export { genAI };
+export const analyzeImages = async (images: string[]) => {
+  // ...existing code...
+};
