@@ -79,3 +79,13 @@ export async function uploadAndSaveValuation(customerId: string | null, analysis
   const saved = await saveValuation(customerId, analysis, imageUrls);
   return saved;
 }
+
+// Sanera filnamn så att Supabase Storage får en giltig key
+const sanitizeFilename = (name: string) =>
+  name
+    .normalize("NFKD") // dela upp diakritiska tecken
+    .replace(/[\u0300-\u036f]/g, "") // ta bort diakritiska tecken
+    .replace(/[^a-zA-Z0-9._-]/g, "-") // ersätt ogiltiga tecken med '-'
+    .replace(/-+/g, "-") // sammanfoga upprepade '-'
+    .replace(/(^-+|-+$)/g, "") // ta bort ledande/efterföljande '-'
+    .toLowerCase();

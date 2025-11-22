@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import Tidio from "@/components/Tidio";
 import ValueEstimator from "@/components/ValueEstimator";
+import CollapsibleCard from "@/components/ui/CollapsibleCard";
 import {
   Card,
   CardContent,
@@ -20,15 +21,13 @@ import {
   Calendar,
   MapPin,
   DollarSign,
-  PlusCircle,
-  Save,
   X,
 } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
-import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscription, Valuation } from '../../types'; 
+import type { Customer, Case, CaseComment, Valuation } from '../../types';
 
-  const CustomerPortal = () => {
+const CustomerPortal: React.FC = () => {
   const { customer, signOut } = useAuth();
   const [cases, setCases] = useState<Case[]>([]);
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
@@ -37,18 +36,14 @@ import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscrip
   const [loading, setLoading] = useState(true);
   const [loadingComments, setLoadingComments] = useState(false);
   const [mainTab, setMainTab] = useState<"new" | "saved">("new");
+  // valuations kan ha fält som inte finns i Valuation-typ; använd any[] för flexibilitet
   const [valuations, setValuations] = useState<any[]>([]);
   const [loadingVals, setLoadingVals] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (customer?.id) {
-      setLoading(true);
-      fetchCases();
-    } else {
-      setCases([]);
-      setLoading(false);
-    }
+    if (customer?.id) fetchCases();
+    else setLoading(false);
     // eslint-disable-next-line
   }, [customer?.id]);
 
@@ -59,49 +54,40 @@ import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscrip
       const { data, error } = await supabase
         .from("cases")
         .select(
-          `
-          *,
+          `*,
           service_type:service_types(name, description),
           case_subscriptions(
             *,
             subscription:subscriptions(name, provider)
-          )
-        `
+          )`
         )
         .eq("customer_id", customer.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       setCases(data || []);
-    } catch (error) {
-      console.error("Error fetching cases:", error);
-      toast({
-        title: "Fel",
-        description: "Kunde inte hämta ärenden",
-        variant: "destructive",
-      });
+    } catch (err) {
+      console.error("Error fetching cases:", err);
+      toast({ title: "Fel", description: "Kunde inte hämta ärenden", variant: "destructive" });
       setCases([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchComments = async (caseId: string) => {
+  // caseId kan vara string eller number; supabase accepterar båda
+  const fetchComments = async (caseId: string | number) => {
     setLoadingComments(true);
     try {
       const { data, error } = await supabase
         .from("case_comments")
-        .select(`
-          *,
-          author:customers(name)
-        `)
+        .select(`*, author:customers(name)`)
         .eq("case_id", caseId)
         .order("created_at", { ascending: true });
-
       if (error) throw error;
       setComments(data || []);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
+    } catch (err) {
+      console.error("Error fetching comments:", err);
       setComments([]);
     } finally {
       setLoadingComments(false);
@@ -110,34 +96,23 @@ import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscrip
 
   const addComment = async () => {
     if (!newComment.trim() || !selectedCase) return;
-
     try {
-      const { error } = await supabase
-        .from("case_comments")
-        .insert({
-          case_id: selectedCase.id,
-          author_id: customer?.id,
-          author_type: "customer",
-          content: newComment.trim(),
-        });
-
+      const { error } = await supabase.from("case_comments").insert({
+        case_id: selectedCase.id,
+        author_id: customer?.id,
+        author_type: "customer",
+        content: newComment.trim(),
+      });
       if (error) throw error;
-
       setNewComment("");
-      fetchComments(selectedCase.id);
-      toast({
-        title: "Kommentar tillagd",
-        description: "Din kommentar har skickats",
-      });
-    } catch (error) {
-      console.error("Error adding comment:", error);
-      toast({
-        title: "Fel",
-        description: "Kunde inte skicka kommentar",
-        variant: "destructive",
-      });
+      // Reload comments for the selected case
+      await fetchComments(selectedCase.id as string | number);
+      toast({ title: "Kommentar tillagd", description: "Din kommentar har skickats" });
+    } catch (err) {
+      console.error("Error adding comment:", err);
+      toast({ title: "Fel", description: "Kunde inte skicka kommentar", variant: "destructive" });
     }
-  }
+  };
 
   const fetchValuations = async () => {
     if (!customer?.id) return;
@@ -148,33 +123,28 @@ import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscrip
         .select("*")
         .eq("customer_id", customer.id)
         .order("created_at", { ascending: false });
-
       if (error) throw error;
       setValuations(data || []);
-    } catch (error) {
-      console.error("Error fetching valuations:", error);
+    } catch (err) {
+      console.error("Error fetching valuations:", err);
       setValuations([]);
-      toast({
-        title: "Fel",
-        description: "Kunde inte hämta värderingar",
-        variant: "destructive",
-      });
+      toast({ title: "Fel", description: "Kunde inte hämta värderingar", variant: "destructive" });
     } finally {
       setLoadingVals(false);
     }
   };
 
-  // Ta bort en värdering (kundvy)
-  const deleteValuation = async (id: number) => {
+  const deleteValuation = async (id: string | number) => {
     if (!window.confirm("Vill du verkligen ta bort denna värdering?")) return;
     setLoadingVals(true);
     try {
       const { error } = await supabase.from("valuations").delete().eq("id", id);
       if (error) throw error;
-      setValuations((prev) => prev.filter((v) => v.id !== id));
+      // jämför som sträng för att undvika string/number mismatch
+      setValuations((prev) => prev.filter((v) => String(v.id) !== String(id)));
       toast({ title: "Raderad", description: `Värdering #${String(id)} togs bort.` });
     } catch (err: any) {
-      console.error("Delete valuation error:", err);
+      console.error(err);
       toast({ title: "Fel", description: String(err?.message ?? err), variant: "destructive" });
     } finally {
       setLoadingVals(false);
@@ -183,185 +153,165 @@ import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscrip
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending":
-        return "bg-yellow-500";
-      case "in_progress":
-        return "bg-blue-500";
-      case "completed":
-        return "bg-green-500";
-      case "cancelled":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
+      case "pending": return "bg-yellow-500";
+      case "in_progress": return "bg-blue-500";
+      case "completed": return "bg-green-500";
+      case "cancelled": return "bg-red-500";
+      default: return "bg-gray-500";
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "pending":
-        return "Väntar";
-      case "in_progress":
-        return "Pågår";
-      case "completed":
-        return "Klar";
-      case "cancelled":
-        return "Avbruten";
-      default:
-        return status;
+      case "pending": return "Väntar";
+      case "in_progress": return "Pågår";
+      case "completed": return "Klar";
+      case "cancelled": return "Avbruten";
+      default: return status;
     }
   };
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (err) {
-      console.error("Sign out error:", err);
-    } finally {
-      // Navigera tillbaka till startsidan efter utloggning
-      window.location.href = "/";
-    }
+    try { await signOut(); } catch (err) { console.error(err); }
+    finally { window.location.href = "/"; }
   };
 
-  if (loading) {
+  // Prepare saved valuations render content to avoid nested inline ternaries in JSX
+  const savedValsContent = useMemo(() => {
+    if (loadingVals) {
+      return <p className="text-warm-gray">Laddar sparade värderingar…</p>;
+    }
+    if (!loadingVals && valuations.length === 0) {
+      return <p className="text-warm-gray">Inga sparade värderingar.</p>;
+    }
     return (
-      <div className="min-h-screen bg-soft-gray flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-trust-blue mx-auto mb-4"></div>
-          <p className="text-warm-gray">Laddar dina ärenden...</p>
-        </div>
+      <div className="grid gap-4">
+        {valuations.map((v) => (
+          <div key={String(v.id)} className="p-4 border rounded bg-white">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <button
+                  onClick={() => deleteValuation(v.id)}
+                  className="text-gray-400 hover:text-red-600"
+                  title="Ta bort värdering"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex-1">
+                <div className="text-sm font-medium">Värdering #{String(v.id)}</div>
+                <div className="text-xs text-gray-500">
+                  {v.created_at ? new Date(v.created_at).toLocaleString("sv-SE") : ""}
+                </div>
+                <div className="mt-2 flex items-center gap-4">
+                  {v.image_urls && v.image_urls.length > 0 ? (
+                    <img src={v.image_urls[0]} alt={`val-${v.id}-img`} className="w-16 h-16 object-cover rounded-md border" />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-50 rounded-md flex items-center justify-center text-xs text-warm-gray">Ingen bild</div>
+                  )}
+                  <div className="text-xs text-gray-600">
+                    {(() => {
+                      // använd any-säker åtkomst så kompilatorn inte klagar om ditt Valuation-interface saknar fältet
+                      const text = (v as any).analysis_result ?? (v as any).analysis ?? "";
+                      try {
+                        const parsed = typeof text === "string" ? JSON.parse(text) : text;
+                        return parsed?.foremal_beskrivning ?? parsed?.motivering ?? String(text);
+                      } catch {
+                        return String(text);
+                      }
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
-  }
+  }, [loadingVals, valuations]);
+
+  if (loading) return (
+    <div className="min-h-screen bg-soft-gray flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-trust-blue mx-auto mb-4"></div>
+        <p className="text-warm-gray">Laddar dina ärenden...</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="bg-soft-gray">
+    <div className="bg-soft-gray min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <header >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16 pt-2">
-               <div>
-                                 
-               </div>
-               <div className="flex items-center gap-3">
-                 <Button onClick={handleSignOut} variant="outline" size="sm">
-                   <LogOut className="w-4 h-4 mr-2" />
-                   Logga ut
-                 </Button>
-               </div>
-             </div>
-          </div>
+        <header className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold text-trust-blue">Välkommen {customer?.name}</h2>
+          <Button onClick={handleSignOut} variant="outline" size="sm">
+            <LogOut className="w-4 h-4 mr-2" /> Logga ut
+          </Button>
         </header>
 
-        {/*Värderingsfunktion */}
-        
-        {mainTab === "new" ? (
-          <div className="mb-6">
+        {/* Värdebedömningsverktyg: Collapsible */}
+        <div className="mb-6">
+          <CollapsibleCard
+            defaultOpen
+            title={
+              <div className="flex flex-col">
+                <span className="font-bold text-lg">Värdebedömningsverktyg</span>
+                <span className="text-sm text-gray-600">
+                  Hjälpmedel för att uppskatta värdet på dina bilder och föremål.
+                </span>
+              </div>
+            }
+          >
             <ValueEstimator
               customerId={customer?.id}
-              onSaved={() => {
-                setMainTab("saved");
-                fetchValuations();
-              }}
-              onOpenSaved={() => {
-                setMainTab("saved");
-                fetchValuations();
-              }}
-              onNew={() => {
-                setMainTab("new");
-              }}
+              onSaved={() => { setMainTab("saved"); fetchValuations(); }}
+              onOpenSaved={() => { setMainTab("saved"); fetchValuations(); }}
+              onNew={() => { setMainTab("new"); }}
             />
-          </div>
-        ) : (
+          </CollapsibleCard>
+        </div>
+
+        {/* Sparade värderingar */}
+        {mainTab === "saved" && (
           <div className="mb-6">
             <div className="mb-3">
               <Button onClick={() => setMainTab("new")} variant="outline" size="sm">
                 Tillbaka
               </Button>
             </div>
-            {loadingVals ? (
-               <p className="text-warm-gray">Laddar sparade värderingar…</p>
-             ) : valuations.length === 0 ? (
-               <p className="text-warm-gray">Inga sparade värderingar.</p>
-             ) : (
-               <div className="grid gap-4">
-                 {valuations.map((v) => (
-                   <div key={String(v.id)} className="p-4 border rounded bg-white">
-                     <div className="flex items-start gap-4">
-                       <div className="flex-shrink-0">
-                         <button
-                           onClick={() => deleteValuation(v.id)}
-                           className="text-gray-400 hover:text-red-600"
-                           title="Ta bort värdering"
-                         >
-                           <X className="w-4 h-4" />
-                         </button>
-                       </div>
+            {savedValsContent}
+          </div>
+        )}
 
-                       <div className="flex-1">
-                         <div className="text-sm font-medium">Värdering #{String(v.id)}</div>
-                         <div className="text-xs text-gray-500">
-                           {v.created_at ? new Date(v.created_at).toLocaleString("sv-SE") : ""}
-                         </div>
-                         <div className="mt-2 flex items-center gap-4">
-                           {v.image_urls && v.image_urls.length > 0 ? (
-                             <img src={v.image_urls[0]} alt={`val-${v.id}-img`} className="w-16 h-16 object-cover rounded-md border" />
-                           ) : (
-                             <div className="w-16 h-16 bg-gray-50 rounded-md flex items-center justify-center text-xs text-warm-gray">Ingen bild</div>
-                           )}
-                           <div className="text-xs text-gray-600">
-                             {(() => {
-                               const text = v.analysis_result ?? v.analysis ?? "";
-                               try {
-                                 const parsed = typeof text === "string" ? JSON.parse(text) : text;
-                                 return parsed?.foremal_beskrivning ?? parsed?.motivering ?? String(text);
-                               } catch {
-                                 return String(text);
-                               }
-                             })()}
-                           </div>
-                         </div>
-                       </div>
-                     </div>
-                   </div>
-                 ))}
-               </div>
-             )}
-           </div>
-         )}
-
-        {/* Layout: EstimatorCard + Cases (left) and Details (right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          {/* Left column: EstimatorCard and Cases */}
-          <div className="lg:col-span-2 flex flex-col">
-            {/* EstimatorCard removed — ValueEstimator renders the 'Värdera bilder' card itself */}
-
-            <Card className="flex-1 flex flex-col">
-              <CardHeader className="flex flex-row justify-between items-center">
-                <div>
-                  <CardTitle>Mina ärenden</CardTitle>
-                  <CardDescription>
-                    Här ser du alla dina pågående och avslutade ärenden
-                  </CardDescription>
-                </div>
-              </CardHeader>
-
-              <CardContent className="flex-1 overflow-y-auto">
-                {cases.length === 0 ? (
-                  <p className="text-center text-warm-gray py-8">Inga ärenden än</p>
-                ) : (
-                  <div className="space-y-4">
-                    {cases.map((case_) => (
+        {/* Layout: Mina ärenden (collapsible) */}
+        <div className="lg:col-span-2 flex flex-col mb-6">
+          <CollapsibleCard
+            defaultOpen
+            title={
+              <div className="flex flex-col">
+                <span className="font-bold text-lg">Mina ärenden</span>
+                <span className="text-sm text-gray-600">Alla pågående och avslutade ärenden</span>
+              </div>
+            }
+          >
+            <div className="flex-1 overflow-y-auto">
+              {cases.length === 0 ? (
+                <p className="text-center text-warm-gray py-8">Inga ärenden än</p>
+              ) : (
+                <div className="space-y-4">
+                  {cases.map((case_) => {
+                    const isSelected = selectedCase && String(selectedCase.id) === String(case_.id);
+                    return (
                       <div
-                        key={case_.id}
+                        key={String(case_.id)}
                         className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                          selectedCase?.id === case_.id
-                            ? "border-trust-blue bg-trust-blue/5"
-                            : "border-gray-200 hover:border-trust-blue/50"
+                          isSelected ? "border-trust-blue bg-trust-blue/5" : "border-gray-200 hover:border-trust-blue/50"
                         }`}
                         onClick={() => {
                           setSelectedCase(case_);
-                          fetchComments(case_.id);
+                          fetchComments(case_.id as string | number);
                         }}
                       >
                         <div className="flex justify-between items-start mb-2">
@@ -370,18 +320,12 @@ import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscrip
                             {getStatusText(case_.status)}
                           </Badge>
                         </div>
-                        <p className="text-sm text-warm-gray mb-2">
-                          {case_.service_type?.name}
-                        </p>
+                        <p className="text-sm text-warm-gray mb-2">{(case_ as any).service_type?.name}</p>
                         <div className="flex items-center text-xs text-warm-gray space-x-4">
                           {case_.scheduled_date && (
                             <div className="flex items-center">
                               <Calendar className="w-3 h-3 mr-1" />
-                              {format(
-                                new Date(case_.scheduled_date),
-                                "dd MMM yyyy",
-                                { locale: sv }
-                              )}
+                              {format(new Date(case_.scheduled_date), "dd MMM yyyy", { locale: sv })}
                             </div>
                           )}
                           {case_.address && (
@@ -398,92 +342,73 @@ import type { Customer, Case, CaseComment, ServiceType, ContactRequest, Subscrip
                           )}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </CollapsibleCard>
+        </div>
 
-          {/* Right column: Details & Comments — match height with left */}
-          <div className="flex">
-            {selectedCase ? (
-              <Card className="flex-1 flex flex-col">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
+        {/* Kommentarer (collapsible) */}
+        <div className="flex">
+          {selectedCase ? (
+            <CollapsibleCard
+              defaultOpen
+              title={
+                <div className="flex flex-col">
+                  <span className="font-bold text-lg flex items-center">
                     <MessageSquare className="w-5 h-5 mr-2" />
                     Kommentarer
-                  </CardTitle>
-                  <CardDescription>
+                  </span>
+                  <span className="text-sm text-gray-600">
                     Kommunicera om ärendet: {selectedCase.title}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent className="flex-1 flex flex-col">
-                  <div className="space-y-4 mb-6 overflow-y-auto flex-1">
-                    {loadingComments ? (
-                      <div className="text-center text-warm-gray">
-                        Laddar kommentarer...
-                      </div>
-                    ) : (
-                      comments.map((comment) => (
-                        <div
-                          key={comment.id}
-                          className={`p-3 rounded-lg ${
-                            comment.author_type === "customer"
-                              ? "bg-trust-blue/10 ml-4"
-                              : "bg-gray-100 mr-4"
-                          }`}
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-sm font-medium">
-                              {comment.author_type === "customer"
-                                ? "Du"
-                                : "Trygg Hand"}
-                            </span>
-                            <span className="text-xs text-warm-gray">
-                              {format(new Date(comment.created_at), "dd MMM HH:mm", {
-                                locale: sv,
-                              })}
-                            </span>
-                          </div>
-                          <p className="text-sm">{comment.content}</p>
+                  </span>
+                </div>
+              }
+            >
+              <div className="flex-1 flex flex-col">
+                <div className="space-y-4 mb-6 overflow-y-auto flex-1">
+                  {loadingComments ? (
+                    <div className="text-center text-warm-gray">Laddar kommentarer...</div>
+                  ) : (
+                    comments.map((comment) => (
+                      <div
+                        key={String(comment.id)}
+                        className={`p-3 rounded-lg ${
+                          comment.author_type === "customer" ? "bg-trust-blue/10 ml-4" : "bg-gray-100 mr-4"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-sm font-medium">
+                            {comment.author_type === "customer" ? "Du" : "Trygg Hand"}
+                          </span>
+                          <span className="text-xs text-warm-gray">
+                            {comment.created_at ? format(new Date(comment.created_at), "dd MMM HH:mm", { locale: sv }) : ""}
+                          </span>
                         </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <Textarea
-                      placeholder="Skriv en kommentar..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      className="min-h-[80px]"
-                    />
-                    <Button
-                      onClick={addComment}
-                      disabled={!newComment.trim() || loadingComments}
-                      className="w-full"
-                    >
-                      Skicka kommentar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="flex-1 flex">
-                <CardContent className="flex-1 flex items-center justify-center">
-                  <p className="text-warm-gray">Välj ett ärende för att se detaljer</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                        <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <Textarea placeholder="Skriv en kommentar..." value={newComment} onChange={(e) => setNewComment(e.target.value)} className="min-h-[80px]" />
+                  <Button onClick={addComment} disabled={!newComment.trim() || loadingComments} className="w-full">Skicka kommentar</Button>
+                </div>
+              </div>
+            </CollapsibleCard>
+          ) : (
+            <Card className="flex-1 flex">
+              <CardContent className="flex-1 flex items-center justify-center">
+                <p className="text-warm-gray">Välj ett ärende för att se detaljer</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      </div>
 
-      {/* Tidio som en liten fixed widget längst ner till höger så den syns och inte blir helskärm */}
-      <div className="fixed bottom-4 right-4 z-50 pointer-events-auto">
-        <Tidio />
+        {/* Tidio-widget */}
+        <div className="fixed bottom-4 right-4 z-50 pointer-events-auto"><Tidio/></div>
       </div>
     </div>
   );
