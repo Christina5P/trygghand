@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, User } from "lucide-react";
+import { Phone, Mail, User, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import Logo from "./HouseHandsLogo.jsx";
@@ -10,13 +10,18 @@ import { useAuth } from "@/hooks/useAuth"; // <-- adjust path if needed
 
 interface HeaderProps {
   customer?: Customer;
-  signOut?: () => void;
+  signOut: () => Promise<void> | void;
+  
 }
 
 const Header: React.FC<HeaderProps> = ({ customer, signOut }) => {
   const auth = useAuth();
-  const effectiveSignOut = signOut ?? auth.signOut;
+  const effectiveSignOut = async () => {
+  await signOut();        // logga ut användaren
+  navigate("/");          // gå till hemsidan
+};
   const effectiveCustomer = customer ?? auth?.customer;
+  
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -116,6 +121,15 @@ const Header: React.FC<HeaderProps> = ({ customer, signOut }) => {
               Min sida
             </Link>
           </Button>
+           <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow">
+            <button
+              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => signOut()}
+            >
+              <LogOut className="w-4 h-4" />
+              Logga ut
+            </button>
+         </div>
         </div>
       </div>
     </header>

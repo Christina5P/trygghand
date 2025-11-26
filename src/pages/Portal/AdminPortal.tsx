@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-// KORRIGERING: Använder CustomerCase direkt i importen.
 import type { Customer, ServiceType, ContactRequest, Subscription, Valuation, CustomerCase } from '@/types'; 
 import React, { useState, useRef, useMemo, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,7 +24,9 @@ import ValuationManager from "@/components/ValuationManager";
 import Header from "@/components/Header";
 import ValuationsView from "./views/ValuationsView"; 
 import ValuationDetailsDialog from "./dialogs/ValuationDetailsDialog";
+import { useNavigate } from "react-router-dom";
 
+// Header and logout are handled inside the AdminPortal component via the `signOut` hook.
 
 const CaseDetailsDialog: React.FC<{
   caseData: CustomerCase;
@@ -84,6 +85,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
     fetchValuations,   // <-- lägg till dessa två
   } = useAdminData();
 
+
   // MODAL STATE
   const [mainTab, setMainTab] = useState<
     "cases" | "subscriptions" | "valuations" | "customers" | "contact_requests" | "new" | "saved"
@@ -95,6 +97,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
 
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
   const [newCaseCustomerId, setNewCaseCustomerId] = useState<string | undefined>(undefined);
+  
 
   // --- ÅTGÄRDSLOGIK ---
 
@@ -143,7 +146,9 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
   // se till att de ligger INNAN "if (loading)" och det sista return.
 
   const contactRequestList = useMemo(() => {
-    return contactRequests.map((contact) => {
+  return contactRequests
+    .filter((c) => c.status === "new" || c.status === "in_progress")
+    .map((contact) => {
       const badge = getStatusBadge(contact.status);
       return (
         <div
@@ -159,7 +164,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
         </div>
       );
     });
-  }, [contactRequests]);
+}, [contactRequests]);
+
 
   const customerList = useMemo(() => {
     return customers.map((c) => (
@@ -179,44 +185,51 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
     ));
   }, [customers]);
 
+// Funktion för att konvertera kontaktförfrågan till en kund
+const handleConvertContactToCustomer = useCallback(async (contact: ContactRequest) => {
+  // ERSÄTT 'window.confirm' med en custom modal/dialog för att följa strikta riktlinjer
+  // För detta exempel använder vi alert/confirm för att vara runnable, men det bör ersättas.
+  if (!window.confirm(`Är du säker på att du vill konvertera ${contact.name} till en ny kund?`)) return;
 
-  // Funktion för att konvertera kontaktförfrågan till en kund
-  const handleConvertContactToCustomer = useCallback(async (contact: ContactRequest) => {
-    // ERSÄTT 'window.confirm' med en custom modal/dialog för att följa strikta riktlinjer
-    // För detta exempel använder vi alert/confirm för att vara runnable, men det bör ersättas.
-    if (!window.confirm(`Är du säker på att du vill konvertera ${contact.name} till en ny kund?`)) return;
+  setSelectedContact(null);
+  
+  try {
+    // 1. Skapa en ny kund i databasen
+    const newCustomerPayload = {
+      name: contact.name,
+      email: contact.email,
+      phone: contact.phone,
+      personal_number: null,
+    };
 
-    setSelectedContact(null);
-    
-    try {
-      // 1. Skapa en ny kund i databasen
-      const newCustomerPayload = {
-        name: contact.name,
-        email: contact.email,
-        phone: contact.phone,
-        personal_number: null
-      };
+    const { data: newCustomer, error: customerError } = await supabase
+      .from("customers")
+      .insert([newCustomerPayload])
+      .select()
+      .single();
 
-      const { data: newCustomer, error: customerError } = await supabase
-        .from('customers')
-        .insert([newCustomerPayload])
-        .select()
-        .single();
+    if (customerError) throw customerError;
 
-      if (customerError) throw customerError;
+    // 2. Uppdatera status på kontaktförfrågan till ett värde som DB tillåter
+    const { error: updateError } = await supabase
+      .from("contact_requests")
+      .update({
+        status: "completed", // <- ändrad från 'converted'
+        admin_notes: `KONVERTERAD TILL KUND (ID: ${newCustomer.id}). Föregående anteckningar: ${
+          contact.admin_notes || ""
+        }`,
+      })
+      .eq("id", contact.id);
 
-      // 2. Uppdatera status på kontaktförfrågan till 'converted'
-      const { error: updateError } = await supabase
-        .from("contact_requests")
-        .update({ status: 'converted', admin_notes: `Konverterad till kund ID: ${newCustomer.id}. Föregående anteckningar: ${contact.admin_notes || ""}` })
-        .eq("id", contact.id);
+    if (updateError) throw updateError;
 
-      if (updateError) throw updateError;
-      
-      toast({ title: "Konverterad!", description: `${contact.name} är nu registrerad som kund.` });
+    toast({
+      title: "Konverterad!",
+      description: `${contact.name} är nu registrerad som kund.`,
+    });
 
-      // 3. Ladda om all admin data för att uppdatera listorna
-      await fetchData(); 
+    // 3. Ladda om all admin data för att uppdatera listorna
+    await fetchData();
 
       // 4. Öppna den nya kundens dialog för snabb åtkomst/skapande av ärende
       setSelectedCustomer(newCustomer as Customer);
@@ -327,7 +340,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
           {/* 1. Kunddialog (CustomersDialog) */}
           {selectedCustomer && (
               <CustomersDialog
-                customer={selectedCustomer}
+                customer={selectedCustomer!}
                 onClose={() => setSelectedCustomer(null)}
                 onCustomerUpdated={fetchData} 
                 onNewCase={handleNewCaseFromCustomerDialog} 
@@ -340,6 +353,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
             <ValuationDetailsDialog
               valuation={selectedValuation}
               customers={customers}
+              open={true}
               onClose={() => setSelectedValuation(null)}
             />
           )}
@@ -347,7 +361,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
           {/* 2. Kontaktförfrågandialog (ContactRequestDialog) */}
           {selectedContact && (
               <ContactRequestDialog
-                contact={selectedContact}
+                contact={selectedContact!}
                 onClose={() => setSelectedContact(null)}
                 onUpdate={fetchData} 
                 onConvert={handleConvertContactToCustomer} 
@@ -368,13 +382,15 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
           {/* Använder den simulerade CaseDetailsDialog istället för CustomersDialog */}
           {selectedCase && (
            <CaseDetailsDialog
-                caseData={selectedCase}
+                caseData={selectedCase!}
                 onClose={() => setSelectedCase(null)}
                 onUpdate={fetchData} 
             />
           )}
 
       </div>
+
+ 
   );
 };
 

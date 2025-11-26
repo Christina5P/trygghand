@@ -26,17 +26,12 @@ import ValueEstimator from "@/components/ValueEstimator";
 import { useCustomerData } from "@/hooks/useCustomerData";
 import { useAuth } from "@/hooks/useAuth";
 
-
 /src/integrations/supabaseUpload.ts
 Laddar upp bilderna till Supabase Storage
 
 /src/lib/valuations.ts
 Sparar den nya värderingsposten, inklusive kund-ID, bild-URL:er och formulärdata, i tabellen valuations i supabase
-
-
-
 import ValueEstimator from "@/components/ValueEstimator";
-
 
 /src/pages/Portal/dialogs/ValuationDetailsDialog.tsx
 Värderingskorten som visar detaljerad info i adminportalen
@@ -45,11 +40,13 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 Sammanfattning av flödeskedjan
 
-Frontend (ValuationsValuationDialogs) → Uppladdning (supabaseUploads).
+Frontend Uppladdning geminiApiService -> (supabaseUploads).
 Supabase Database (Insert) → Webhook → Edge Function Router (supabase edge function).
-Router → analyze-image (Edge Function).
-analyze-image → Anropar geminiAPIService (för AI-analys).
-analyze-image → Anropar ValueEstimator (för värdeberäkning).
-analyze-image → Anropar save-valuation (för att spara slutförd data).
+supabaseUpload.ts -> Laddar upp bilderna i Supabase storage
+valuations.ts -> sparar värderingsposten i Supabase tabell "Valuations"
+ValuationManager.tsx UI-skalet för värderingsfunktionen + kundens sparade värderingslista
+ValueEstimator.tsx UI-gränssnittet för verktyget
+
 AdminPortal → ValuationsView → Visar den uppdaterade datan i listan.
+Hämtar data till listan från useAdminData
 Admin Klick → ValuationDetailsDialog → Visar detaljerad rapport.
