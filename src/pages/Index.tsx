@@ -4,6 +4,7 @@ import Services from "@/components/Services";
 import About from "@/components/About";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import { supabase } from "@/lib/supabase";
 // Define Route types directly here
 type LoaderArgs = { request: Request };
 type ComponentProps = { loaderData: { todos?: { id: string | number; name: string }[] } };
@@ -13,7 +14,7 @@ export const Route = {
   ComponentProps: {} as ComponentProps,
 };
 
-import { supabase } from "../lib/supabase";
+
 
 const Index = () => {
   return (
