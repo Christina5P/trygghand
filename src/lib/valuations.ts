@@ -1,7 +1,6 @@
 // src/lib/valuations.ts
 
-import { supabase } from "./supabase";
-
+import { supabase } from "@/lib/supabase";
 /**
  * Sparar AI-analysen och bild-URL:er i 'valuations' tabellen.
  * @param customerId Kund-ID (kan vara null).

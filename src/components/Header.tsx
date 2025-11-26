@@ -4,9 +4,20 @@ import { Phone, Mail, User } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useRef } from "react";
 import Logo from "./HouseHandsLogo.jsx";
-import type { Customer } from "../types";
+import React from "react";
+import { Customer } from "@/types"; // <-- adjust path if needed
+import { useAuth } from "@/hooks/useAuth"; // <-- adjust path if needed
 
-const Header = () => {
+interface HeaderProps {
+  customer?: Customer;
+  signOut?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ customer, signOut }) => {
+  const auth = useAuth();
+  const effectiveSignOut = signOut ?? auth.signOut;
+  const effectiveCustomer = customer ?? auth?.customer;
+
   const location = useLocation();
   const navigate = useNavigate();
   // Scroll to hash target on navigation, always scroll to top of section

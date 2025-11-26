@@ -3,6 +3,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
+// Hämtar och bevakar användarens inloggningsstatus från Supabase.
+// Gör användarinformation (user) och utloggningsfunktionen tillgänglig för alla dina React-komponenter.
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;

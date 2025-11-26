@@ -1,89 +1,145 @@
+// --------------------------------------------------------
+// CUSTOMERS
+// --------------------------------------------------------
+
 export interface Customer {
-  id: string;
-  name?: string;
-  email?: string;
-  personal_number?: string;
-  phone?: string; // <-- add this optional field
-  is_admin?: boolean; 
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  created_at?: string;
+  personal_number?: string;
+  is_admin?: boolean; 
 }
+
+export type CustomerMap = Record<string, Customer>;
+
+
+// --------------------------------------------------------
+// SERVICE TYPES
+// --------------------------------------------------------
 
 export interface ServiceType {
   id: string;
   name: string;
+  description?: string;
 }
+
+
+// --------------------------------------------------------
+// CASES
+// --------------------------------------------------------
 
 export interface Case {
   id: string;
-  title: string;
-  description?: string; // optional to match DB / Supabase rows
-  status: string;
-  customer_id?: string;
-   service_type?: {
-    name: string;
-    description?: string;
-  };
-  created_at: string;
-  deadline?: string | null;
-  scheduled_date?: string;
-  address?: string;
-  total_price?: number;
-  [key: string]: any;
-}
+  title: string | null;
+  description: string | null;
+  status: "pending" | "in_progress" | "completed" | "cancelled";
 
-export interface CaseComment {
-  id: string;
-  case_id: string;
-  author_id: string;
-  author_type: string;
-  content: string;
-  created_at: string;
-  author?: {
-    name: string;
-  };
-};
+  customer_id: string;
 
-export interface ContactRequest {
-  id: string;
-  name: string;        // required
-  email: string | null;      // required
-  phone?: string | null;
-  company?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  scheduled_date?: string | null;
   address?: string | null;
-  city?: string | null;
-  postal_code?: string | null;
-  message: string;         // required
-  status?: 'new' | 'contacted' | 'converted' | 'closed' | string;
-  created_at?: string | null;
-  admin_notes?: string | null;
 
-  // add service_type if contact requests can include it
-  service_type?: string | null;
+  // JOIN: service_type(*)
+  service_type?: ServiceType | null;
 }
 
-export interface Subscription {
-  id: string;
-  customer_id?: string;
-  plan?: string;
-  status?: 'active' | 'in_progress' | 'cancelled' | 'paused' | string;
-  started_at?: string | null;
-  ends_at?: string | null;
-  metadata?: Record<string, any>;
-  category?: string; // <-- add this (optional to avoid breaking existing callers)
-  provider?: string; // <-- add this optional field
+/**
+ * CustomerCase används för adminportalen när du JOIN:ar customers + service types.
+ * Den utökar egentligen bara Case.
+ */
+export interface CustomerCase extends Case {
+  scheduled_date?: string | null;
+  deadline?: string | null;
+  address?: string | null;
+  // andra fält som komponenterna använder
 }
+
+
+// --------------------------------------------------------
+// CASE COMMENTS
+// --------------------------------------------------------
+export interface Comment {
+    // 🛑 KRITISK ÄNDRING 1: Supabase UUID är sträng
+    id: string; 
+    
+    // UUID (strängar)
+    case_id: string; 
+    author_id: string | null; // Tillåt null om author_id är nullable i DB
+    customer_id: string | null;
+
+    // Textfält
+     author_type?: "admin" | "customer" | string | null;
+    content: string | null; // Tillåt null då det är texttext (nullable)
+
+    // Relation (från SELECT *, author:customers(name))
+    author: {
+        name: string | null;
+    } | null;
+}
+
+export interface AdminCase extends Case {
+  service_type?: {
+    name?: string;
+  } | null;
+
+  scheduled_date?: string | null;
+  deadline?: string | null;
+  address?: string | null;
+}
+
+
+// --------------------------------------------------------
+// VALUATIONS
+// --------------------------------------------------------
 
 export interface Valuation {
   id: string;
-  customer_id?: string;
-  property_address?: string;
-  estimated_value?: number;
-  currency?: string;
-  status?: 'draft' | 'final' | 'cancelled' | string;
-  created_at?: string | null;
-  updated_at?: string | null;
-  comments?: string;
-  name?: string;
-  customer_name?: string;
+  customer_id: string;
+  analysis?: string | null;
+  analysis_result?: any;
   image_urls?: string[] | null;
-  analysis?: string; // <-- add this optional field
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any;
+}
+
+// --------------------------------------------------------
+// SUBSCRIPTIONS
+// --------------------------------------------------------
+
+export interface Subscription {
+  id: string;
+  customer_id: string;
+  plan?: string;
+  name?: string;
+  provider?: string;
+  category?: string;
+  status?: string;
+  created_at?: string;
+}
+
+
+// --------------------------------------------------------
+// CONTACT REQUESTS
+// --------------------------------------------------------
+
+
+export interface ContactRequest {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  message?: string;
+  status?: "new" | "in_progress" | "contacted" | "converted" | "completed" | "cancelled";
+  created_at?: string;
+  company?: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+  service_type?: string;
+  admin_notes?: string | null;
 }
