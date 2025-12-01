@@ -44,7 +44,7 @@ interface CustomersDialogProps {
   onOpenCase?: (c: Case) => void;   // <--- Lägg till denna
 }
 
-const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, onCustomerUpdated }) => {
+const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, onCustomerUpdated, onOpenCase = () => {} }) => {
   const { toast } = useToast();
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(false);
@@ -243,26 +243,40 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
                             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Spara Kundinformation
                         </Button>
                     </div>
-                {customerCases.map((caseItem) => (
-                  <div key={caseItem.id} className="border rounded-lg p-3 flex justify-between items-center">
-                    <div>
-                      <div className="font-semibold">{caseItem.title}</div>
-                      <p className="text-sm text-gray-600">{caseItem.service_type?.name || "Okänd tjänst"}</p>
-                      <p className="text-xs text-gray-500">
-                        Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge className={`${getStatusColor(caseItem.status)} text-sm`}>
-                        {getStatusText(caseItem.status)}
-                      </Badge>
-                      <Button variant="ghost" size="sm" onClick={() => handleEditCustomerCase(caseItem)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            
+                {customerCases.map((caseItem) => (
+                  <div 
+                    key={caseItem.id} 
+                    // KRITISK ÄNDRING 1: Hela kortet öppnar ärendet
+                    className="border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition"
+                    onClick={() => handleEditCustomerCase(caseItem)} 
+                  >
+                    <div>
+                      <div className="font-semibold">{caseItem.title}</div>
+                      <p className="text-sm text-gray-600">{caseItem.service_type?.name || "Okänd tjänst"}</p>
+                      <p className="text-xs text-gray-500">
+                        Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge className={`${getStatusColor(caseItem.status)} text-sm`}>
+                        {getStatusText(caseItem.status)}
+                      </Badge>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        // KRITISK ÄNDRING 2: Stoppar eventbubblingen så att bara knappen triggas
+                        onClick={(e) => {
+                          e.stopPropagation(); 
+                          handleEditCustomerCase(caseItem); 
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+            </div>
             )}
           </div>
         </div>

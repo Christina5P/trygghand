@@ -171,10 +171,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
     await fetchAll();
   };
 
-  // ... dina övriga callbacks: handleConvertContactToCustomer, handleNewCaseFromCustomerDialog, osv.
-  // se till att de ligger INNAN "if (loading)" och det sista return.
-
-  const contactRequestList = useMemo(() => {
+   const contactRequestList = useMemo(() => {
   return contactRequests
     .filter((c) => c.status === "new" || c.status === "in_progress")
     .map((contact) => {
@@ -275,16 +272,7 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
     setIsNewCaseModalOpen(true);
   };
   
-  // Funktion för att öppna ett befintligt ärende
-  // KORRIGERING: Använder CustomerCase istället för Case
-  const handleOpenCaseFromCustomerDialog = (c: CustomerCase) => {
-    setSelectedCase(c);
-    setSelectedCustomer(null); // Stäng kunddialogen när ärendet öppnas
-  };
-  
-  if (loading) {
-      return <div className="min-h-screen bg-gray-50 p-8 text-center">Laddar adminportal...</div>;
-  }
+
 
   return (
 
@@ -324,9 +312,8 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
     <CasesView 
         cases={cases} 
         customers={customers} 
-        
-        // NY RAD SOM MÅSTE LÄGGAS TILL:
-        onDataUpdated={fetchData} 
+        onDataUpdated={fetchData}
+        onOpenCase={(c) => setSelectedCase(c)}
     />
 </TabsContent>
 
@@ -370,7 +357,7 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
                 onClose={() => setSelectedCustomer(null)}
                 onCustomerUpdated={fetchData} 
                 onNewCase={handleNewCaseFromCustomerDialog} 
-                //onOpenCase={handleOpenCaseFromCustomerDialog} 
+                onOpenCase={selectedCase ? () => {} : undefined }
               />
           )}
           
