@@ -1,196 +1,166 @@
 // src/pages/Portal/views/CasesView.tsx
-
-import React, { useState, useRef, useMemo, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
-import NewCaseForm from "./NewCaseForm";
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { useToast } from "@/hooks/use-toast";
-import type { CustomerCase, Customer, Comment } from '@/types';
-// import type { Database } from '@/database-types'; 
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Plus, Edit } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { format } from "date-fns";
+import { sv } from "date-fns/locale";
+import NewCaseForm from "./NewCaseForm"; // Importera din NewCaseForm
 
-// --- Hjälpfunktion för statusbadge ---
-const getStatusBadge = (status?: string) => {
-    const normalized = (status ?? '').toLowerCase().trim();
-    switch(normalized){
-        case 'pending': case 'nytt': return { text: 'Nytt', colorClass: 'bg-yellow-500 hover:bg-yellow-600 text-black' };
-        case 'in_progress': case 'pågående': return { text: 'Pågående', colorClass: 'bg-blue-500 hover:bg-blue-600 text-white' };
-        case 'completed': case 'avslutat': return { text: 'Avslutat', colorClass: 'bg-green-500 hover:bg-green-600 text-white' };
-        case 'cancelled': case 'avbrutet': return { text: 'Avbrutet', colorClass: 'bg-gray-600 hover:bg-gray-700 text-white' };
-        default: return { text: status ?? 'Okänd', colorClass: 'bg-gray-400 hover:bg-gray-500 text-white' };
-    }
-};
+// Importera dina typer
+import type { Case, Customer, Comment, ServiceType } from "@/types";
 
 interface CasesViewProps {
-    cases: CustomerCase[]; 
-    customers: Customer[];
-    onOpenCase: (c: CustomerCase) => void;
-    onOpenCustomer: (cust: Customer) => void;
-    onDataUpdated: () => Promise<void> | void; 
+  cases: Case[];
+  customers: Customer[]; // För att skicka till NewCaseForm
+  onDataUpdated: () => Promise<void> | void;
 }
 
-const CasesView: React.FC<CasesViewProps> = ({ 
-    cases, 
-    customers, 
-    onOpenCase, 
-    onOpenCustomer, 
-    onDataUpdated
-}) => {
-    const { toast } = useToast();
+// --- Hjälpfunktioner för status (kopierade från CustomerPortal) ---
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "pending": return "bg-yellow-500 text-black";
+    case "in_progress": return "bg-blue-500 text-white";
+    case "completed": return "bg-green-500 text-white";
+    case "cancelled": return "bg-red-500 text-white";
+    default: return "bg-gray-500 text-white";
+  }
+};
 
-    // --- State ---
-    const [showNewCase, setShowNewCase] = useState(false);
-    const [selectedCase, setSelectedCase] = useState<CustomerCase | null>(null);
-    const [newCaseForCustomerId, setNewCaseForCustomerId] = useState<string | null>(null);
-    const [caseComments, setCaseComments] = useState<Comment[]>([]);
-    const [loadingComments, setLoadingComments] = useState(false);
-    const newCaseRef = useRef<HTMLDivElement | null>(null);
-    
-    // Create a map for quick customer lookup
-    const customerMap = useMemo(() => {
-        const map: Record<string, Customer> = {};
-        customers.forEach((cust) => {
-            if (cust.id) map[cust.id] = cust;
-        });
-        return map;
-    }, [customers]);
+const getStatusText = (status: string) => {
+  switch (status) {
+    case "pending": return "Väntar";
+    case "in_progress": return "Pågår";
+    case "completed": return "Klar";
+    case "cancelled": return "Avbruten";
+    default: return status;
+  }
+};
 
-    // --- Funktion för att hämta kommentarer (Återskapad och Korrigerad) ---
-    const fetchCaseComments = useCallback(async (caseId: string) => {
-        setLoadingComments(true);
-        try {
-            const { data, error } = await supabase
-                .from("case_comments")
-                .select(`
-                    *,
-                    author:customers(name)
-                `)
-                .eq("case_id", caseId)
-                .order("created_at", { ascending: true });
+const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated }) => {
+  const { user } = useAuth(); // Används för att skicka till NewCaseForm som default adminId
+  const [isNewCaseDialogOpen, setIsNewCaseDialogOpen] = useState(false);
+  const [editingCase, setEditingCase] = useState<Case | null>(null);
+  const [caseComments, setCaseComments] = useState<Comment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
 
-            if (error) throw error;
-            // Lösning för ParserError/Type-konflikten med dubbelkonvertering
-            setCaseComments((data as unknown as Comment[]) || []); 
-        } catch (err) {
-            console.error("Error fetching comments:", err);
-            setCaseComments([]);
-        } finally {
-            setLoadingComments(false);
-        }
-    }, []); 
+  // Hämtar kommentarer för ett ärende, anropas från NewCaseForm
+  const fetchCaseComments = useCallback(async (caseId: string) => {
+    setLoadingComments(true);
+    try {
+      const { data, error } = await supabase
+        .from("case_comments")
+        .select(`*, author:customers(name)`) // Anpassa denna join vid behov för admin-namn
+        .eq("case_id", caseId)
+        .order("created_at", { ascending: true });
 
-    // --- Öppna formulär för redigering ---
-    const openCaseForEdit = async (c: CustomerCase) => {
-        setSelectedCase(c);
-        setNewCaseForCustomerId(c.customer_id ?? null);
-        setCaseComments([]); 
-        
-        if (typeof c.id === 'string' && c.id.length > 0) {
-            await fetchCaseComments(c.id);
-        }
-        setShowNewCase(true);
-    };
+      if (error) throw error;
+      setCaseComments(data as Comment[] || []);
+    } catch (err) {
+      console.error("Error fetching case comments:", err);
+      setCaseComments([]);
+    } finally {
+      setLoadingComments(false);
+    }
+  }, []);
 
-    // --- Öppna nytt ärende-formulär ---
-    const openNewCaseForm = (customerId?: string) => {
-        setSelectedCase(null);
-        setCaseComments([]);
-        setNewCaseForCustomerId(customerId ?? null);
-        setShowNewCase(true);
-    };
-    
-    // --- Stäng formulär ---
-    const closeNewCaseForm = () => { 
-        setShowNewCase(false); 
-        setSelectedCase(null); 
-        setNewCaseForCustomerId(null); 
-        setCaseComments([]); 
-    };
+  const handleOpenNewCaseDialog = () => {
+    setEditingCase(null); // Nollställ för nytt ärende
+    setCaseComments([]); // Rensa kommentarer
+    setIsNewCaseDialogOpen(true);
+  };
 
-   const normalizedComments = useMemo(() => {
-        return caseComments.map(c => ({
-         ...c,
-         content: c.content ?? "",
-         })) as Comment[]; 
-    }, [caseComments]);
+  const handleEditCase = (caseItem: Case) => {
+    setEditingCase(caseItem);
+    setIsNewCaseDialogOpen(true);
+    // Ladda kommentarer när ett ärende öppnas för redigering
+    if (caseItem.id) {
+        fetchCaseComments(caseItem.id);
+    }
+  };
 
-    return ( 
-        <div className="p-4">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">Ärenden</h2>
-                <Button
-                    type="button"
-                    onClick={() => openNewCaseForm()}
-                    className="bg-blue-600 text-white"
-                >
-                    Nytt ärende
-                </Button>
-            </div>
-            
-            {/* Nytt / Redigera ärende */}
-            {showNewCase && (
-                <div ref={newCaseRef} className="my-6 p-4 border rounded-lg bg-white shadow-lg relative">
-                    <Button 
-                        onClick={closeNewCaseForm} 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
-                        aria-label="Stäng formulär"
-                    >
-                        <X className="w-5 h-5" />
-                    </Button>
-                  <NewCaseForm 
-                        customers={customers}
-                        caseToEdit={selectedCase}
-                        defaultCustomerId={newCaseForCustomerId}
-                        onCaseSaved={async () => {
-                            await onDataUpdated(); 
-                            closeNewCaseForm();
-                        }}
-                        onCancel={closeNewCaseForm} 
-                        caseComments={normalizedComments} 
-                        fetchCaseComments={(fetchCaseComments as any)}
-                    />
-                </div>
-            )}
+  const handleCaseFormClose = async () => {
+    setIsNewCaseDialogOpen(false);
+    setEditingCase(null); // Rensa det ärende som redigerades
+    setCaseComments([]); // Rensa kommentarerna
+    await onDataUpdated(); // Ladda om alla ärenden
+  };
 
-            {/* Lista över ärenden */}
-            {cases.length === 0 ? (
-                <p>Inga ärenden hittades.</p>
-            ) : (
-                <div className="grid gap-4 mt-6">
-                    {cases.map(c => {
-                        const badge = getStatusBadge(c.status);
-                        const isSelectedForEdit = selectedCase && selectedCase.id === c.id;
+  // Om du vill visa laddningsstatus för huvudvyerna
+  if (!cases || !customers) { // Enkel check, kan vara mer detaljerad
+    return (
+      <div className="flex justify-center items-center min-h-[200px] bg-white rounded-lg shadow-md p-6">
+        <Loader2 className="h-8 w-8 animate-spin text-trust-blue mr-2" />
+        <p className="text-xl text-gray-700">Laddar ärenden...</p>
+      </div>
+    );
+  }
 
-                        return (
-                            <Card 
-                                key={c.id} 
-                                className={`hover:shadow-lg cursor-pointer ${isSelectedForEdit ? 'border-blue-500 ring-2 ring-blue-500' : ''}`} 
-                                onClick={() => openCaseForEdit(c)}
-                            >
-                                <CardContent className="p-4">
-                                    <div className="flex justify-between items-start">
-                                          <div>
-                                            <h3 className="font-semibold">{c.title}</h3>
-                                            <p className="text-sm text-gray-500">
-                                                Kund: {c.customer_id ? (customerMap?.[c.customer_id]?.name ?? 'Okänd') : 'Okänd'}
-                                            </p>
-                                        </div>
-                                        <Badge className={badge.colorClass}>{badge.text}</Badge>
-                                    </div>
-                                    <p className="text-sm mt-2 line-clamp-2">{c.description}</p>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
-    );
+  return (
+    <div className="p-4 bg-white rounded-lg shadow-md">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Ärendehantering</h2>
+        <Button onClick={handleOpenNewCaseDialog} className="bg-trust-blue hover:bg-trust-blue/90">
+          <Plus className="mr-2 h-4 w-4" /> Nytt Ärende
+        </Button>
+      </div>
+
+      <Dialog open={isNewCaseDialogOpen} onOpenChange={setIsNewCaseDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingCase ? "Redigera Ärende" : "Skapa Nytt Ärende"}</DialogTitle>
+          </DialogHeader>
+          <NewCaseForm
+            customers={customers}
+            defaultCustomerId={editingCase?.customer_id || null}
+            onCaseSaved={handleCaseFormClose}
+            onCancel={handleCaseFormClose}
+            caseToEdit={editingCase}
+            caseComments={caseComments}
+            fetchCaseComments={fetchCaseComments}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {cases.length === 0 ? (
+        <p className="text-center text-gray-500 py-8">Inga ärenden hittades.</p>
+      ) : (
+        <div className="grid gap-4 mt-4">
+          {cases.map((caseItem) => (
+            <Card key={caseItem.id} className="relative hover:shadow-lg transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-semibold text-lg">{caseItem.title}</h3>
+                  <Badge className={`${getStatusColor(caseItem.status)} text-sm`}>
+                    {getStatusText(caseItem.status)}
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-700 mb-2 line-clamp-2">{caseItem.description}</p>
+                <p className="text-xs text-gray-500">
+                  Kund: {customers.find(c => c.id === caseItem.customer_id)?.name || "Okänd"} |
+                  {/* Tjänst: {caseItem.service_type?.name || "Okänd"} | */}
+                  Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}
+                  {caseItem.scheduled_date && ` | Schemalagt: ${format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}`}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEditCase(caseItem)}
+                  className="absolute bottom-2 right-2 text-trust-blue hover:bg-trust-blue/10"
+                >
+                  <Edit className="h-4 w-4 mr-1" /> Redigera
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default CasesView;

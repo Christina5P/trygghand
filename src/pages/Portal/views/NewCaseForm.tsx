@@ -5,31 +5,24 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { Button, Textarea } from "@/components/ui"; 
 // Se till att dessa typer finns och importeras korrekt i din Typescript-struktur
-import type { Customer, CustomerCase } from "../../../types"; 
+import type { Customer, Case, Comment } from "../../../types";
+//import { saveCaseComment } from "@/services/caseCommentService";
 
 // --- Interface Definitions ---
 
+// src/pages/Portal/views/NewCaseForm.tsx
+
 // Definierad här för att lösa "Cannot find name 'NewCaseFormProps'"
 interface NewCaseFormProps {
-    customers: Customer[];
-    defaultCustomerId?: string | null;
-    onCaseSaved?: () => Promise<void> | void;
-    onCancel?: () => void;
-    caseToEdit?: CustomerCase | null; 
-    caseComments?: Comment[]; 
-    fetchCaseComments?: (caseId: string) => Promise<void>;
+    customers: Customer[];
+    defaultCustomerId?: string | null;
+    onCaseSaved?: () => Promise<void> | void;
+    onCancel?: () => void;
+    caseToEdit?: Case | null; // <-- Använd din centrala "Case" typ här
+    caseComments?: Comment[]; // <-- Använd din centrala "Comment" typ här
+    fetchCaseComments?: (caseId: string) => Promise<void>;
 }
 
-// Kommentarsinterface (matchar Supabase UUID/Text)
-interface Comment { 
-    id: string; // Matchar Supabase UUID
-    content: string | null; // Matchar Supabase textfält, men kan vara null
-    author_type?: string | null;
-    created_at?: string | null; 
-    author?: { 
-        name?: string | null 
-    } | null;
-};
 
 // --- Helper Functions ---
 
@@ -159,7 +152,14 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
   const addCaseComment = async () => {
     if (!caseToEdit?.id || !localNewComment.trim()) return;
     
-    const adminId = authUser?.id; 
+    const adminId = authUser?.id; // Inloggad administratörs ID
+    const customerId = caseToEdit.customer_id; // <-- Hämta kund-ID från ärendet
+
+    if (!adminId || !customerId) {
+        console.error("Saknar administratörs- eller kund-ID.");
+        setMessage("Kunde inte skicka kommentar: Saknar nödvändig information.");
+        return;
+    }
 
     try {
       setLocalLoadingComments(true);
@@ -168,17 +168,18 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
         author_id: adminId, 
         author_type: "admin",
         content: localNewComment.trim(),
+        customer_id: customerId, // <-- KRITISKT: Detta måste inkluderas
       });
       if (error) throw error;
       setLocalNewComment("");
       if (fetchCaseComments) await fetchCaseComments(caseToEdit.id);
     } catch (err) {
       console.error("Error adding comment:", err);
+      setMessage("Kunde inte skicka kommentar. RLS/databasfel: " + String(err));
     } finally {
       setLocalLoadingComments(false);
     }
   };
-
   
   return (
     <div className="p-4">
@@ -194,7 +195,7 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
               caseComments.map((cm: Comment) => (
                 <div key={cm.id} className={`p-2 rounded ${cm.author_type === "customer" ? "bg-trust-blue/10" : "bg-gray-100"}`}>
                   <div className="text-xs text-gray-500 mb-1">
-                        {cm.author_type === "customer" ? (cm.author?.name ?? "Kund") : "Trygg Hand"} 
+                        {cm.author_type === "customer" ? "Kund" : "Trygg Hand"} 
                         • 
                         {cm.created_at ? new Date(cm.created_at).toLocaleString('sv-SE') : ""}
                     </div>

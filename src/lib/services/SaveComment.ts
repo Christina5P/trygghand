@@ -5,6 +5,7 @@ interface CommentPayload {
   caseId: string;
   content: string;
   authorId: string;
+  customerId: string;
 }
 
 /**

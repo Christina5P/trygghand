@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Customer, ServiceType, ContactRequest, Subscription, Valuation, CustomerCase } from '@/types'; 
-import React, { useState, useRef, useMemo, useCallback } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,7 +21,6 @@ import CustomersDialog from "./dialogs/CustomersDialog";
 import SubscriptionsView from "./views/SubscriptionsView";
 import ContactRequestDialog from "./dialogs/ContactRequestDialog";
 import ValuationManager from "@/components/ValuationManager";
-import Header from "@/components/Header";
 import ValuationsView from "./views/ValuationsView"; 
 import ValuationDetailsDialog from "./dialogs/ValuationDetailsDialog";
 import { useNavigate } from "react-router-dom";
@@ -32,7 +31,9 @@ const CaseDetailsDialog: React.FC<{
   caseData: CustomerCase;
   onClose: () => void;
   onUpdate: () => Promise<void>;
-}> = ({ caseData, onClose, onUpdate }) => {
+  caseComments: Comment[];
+  fetchCaseComments: (caseId: string) => Promise<void>;
+}> = ({ caseData, onClose, onUpdate, caseComments, fetchCaseComments }) => {
   // Här skulle logiken för att visa och redigera ärendedata finnas
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -53,7 +54,8 @@ const CaseDetailsDialog: React.FC<{
 
 // --- ADMIN PORTAL PROPS ---
 interface AdminPortalProps {
-    customer: Customer; 
+  customer: Customer;
+ 
 }
 
 // --- Status kundförfrågan ---
@@ -98,6 +100,33 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
   const [newCaseCustomerId, setNewCaseCustomerId] = useState<string | undefined>(undefined);
   
+
+  // Kommentarer för det valda ärendet
+  const [caseComments, setCaseComments] = useState<Comment[]>([]);
+  const [loadingCaseComments, setLoadingCaseComments] = useState(false);
+
+  const fetchCaseComments = async (caseId: string) => {
+    setLoadingCaseComments(true);
+    try {
+      const { data, error } = await supabase
+        .from("case_comments")
+        .select("*, author:customers(name)")
+        .eq("case_id", caseId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      setCaseComments((data as Comment[]) || []);
+    } catch (err) {
+      console.error("Could not fetch case comments:", err);
+      setCaseComments([]);
+    } finally {
+      setLoadingCaseComments(false);
+    }
+  };
+
+  // När ett ärende väljs, hämta kommentarer
+  useEffect(() => {
+    if (selectedCase?.id) fetchCaseComments(selectedCase.id);
+  }, [selectedCase]);
 
   // --- ÅTGÄRDSLOGIK ---
 
@@ -263,8 +292,6 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
       <div className="min-h-screen bg-gray-50">
           <Tidio />
 
-          <Header customer={customer} signOut={signOut} />
-          
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
              {/* Visa värderings-översikt ovanför tabbarna */}
@@ -297,8 +324,7 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
     <CasesView 
         cases={cases} 
         customers={customers} 
-        onOpenCase={(c: CustomerCase) => setSelectedCase(c)}
-        onOpenCustomer={(cust: Customer) => handleOpenCustomerDialog(cust)}
+        
         // NY RAD SOM MÅSTE LÄGGAS TILL:
         onDataUpdated={fetchData} 
     />
@@ -344,7 +370,7 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
                 onClose={() => setSelectedCustomer(null)}
                 onCustomerUpdated={fetchData} 
                 onNewCase={handleNewCaseFromCustomerDialog} 
-                onOpenCase={handleOpenCaseFromCustomerDialog} 
+                //onOpenCase={handleOpenCaseFromCustomerDialog} 
               />
           )}
           
@@ -378,18 +404,7 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
               />
           )}
           
-          {/* 4. Redigera ärende (CaseDetailsDialog - Korrigerad) */}
-          {/* Använder den simulerade CaseDetailsDialog istället för CustomersDialog */}
-          {selectedCase && (
-           <CaseDetailsDialog
-                caseData={selectedCase!}
-                onClose={() => setSelectedCase(null)}
-                onUpdate={fetchData} 
-            />
-          )}
-
-      </div>
-
+         </div>
  
   );
 };

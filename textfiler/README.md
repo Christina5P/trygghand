@@ -248,4 +248,215 @@ Vanliga kommandon
 - npm run dev — starta utveckling
 - npm run build — bygg produktion
 - npm run preview — förhandsgranska build
+ 
+ 
+ @Christina5P ➜ /workspaces/trygghand (main) $ tree -I "node_modules|dist"
+.
+├── CNAME
+├── Console
+├── app
+│   └── routes
+│       ├── +types
+│       │   └── home.ts
+│       ├── _index.tsx
+│       ├── login.tsx
+│       └── reset-password.tsx
+├── backend
+│   ├── SupabaseEdgeFunction
+│   │   ├── analyze-image.ts
+│   │   └── save-valuation.js
+│   ├── package-lock.json
+│   ├── package.json
+│   └── server.js
+├── backups
+│   └── trygghand_backup_20251122_221844.tar.gz
+├── components.json
+├── eslint.config.js
+├── index.html
+├── package-lock.json
+├── package.json
+├── pnpm-lock.yaml
+├── postcss.config.cjs
+├── postcss.config.js
+├── public
+│   ├── CNAME
+│   ├── apple-touch-icon.png
+│   ├── favicon-16x16.png
+│   ├── favicon-192x192.png
+│   ├── favicon-32x32.png
+│   ├── favicon-512x512.png
+│   ├── favicon.ico
+│   ├── favicon_trygghand.png
+│   ├── hero-image-aoYg4Bmy.jpg
+│   ├── images
+│   │   ├── arkiv.png
+│   │   ├── bouppteckning.png
+│   │   ├── checklista.png
+│   │   ├── dostadning.png
+│   │   ├── rutavdrag.png
+│   │   └── skatt.png
+│   ├── robots.txt
+│   └── trygghandlogo-rb0vFdGw.png
+├── server.pid
+├── src
+│   ├── App.css
+│   ├── App.tsx
+│   ├── api
+│   │   └── revokeSessions.ts
+│   ├── assets
+│   │   ├── hero-image.jpg
+│   │   ├── nojdkundlogo.png
+│   │   ├── tailwind.config.js
+│   │   └── trygghandlogo.png
+│   ├── components
+│   │   ├── About.tsx
+│   │   ├── Contact.tsx
+│   │   ├── CookieBanner.tsx
+│   │   ├── EstimatorCard.tsx
+│   │   ├── Footer.tsx
+│   │   ├── FragorTips.tsx
+│   │   ├── Header.tsx
+│   │   ├── Hero.tsx
+│   │   ├── HouseHandsLogo.jsx
+│   │   ├── PriceCalculator.tsx
+│   │   ├── ResetPassword.tsx
+│   │   ├── Services.tsx
+│   │   ├── Tidio.tsx
+│   │   ├── ValuationManager.tsx
+│   │   ├── ValueEstimator.tsx
+│   │   ├── icons.tsx
+│   │   └── ui
+│   │       ├── CollapsibleCard.tsx
+│   │       ├── accordion.tsx
+│   │       ├── alert-dialog.tsx
+│   │       ├── alert.tsx
+│   │       ├── aspect-ratio.tsx
+│   │       ├── avatar.tsx
+│   │       ├── badge.tsx
+│   │       ├── breadcrumb.tsx
+│   │       ├── button.tsx
+│   │       ├── calendar.tsx
+│   │       ├── card.tsx
+│   │       ├── carousel.tsx
+│   │       ├── chart.tsx
+│   │       ├── checkbox.tsx
+│   │       ├── collapsible.tsx
+│   │       ├── command.tsx
+│   │       ├── context-menu.tsx
+│   │       ├── dialog.tsx
+│   │       ├── drawer.tsx
+│   │       ├── dropdown-menu.tsx
+│   │       ├── form.tsx
+│   │       ├── hover-card.tsx
+│   │       ├── index.ts
+│   │       ├── input-otp.tsx
+│   │       ├── input.tsx
+│   │       ├── label.tsx
+│   │       ├── menubar.tsx
+│   │       ├── navigation-menu.tsx
+│   │       ├── pagination.tsx
+│   │       ├── popover.tsx
+│   │       ├── progress.tsx
+│   │       ├── radio-group.tsx
+│   │       ├── resizable.tsx
+│   │       ├── scroll-area.tsx
+│   │       ├── select.tsx
+│   │       ├── separator.tsx
+│   │       ├── sheet.tsx
+│   │       ├── sidebar.tsx
+│   │       ├── skeleton.tsx
+│   │       ├── slider.tsx
+│   │       ├── sonner.tsx
+│   │       ├── switch.tsx
+│   │       ├── table.tsx
+│   │       ├── tabs.tsx
+│   │       ├── textarea.tsx
+│   │       ├── toast.tsx
+│   │       ├── toaster.tsx
+│   │       ├── toggle-group.tsx
+│   │       ├── toggle.tsx
+│   │       ├── tooltip.tsx
+│   │       └── use-toast.ts
+│   ├── config
+│   │   └── prices.ts
+│   ├── contexts
+│   │   └── AuthContext.tsx
+│   ├── global.d.ts
+│   ├── hooks
+│   │   ├── use-mobile.tsx
+│   │   ├── use-toast.ts
+│   │   ├── useAdminData.ts
+│   │   ├── useAuth.ts
+│   │   ├── useCustomerData.ts
+│   │   ├── usePortalStats.ts
+│   │   └── useSubscriptionCancellations.ts
+│   ├── index.css
+│   ├── integrations
+│   │   ├── supabase
+│   │   │   └── client.ts
+│   │   └── supabaseUpload.ts
+│   ├── lib
+│   │   ├── fullmakter.ts
+│   │   ├── services
+│   │   │   ├── SaveComment.ts
+│   │   │   └── geminiApiService.ts
+│   │   ├── supabase.ts
+│   │   ├── utils.ts
+│   │   └── valuations.ts
+│   ├── main.tsx
+│   ├── pages
+│   │   ├── ClearCookies.tsx
+│   │   ├── ComingSoon.tsx
+│   │   ├── CookiePolicy.tsx
+│   │   ├── Index.tsx
+│   │   ├── NotFound.tsx
+│   │   ├── Portal
+│   │   │   ├── AdminPortal.tsx
+│   │   │   ├── Auth.tsx
+│   │   │   ├── AuthLayout.tsx
+│   │   │   ├── CustomerPortal.tsx
+│   │   │   ├── Portal.tsx
+│   │   │   ├── PortalStats.tsx
+│   │   │   ├── dialogs
+│   │   │   │   ├── ContactRequestDialog.tsx
+│   │   │   │   ├── CustomersDialog.tsx
+│   │   │   │   ├── EditSubscriptionDialog.tsx
+│   │   │   │   ├── FullmaktDialog.tsx
+│   │   │   │   └── ValuationDetailsDialog.tsx
+│   │   │   └── views
+│   │   │       ├── CasesView.tsx
+│   │   │       ├── NewCaseForm.tsx
+│   │   │       ├── SubscriptionsView.tsx
+│   │   │       └── ValuationsView.tsx
+│   │   ├── Privacy.tsx
+│   │   ├── contacts.tsx
+│   │   ├── services
+│   │   │   ├── Flytt.tsx
+│   │   │   ├── Forsaljning.tsx
+│   │   │   ├── Juridikguide.tsx
+│   │   │   ├── Magasinering.tsx
+│   │   │   ├── RadgivningPlanering.tsx
+│   │   │   ├── Stadning.tsx
+│   │   │   ├── TomningBohag.tsx
+│   │   │   └── vardering-ai.tsx
+│   │   └── services.tsx
+│   ├── svg.d.ts
+│   ├── types.ts
+│   ├── utils.ts
+│   └── vite-env.d.ts
+├── stylelint.config.js
+├── supabase
+├── tailwind.config.ts
+├── textfiler
+│   ├── ADMIN_SETUPSupabase.md
+│   ├── GDPR_DPA_CHECKLIST.md
+│   ├── README.md
+│   ├── project_backup_20251028_141846.tar.gz
+│   ├── setup-database.sql
+│   └── struktur.md
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
 
+28 directories, 179 files
