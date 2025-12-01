@@ -16,7 +16,7 @@ import ClearCookies from "@/pages/ClearCookies";
 import Privacy from "@/pages/Privacy";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
-import FragorTips from "@/pages/FragorTips";
+import FragorTips from "@/components/FragorTips";
 import AdminPortal from "@/pages/Portal/AdminPortal";
 import Portal from "@/pages/Portal/Portal";
 

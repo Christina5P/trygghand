@@ -5,6 +5,7 @@ import { CheckCircle, AlertCircle, FileText, Calculator, Archive, ClipboardList 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 
 const FragorTips = () => {
   useEffect(() => {
@@ -112,10 +113,10 @@ content: (
             <h4 className="font-semibold">Fördelar med Framtidsorganisering:</h4>
             <ul className="space-y-2">
               <li className="flex items-start">
-                <li className="flex items-start">
                 <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-1 flex-shrink-0" />
                 <span>Du får använda RUT-avdrag vid köp av hjälp av servicetjänster som hjälp</span>
               </li>
+              <li className="flex items-start">
                 <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-1 flex-shrink-0" />
                 <span>Minskar stress för familjen efter dödsfallet</span>
               </li>
@@ -269,7 +270,20 @@ content: (
 
   return (
     <div className="min-h-screen">
+      {/* Global header — visa utan utloggning på denna sida */}
       <Header />
+
+      {/* Back link so user can navigate away from Frågor & Tips */}
+      <div className="container mx-auto px-4 pt-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-4">
+            <Link to="/" className="inline-flex items-center text-sm text-primary hover:underline">
+              ← Tillbaka
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}

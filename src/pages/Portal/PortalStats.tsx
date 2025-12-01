@@ -1,4 +1,4 @@
-// src/components/customer/PortalStats.tsx
+
 
 import React from "react";
 import { usePortalStats } from "@/hooks/usePortalStats";

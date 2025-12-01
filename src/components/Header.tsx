@@ -1,30 +1,16 @@
-import { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Phone, Mail, User, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useRef } from "react";
 import Logo from "./HouseHandsLogo.jsx";
-import React from "react";
 import { Customer } from "@/types"; // <-- adjust path if needed
 import { useAuth } from "@/hooks/useAuth"; // <-- adjust path if needed
 
-interface HeaderProps {
-  customer?: Customer;
-  signOut: () => Promise<void> | void;
-  
-}
-
-const Header: React.FC<HeaderProps> = ({ customer, signOut }) => {
-  const auth = useAuth();
-  const effectiveSignOut = async () => {
-  await signOut();        // logga ut användaren
-  navigate("/");          // gå till hemsidan
-};
-  const effectiveCustomer = customer ?? auth?.customer;
-  
-
+const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
+
   // Scroll to hash target on navigation, always scroll to top of section
   useEffect(() => {
     // Scroll to hash target on location change, with offset for header
@@ -42,13 +28,15 @@ const Header: React.FC<HeaderProps> = ({ customer, signOut }) => {
       }, 0);
     }
   }, [location]);
+
   const mobileMenuRef = useRef<HTMLDetailsElement>(null);
   // Helper to close mobile menu
   const closeMobileMenu = () => {
     if (mobileMenuRef.current) mobileMenuRef.current.open = false;
   };
+
   return (
-  <header className="bg-background border-b border-border sticky top-0 z-50">
+    <header className="bg-background border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <a href="#top" onClick={e => { e.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
@@ -121,15 +109,7 @@ const Header: React.FC<HeaderProps> = ({ customer, signOut }) => {
               Min sida
             </Link>
           </Button>
-           <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow">
-            <button
-              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-              onClick={() => signOut()}
-            >
-              <LogOut className="w-4 h-4" />
-              Logga ut
-            </button>
-         </div>
+         
         </div>
       </div>
     </header>

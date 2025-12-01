@@ -68,12 +68,13 @@ export interface Comment {
     
     // UUID (strängar)
     case_id: string; 
-    author_id: string | null; // Tillåt null om author_id är nullable i DB
+    author_id: string | null; 
     customer_id: string | null;
+    created_at?: string;
 
     // Textfält
      author_type?: "admin" | "customer" | string | null;
-    content: string | null; // Tillåt null då det är texttext (nullable)
+    content: string | null; 
 
     // Relation (från SELECT *, author:customers(name))
     author: {
@@ -82,9 +83,7 @@ export interface Comment {
 }
 
 export interface AdminCase extends Case {
-  service_type?: {
-    name?: string;
-  } | null;
+  service_type?: ServiceType | null;
 
   scheduled_date?: string | null;
   deadline?: string | null;

@@ -14,6 +14,7 @@ import type { Valuation } from "@/types";
 interface ValuationManagerProps {
   valuations: Valuation[];
   onDataUpdated: () => Promise<void>;
+  customerId?: string;
 }
   
 export const ValuationManager: React.FC<ValuationManagerProps> = ({ valuations, onDataUpdated }) => {
