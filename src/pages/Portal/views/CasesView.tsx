@@ -18,6 +18,7 @@ interface CasesViewProps {
   cases: Case[];
   customers: Customer[]; // För att skicka till NewCaseForm
   onDataUpdated: () => Promise<void> | void;
+  onOpenCase?: (c: Case) => void;
 }
 
 // --- Hjälpfunktioner för status (kopierade från CustomerPortal) ---
@@ -41,7 +42,7 @@ const getStatusText = (status: string) => {
   }
 };
 
-const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated }) => {
+const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, onOpenCase }) => {
   const { user } = useAuth(); // Används för att skicka till NewCaseForm som default adminId
   const [isNewCaseDialogOpen, setIsNewCaseDialogOpen] = useState(false);
   const [editingCase, setEditingCase] = useState<Case | null>(null);
@@ -81,6 +82,8 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated }
     if (caseItem.id) {
         fetchCaseComments(caseItem.id);
     }
+   // Notify parent (AdminPortal) so it can show full case dialog/details
+   onOpenCase?.(caseItem);
   };
 
   const handleCaseFormClose = async () => {
@@ -131,7 +134,11 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated }
       ) : (
         <div className="grid gap-4 mt-4">
           {cases.map((caseItem) => (
-            <Card key={caseItem.id} className="relative hover:shadow-lg transition-shadow">
+            <Card
+              key={caseItem.id}
+              className="relative hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleEditCase(caseItem)}
+            >
               <CardContent className="p-4">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-lg">{caseItem.title}</h3>
@@ -149,7 +156,7 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated }
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleEditCase(caseItem)}
+                  onClick={(e) => { e.stopPropagation(); handleEditCase(caseItem); }}
                   className="absolute bottom-2 right-2 text-trust-blue hover:bg-trust-blue/10"
                 >
                   <Edit className="h-4 w-4 mr-1" /> Redigera
