@@ -60,6 +60,21 @@ export interface CustomerCase extends Case {
 
 
 // --------------------------------------------------------
+// FULLMAKTER
+// --------------------------------------------------------
+export interface FullmaktDocument {
+  id: string;
+  customer_id: string | null;
+  file_name: string;
+  storage_path: string;
+  created_at: string;
+  fullmaktstyp?: string;
+  status?: string;
+}
+
+
+
+// --------------------------------------------------------
 // CASE COMMENTS
 // --------------------------------------------------------
 export interface Comment {

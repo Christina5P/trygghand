@@ -1,14 +1,15 @@
+//src/pages/Portal/AdminPortal.tsx
+
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, LogOut, X, MessageSquare } from "lucide-react";
 import NewCaseForm from "./views/NewCaseForm";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Customer, ServiceType, ContactRequest, Subscription, Valuation, CustomerCase } from '@/types'; 
+import type { Customer, ServiceType, ContactRequest, Subscription, Valuation, CustomerCase, Comment } from '@/types'; 
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -23,9 +24,10 @@ import ContactRequestDialog from "./dialogs/ContactRequestDialog";
 import ValuationManager from "@/components/ValuationManager";
 import ValuationsView from "./views/ValuationsView"; 
 import ValuationDetailsDialog from "./dialogs/ValuationDetailsDialog";
+import { FullmaktManagement } from "./views/FullmaktManagement";
 import { useNavigate } from "react-router-dom";
+import { Upload, FileText, Download, Loader2, FileWarning, Eye } from "lucide-react";
 
-// Header and logout are handled inside the AdminPortal component via the `signOut` hook.
 
 const CaseDetailsDialog: React.FC<{
   caseData: CustomerCase;
@@ -171,10 +173,17 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
     await fetchAll();
   };
 
+  const activeContactCount = useMemo(() => {
+    // Filtrera precis som du gör i contactRequestList
+    return contactRequests.filter(
+        (c) => c.status === "new" || c.status === "in_progress"
+    ).length;
+}, [contactRequests]);
+
    const contactRequestList = useMemo(() => {
-  return contactRequests
-    .filter((c) => c.status === "new" || c.status === "in_progress")
-    .map((contact) => {
+    return contactRequests
+        .filter((c) => c.status === "new" || c.status === "in_progress")
+        .map((contact) => {
       const badge = getStatusBadge(contact.status);
       return (
         <div
@@ -272,7 +281,19 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
     setIsNewCaseModalOpen(true);
   };
   
+ {/* NY DIALOG FÖR FULLMAKTSMALLAR & ADMIN ARKIV */} 
+const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(false);
 
+// ... i din render-funktion:
+<Button onClick={() => setIsGeneralFullmaktDialogOpen(true)}>
+    <FileText className="mr-2 h-4 w-4" /> Hantera Fullmaktsmallar & Admin Arkiv
+</Button>
+
+{isGeneralFullmaktDialogOpen && (
+    <Dialog open={true} onOpenChange={setIsGeneralFullmaktDialogOpen}>
+        <FullmaktManagement onClose={() => setIsGeneralFullmaktDialogOpen(false)} />
+    </Dialog>
+)}
 
   return (
 
@@ -303,9 +324,10 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
                           Kunder ({customers.length})
                       </TabsTrigger>
                       <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="contact_requests">
-                          Kontakt ({contactRequests.length})
+                          Kontakt ({activeContactCount})
                       </TabsTrigger>
                   </TabsList>
+           
 
           {/* Ärenden */}
                   <TabsContent value="cases">
@@ -384,16 +406,30 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
           {/* 3. Skapa nytt ärende (NewCaseForm) */}
           {isNewCaseModalOpen && (
               <NewCaseForm
-                  customers={customers} 
-                  defaultCustomerId={newCaseCustomerId} 
-                  onCancel={() => { setIsNewCaseModalOpen(false); setNewCaseCustomerId(undefined); }} 
-                  onCaseSaved={fetchData} 
+                  customers={customers}
+                  defaultCustomerId={newCaseCustomerId}
+                  onCancel={() => { setIsNewCaseModalOpen(false); setNewCaseCustomerId(undefined); }}
+                  onCaseSaved={fetchData}
               />
           )}
-          
-         </div>
- 
+ 
+          {isGeneralFullmaktDialogOpen && (
+ 
+              <Dialog open={true} onOpenChange={setIsGeneralFullmaktDialogOpen}>
+ 
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+ 
+                      <FullmaktManagement onClose={() => setIsGeneralFullmaktDialogOpen(false)} />
+ 
+                  </DialogContent>
+ 
+              </Dialog>
+ 
+          )}
+ 
+          </div>
+ 
   );
 };
-
+ 
 export default AdminPortal;
