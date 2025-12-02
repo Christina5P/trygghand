@@ -7,6 +7,7 @@ import type { Customer } from '@/types';
 // Importen av Auth används sällan direkt; AuthLayout hanterar det oftast
 import Auth from './Auth' 
 import CustomerPortal from './CustomerPortal'
+
 import AdminPortal from './AdminPortal'
 import { useEffect, useState } from "react";
 import { Phone, Mail, User, LogOut } from "lucide-react";
@@ -29,7 +30,7 @@ import CustomersDialog from "./dialogs/CustomersDialog"; // Din dialog
 
 
 interface HeaderProps {
-  customer?: Customer;
+  customer: Customer | null;
   signOut: () => Promise<void> | void;
   showSignOut?: boolean;
 }

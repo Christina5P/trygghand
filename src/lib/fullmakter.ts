@@ -1,6 +1,7 @@
-// src/lib/fullmakter.ts
-import { supabase } from "./supabase";
-import { v4 as uuidv4 } from "uuid";
+//src/lib/fullmakter.ts
+
+import { supabase } from "./supabase"; // Antag att Supabase-klienten är korrekt konfigurerad
+// import { v4 as uuidv4 } from "uuid"; // Denna import tas bort
 
 export interface FullmaktRow {
   id: string;
@@ -15,15 +16,23 @@ export interface FullmaktRow {
 
 // ----------------- UPLOAD -----------------
 
+/**
+ * Laddar upp en fil till Supabase Storage i din 'fullmakts-filer' bucket
+ * och genererar ett unikt filnamn med crypto.randomUUID().
+ */
 export async function uploadFullmakt(file: File, userId: string) {
   if (!file) return { success: false, error: "Ingen fil skickad" };
   if (!userId) return { success: false, error: "Saknar userId" };
 
-  const bucket = "documents";
+  // Uppdaterad till din önskade bucket
+  const bucket = "fullmakts-filer"; 
+  
   const ext = file.name.split(".").pop()?.toLowerCase() || "dat";
-  const filename = `${Date.now()}_${uuidv4()}.${ext}`;
+  
+  // ANVÄND crypto.randomUUID() istället för uuidv4()
+  const filename = `${Date.now()}_${crypto.randomUUID()}.${ext}`;
 
-  const key = `fullmakter/${userId}/${filename}`;
+  const key = `fullmakts-filer/${userId}/${filename}`;
 
   const { error } = await supabase.storage.from(bucket).upload(key, file);
 
@@ -40,7 +49,7 @@ export async function uploadFullmakt(file: File, userId: string) {
 
 export async function getFullmakterForCustomer(customerId: string) {
   const { data, error } = await supabase
-    .from("fullmakter")
+    .from("fullmakts-filer")
     .select("*")
     .eq("fullmakthavare", customerId)
     .order("created_at", { ascending: false });
@@ -60,11 +69,12 @@ export async function getFullmakterForCustomer(customerId: string) {
 }
 
 
-// ----------------- SIGNED URL (view) -----------------
+// ----------------- SIGNED URL (lista) -----------------
 
 export async function getFullmaktSignedUrl(path: string, seconds = 3600) {
-  const { data, error } = await supabase.storage
-    .from("documents")
+  // Uppdaterad till din önskade bucket
+  const { data, error } = await supabase.storage 
+    .from("fullmakts-filer")
     .createSignedUrl(path, seconds);
 
   if (error) {
@@ -80,14 +90,15 @@ export async function getFullmaktSignedUrl(path: string, seconds = 3600) {
 
 export async function deleteFullmakt(id: string, dokument_url: string) {
   const { error: dbErr } = await supabase
-    .from("fullmakter")
+    .from("fullmakters-filer")
     .delete()
     .eq("id", id);
 
   if (dbErr) throw dbErr;
 
-  const { error: storageErr } = await supabase.storage
-    .from("documents")
+  // Uppdaterad till din önskade bucket
+  const { error: storageErr } = await supabase.storage 
+    .from("fullmakts-filer")
     .remove([dokument_url]);
 
   if (storageErr) throw storageErr;
