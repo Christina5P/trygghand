@@ -6,13 +6,21 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import NewCaseForm from "./views/NewCaseForm";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter, // <- add this
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Customer, ServiceType, ContactRequest, Subscription, Valuation, CustomerCase, Comment } from '@/types'; 
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminData } from "@/hooks/useAdminData"; 
 import { useCustomerData } from "@/hooks/useCustomerData"
@@ -26,7 +34,6 @@ import ValuationsView from "./views/ValuationsView";
 import ValuationDetailsDialog from "./dialogs/ValuationDetailsDialog";
 import { FullmaktManagement } from "./views/FullmaktManagement";
 import { useNavigate } from "react-router-dom";
-import { Upload, FileText, Download, Loader2, FileWarning, Eye } from "lucide-react";
 
 
 const CaseDetailsDialog: React.FC<{
@@ -57,7 +64,11 @@ const CaseDetailsDialog: React.FC<{
 // --- ADMIN PORTAL PROPS ---
 interface AdminPortalProps {
   customer: Customer;
- 
+  templatesOpen?: boolean;
+  setTemplatesOpen?: React.Dispatch<React.SetStateAction<boolean>>;
+  fullmaktTemplates?: { id: string; name: string; storage_path: string }[];
+  handleDownloadTemplate?: (path: string) => Promise<void>;
+  // ...existing props...
 }
 
 // --- Status kundförfrågan ---
@@ -74,10 +85,21 @@ const getStatusBadge = (status?: string) => {
     default: return { text: status ?? 'Okänd', colorClass: 'bg-gray-400 hover:bg-gray-500 text-white' };
   }
 };
-const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
-  const { signOut } = useAuth();
-  const { toast } = useToast();
+const AdminPortal: React.FC<AdminPortalProps> = ({
+  customer,
+  templatesOpen,
+  setTemplatesOpen,
+  fullmaktTemplates = [],
+  handleDownloadTemplate = async () => {},
+}) => {
+   const { signOut } = useAuth();
+   const { toast } = useToast();
 
+  // Lokal fallback om parent inte skickar ned kontroll för templates-dialogen
+  const [localTemplatesOpen, setLocalTemplatesOpen] = useState(false);
+  const templatesDialogOpen = templatesOpen ?? localTemplatesOpen;
+  const setTemplatesDialogOpen = setTemplatesOpen ?? setLocalTemplatesOpen;
+ 
   const {
     cases = [],
     subscriptions = [],
@@ -86,7 +108,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
     contactRequests = [],
     loading,
     fetchAll,
-    fetchValuations,   // <-- lägg till dessa två
+    fetchValuations,   
   } = useAdminData();
 
 
@@ -174,7 +196,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
   };
 
   const activeContactCount = useMemo(() => {
-    // Filtrera precis som du gör i contactRequestList
+    
     return contactRequests.filter(
         (c) => c.status === "new" || c.status === "in_progress"
     ).length;
@@ -222,8 +244,6 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ customer }) => {
 
 // Funktion för att konvertera kontaktförfrågan till en kund
 const handleConvertContactToCustomer = useCallback(async (contact: ContactRequest) => {
-  // ERSÄTT 'window.confirm' med en custom modal/dialog för att följa strikta riktlinjer
-  // För detta exempel använder vi alert/confirm för att vara runnable, men det bör ersättas.
   if (!window.confirm(`Är du säker på att du vill konvertera ${contact.name} till en ny kund?`)) return;
 
   setSelectedContact(null);
@@ -249,7 +269,7 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
     const { error: updateError } = await supabase
       .from("contact_requests")
       .update({
-        status: "completed", // <- ändrad från 'converted'
+        status: "completed", 
         admin_notes: `KONVERTERAD TILL KUND (ID: ${newCustomer.id}). Föregående anteckningar: ${
           contact.admin_notes || ""
         }`,
@@ -302,21 +322,69 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
           <Tidio />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+       
+<div className="w-full bg-gradient-to-r from-blue-50 to-white border-t border-blue-100">
+  <div className="max-w-6xl mx-auto px-4 py-2 text-sm text-gray-600">
+    Tips: Använd våra färdiga mallar för snabbare hantering — klicka på "Hämta fullmaktsmallar".
+  </div>
+</div>
 
+<div className="max-w-6xl mx-auto px-4 py-4 flex justify-center">
+  <Button
+    onClick={() => setTemplatesDialogOpen(true)}
+    className="bg-gradient-to-r from-trust-blue to-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:scale-102 transform transition"
+  >
+    <FileText className="w-4 h-4 mr-2" />
+    Hämta fullmaktsmallar
+  </Button>
+</div>
+ 
+ {/* Templates dialog */}
+  <Dialog open={templatesDialogOpen} onOpenChange={setTemplatesDialogOpen}>
+   <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+     <DialogHeader>
+       <DialogTitle>Fullmaktsmallar</DialogTitle>
+     </DialogHeader>
+     <div className="p-4 space-y-4">
+       <p className="text-sm text-gray-600">Välj en mall för att ladda ner. Mallarna öppnas i ny flik.</p>
+       <div className="grid grid-cols-1 gap-3">
+         {(fullmaktTemplates && fullmaktTemplates.length ? fullmaktTemplates : [
+           { id: "1", name: "Fullmakt - Enkel mall (PDF)", storage_path: "templates/fullmaktenkel.pdf" }
+         ]).map(t => (
+           <div key={t.id} className="bg-white p-3 rounded shadow flex items-center justify-between">
+             <div>
+               <div className="font-medium">{t.name}</div>
+               <div className="text-xs text-gray-500">{t.storage_path}</div>
+             </div>
+             <div className="flex gap-2">
+               <Button size="sm" variant="ghost" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Förhandsgranska</Button>
+               <Button size="sm" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Hämta</Button>
+             </div>
+           </div>
+         ))}
+       </div>
+     </div>
+     <DialogFooter>
+      <Button variant="secondary" onClick={() => setTemplatesDialogOpen(false)}>Stäng</Button>
+     </DialogFooter>
+   </DialogContent>
+ </Dialog>
+ 
              {/* Visa värderings-översikt ovanför tabbarna */}
              <div className="mb-6">
                <ValuationManager valuations={valuations} onDataUpdated={fetchData} />
              </div>
+
               <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-6">
                   <TabsList className="w-full bg-white shadow-md rounded-lg p-1 flex flex-wrap gap-1">
                       <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="cases">
                           Ärenden ({cases.length})
                       </TabsTrigger>
-                      {/* LÄGG TILL: Abonnemang */}
+                      {/* Abonnemang */}
                       <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="subscriptions">
                           Abonnemang ({subscriptions.length})
                       </TabsTrigger>
-                      {/* LÄGG TILL: Värderingar */}
+                      {/* Värderingar */}
                       <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="valuations">
                           Värderingar ({valuations.length})
                       </TabsTrigger>
