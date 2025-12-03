@@ -22,14 +22,6 @@ import { Button } from "@/components/ui/button";
 import CasesView from "./views/CasesView";
 import CustomersDialog from "./dialogs/CustomersDialog"; // Din dialog
 
-// Importera dina typer
-//import type { CustomerCase, Customer, Comment } from '@/types';
-// OBS! Dessa används ej i den städade versionen av Portal.tsx, men behåll dem om de används någon annanstans.
-// const statusColors: Record<string, string> = { ... };
-// const statusLabels: Record<string, string> = { ... };
-
-
-
 interface HeaderProps {
   customer: Customer | null;
   signOut: () => Promise<void> | void;
@@ -85,24 +77,45 @@ const Portal = () => {
   const { toast } = useToast();
   const [templatesOpen, setTemplatesOpen] = useState(false);
 
-  // Static list of downloadable fullmaktsmallar (put actual storage paths)
+  // Korrigerade sökvägar — använd faktiskt mappnamn i din bucket (exempel: "fullmaktsmallar/...")
   const fullmaktTemplates: { id: string; name: string; storage_path: string }[] = [
-    { id: "1", name: "Fullmakt - Enkel mall (PDF)", storage_path: "templates/fullmakt_enkel.pdf" },
-    { id: "2", name: "Fullmakt - Omfattande mall (PDF)", storage_path: "templates/fullmakt_omfattande.pdf" },
-    { id: "3", name: "Fullmakt - Fullmakt + Villkor (DOCX)", storage_path: "templates/fullmakt_med_villkor.docx" },
+    { id: "1", name: "Fullmakt - Apoteksärenden", storage_path: "fullmaktsmallar/Apoteksarenden Fullmakt.pdf" },
+    { id: "2", name: "Fullmakt - Tele2", storage_path: "fullmaktsmallar/Tele2 Fullmakt.pdf" },
+    { id: "3", name: "Telia - webbsida för fullmakter", storage_path: "https://www.telia.se/mitt-telia/mitt-konto/fullmakter" }
   ];
 
-  const handleDownloadTemplate = async (path: string) => {
+  const BUCKET = "fullmakts-filer";
+
+  const openTemplate = async (storagePath: string) => {
     try {
-      const { data, error } = await supabase.storage.from("fullmakts-filer").createSignedUrl(path, 60);
+      // Om det redan är en extern URL, öppna direkt
+      if (/^https?:\/\//i.test(storagePath)) {
+        window.open(storagePath, "_blank");
+        return;
+      }
+
+      // Annars anta Supabase storage-path och skapa signerad länk
+      const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(storagePath, 60);
       if (error) throw error;
-      const url = (data as any)?.signedUrl ?? (data as any)?.signed_url;
+      const url = (data as any).signedUrl ?? (data as any).signed_url;
       if (!url) throw new Error("Kunde inte generera länk");
       window.open(url, "_blank");
     } catch (err) {
-      console.error("Template download failed:", err);
-      toast({ title: "Fel", description: "Kunde inte hämta mallen.", variant: "destructive" });
+      console.error("Kunde inte hämta mall:", err);
+      toast?.({ title: "Fel", description: "Kunde inte öppna mallen.", variant: "destructive" });
     }
+  };
+
+  // Lista filer i en mapp (ex: templates/global)
+  const listTemplates = async (prefix = "templates/global") => {
+    const { data, error } = await supabase.storage.from(BUCKET).list(prefix, { limit: 100 });
+    if (error) throw error;
+    // data är array med { name, id?, updated_at, ... }
+    return (data || []).map((f: any) => ({
+      id: f.name,
+      name: f.name,
+      storage_path: `${prefix}/${f.name}`,
+    }));
   };
 
   // Templates dialog is now rendered inside CustomerPortal (under valuation overview).
@@ -143,13 +156,13 @@ const Portal = () => {
           customer={customer}
           // pass templates to admin if you want admin to also show them under valuations
           fullmaktTemplates={fullmaktTemplates}
-          handleDownloadTemplate={handleDownloadTemplate}
+          handleDownloadTemplate={openTemplate}
         />
       ) : (
         <CustomerPortal
           customer={customer}
           fullmaktTemplates={fullmaktTemplates}
-          handleDownloadTemplate={handleDownloadTemplate}
+          handleDownloadTemplate={openTemplate}
         />
       )}
     </div>

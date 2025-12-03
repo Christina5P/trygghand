@@ -114,11 +114,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
   const handleUpdateCustomer = async (updates?: Partial<Customer>) => {
     const payload = updates ? ({ ...editingCustomer, ...updates } as Customer) : editingCustomer;
     try {
-      // Example: replace with your Supabase update or other API call
-      // const { error } = await supabase.from("customers").update(payload).eq("id", payload.id);
-      // if (error) throw error;
-
-      console.log("Updating customer:", payload);
+           console.log("Updating customer:", payload);
       // reflect successful update locally
       setEditingCustomer(payload);
     } catch (err) {
@@ -163,7 +159,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             setLoadingCases(false);
             setLoadingValuations(false);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [customer.id]);
 
     // --- Hämta Ärenden ---
