@@ -58,8 +58,8 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
   const [isFullmaktDialogOpen, setIsFullmaktDialogOpen] = useState(false); 
   
   // NYTT STATE FÖR FULLMAKT HANTERING
-  const [documents, setDocuments] = useState<FullmaktDocument[]>([]); // *** FIX: Lade till documents state ***
-  const [loadingDocuments, setLoadingDocuments] = useState(true); // *** FIX: Lade till loadingDocuments state ***
+  const [documents, setDocuments] = useState<FullmaktDocument[]>([]); 
+  const [loadingDocuments, setLoadingDocuments] = useState(true); 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -314,7 +314,7 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {/* Kundinformation formulär (Oändrat) */}
+          {/* Kundinformation formulär */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">Namn</Label>
             <Input id="name" name="name" value={editingCustomer.name} onChange={handleInputChange} className="col-span-3" />
@@ -332,7 +332,7 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
             <Input id="personal_number" name="personal_number" value={editingCustomer.personal_number || ""} onChange={handleInputChange} className="col-span-3" />
           </div>
 
-          {/* ÄNDRAD STIL: Spara Kundinformation (Outline) */}
+          {/*Spara Kundinformation (Outline) */}
           <Button 
             onClick={handleUpdateCustomer} 
             disabled={loading} 
@@ -375,7 +375,7 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
             ) : (
               <div className="space-y-3">
                 <div className="flex justify-between items-center mt-4 mb-4"> 
-                        {/* ÄNDRAD STIL: Fullmakt knapp (Blå) */}
+                        {/* Fullmakt knapp (Blå) */}
                         <Button 
                             onClick={() => setIsFullmaktDialogOpen(true)}
                             className="bg-trust-blue hover:bg-trust-blue/90"

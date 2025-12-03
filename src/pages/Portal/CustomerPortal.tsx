@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; // Import för Fullmakt Dialog
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Import för Fullmakt Dialog
 import CollapsibleCard from "@/components/ui/CollapsibleCard"; // Se till att denna komponent finns
 import ValuationManager from "@/components/ValuationManager"; // Se till att denna komponent finns
 import { PortalStats } from '@/pages/Portal/PortalStats'; // Se till att denna komponent finns
@@ -57,7 +57,9 @@ import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import type { Customer, Case, Comment, Valuation, FullmaktDocument } from '@/types'; // Importera dina typer
 
-// --- Hjälpfunktioner för status ---
+import type { Dispatch, SetStateAction } from "react";
+ 
+ // --- Hjälpfunktioner för status ---
 const getStatusColor = (status: string) => {
     switch (status) {
         case "pending": return "bg-yellow-500 text-black";
@@ -77,7 +79,15 @@ const getStatusText = (status: string) => {
     }
 };
 
-const CustomerPortal: React.FC<{ customer: Customer }> = ({ customer }) => {
+type CustomerPortalProps = {
+  customer: Customer;
+  fullmaktTemplates?: { id: string; name: string; storage_path: string }[];
+  handleDownloadTemplate?: (path: string) => Promise<void>;
+};
+
+const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTemplates = [], handleDownloadTemplate }) => {
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+
   // example controlled state — adapt to your actual state variable
   const [editingCustomer, setEditingCustomer] = useState<Customer>(customer);
 
@@ -364,7 +374,7 @@ const CustomerPortal: React.FC<{ customer: Customer }> = ({ customer }) => {
             <div className="max-w-4xl mx-auto space-y-8">
                 
                 {/* 1. Portal Stats (Krav: Status på ärenden) */}
-                <Card className="shadow-lg">
+                <Card className="shadow-lg bg-gradient-to-br from-sky-50 to-white">
                     <CardHeader>
                         <CardTitle className="text-2xl font-bold text-trust-blue">Din Översikt</CardTitle>
                     </CardHeader>
@@ -372,7 +382,17 @@ const CustomerPortal: React.FC<{ customer: Customer }> = ({ customer }) => {
                         {/* Notera: PortalStats är oftast för admin. Om du vill visa kundens unika stats här,
                             behöver PortalStats anpassas för att ta emot customer.id och filtrera,
                             eller så kan du bygga en enklare vy här. För nu antar vi att PortalStats kan visa relevanta kunddata. */}
-                        <PortalStats /> 
+                        <PortalStats />
+
+                        {/* Knapp för att öppna fullmaktsmallar — placerad längst ned i "Din Översikt" */}
+                        <div className="mt-4 border-t pt-4 flex justify-end">
+                          <Button
+                            onClick={() => setTemplatesOpen(true)}
+                            className="bg-gradient-to-r from-trust-blue to-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:scale-102 transform transition"
+                          >
+                            Hämta fullmaktsmallar
+                          </Button>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -383,26 +403,76 @@ const CustomerPortal: React.FC<{ customer: Customer }> = ({ customer }) => {
                     </CardHeader>
                     <CardContent>
                         <ValuationManager valuations={valuations} onDataUpdated={fetchValuations} customerId={customer.id} />
+
+                        {/* Tip and prominent button for templates directly under valuation overview */}
+                        <div className="mt-4 border-t pt-4">
+                          <p className="text-sm text-gray-600 mb-2">Behöver du en mall? Välj en färdig fullmaktsmall nedan för att ladda ner och fylla i.</p>
+                          <div className="flex items-center gap-3">
+                            <Button
+                              onClick={() => setTemplatesOpen(true)}
+                              className="bg-gradient-to-r from-trust-blue to-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:scale-102 transform transition"
+                            >
+                              Hämta fullmaktsmallar
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Templates dialog placed under the valuation section */}
+                        <Dialog open={templatesOpen} onOpenChange={setTemplatesOpen}>
+                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Fullmaktsmallar</DialogTitle>
+                            </DialogHeader>
+                            <div className="p-4 space-y-4">
+                              <p className="text-sm text-gray-600">Välj en mall för att ladda ner. Mallarna öppnas i ny flik.</p>
+                              <div className="grid grid-cols-1 gap-3">
+                                {(fullmaktTemplates.length ? fullmaktTemplates : [
+                                  { id: "1", name: "Fullmakt - Enkel mall (PDF)", storage_path: "templates/fullmaktenkel.pdf" }
+                                ]).map(t => (
+                                  <div key={t.id} className="bg-white p-3 rounded shadow flex items-center justify-between">
+                                    <div>
+                                      <div className="font-medium">{t.name}</div>
+                                      <div className="text-xs text-gray-500">{t.storage_path}</div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button size="sm" variant="ghost" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Förhandsgranska</Button>
+                                      <Button size="sm" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Hämta</Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button variant="secondary" onClick={() => setTemplatesOpen(false)}>Stäng</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                     </CardContent>
                 </Card>
 
                                {/* 4. Mina Fullmakter (NY SEKTION för kunden) */}
-                <CollapsibleCard
-                    title={
-                        <div className="flex items-center">
-                            <FileText className="w-5 h-5 mr-2 text-gray-600" />
-                            <span className="font-bold text-lg">Fullmakter</span>
-                        </div>
-                    }
-                    className="shadow-lg"
-                >
-                    <div className="pt-2">
-                         <Button onClick={() => setIsFullmaktDialogOpen(true)} className="bg-trust-blue hover:bg-trust-blue/90">
-                            Mina Fullmakter / Dokument
-                         </Button>
-                         <p className="text-sm text-gray-600 mt-2">Här kan du se och ladda upp fullmakter.</p>
-                    </div>
-                </CollapsibleCard>
+              {/* Tip: flyttat ovanför fullmakt-cardet så den syns bättre */}
+              <div className="w-full bg-gradient-to-r from-blue-50 to-white border-t border-blue-100">
+                <div className="max-w-4xl mx-auto px-4 py-2 text-sm text-gray-600">
+                  Tips: Använd våra färdiga mallar för snabbare hantering — klicka på "Hämta fullmaktsmallar".
+                </div>
+              </div>
+                 <CollapsibleCard
+                     title={
+                         <div className="flex items-center">
+                             <FileText className="w-5 h-5 mr-2 text-gray-600" />
+                             <span className="font-bold text-lg">Fullmakter</span>
+                         </div>
+                     }
+                     className="shadow-lg"
+                 >
+                     <div className="pt-2">
+                          <Button onClick={() => setIsFullmaktDialogOpen(true)} className="bg-trust-blue hover:bg-trust-blue/90">
+                             Mina Fullmakter / Dokument
+                          </Button>
+                          <p className="text-sm text-gray-600 mt-2">Här kan du se och ladda upp fullmakter.</p>
+                     </div>
+                 </CollapsibleCard>
 
                   {/*  DIALOG FÖR FULLMAKTSHANTERING */}
             {isFullmaktDialogOpen && (
@@ -577,7 +647,7 @@ const CustomerPortal: React.FC<{ customer: Customer }> = ({ customer }) => {
                             <DialogTitle>Mina Fullmakter och Dokument</DialogTitle>
                         </DialogHeader>
                         <div className="p-4 border rounded-md bg-gray-50 space-y-4">
-                            <p className="text-gray-700">Här visas fullmakter och dokument kopplade till dina ärenden. Du kan ladda upp PDF/DOC eller ladda ner befintliga filer.</p>
+                            <p className="text-gray-700">Här visas fullmakter och dokument kopplade till dina ärenden. </p>
 
                             <div className="border rounded p-4 bg-white">
                                 <h4 className="font-semibold mb-2">Ladda upp ny fullmakt</h4>
