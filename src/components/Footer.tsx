@@ -48,7 +48,7 @@ const Footer = () => {
             <div className="space-y-3 text-sm text-background/80">
               <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4" />
-                <span>070-175 35 85</span>
+                <span>076- 116 95 54</span>
               </div>
               <div className="flex items-center space-x-2">
                 <a href="mailto:kontakt@trygghand.com" className="flex items-center space-x-1 hover:text-primary transition-colors">

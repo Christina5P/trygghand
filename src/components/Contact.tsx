@@ -47,7 +47,7 @@ const Contact = () => {
     {
       icon: Phone,
       title: "Telefon",
-      value: "070-175 35 85",
+      value: "076- 116 95 54",
       description: "Vardagar 08:00-17:00"
     },
     {
@@ -175,7 +175,7 @@ const Contact = () => {
                     <div className="w-full overflow-hidden rounded-md">
                     <div className="text-foreground  p-4 rounded-lg shadow-md mb-4">
                     <iframe
-  src="https://calendar.google.com/calendar/appointments/schedules/AcZssZ1UAZQAx03XE6hyOig-HfYTIaEGIHD2r0nJijTEhzeuviQxvsSF0TOx1sL8lwreiQyfbTzV_Zxx?gv=true"
+  src="https://calendar.google.com/calendar/appointments/schedules/AcZssZ1UAZQAx03XE6hyOig-HfYTIaEGIHD2r0nJijTEhzeuviQxvsSF0TOx1sL8lwreiQyfbTzV_Zxx?gv=true/&hl=sv"
   className="w-full overflow-hidden rounded-md"
   style={{ 
     border: 0,
