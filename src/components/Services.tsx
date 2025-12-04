@@ -239,7 +239,7 @@ const PackageCard = ({ pkg, type }: { pkg: any; type: string }) => {
 
 const Services = () => {
   return (
-    <section id="Services" className="py-20 bg-background">
+    <section id="paketlosningar" className="py-20 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center space-y-4 mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground">Servicepaket</h2>
