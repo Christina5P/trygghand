@@ -154,9 +154,6 @@ const Portal = () => {
       {customer.is_admin ? (
         <AdminPortal
           customer={customer}
-          // pass templates to admin if you want admin to also show them under valuations
-          fullmaktTemplates={fullmaktTemplates}
-          handleDownloadTemplate={openTemplate}
         />
       ) : (
         <CustomerPortal

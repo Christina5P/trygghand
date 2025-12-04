@@ -64,33 +64,48 @@ const CaseDetailsDialog: React.FC<{
 // --- ADMIN PORTAL PROPS ---
 interface AdminPortalProps {
   customer: Customer;
+  // ...existing props...
+  isNewCaseModalOpen?: boolean;
+  setIsNewCaseModalOpen?: React.Dispatch<React.SetStateAction<boolean>>;
   templatesOpen?: boolean;
   setTemplatesOpen?: React.Dispatch<React.SetStateAction<boolean>>;
-  fullmaktTemplates?: { id: string; name: string; storage_path: string }[];
-  handleDownloadTemplate?: (path: string) => Promise<void>;
-  // ...existing props...
 }
+ 
+// --- STATUS DEFINITIONS (ENSTÄLLT STÄLLE FÖR KODER, ETIKETTER OCH FÄRGER) ---
+const STATUS_DEFINITIONS: { code: string; label: string; colorClass: string }[] = [
+  { code: "new", label: "Ny", colorClass: "bg-yellow-100 text-yellow-800" },
+  { code: "pending", label: "Väntar", colorClass: "bg-yellow-100 text-yellow-800" },
+  { code: "in_progress", label: "Pågår", colorClass: "bg-blue-100 text-blue-800" },
+  { code: "completed", label: "Avslutat", colorClass: "bg-green-100 text-green-800" },
+  { code: "cancelled", label: "Avbruten", colorClass: "bg-red-100 text-red-800" },
+  { code: "declined", label: "Avböjd", colorClass: "bg-red-100 text-red-800" },
+  { code: "converted", label: "Kund", colorClass: "bg-indigo-100 text-indigo-800" },
+];
 
-// --- Status kundförfrågan ---
-const getStatusBadge = (status?: string) => {
-  const normalized = (status ?? '').toLowerCase().trim();
-  switch(normalized){
-    case 'new': case 'ny': case 'nytt': return { text: 'Ny', colorClass: 'bg-blue-500 hover:bg-blue-600 text-white' };
-    case 'contacted': case 'kontaktad': 
-    case 'in_progress': case 'pågående': return { text: 'Pågående', colorClass: 'bg-yellow-500 hover:bg-yellow-600 text-black' };
-    case 'completed': case 'avslutat': return { text: 'Avslutat', colorClass: 'bg-green-500 hover:bg-green-600 text-white' };
-    case 'converted': case 'kund': return { text: 'Kund', colorClass: 'bg-green-700 hover:bg-green-800 text-white' };
-    case 'cancelled': case 'avbrutet': 
-    case 'declined': case 'avböjd': return { text: 'Stängd', colorClass: 'bg-gray-600 hover:bg-gray-700 text-white' };
-    default: return { text: status ?? 'Okänd', colorClass: 'bg-gray-400 hover:bg-gray-500 text-white' };
-  }
+const normalizeStatus = (s?: string) => (s ?? "okand").toLowerCase().trim();
+
+const statusLabel = (code: string) => {
+  if (code === "all") return "Alla";
+  const def = STATUS_DEFINITIONS.find((d) => d.code === code);
+  return def ? def.label : (code.charAt(0).toUpperCase() + code.slice(1));
 };
+
+const getStatusBadge = (status?: string) => {
+  const code = normalizeStatus(status);
+  const def = STATUS_DEFINITIONS.find((d) => d.code === code);
+  if (def) return { text: def.label, colorClass: def.colorClass };
+  return { text: status ?? "Okänd", colorClass: "bg-gray-400 text-white" };
+};
+
+// statusLabelMap removed — använd statusLabel(code) från STATUS_DEFINITIONS
+
 const AdminPortal: React.FC<AdminPortalProps> = ({
   customer,
+  // ...existing props...
   templatesOpen,
   setTemplatesOpen,
-  fullmaktTemplates = [],
-  handleDownloadTemplate = async () => {},
+  isNewCaseModalOpen = false,
+  setIsNewCaseModalOpen = () => {},
 }) => {
    const { signOut } = useAuth();
    const { toast } = useToast();
@@ -116,15 +131,46 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [mainTab, setMainTab] = useState<
     "cases" | "subscriptions" | "valuations" | "customers" | "contact_requests" | "new" | "saved"
   >("cases");
+  // Statusfilter för ärenden — använder normalizeStatus + STATUS_DEFINITIONS
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const statusOptions = useMemo(() => {
+    const opts = Array.from(new Set((cases || []).map((c) => normalizeStatus(c.status))));
+    // behåll ordning enligt STATUS_DEFINITIONS där möjligt
+    const ordered = STATUS_DEFINITIONS.map((d) => d.code).filter((c) => opts.includes(c));
+    // lägg till övriga okända koder sist
+    const rest = opts.filter((o) => !ordered.includes(o));
+    return ["all", ...ordered, ...rest];
+  }, [cases]);
+
+  const filteredCases = useMemo(() => {
+    if (statusFilter === "all") return cases;
+    return (cases || []).filter((c) => normalizeStatus(c.status) === statusFilter);
+  }, [cases, statusFilter]);
+
+  // Fullmakt templates (previously undefined) and helper to open/download them
+  type FullmaktTemplate = { id: string; name: string; storage_path: string };
+  const [fullmaktTemplates, setFullmaktTemplates] = useState<FullmaktTemplate[] | null>(null);
+
+  const handleDownloadTemplate = async (storagePath: string) => {
+    try {
+      // Attempt to open the provided path; if it's not an absolute URL it will open relative to the app.
+      const url = storagePath.startsWith("http") ? storagePath : storagePath;
+      window.open(url, "_blank");
+    } catch (err) {
+      console.error("Failed to open template:", err);
+      toast({ title: "Fel", description: "Kunde inte öppna mallen.", variant: "destructive" });
+    }
+  };
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedContact, setSelectedContact] = useState<ContactRequest | null>(null);
   const [selectedCase, setSelectedCase] = useState<CustomerCase | null>(null);
   const [selectedValuation, setSelectedValuation] = useState<Valuation | null>(null);
 
-  const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
+  // ID för kund som används när ett nytt ärende skapas från kunddialogen
   const [newCaseCustomerId, setNewCaseCustomerId] = useState<string | undefined>(undefined);
-  
 
+  // Use: setIsNewCaseModalOpen(true) to open, setIsNewCaseModalOpen(false) to close
   // Kommentarer för det valda ärendet
   const [caseComments, setCaseComments] = useState<Comment[]>([]);
   const [loadingCaseComments, setLoadingCaseComments] = useState(false);
@@ -399,13 +445,32 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 
           {/* Ärenden */}
                   <TabsContent value="cases">
-    <CasesView 
-        cases={cases} 
-        customers={customers} 
-        onDataUpdated={fetchData}
-        onOpenCase={(c) => setSelectedCase(c)}
-    />
-</TabsContent>
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div className="text-sm text-gray-600">Filtrera ärenden:</div>
+              <div className="flex items-center gap-2">
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{statusLabel("all")}</SelectItem>
+                    {statusOptions.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {statusLabel(s)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <CasesView
+              cases={filteredCases}
+              customers={customers}
+              onDataUpdated={fetchData}
+             onOpenCase={(c) => setSelectedCase(c)}
+            />
+          </TabsContent>
 
           {/* Abonnemang */}
           <TabsContent value="subscriptions">
@@ -461,7 +526,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
             />
           )}
 
-          {/* 2. Kontaktförfrågandialog (ContactRequestDialog) */}
+          {/* 2. Kontaktförfrågnandialog (ContactRequestDialog) */}
           {selectedContact && (
               <ContactRequestDialog
                 contact={selectedContact!}
