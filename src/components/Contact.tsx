@@ -27,11 +27,11 @@ const Contact = () => {
     if (!form) return;
 
     const data = {
-      firstname: form.firstname.value,
-      lastname: form.lastname.value,
-      email: form.email.value,
-      phone: form.phone.value,
-      message: form.message.value,
+      firstname: (form as any).firstname.value,
+      lastname: (form as any).lastname.value,
+      email: (form as any).email.value,
+      phone: (form as any).phone.value,
+      message: (form as any).message.value,
     };
 
     const { error } = await supabase.from("contact_requests").insert([data]);
@@ -169,6 +169,27 @@ const Contact = () => {
                   din situation och föreslår den bästa lösningen för just dina behov. 
                   Ingen förpliktelse - bara professionell rådgivning.
                 </p>
+
+                {/* Google Calendar Appointment Scheduling begin */}
+                
+                    <div className="w-full overflow-hidden rounded-md">
+                    <div className="text-foreground  p-4 rounded-lg shadow-md mb-4">
+                    <iframe
+  src="https://calendar.google.com/calendar/appointments/schedules/AcZssZ1UAZQAx03XE6hyOig-HfYTIaEGIHD2r0nJijTEhzeuviQxvsSF0TOx1sL8lwreiQyfbTzV_Zxx?gv=true"
+  className="w-full overflow-hidden rounded-md"
+  style={{ 
+    border: 0,
+    height: "800px",   // 👉 fasta höjden löser scroll-problemet
+    backgroundColor: "white"
+  }}
+  aria-label="Google Calendar booking"
+  loading="lazy"
+/>
+
+                  </div>
+                </div>
+                {/* Google Calendar Appointment Scheduling end */}
+
               </CardContent>
             </Card>
           </div>
