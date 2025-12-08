@@ -66,7 +66,7 @@ const Footer = () => {
 
         <div className="border-t border-background/20 mt-12 pt-8 text-center">
           <p className="text-sm text-background/60">
-            © 2025 Trygg Hand. Alla rättigheter förbehållna.
+            © 2025 Trygg Hand. ❤️ Egenutvecklad och noggrant designad. Alla rättigheter förbehållna.
           </p>
         </div>
       </div>

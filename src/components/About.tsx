@@ -1,5 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Heart, Clock, CheckCircle } from "lucide-react";
+import { useState } from "react";
+import { Review } from "./Reviews";
+
 
 const About = () => {
   const values = [
@@ -18,15 +21,19 @@ const About = () => {
       title: "Effektivitet & Transparens",
       description: "Med vår digitala plattform kan du följa processens framsteg i realtid. Vi håller dig informerad varje steg på vägen."
     },
-  ];
+
+      ];
 
   const benefits = [
     "Försäkrad verksamhet och nöjd kund-garanti – vi rättar till om något inte blir som förväntat",
     "Flexibel service anpassad efter dina behov",
     "Kostnadsfri första konsultation",
     "Digital uppföljning i realtid – du kan följa arbetet steg för steg",
-    "Nätverk av pålitliga partners för städning, flytt och värdering"
+    "Nätverk av pålitliga partners för städning, flytt och värdering",
+    "Sekretessavtal för din trygghet"
   ];
+
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   return (
     <section id="about" className="py-20 bg-soft-gray/30">
@@ -97,3 +104,5 @@ const About = () => {
 };
 
 export default About;
+           
+    

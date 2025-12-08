@@ -55,7 +55,7 @@ const seniorPackages = [
     key: 'standard', // Hämta priser från PRICES.senior.standard
     rutAvdrag: true,
     included: [
-      "BASPAKET", // Tydliggör att det bygger på föregående
+      "Allt som ingår i BASPAKET", // Tydliggör att det bygger på föregående
       "Hjälp med anmälan av Adressändring och Folkbokföring till Skatteverket",
       "Översyn och uppsägning/flytt av abonnemang för El, Bredband, TV, Fast telefoni och andra löpande avtal",
       "Rådgivning och assistans med att flytta eller teckna ny Hemförsäkring",
@@ -69,7 +69,7 @@ const seniorPackages = [
     key: 'premium', // Hämta priser från PRICES.senior.premium
     rutAvdrag: true,
     included: [
-      "STANDARDPAKET", // Tydliggör att det bygger på föregående
+      "Allt som ingår i STANDARDPAKET", // Tydliggör att det bygger på föregående
       "Full Projektledning",
       "Värdering av Bohag",
       "Magasinering & Extratransport (1 månad)",
@@ -99,7 +99,7 @@ const dodsboPackages = [
     key: 'standard', // Hämta priser från PRICES.dodsbo.standard
     rutAvdrag: false,
     included: [
-      "BASPAKET", 
+      "Allt som ingår i BASPAKET", 
       "Uppsägning av hyreskontrakt, el, vatten, värme",
       "Uppsägning av abonnemang för Mobiltelefoni, Bredband, TV-paket och andra löpande abonnemang",
       "Beställa eftersändning av post",
@@ -116,7 +116,7 @@ const dodsboPackages = [
     key: 'premium', // Hämta priser från PRICES.dodsbo.premium
     rutAvdrag: false,
     included: [
-      "STANDARDPAKET", 
+      "Allt som ingår i STANDARDPAKET", 
       "Full Projektledning", 
       "Stöd vid bouppteckning och bankärenden",
       "Samla in all nödvändig information och dokumentation till bouppteckning,",
