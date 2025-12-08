@@ -1,6 +1,13 @@
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+
 export default function Privacy() {
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
+      <Link to="/" className="inline-flex items-center text-primary hover:underline mb-4">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Tillbaka till startsidan
+      </Link>
       <h1 className="text-2xl font-bold mb-4">Integritet & personuppgifter</h1>
 
       <p className="mb-4 text-lg">

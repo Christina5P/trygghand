@@ -40,6 +40,8 @@ const Footer = () => {
               <li><Link to="/values" className="hover:underline">Våra värderingar</Link></li>
               <li><Link to="/partners" className="hover:underline">Partners</Link></li>
               <li><Link to="/privacy" className="hover:underline">Integritetspolicy</Link></li>
+              <li><Link to="/cookiepolicy" className="hover:underline">Cookie-policy</Link></li>
+              <li><Link to="/clearcookies" className="hover:underline">Rensa cookies</Link></li>
             </ul>
           </div>
 

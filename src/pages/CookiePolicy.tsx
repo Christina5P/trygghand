@@ -1,8 +1,14 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 export default function CookiePolicy() {
   return (
     <div className="container mx-auto px-4 py-12">
+      <Link to="/" className="inline-flex items-center text-primary hover:underline mb-4">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Tillbaka till startsidan
+      </Link>
       <h1 className="text-2xl font-bold mb-4">Cookie‑policy</h1>
 
       <p className="mb-4 text-lg">
@@ -12,9 +18,9 @@ export default function CookiePolicy() {
       <h2 className="font-semibold mt-6">Cookies vi använder</h2>
       <ul className="list-disc pl-5 mt-3 space-y-2 text-base">
         <li>
-          <strong>trygghand_cookie_consent</strong> — Sparar ditt val om du vill tillåta statistik/marknadsföring. 
-          Den används enbart för att komma ihåg ditt val och påverkar inte webbplatsens funktion. (Persistent cookie)
-        </li>
+          <strong>trygghand_cookie_consent</strong> — Denna cookie sparar ditt val om du vill tillåta oss att samla in anonym statistik.
+          Den används enbart för att komma ihåg ditt val och påverkar inte webbplatsens funktion.Den sparas i 12 månader.
+          </li>
        
       </ul>
 
@@ -24,19 +30,20 @@ export default function CookiePolicy() {
         - Statistik (valfritt): Hjälper oss förstå hur sidan används och göra den bättre. Vi sätter sådana cookies bara om du godkänner.
       </p>
 
-      <h2 className="font-semibold mt-6">Hur ändrar jag mitt val?</h2>
-      <p className="mb-4 text-base">
-        Vill du ändra ditt val: radera cookie med namnet <code>trygghand_cookie_consent</code> i din webbläsare eller kontakta oss så hjälper vi till.
-      </p>
 
-      <h3 className="font-semibold mt-4">Säkerhet och personliga uppgifter</h3>
+      <h3 className="font-semibold mt-4">Vår trygghetsgaranti:</h3>
       <p className="text-base mb-4">
-        Vi samlar inte personuppgifter via cookies i annat syfte än att komma ihåg dina val eller, om du godkänner, för statistik. För mer information, kontakta oss gärna.
+        Vi samlar <strong>inga</strong> personliga uppgifter som namn, adress eller personnummer via cookies. All statistik är anonymiserad och hjälper oss bara att se vilka sidor som är mest hjälpsamma för dig.
       </p>
-
-      <h3 className="font-semibold mt-4">Behöver du hjälp?</h3>
+      
+      <h3 className="font-semibold mt-4">Cookies för Statistik (Om du godkänner):</h3>
+      <p className="text-base mb-4">
+        Google Analytics för att förstå hur vår sida används. Dessa cookies samlar in data om t.ex. hur länge du stannar på en sida. Syfte: Förbättra vår information och göra sidan mer lättanvänd.
+      </p>
+        
+      <h3 className="font-semibold mt-4">Ändra eller dra tillbaka ditt val:</h3>
       <p className="text-base">
-        Om du vill ha hjälp med att rensa cookies eller är osäker på något, ring eller mejla oss så hjälper vi gärna.
+       Det ska vara enkelt att ändra sig! Du kan alltid klicka på länken <a href="/clearcookies" className="text-primary underline hover:text-primary/80">Rensa cookies</a> längst ned på sidan för att enkelt ändra dina inställningar. Självklart kan du också ringa oss så hjälper vi dig.
       </p>
     </div>
   );

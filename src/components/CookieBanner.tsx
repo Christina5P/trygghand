@@ -24,15 +24,20 @@ export default function CookieBanner() {
     if (!c || force) setVisible(true);
   }, []);
 
+  /* Triggar en reload/event när användaren ändrar sitt samtycke, så att GoogleAnalytics-komponenten reagerar */
+
   const acceptAll = () => {
     setCookie(COOKIE_NAME, JSON.stringify({ analytics: true, marketing: true }), 365);
     setVisible(false);
     window.dispatchEvent(new Event("cookieConsentGiven"));
+    // Ladda om sidan för att aktivera Google Analytics (om utloggad)
+    window.location.reload();
   };
 
   const acceptOnlyNecessary = () => {
     setCookie(COOKIE_NAME, JSON.stringify({ analytics: false, marketing: false }), 365);
     setVisible(false);
+    window.dispatchEvent(new Event("cookieConsentDenied"));
   };
 
   if (!visible) return null;
@@ -51,7 +56,7 @@ export default function CookieBanner() {
         <div>
           <strong className="block text-lg mb-1">Vi använder cookies</strong>
           <div className="text-base">
-            Vi behöver några tekniska cookies för att sidan ska fungera. Vill du även tillåta statistik‑cookies som hjälper oss förbättra tjänsten?
+            Vi behöver några tekniska cookies för att sidan ska fungera. Välj "Acceptera alla" om du vill tillåta statistik‑cookies som hjälper oss förbättra tjänsten? Ditt val sparas i ett år.
           </div>
           <a href="/cookiepolicy" className="text-sm underline mt-2 inline-block">Läs mer om cookies</a>
         </div>

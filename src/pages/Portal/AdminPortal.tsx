@@ -63,7 +63,7 @@ const CaseDetailsDialog: React.FC<{
 
 // --- ADMIN PORTAL PROPS ---
 interface AdminPortalProps {
-  customer: Customer;
+  customer?: Customer;
   // ...existing props...
   isNewCaseModalOpen?: boolean;
   setIsNewCaseModalOpen?: React.Dispatch<React.SetStateAction<boolean>>;

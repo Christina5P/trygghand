@@ -9,6 +9,7 @@ import "@/index.css";
 // 🧩 Komponenter & sidor
 import ResetPassword from "@/components/ResetPassword";
 import CookieBanner from "@/components/CookieBanner";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import About from "@/components/About";
 
 import CookiePolicy from "@/pages/CookiePolicy";
@@ -43,6 +44,7 @@ function App() {
   return (
     <AuthProvider>
       <CookieBanner />
+      <GoogleAnalytics />
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <BrowserRouter>

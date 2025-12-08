@@ -73,6 +73,11 @@ This project is divided into:
 ### [wireframes](#wireframes)  
 
 I used loveable to get a basic webside, to build from.
+### [Cookie](#cookie)  
+
+Jag har skapat en CookieBanner.tsx som skapar pop på rutan med val av cookies.
+Jag har en max-längd på 1 år på cookies.
+Jag har också en CookiePolicy.tsx med information om cookies innehåll.
 
 
 ### [UX](#ux)
@@ -221,12 +226,17 @@ Viktiga filer och rutter
   - src/api/revokeSessions.ts — endpoint‑stub för att ogiltigförklara Supabase‑sessioner (måste köras server‑side)
 
 Miljövariabler (lägg i .env eller i din hosting)
-- SUPABASE_URL
+- VITE_SUPABASE_URL
+- VITE_SUPABASE_ANON_KEY
+- VITE_GA_MEASUREMENT_ID (Google Analytics, valfritt - endast för utloggade)
 - SUPABASE_SERVICE_ROLE  (ANVÄND ENDAST PÅ SERVER, aldrig i frontend)
 - REVOKE_API_KEY         (intern nyckel för skydd av revokeSessions endpoint)
+- GEMINI_API_KEY         (Backend, för AI-värdering)
+- VITE_TIDIO_KEY         (Chat-widget)
 
 Cookie / GDPR — kort
-- Banner sparar val i cookie: `trygghand_cookie_consent` (persistent).  
+- Banner sparar val i cookie: `trygghand_cookie_consent` (persistent, 12 månader).  
+- **Google Analytics:** Laddas ENDAST för utloggade användare som godkänt statistik-cookies. Inloggade användare spåras ALDRIG. Se `/textfiler/GA_IMPLEMENTATION.md` för detaljer.
 - Statistik/analytics initieras bara efter samtycke (lyssnar på event "cookieConsentGiven").
 - Supportflöde: be användare öppna `/clearcookies` för att radera cookien i deras webbläsare.
 - För att tvinga utloggning/revocation: anropa server‑endpoint `/api/revokeSessions` med POST { userId } och header `x-revoke-key: <REVOKE_API_KEY>`. Endpointen måste skyddas och köras server‑side.
