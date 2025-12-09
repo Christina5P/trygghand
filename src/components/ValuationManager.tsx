@@ -19,6 +19,7 @@ interface ValuationManagerProps {
   
 export const ValuationManager: React.FC<ValuationManagerProps> = ({ valuations, onDataUpdated }) => {
 const { customer } = useAuth();
+const isAdmin = Boolean(customer?.is_admin);
 const {
 loadingVals,
 fetchValuations,
@@ -90,7 +91,7 @@ aria-label="Ta bort värdering"
 return (
 <div className="mb-6">
 <CollapsibleCard
-defaultOpen
+defaultOpen={!isAdmin}
 title={
 <div className="flex flex-col">
 <span className="font-bold text-lg">Värdebedömningsverktyg</span>

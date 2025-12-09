@@ -134,7 +134,9 @@ Denna applikation är byggd med följande teknologier och verktyg:
 
 #### Databaser & Backend-tjänster (Databases & Backend Services)
 * **Supabase:** Används som en molnbaserad backend-tjänst (BaaS), som inkluderar databas (PostgreSQL), autentisering och realtidsfunktioner.
-
+* **Tidio** Chatbot
+* **Brevio** Inbjudningsmail till nya meddlemmar
+* * **STRATO** Host för domänen och mailserver
 
 #### [Manual Testing](manual_testing) 
 
@@ -176,6 +178,7 @@ Miljövariabler (lägg i .env eller i din hosting)
 - REVOKE_API_KEY         (intern nyckel för skydd av revokeSessions endpoint)
 - GEMINI_API_KEY         (Backend, för AI-värdering)
 - VITE_TIDIO_KEY         (Chat-widget)
+-VITE_BREVIO_API
 
 Cookie / GDPR — kort
 - Banner sparar val i cookie: `trygghand_cookie_consent` (persistent, 12 månader).  

@@ -7,7 +7,7 @@ const AuthLayout = () => {
   // använd auth-objekt så vi kan nå optional reset-funktion säkert
   const auth = useAuth();
   const signIn = auth.signIn;
-  const signUp = auth.signUp;
+  // Registrering stängd: konton skapas av admin
    const { toast } = useToast();
    const [isLoading, setIsLoading] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
@@ -27,22 +27,6 @@ const AuthLayout = () => {
      setIsLoading(false);
    };
  
-   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
-     e.preventDefault();
-     setIsLoading(true);
-     const formData = new FormData(e.currentTarget);
-     const email = formData.get("email") as string;
-     const password = formData.get("password") as string;
-     const name = formData.get("name") as string;
-     const phone = formData.get("phone") as string;
-
-     const { error } = await signUp(email, password, name, phone);
-     if (error) toast({ title: "Registrering misslyckades", description: error.message, variant: "destructive" });
-     else toast({ title: "Registrering lyckad!", description: "Kontrollera din e-post för att bekräfta kontot." });
-
-     setIsLoading(false);
-   };
-
   const handleForgotPassword = async (e?: React.FormEvent<HTMLFormElement>) => {
     if (e) e.preventDefault();
     if (!forgotEmail) {
@@ -96,56 +80,34 @@ const AuthLayout = () => {
            <CardHeader>
              <CardTitle>Trygg Hand</CardTitle>
              <CardDescription className="mb-2">Logga in för att hantera dina ärenden</CardDescription>
+             <p className="text-sm text-gray-500">Konto skapas av admin. Kontakta support om du behöver åtkomst.</p>
            </CardHeader>
            <CardContent>
-             <Tabs defaultValue="signin">
-               <TabsList className="grid w-full grid-cols-2">
-                 <TabsTrigger value="signin">Logga in</TabsTrigger>
-                 <TabsTrigger value="signup">Registrera</TabsTrigger>
-               </TabsList>
- 
-               <TabsContent value="signin">
-                 {!forgotMode ? (
-                   <form onSubmit={handleSignIn} className="space-y-4">
-                     <Label htmlFor="email">E-post</Label>
-                     <Input id="email" name="email" type="email" required />
-                     <Label htmlFor="password">Lösenord</Label>
-                     <Input id="password" name="password" type="password" required />
-                     <div className="flex items-center justify-between">
-                       <Button type="submit" disabled={isLoading}>{isLoading ? "Laddar..." : "Logga in"}</Button>
-                       <button type="button" onClick={() => setForgotMode(true)} className="text-sm text-trust-blue hover:underline">
-                         Glömt lösenord?
-                       </button>
-                     </div>
-                   </form>
-                 ) : (
-                   <form onSubmit={handleForgotPassword} className="space-y-4">
-                     <Label htmlFor="forgotEmail">Ange din e-post</Label>
-                     <Input id="forgotEmail" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} type="email" required />
-                     <div className="flex items-center gap-2">
-                       <Button type="submit" disabled={isLoading}>{isLoading ? "Skickar..." : "Skicka återställning"}</Button>
-                       <button type="button" onClick={() => setForgotMode(false)} className="text-sm text-warm-gray hover:underline">
-                         Avbryt
-                       </button>
-                     </div>
-                   </form>
-                 )}
-               </TabsContent>
- 
-               <TabsContent value="signup">
-                 <form onSubmit={handleSignUp} className="space-y-4">
-                   <Label htmlFor="name">Namn</Label>
-                   <Input id="name" name="name" type="text" required />
-                   <Label htmlFor="phone">Telefon</Label>
-                   <Input id="phone" name="phone" type="tel" />
-                   <Label htmlFor="email">E-post</Label>
-                   <Input id="email" name="email" type="email" required />
-                   <Label htmlFor="password">Lösenord</Label>
-                   <Input id="password" name="password" type="password" required />
-                   <Button type="submit" disabled={isLoading}>{isLoading ? "Laddar..." : "Registrera"}</Button>
-                 </form>
-               </TabsContent>
-             </Tabs>
+             {!forgotMode ? (
+               <form onSubmit={handleSignIn} className="space-y-4">
+                 <Label htmlFor="email">E-post</Label>
+                 <Input id="email" name="email" type="email" required />
+                 <Label htmlFor="password">Lösenord</Label>
+                 <Input id="password" name="password" type="password" required />
+                 <div className="flex items-center justify-between">
+                   <Button type="submit" disabled={isLoading}>{isLoading ? "Laddar..." : "Logga in"}</Button>
+                   <button type="button" onClick={() => setForgotMode(true)} className="text-sm text-trust-blue hover:underline">
+                     Glömt lösenord?
+                   </button>
+                 </div>
+               </form>
+             ) : (
+               <form onSubmit={handleForgotPassword} className="space-y-4">
+                 <Label htmlFor="forgotEmail">Ange din e-post</Label>
+                 <Input id="forgotEmail" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} type="email" required />
+                 <div className="flex items-center gap-2">
+                   <Button type="submit" disabled={isLoading}>{isLoading ? "Skickar..." : "Skicka återställning"}</Button>
+                   <button type="button" onClick={() => setForgotMode(false)} className="text-sm text-warm-gray hover:underline">
+                     Avbryt
+                   </button>
+                 </div>
+               </form>
+             )}
            </CardContent>
          </Card>
        </div>
