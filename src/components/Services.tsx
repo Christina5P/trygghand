@@ -249,12 +249,18 @@ const Services = () => {
         </div>
 
         <Tabs defaultValue="senior">
-          <TabsList className="grid w-full grid-cols-2 mb-12">
-            <TabsTrigger value="senior">
-              <Heart className="mr-2 h-5 w-5" /> Seniorförändring
+          <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-2 mb-12 overflow-hidden rounded-2xl border border-primary/30 bg-white shadow-md">
+            <TabsTrigger
+              value="senior"
+              className="flex h-full w-full items-center justify-center gap-2 px-2 py-1 text-sm sm:text-base font-semibold whitespace-normal break-words text-center leading-snug rounded-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=inactive]:text-primary/80 data-[state=inactive]:bg-primary/5"
+            >
+              <Heart className="mr-1 h-5 w-5" /> Seniorförändring
             </TabsTrigger>
-            <TabsTrigger value="dodsbo">
-              <Shield className="mr-2 h-5 w-5" /> Dödsbohantering
+            <TabsTrigger
+              value="dodsbo"
+              className="flex h-full w-full items-center justify-center gap-2 px-2 py-1 text-sm sm:text-base font-semibold whitespace-normal break-words text-center leading-snug rounded-none data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=inactive]:text-primary/80 data-[state=inactive]:bg-primary/5"
+            >
+              <Shield className="mr-1 h-5 w-5" /> Dödsbohantering
             </TabsTrigger>
           </TabsList>
 
