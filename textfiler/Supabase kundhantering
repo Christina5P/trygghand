@@ -1,0 +1,18 @@
+Bjuda in en kontakt:
+Gå till Supabase Dashboard och gör så här:
+
+Öppna ditt projekt.
+I vänstermenyn: Authentication → Users.
+Klicka på knappen "Invite user" (överst till höger).
+En dialog öppnas:
+
+Email: Skriv in emailadressen (t.ex. trygghandkontakt@gmail.com).
+Klicka "Send invite".
+Supabase skickar en email till den adressen med en länk där de kan sätta sitt lösenord.
+
+Från dashboard- Auth:
+Här kan du hantera:
+skicka magic link till inlogg
+reset password
+Ta bort användare
+

@@ -33,6 +33,8 @@ import ValuationManager from "@/components/ValuationManager";
 import ValuationsView from "./views/ValuationsView"; 
 import ValuationDetailsDialog from "./dialogs/ValuationDetailsDialog";
 import { FullmaktManagement } from "./views/FullmaktManagement";
+import CustomerManagement from "./views/CustomerManagement";
+import CreateCustomerForm from "@/components/CreateCustomerForm";
 import { useNavigate } from "react-router-dom";
 
 
@@ -129,7 +131,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // MODAL STATE
   const [mainTab, setMainTab] = useState<
-    "cases" | "subscriptions" | "valuations" | "customers" | "contact_requests" | "new" | "saved"
+    "cases" | "subscriptions" | "valuations" | "customers" | "contact_requests" | "customer_management" | "new" | "saved"
   >("cases");
   // Statusfilter för ärenden — använder normalizeStatus + STATUS_DEFINITIONS
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -253,6 +255,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         .filter((c) => c.status === "new" || c.status === "in_progress")
         .map((contact) => {
       const badge = getStatusBadge(contact.status);
+      // Kombinera firstname/lastname om name saknas
+      const displayName = contact.name || `${contact.firstname || ''} ${contact.lastname || ''}`.trim() || 'Namnlös';
       return (
         <div
           key={contact.id}
@@ -260,7 +264,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
           onClick={() => handleOpenContactDialog(contact)}
         >
           <div className="min-w-0 pr-4">
-            <p className="text-base font-semibold truncate">{contact.name}</p>
+            <p className="text-base font-semibold truncate">{displayName}</p>
             <p className="text-sm text-gray-500 truncate">{contact.email}</p>
           </div>
           <Badge className={badge.colorClass}>{badge.text}</Badge>
@@ -290,55 +294,50 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
 // Funktion för att konvertera kontaktförfrågan till en kund
 const handleConvertContactToCustomer = useCallback(async (contact: ContactRequest) => {
-  if (!window.confirm(`Är du säker på att du vill konvertera ${contact.name} till en ny kund?`)) return;
+  // Kombinera firstname och lastname om name inte finns
+  const fullName = contact.name || `${(contact as any).firstname || ''} ${(contact as any).lastname || ''}`.trim();
+  
+  if (!fullName) {
+    toast({ title: "Fel", description: "Kontaktförfrågan saknar namn.", variant: "destructive" });
+    return;
+  }
+  
+  if (!contact.email || !contact.email.trim()) {
+    toast({ title: "Fel", description: "Kontaktförfrågan saknar e-postadress.", variant: "destructive" });
+    return;
+  }
+  
+  if (!window.confirm(`Konvertera ${fullName} till kund?`)) return;
 
   setSelectedContact(null);
   
   try {
-    // 1. Skapa en ny kund i databasen
-    const newCustomerPayload = {
-      name: contact.name,
-      email: contact.email,
-      phone: contact.phone,
-      personal_number: null,
-    };
-
-    const { data: newCustomer, error: customerError } = await supabase
-      .from("customers")
-      .insert([newCustomerPayload])
-      .select()
-      .single();
-
-    if (customerError) throw customerError;
-
-    // 2. Uppdatera status på kontaktförfrågan till ett värde som DB tillåter
-    const { error: updateError } = await supabase
-      .from("contact_requests")
-      .update({
-        status: "completed", 
-        admin_notes: `KONVERTERAD TILL KUND (ID: ${newCustomer.id}). Föregående anteckningar: ${
-          contact.admin_notes || ""
-        }`,
-      })
-      .eq("id", contact.id);
-
-    if (updateError) throw updateError;
-
-    toast({
-      title: "Konverterad!",
-      description: `${contact.name} är nu registrerad som kund.`,
+    // 1. Call edge function to create auth user + customer + password email
+    const { data, error: functionError } = await supabase.functions.invoke("convert-contact-to-customer", {
+      body: {
+        email: contact.email.trim(),
+        fullName: fullName,
+        phone: (contact as any).phone || null,
+        contactId: contact.id,
+      },
     });
 
-    // 3. Ladda om all admin data för att uppdatera listorna
+    if (functionError) throw functionError;
+    if (!data?.ok) {
+      console.error("Function response:", data);
+      throw new Error(data?.message || "Edge Function failed");
+    }
+
+    toast({
+      title: "Konvertering slutförd!",
+      description: `${fullName} är nu kund. Mail med lösenord har skickats (om leveransen lyckas).`,
+      duration: 8000,
+    });
     await fetchData();
-
-      // 4. Öppna den nya kundens dialog för snabb åtkomst/skapande av ärende
-      setSelectedCustomer(newCustomer as Customer);
-
-    } catch (err: any) {
-      console.error("Konvertering misslyckades:", err);
-      toast({ title: "Fel vid konvertering", description: err.message, variant: "destructive" });
-    }
+  } catch (err: any) {
+    console.error("Konvertering misslyckades:", err);
+    toast({ title: "Fel", description: err.message, variant: "destructive" });
+  }
   }, [fetchData, toast]);
 
   // Funktion för att skapa nytt ärende (öppnar NewCaseForm)
@@ -437,12 +436,13 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                       <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="customers">
                           Kunder ({customers.length})
                       </TabsTrigger>
-                      <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="contact_requests">
-                          Kontakt ({activeContactCount})
-                      </TabsTrigger>
-                  </TabsList>
-           
-
+                      <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="contact_requests">
+                          Kontakt ({activeContactCount})
+                      </TabsTrigger>
+                      <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="customer_management">
+                          Kundhantering
+                      </TabsTrigger>
+                  </TabsList>
           {/* Ärenden */}
                   <TabsContent value="cases">
             <div className="mb-4 flex items-center justify-between gap-4">
@@ -496,16 +496,28 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                       </div>
                   </TabsContent>
 
-          {/* Kontaktförfrågningar */}
-                  <TabsContent value="contact_requests">
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {contactRequestList}
-                      </div>
-                  </TabsContent>
-              </Tabs>
-          </div>
-    
-          {/* 1. Kunddialog (CustomersDialog) */}
+          {/* Kontaktförfrågningar */}
+                  <TabsContent value="contact_requests">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {contactRequestList}
+                      </div>
+                  </TabsContent>
+
+          {/* NY FLIK: Kundhantering (aktivera/deaktivera kunder) */}
+          <TabsContent value="customer_management">
+            <div className="grid gap-8 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-semibold mb-4">Hantera Kundstatus</h3>
+                <CustomerManagement customers={customers} onDataUpdated={fetchData} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Skapa Ny Kund</h3>
+                <CreateCustomerForm onCustomerCreated={fetchData} />
+              </div>
+            </div>
+          </TabsContent>
+              </Tabs>
+          </div>          {/* 1. Kunddialog (CustomersDialog) */}
           {selectedCustomer && (
               <CustomersDialog
                 customer={selectedCustomer!}
@@ -566,3 +578,4 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 };
  
 export default AdminPortal;
+

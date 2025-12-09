@@ -10,6 +10,7 @@ import "@/index.css";
 import ResetPassword from "@/components/ResetPassword";
 import CookieBanner from "@/components/CookieBanner";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import CustomerRoute from "@/components/CustomerRoute";
 import About from "@/components/About";
 
 import CookiePolicy from "@/pages/CookiePolicy";
@@ -73,6 +74,11 @@ function App() {
               {/* 🧑‍💼 Portaler */}
               <Route path="/portal" element={<Portal />} />
               <Route path="/adminportal" element={<AdminPortal />} />
+
+              {/* 🛡️ Kundskyddade rutter */}
+              <Route element={<CustomerRoute />}>
+                <Route path="/min-sida" element={<Portal />} />
+              </Route>
 
               {/* ❓ Frågor & Policy */}
               <Route path="/fragor-tips" element={<FragorTips />} />

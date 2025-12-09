@@ -3,16 +3,15 @@
 // --------------------------------------------------------
 
 export interface Customer {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  created_at?: string;
-  personal_number?: string;
-  is_admin?: boolean; 
-}
-
-export type CustomerMap = Record<string, Customer>;
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  created_at?: string;
+  personal_number?: string;
+  is_admin?: boolean;
+  is_customer?: boolean; // NYTT: true om användaren är aktiv kund
+}export type CustomerMap = Record<string, Customer>;
 
 
 // --------------------------------------------------------
@@ -144,7 +143,9 @@ export interface Subscription {
 
 export interface ContactRequest {
   id: string;
-  name: string;
+  name?: string; // Kan vara kombinerat namn eller tomt
+  firstname?: string; // Från kontaktformuläret
+  lastname?: string; // Från kontaktformuläret
   email: string;
   phone?: string;
   message?: string;

@@ -55,7 +55,7 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({ contact, on
 
         <div className="space-y-3">
           <div className="text-sm text-gray-700 space-y-1">
-            <p><strong>Namn:</strong> {contact.name}</p>
+            <p><strong>Namn:</strong> {contact.name || `${contact.firstname || ''} ${contact.lastname || ''}`.trim() || 'Okänt'}</p>
             <p><strong>Email:</strong> {contact.email}</p>
             {contact.phone && <p><strong>Telefon:</strong> {contact.phone}</p>}
             {contact.company && <p><strong>Företag:</strong> {contact.company}</p>}

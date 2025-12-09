@@ -7,10 +7,8 @@ Live web site: https://trygghand.com/
 - [About](#about)
 - [Marketing research](#marketing-research) 
 - [Agile method](#agile-method) 
-  - [Concept Chart](#concept_chart)
-  - [Buisness Model](#buisness_model)
-  - [ERD](#erd)
-  - [User Stories](#user-stories) 
+   - [Buisness Model](#buisness_model)
+    - [User Stories](#user-stories) 
 - [wireframes](#wireframes)
 - [UX](#ux)
 - [Design](#design)
@@ -42,18 +40,9 @@ I use tailwind as styling.
 
 I started to make research to update me of this market and see what kind of competitor there is.
 
-### [Agile method](#agile-method) 
-
-I have brainstormed what I want to achieve and how to plan the project.
-
-
-#### [Concept Chart](#concept_chart)
-
 
 ### [Buisness Model](#buisness_model)
 The business operates on a B2C model (Buisness-to-Consumer) and revenue comes from the servicepackage I sell.
-
-#### [ERD](#erd)
 
 
 #### [User Stories](#user-stories)
@@ -62,23 +51,13 @@ This project is divided into:
 - Milestones
 
   - EPICS
-
-
     - User stories
-
       - Tasks
       There could also be some tasks.
 
 
 ### [wireframes](#wireframes)  
-
 I used loveable to get a basic webside, to build from.
-### [Cookie](#cookie)  
-
-Jag har skapat en CookieBanner.tsx som skapar pop på rutan med val av cookies.
-Jag har en max-längd på 1 år på cookies.
-Jag har också en CookiePolicy.tsx med information om cookies innehåll.
-
 
 ### [UX](#ux)
 
@@ -108,6 +87,12 @@ I also load the favicon to work on different devices
  It is easy to read and thats important for my target group
  
 
+### [Cookie](#cookie)  
+
+Jag har skapat en CookieBanner.tsx som skapar pop på rutan med val av cookies.
+Jag har en max-längd på 1 år på cookies.
+Jag har också en CookiePolicy.tsx med information om cookies innehåll.
+
 ### [Media](#media)
 
 Image and content used from media:
@@ -118,45 +103,15 @@ Image and content used from media:
 * https://fontawesome.com/ -font awesome icons
 
 
-
-## [Features](#features) 
-
-
-
-### [Existing Features](#existing_featuers)
-
-
 #### Home
 
 You will be inviting to action in the Homepage and view easy navigation of your interest.
 
-#### Category / search
-
 ####  Users account
-
 
 <details><summary>Footer</summary>
 
 
-
-#### [Future Features](#future_features)
-
-##### Newsletters archive
-Store newsletter in an archive on the website 
-<hr>
-
-
-### [CRUD](#crud)
-
--Create
-
-
--Read 
-
--Update
- 
-
--Delete
 ### 💻 Technologies Used
 
 Denna applikation är byggd med följande teknologier och verktyg:
@@ -180,24 +135,12 @@ Denna applikation är byggd med följande teknologier och verktyg:
 #### Databaser & Backend-tjänster (Databases & Backend Services)
 * **Supabase:** Används som en molnbaserad backend-tjänst (BaaS), som inkluderar databas (PostgreSQL), autentisering och realtidsfunktioner.
 
-### [Setup](#setup)
-
-### [Deployment](#deployment) 
-
-### [Testing](#testing)
-
-
-#### [Validators](#validators)
-
-
- - Responsiveness and SEO in Lighthouse
-
 
 #### [Manual Testing](manual_testing) 
 
 ### [Bug Report](#bugreport)
 
-### [Acknowledgements](#acknowledgements)
+
 
 [Go to Top](#TryggHand)
 

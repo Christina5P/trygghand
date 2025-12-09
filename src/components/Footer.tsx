@@ -37,7 +37,6 @@ const Footer = () => {
             <ul className="space-y-2 text-sm text-background/80">
               <li><Link to="/about" className="hover:underline">Om oss</Link></li>
               <li><Link to="/services/Juridikguide" className="hover:underline">Din Juridiska Guide i Fickan</Link></li>
-              <li><Link to="/values" className="hover:underline">Våra värderingar</Link></li>
               <li><Link to="/partners" className="hover:underline">Partners</Link></li>
               <li><Link to="/privacy" className="hover:underline">Integritetspolicy</Link></li>
               <li><Link to="/cookiepolicy" className="hover:underline">Cookie-policy</Link></li>

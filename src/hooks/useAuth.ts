@@ -8,6 +8,7 @@ interface AuthContextType {
   customer: Customer | null;
   session: Session | null;
   loading: boolean;
+  isCustomer: boolean; // NYTT: convenience flag
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name?: string, phone?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -75,8 +76,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       options: { data: { full_name: name, phone } },
     });
 
-    if (!error && data.user) {
-      await supabase.from('customers').insert([{ id: data.user.id, email, name, phone, is_admin: false }]);
+    if (error) {
+      console.error("SignUp error:", error);
+      return { error };
+    }
+
+    if (data.user) {
+      // Skapa customer-rad (använd upsert för att hantera duplicates)
+      const { error: customerError } = await supabase.from('customers').upsert([
+        { 
+          id: data.user.id, 
+          email, 
+          name: name || email.split('@')[0], 
+          phone, 
+          is_admin: false 
+        }
+      ], { onConflict: 'id' });
+
+      if (customerError) {
+        console.error("Customer creation error:", customerError);
+      }
     }
 
     return { error };
@@ -118,7 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch {}
    };
 
-  const value: AuthContextType = { user, customer, session, loading, signIn, signUp, signOut };
+  const value: AuthContextType = { user, customer, session, loading, isCustomer: customer?.is_customer === true, signIn, signUp, signOut };
 
   return React.createElement(AuthContext.Provider, { value }, children);
 };
