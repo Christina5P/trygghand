@@ -1,45 +1,31 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff } from "lucide-react";
 import { Button, Input, Label, Card, Tabs, TabsContent, TabsList, TabsTrigger, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui";
 
 const AuthLayout = () => {
   // använd auth-objekt så vi kan nå optional reset-funktion säkert
   const auth = useAuth();
   const signIn = auth.signIn;
-  const signUp = auth.signUp;
    const { toast } = useToast();
    const [isLoading, setIsLoading] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
  
    const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
      e.preventDefault();
      setIsLoading(true);
-     const formData = new FormData(e.currentTarget);
-     const email = formData.get("email") as string;
-     const password = formData.get("password") as string;
-
+     
      const { error } = await signIn(email, password);
      if (error) toast({ title: "Inloggning misslyckades", description: error.message, variant: "destructive" });
      else toast({ title: "Välkommen!", description: "Du är nu inloggad." });
 
-     setIsLoading(false);
-   };
- 
-   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
-     e.preventDefault();
-     setIsLoading(true);
-     const formData = new FormData(e.currentTarget);
-     const email = formData.get("email") as string;
-     const password = formData.get("password") as string;
-     const name = formData.get("name") as string;
-     const phone = formData.get("phone") as string;
-
-     const { error } = await signUp(email, password, name, phone);
-     if (error) toast({ title: "Registrering misslyckades", description: error.message, variant: "destructive" });
-     else toast({ title: "Registrering lyckad!", description: "Kontrollera din e-post för att bekräfta kontot." });
-
+     setEmail("");
+     setPassword("");
      setIsLoading(false);
    };
 
@@ -51,23 +37,17 @@ const AuthLayout = () => {
     }
     setIsLoading(true);
     try {
-      // Försök anropa hookens reset-metod om den finns
-      const sendReset = (auth as any).sendPasswordReset ?? (auth as any).resetPassword ?? (auth as any).sendResetEmail;
-      if (typeof sendReset === "function") {
-        const res = await sendReset(forgotEmail);
-        if (res?.error) {
-          toast({ title: "Fel", description: String(res.error?.message ?? res), variant: "destructive" });
-        } else {
-          toast({ title: "E-post skickad", description: "Om kontot finns skickades en återställningslänk." });
-          setForgotMode(false);
-        }
+      const { error } = await auth.sendPasswordReset(forgotEmail);
+      if (error) {
+        toast({ title: "Fel", description: String(error?.message ?? error), variant: "destructive" });
       } else {
-        // Fallback - informera användare/admin
-        toast({
-          title: "Återställning ej tillgänglig",
-          description: "Funktionen för lösenordsåterställning är inte konfigurerad. Kontakta support.",
-          variant: "destructive",
+        toast({ 
+          title: "E-post skickad", 
+          description: "Kontrollera din e-postinkorg. Om mailet inte kommer fram inom några minuter, kontakta support.", 
+          duration: 5000 
         });
+        setForgotMode(false);
+        setForgotEmail("");
       }
     } catch (err: any) {
       console.error("Forgot password error:", err);
@@ -99,18 +79,27 @@ const AuthLayout = () => {
            </CardHeader>
            <CardContent>
              <Tabs defaultValue="signin">
-               <TabsList className="grid w-full grid-cols-2">
+               <TabsList className="grid w-full grid-cols-1">
                  <TabsTrigger value="signin">Logga in</TabsTrigger>
-                 <TabsTrigger value="signup">Registrera</TabsTrigger>
                </TabsList>
  
                <TabsContent value="signin">
                  {!forgotMode ? (
                    <form onSubmit={handleSignIn} className="space-y-4">
                      <Label htmlFor="email">E-post</Label>
-                     <Input id="email" name="email" type="email" required />
+                     <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
                      <Label htmlFor="password">Lösenord</Label>
-                     <Input id="password" name="password" type="password" required />
+                     <div className="relative">
+                       <Input id="password" value={password} onChange={(e) => setPassword(e.target.value)} type={showPassword ? "text" : "password"} required />
+                       <button
+                         type="button"
+                         onClick={() => setShowPassword(!showPassword)}
+                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                         aria-label={showPassword ? "Dölj lösenord" : "Visa lösenord"}
+                       >
+                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                       </button>
+                     </div>
                      <div className="flex items-center justify-between">
                        <Button type="submit" disabled={isLoading}>{isLoading ? "Laddar..." : "Logga in"}</Button>
                        <button type="button" onClick={() => setForgotMode(true)} className="text-sm text-trust-blue hover:underline">
@@ -130,20 +119,6 @@ const AuthLayout = () => {
                      </div>
                    </form>
                  )}
-               </TabsContent>
- 
-               <TabsContent value="signup">
-                 <form onSubmit={handleSignUp} className="space-y-4">
-                   <Label htmlFor="name">Namn</Label>
-                   <Input id="name" name="name" type="text" required />
-                   <Label htmlFor="phone">Telefon</Label>
-                   <Input id="phone" name="phone" type="tel" />
-                   <Label htmlFor="email">E-post</Label>
-                   <Input id="email" name="email" type="email" required />
-                   <Label htmlFor="password">Lösenord</Label>
-                   <Input id="password" name="password" type="password" required />
-                   <Button type="submit" disabled={isLoading}>{isLoading ? "Laddar..." : "Registrera"}</Button>
-                 </form>
                </TabsContent>
              </Tabs>
            </CardContent>

@@ -12,6 +12,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name?: string, phone?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,14 +51,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('email', email)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
 
-    if (!error) setCustomer(data);
-    else setCustomer(null);
+      if (!error && data) {
+        setCustomer(data);
+      } else if (error && error.code !== 'PGRST116') {
+        // PGRST116 = not found
+        console.error("Error fetching customer:", error);
+        setCustomer(null);
+      } else {
+        // Kund existerar inte - skapa en
+        const session = await supabase.auth.getSession();
+        const userId = session?.data?.session?.user?.id;
+        
+        if (userId) {
+          const { data: newCustomer, error: createError } = await supabase
+            .from('customers')
+            .insert([{
+              id: userId,
+              email,
+              name: email.split('@')[0],
+              is_admin: false,
+              is_customer: true,
+            }])
+            .select('*')
+            .maybeSingle();
+
+          if (!createError && newCustomer) {
+            setCustomer(newCustomer);
+          } else {
+            console.error("Error creating customer:", createError);
+            setCustomer(null);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("fetchCustomer error:", err);
+      setCustomer(null);
+    }
   };
 
   const signIn = async (email: string, password: string) => {
@@ -137,7 +173,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch {}
    };
 
-  const value: AuthContextType = { user, customer, session, loading, isCustomer: customer?.is_customer === true, signIn, signUp, signOut };
+  const sendPasswordReset = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password?type=recovery`,
+    });
+    return { error };
+  };
+
+  const value: AuthContextType = { user, customer, session, loading, isCustomer: customer?.is_customer === true, signIn, signUp, signOut, sendPasswordReset };
 
   return React.createElement(AuthContext.Provider, { value }, children);
 };

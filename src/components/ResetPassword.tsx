@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 export default function ResetPassword() {
   const [email, setEmail] = useState("");
@@ -8,12 +9,27 @@ export default function ResetPassword() {
   const [isRecovery, setIsRecovery] = useState(false);
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("type") === "recovery") setIsRecovery(true);
-    } catch {}
+    // Kontrollera om användaren redan är autentiserad (recovery-länk klickad)
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setIsRecovery(true);
+        return;
+      }
+      
+      // Kontrollera även om URL-parametrar anger recovery-läge
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("type") === "recovery") {
+          setIsRecovery(true);
+        }
+      } catch {}
+    };
+
+    checkSession();
   }, []);
 
   const sendReset = async (e: React.FormEvent) => {
@@ -22,7 +38,7 @@ export default function ResetPassword() {
     setLoading(true);
     setMsg(null);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${window.location.origin}/reset-password?type=recovery`,
     });
     setMsg(error ? "Kunde inte skicka länk: " + error.message : "Återställningslänk skickad. Kolla din e‑post.");
     setLoading(false);
@@ -34,7 +50,14 @@ export default function ResetPassword() {
     setLoading(true);
     setMsg(null);
     const { error } = await supabase.auth.updateUser({ password: pw } as any);
-    setMsg(error ? "Kunde inte uppdatera: " + error.message : "Lösenord uppdaterat. Du kan logga in.");
+    if (error) {
+      setMsg("Kunde inte uppdatera: " + error.message);
+    } else {
+      setMsg("Lösenord uppdaterat! Du omdirigeras...");
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+    }
     setLoading(false);
     setPw(""); setPw2("");
   };
