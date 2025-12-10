@@ -44,7 +44,12 @@ export const useAdminData = () => {
 
   const fetchCustomers = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("customers").select("*").order("name", { ascending: true });
+      // Only fetch active customers (is_customer = true)
+      const { data, error } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("is_customer", true)
+        .order("name", { ascending: true });
       if (error) throw error;
       setCustomers(data ?? []);
     } catch (err: any) {

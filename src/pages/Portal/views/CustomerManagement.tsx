@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle2, XCircle, Loader2, Archive } from "lucide-react";
+import { CheckCircle2, Loader2, Archive } from "lucide-react";
 import type { Customer } from "@/types";
 
 interface CustomerManagementProps {
@@ -26,17 +26,16 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
     setLoadingId(customer.id);
 
     try {
-      // Om vi deaktiverar en kund (currentStatus = true, ska bli false)
+      // Deaktivera kunden (alltid false eftersom vi endast visar aktiva här)
       if (currentStatus) {
         // 1. Arkivera kunden
         const { error: archiveError } = await supabase
           .from("archived_customers")
           .insert({
             id: customer.id,
-            email: customer.email,
+            email: customer.email || "",
             name: customer.name,
             phone: customer.phone,
-            address: customer.address || null,
             is_admin: customer.is_admin || false,
             archived_by: user?.id,
             archived_reason: "Deaktiverad av admin",
@@ -47,19 +46,17 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
         if (archiveError) throw archiveError;
       }
 
-      // 2. Uppdatera is_customer-status
+      // 2. Uppdatera is_customer-status till false (deaktivera)
       const { error: updateError } = await supabase
         .from("customers")
-        .update({ is_customer: !currentStatus })
+        .update({ is_customer: false })
         .eq("id", customer.id);
 
       if (updateError) throw updateError;
 
       toast({
-        title: currentStatus ? "Kund deaktiverad och arkiverad" : "Kund aktiverad",
-        description: currentStatus
-          ? `${customer.name} har deaktiverats och arkiverats.`
-          : `${customer.name} är nu aktiv igen.`,
+        title: "Kund deaktiverad och arkiverad",
+        description: `${customer.name} har deaktiverats och arkiverats.`,
       });
 
       await onDataUpdated();
@@ -90,36 +87,26 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
 
                 <div className="flex items-center gap-3">
                   <Badge
-                    variant={customer.is_customer ? "default" : "secondary"}
-                    className={
-                      customer.is_customer
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-200 text-gray-800"
-                    }
+                    variant="default"
+                    className="bg-green-100 text-green-800"
                   >
-                    {customer.is_customer ? (
-                      <CheckCircle2 className="mr-1 h-3 w-3" />
-                    ) : (
-                      <XCircle className="mr-1 h-3 w-3" />
-                    )}
-                    {customer.is_customer ? "Aktiv Kund" : "Inaktiv"}
+                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                    Aktiv
                   </Badge>
 
                   <Button
                     size="sm"
-                    variant={customer.is_customer ? "outline" : "default"}
-                    onClick={() => toggleCustomerStatus(customer, customer.is_customer ?? false)}
+                    variant="outline"
+                    onClick={() => toggleCustomerStatus(customer, true)}
                     disabled={loadingId === customer.id}
                   >
                     {loadingId === customer.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : customer.is_customer ? (
+                    ) : (
                       <>
                         <Archive className="h-4 w-4 mr-2" />
                         Deaktivera & Arkivera
                       </>
-                    ) : (
-                      "Aktivera"
                     )}
                   </Button>
                 </div>
@@ -131,7 +118,7 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
         {customers.length === 0 && (
           <Card>
             <CardContent className="pt-6">
-              <p className="text-center text-gray-500">Inga kunder ännu.</p>
+              <p className="text-center text-gray-500">Inga aktiva kunder ännu.</p>
             </CardContent>
           </Card>
         )}
