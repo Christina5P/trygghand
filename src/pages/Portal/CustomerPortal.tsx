@@ -56,6 +56,7 @@ import {
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import type { Customer, Case, Comment, Valuation, FullmaktDocument } from '@/types'; // Importera dina typer
+import { ChangePasswordSection } from "./components/ChangePasswordSection";
 
 import type { Dispatch, SetStateAction } from "react";
  
@@ -591,7 +592,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
 
                  {/* 3. Kundinformation (Krav: Kund ska kunna redigera sin information) */}
                 <CollapsibleCard
-                    defaultOpen
+                    defaultOpen={false}
                     title={
                         <div className="flex items-center">
                             <User className="w-5 h-5 mr-2 text-gray-600" />
@@ -618,12 +619,18 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                             <Input id="personal_number" name="personal_number" value={editingCustomer.personal_number || ""} onChange={handleInputChange} />
                         </div>
                         <Button
-                          onClick={() => handleUpdateCustomer()} // wrap to ignore the click event
+                          onClick={() => handleUpdateCustomer()}
                           disabled={loadingSave}
                           className="w-full bg-trust-blue hover:bg-trust-blue/90"
                         >
                           {loadingSave ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : "Spara"}
                         </Button>
+
+                        {/* Ändra lösenord-sektion */}
+                        <div className="border-t pt-4 mt-4">
+                          <h4 className="font-semibold mb-3">Ändra lösenord</h4>
+                          <ChangePasswordSection />
+                        </div>
                     </div>
                 </CollapsibleCard>
 
