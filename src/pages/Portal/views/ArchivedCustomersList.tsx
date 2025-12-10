@@ -66,19 +66,19 @@ export default function ArchivedCustomersList({ onDataUpdated }: ArchivedCustome
 
       if (fetchError) throw fetchError;
 
-      // 2. Infoga kunden tillbaka i customers-tabellen med is_customer = true
-      const { error: insertError } = await supabase
+      // 2. Infoga eller uppdatera kunden i customers-tabellen med is_customer = true
+      const { error: upsertError } = await supabase
         .from("customers")
-        .insert({
+        .upsert({
           id: archivedData.id,
           email: archivedData.email,
           name: archivedData.name,
           phone: archivedData.phone,
           is_admin: archivedData.is_admin,
           is_customer: true,
-        });
+        }, { onConflict: 'id' });
 
-      if (insertError) throw insertError;
+      if (upsertError) throw upsertError;
 
       // 3. Ta bort från arkiv
       const { error: deleteError } = await supabase
