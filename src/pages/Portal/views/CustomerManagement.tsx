@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { CheckCircle2, XCircle, Loader2, Archive } from "lucide-react";
 import type { Customer } from "@/types";
 
 interface CustomerManagementProps {
@@ -14,25 +15,51 @@ interface CustomerManagementProps {
 
 /**
  * CustomerManagement: Administratörsverktyg för att aktivera/deaktivera kundstatus
+ * Vid deaktivering arkiveras kunden automatiskt i archived_customers-tabellen
  */
 export default function CustomerManagement({ customers, onDataUpdated }: CustomerManagementProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const toggleCustomerStatus = async (customerId: string, currentStatus: boolean) => {
-    setLoadingId(customerId);
+  const toggleCustomerStatus = async (customer: Customer, currentStatus: boolean) => {
+    setLoadingId(customer.id);
 
     try {
-      const { error } = await supabase
+      // Om vi deaktiverar en kund (currentStatus = true, ska bli false)
+      if (currentStatus) {
+        // 1. Arkivera kunden
+        const { error: archiveError } = await supabase
+          .from("archived_customers")
+          .insert({
+            id: customer.id,
+            email: customer.email,
+            name: customer.name,
+            phone: customer.phone,
+            address: customer.address || null,
+            is_admin: customer.is_admin || false,
+            archived_by: user?.id,
+            archived_reason: "Deaktiverad av admin",
+            original_created_at: customer.created_at,
+            original_data: customer, // Lagra komplett original-data
+          });
+
+        if (archiveError) throw archiveError;
+      }
+
+      // 2. Uppdatera is_customer-status
+      const { error: updateError } = await supabase
         .from("customers")
         .update({ is_customer: !currentStatus })
-        .eq("id", customerId);
+        .eq("id", customer.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast({
-        title: "Uppdaterad",
-        description: `Kundstatus uppdaterad.`,
+        title: currentStatus ? "Kund deaktiverad och arkiverad" : "Kund aktiverad",
+        description: currentStatus
+          ? `${customer.name} har deaktiverats och arkiverats.`
+          : `${customer.name} är nu aktiv igen.`,
       });
 
       await onDataUpdated();
@@ -81,13 +108,16 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
                   <Button
                     size="sm"
                     variant={customer.is_customer ? "outline" : "default"}
-                    onClick={() => toggleCustomerStatus(customer.id, customer.is_customer ?? false)}
+                    onClick={() => toggleCustomerStatus(customer, customer.is_customer ?? false)}
                     disabled={loadingId === customer.id}
                   >
                     {loadingId === customer.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : customer.is_customer ? (
-                      "Deaktivera"
+                      <>
+                        <Archive className="h-4 w-4 mr-2" />
+                        Deaktivera & Arkivera
+                      </>
                     ) : (
                       "Aktivera"
                     )}

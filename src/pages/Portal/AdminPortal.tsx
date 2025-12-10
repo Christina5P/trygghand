@@ -1,5 +1,3 @@
-//src/pages/Portal/AdminPortal.tsx
-
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +32,7 @@ import ValuationsView from "./views/ValuationsView";
 import ValuationDetailsDialog from "./dialogs/ValuationDetailsDialog";
 import { FullmaktManagement } from "./views/FullmaktManagement";
 import CustomerManagement from "./views/CustomerManagement";
+import ArchivedCustomersList from "./views/ArchivedCustomersList";
 import CreateCustomerForm from "@/components/CreateCustomerForm";
 import { useNavigate } from "react-router-dom";
 
@@ -533,14 +532,25 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 
           {/* NY FLIK: Kundhantering (aktivera/deaktivera kunder) */}
           <TabsContent value="customer_management">
-            <div className="grid gap-8 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <h3 className="text-lg font-semibold mb-4">Hantera Kundstatus</h3>
-                <CustomerManagement customers={customers} onDataUpdated={fetchData} />
-              </div>
+            <div className="space-y-8">
+              {/* Aktiva kunder */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Skapa Ny Kund</h3>
-                <CreateCustomerForm onCustomerCreated={fetchData} />
+                <div className="grid gap-8 lg:grid-cols-3">
+                  <div className="lg:col-span-2">
+                    <h3 className="text-lg font-semibold mb-4">Hantera Kundstatus</h3>
+                    <CustomerManagement customers={customers} onDataUpdated={fetchData} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Skapa Ny Kund</h3>
+                    <CreateCustomerForm onCustomerCreated={fetchData} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Arkiverade kunder */}
+              <div className="border-t pt-8">
+                <h3 className="text-lg font-semibold mb-4">Arkiverade Kunder</h3>
+                <ArchivedCustomersList onDataUpdated={fetchData} />
               </div>
             </div>
           </TabsContent>
