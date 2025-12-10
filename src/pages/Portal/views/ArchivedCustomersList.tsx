@@ -57,15 +57,30 @@ export default function ArchivedCustomersList({ onDataUpdated }: ArchivedCustome
   const restoreCustomer = async (customerId: string, customerName: string) => {
     setActionLoadingId(customerId);
     try {
-      // 1. Återaktivera kunden
-      const { error: updateError } = await supabase
+      // 1. Hämta den arkiverade kundens originaldata
+      const { data: archivedData, error: fetchError } = await supabase
+        .from("archived_customers")
+        .select("*")
+        .eq("id", customerId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // 2. Infoga kunden tillbaka i customers-tabellen med is_customer = true
+      const { error: insertError } = await supabase
         .from("customers")
-        .update({ is_customer: true })
-        .eq("id", customerId);
+        .insert({
+          id: archivedData.id,
+          email: archivedData.email,
+          name: archivedData.name,
+          phone: archivedData.phone,
+          is_admin: archivedData.is_admin,
+          is_customer: true,
+        });
 
-      if (updateError) throw updateError;
+      if (insertError) throw insertError;
 
-      // 2. Ta bort från arkiv
+      // 3. Ta bort från arkiv
       const { error: deleteError } = await supabase
         .from("archived_customers")
         .delete()

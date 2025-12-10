@@ -46,13 +46,13 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
         if (archiveError) throw archiveError;
       }
 
-      // 2. Uppdatera is_customer-status till false (deaktivera)
-      const { error: updateError } = await supabase
+      // 2. Ta bort kunden från customers-tabellen (så den bara finns i arkiv)
+      const { error: deleteError } = await supabase
         .from("customers")
-        .update({ is_customer: false })
+        .delete()
         .eq("id", customer.id);
 
-      if (updateError) throw updateError;
+      if (deleteError) throw deleteError;
 
       toast({
         title: "Kund deaktiverad och arkiverad",
