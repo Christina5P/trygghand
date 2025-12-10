@@ -1,7 +1,7 @@
 // src/hooks/useAdminData.ts
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Customer, CustomerMap, Case, ContactRequest, Subscription, Valuation, ServiceType } from "@/types";
+import type { Customer, CustomerMap, Case, ContactRequest, Subscription, SubscriptionCancellation, Valuation, ServiceType } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
 /**
@@ -17,6 +17,7 @@ export const useAdminData = () => {
   const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [valuations, setValuations] = useState<Valuation[]>([]);
+  const [cancellations, setCancellations] = useState<SubscriptionCancellation[]>([]);
 
   // customerMap for quick lookup
   const customerMap = useMemo(() => {
@@ -85,6 +86,17 @@ export const useAdminData = () => {
     }
   }, []);
 
+  const fetchCancellations = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from("subscription_cancellations").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      setCancellations(data ?? []);
+    } catch (err: any) {
+      console.error("fetchCancellations error", err);
+      setCancellations([]);
+    }
+  }, []);
+
   // fetch all
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -94,12 +106,13 @@ export const useAdminData = () => {
         fetchCustomers(),
         fetchContactRequests(),
         fetchSubscriptions(),
-        fetchValuations()
+        fetchValuations(),
+        fetchCancellations()
       ]);
     } finally {
       setLoading(false);
     }
-  }, [fetchCases, fetchCustomers, fetchContactRequests, fetchSubscriptions, fetchValuations]);
+  }, [fetchCases, fetchCustomers, fetchContactRequests, fetchSubscriptions, fetchValuations, fetchCancellations]);
 
   useEffect(() => {
     fetchAll();
@@ -113,12 +126,14 @@ export const useAdminData = () => {
     contactRequests,
     subscriptions,
     valuations,
+    cancellations,
     fetchAll,
     fetchCases,
     fetchCustomers,
     fetchContactRequests,
     fetchSubscriptions,
     fetchValuations,
+    fetchCancellations,
   };
 };
 

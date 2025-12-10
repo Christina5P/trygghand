@@ -16,3 +16,23 @@ skicka magic link till inlogg
 reset password
 Ta bort användare
 
+visa fullständigt schema - Kör script:
+-- Detta script listar tabeller i scheman som 'auth' och 'storage'
+-- (Exkluderar interna system-scheman för att minska brus)
+SELECT 
+    t.table_schema,
+    t.table_name,
+    c.column_name,
+    c.data_type,
+    c.is_nullable
+FROM 
+    information_schema.tables t
+JOIN 
+    information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema
+WHERE 
+    t.table_schema NOT IN ('public', 'information_schema', 'pg_catalog', 'pg_toast')
+    AND t.table_type = 'BASE TABLE'
+ORDER BY 
+    t.table_schema,
+    t.table_name, 
+    c.ordinal_position;

@@ -93,15 +93,17 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
         setUploading(true);
         const fileExtension = selectedFile.name.split('.').pop();
         
-        const { data, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error("Failed to get user", error);
-          return;
-        }
-        const currentUser = data.user;
-        const uploaderId = currentUser?.id; 
+                const { data, error } = await supabase.auth.getUser();
+                if (error || !data.user) {
+                    console.error("Failed to get user", error);
+                    toast({ title: "Inloggning krävs", description: "Kunde inte hämta användare.", variant: "destructive" });
+                    return;
+                }
+                const currentUser = data.user;
+                const uploaderId = currentUser.id; // kopplad till auth.users (FK)
         
-        const pathPrefix = customerId ? `fullmakter/${customerId}` : `fullmakter/admin/`; 
+                // Använd auth-user-id som ägare i storage-sökvägen
+                const pathPrefix = `fullmakter/${uploaderId}`;
         
         const safeFileName = selectedFile.name.replace(/[^a-z0-9.]/gi, '_');
         const uniqueFileName = `${safeFileName}_${Date.now()}.${fileExtension}`;
@@ -120,8 +122,8 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
             const { error: dbError } = await supabase
                 .from('fullmakter')
                 .insert({
-                    fullmaktsgivare: customerId || null, 
-                    fullmakthavare: 'Juristbyrån AB',
+                    fullmaktsgivare: uploaderId, // FK mot auth.users
+                    fullmakthavare: customerId || uploaderId, // fallback
                     fullmaktstyp: 'Allmän fullmakt', 
                     status: 'Aktiv', 
                     dokument_url: storagePath, 

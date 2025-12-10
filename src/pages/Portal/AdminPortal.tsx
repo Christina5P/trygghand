@@ -27,7 +27,7 @@ import { useCustomerData } from "@/hooks/useCustomerData"
 import Tidio from "@/components/Tidio";
 import CasesView from "./views/CasesView";
 import CustomersDialog from "./dialogs/CustomersDialog";
-import SubscriptionsView from "./views/SubscriptionsView";
+import SubscriptionCancellationsView from "./views/SubscriptionCancellationsView";
 import ContactRequestDialog from "./dialogs/ContactRequestDialog";
 import ValuationManager from "@/components/ValuationManager";
 import ValuationsView from "./views/ValuationsView"; 
@@ -123,6 +123,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     valuations = [],
     customers = [],
     contactRequests = [],
+    cancellations = [],
     loading,
     fetchAll,
     fetchValuations,   
@@ -153,15 +154,30 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   // Fullmakt templates (previously undefined) and helper to open/download them
   type FullmaktTemplate = { id: string; name: string; storage_path: string };
   const [fullmaktTemplates, setFullmaktTemplates] = useState<FullmaktTemplate[] | null>(null);
+  const FULLMAKT_BUCKET = "fullmakts-filer";
 
   const handleDownloadTemplate = async (storagePath: string) => {
     try {
-      // Attempt to open the provided path; if it's not an absolute URL it will open relative to the app.
-      const url = storagePath.startsWith("http") ? storagePath : storagePath;
+      // Öppna externa länkar direkt
+      if (/^https?:\/\//i.test(storagePath)) {
+        window.open(storagePath, "_blank");
+        return;
+      }
+
+      // Generera signerad URL från rätt bucket
+      const { data, error } = await supabase.storage
+        .from(FULLMAKT_BUCKET)
+        .createSignedUrl(storagePath, 3600);
+
+      if (error) throw error;
+
+      const url = (data as any)?.signedUrl || (data as any)?.signed_url;
+      if (!url) throw new Error("Ingen signerad URL genererades");
+
       window.open(url, "_blank");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to open template:", err);
-      toast({ title: "Fel", description: "Kunde inte öppna mallen.", variant: "destructive" });
+      toast({ title: "Fel", description: err.message || "Kunde inte öppna mallen.", variant: "destructive" });
     }
   };
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -363,24 +379,31 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
   return (
 
     
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-100">
           <Tidio />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
        
 <div className="w-full bg-gradient-to-r from-blue-50 to-white border-t border-blue-100">
-  <div className="max-w-6xl mx-auto px-4 py-2 text-sm text-gray-600">
+  <div className="max-w-6xl mx-auto px-4 py-2 text-sm text-gray-700">
     Tips: Använd våra färdiga mallar för snabbare hantering — klicka på "Hämta fullmaktsmallar".
   </div>
 </div>
 
-<div className="max-w-6xl mx-auto px-4 py-4 flex justify-center">
+<div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-center gap-3">
   <Button
     onClick={() => setTemplatesDialogOpen(true)}
-    className="bg-gradient-to-r from-trust-blue to-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:scale-102 transform transition"
+    className="bg-gradient-to-r from-trust-blue to-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:translate-y-[-1px] transition"
   >
     <FileText className="w-4 h-4 mr-2" />
     Hämta fullmaktsmallar
+  </Button>
+  <Button
+    variant="outline"
+    className="border-blue-200 text-blue-700 bg-white/70 hover:bg-white"
+    onClick={() => window.open("https://supabase.com/dashboard/project/laexmlqsqgeujcvysqoz/storage/files/buckets/fullmakts-filer", "_blank")}
+  >
+    Öppna mall-bibliotek
   </Button>
 </div>
  
@@ -392,22 +415,23 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
      </DialogHeader>
      <div className="p-4 space-y-4">
        <p className="text-sm text-gray-600">Välj en mall för att ladda ner. Mallarna öppnas i ny flik.</p>
-       <div className="grid grid-cols-1 gap-3">
-         {(fullmaktTemplates && fullmaktTemplates.length ? fullmaktTemplates : [
-           { id: "1", name: "Fullmakt - Enkel mall (PDF)", storage_path: "templates/fullmaktenkel.pdf" }
-         ]).map(t => (
-           <div key={t.id} className="bg-white p-3 rounded shadow flex items-center justify-between">
-             <div>
-               <div className="font-medium">{t.name}</div>
-               <div className="text-xs text-gray-500">{t.storage_path}</div>
+      <div className="grid grid-cols-1 gap-3">
+               {(fullmaktTemplates && fullmaktTemplates.length ? fullmaktTemplates : [
+                 { id: "1", name: "Fullmakt - Apoteksärenden", storage_path: "fullmaktsmallar/Apoteksarenden Fullmakt.pdf" },
+                 { id: "2", name: "Fullmakt - Tele2", storage_path: "fullmaktsmallar/Tele2 Fullmakt.pdf" }
+               ]).map(t => (
+                 <div key={t.id} className="bg-white p-3 rounded border border-slate-200 shadow-sm flex items-center justify-between">
+                   <div>
+                     <div className="font-medium">{t.name}</div>
+                     <div className="text-xs text-gray-500">{t.storage_path}</div>
+                   </div>
+                   <div className="flex gap-2">
+                     <Button size="sm" variant="ghost" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Förhandsgranska</Button>
+                     <Button size="sm" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Hämta</Button>
+                   </div>
+                 </div>
+               ))}
              </div>
-             <div className="flex gap-2">
-               <Button size="sm" variant="ghost" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Förhandsgranska</Button>
-               <Button size="sm" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Hämta</Button>
-             </div>
-           </div>
-         ))}
-       </div>
      </div>
      <DialogFooter>
       <Button variant="secondary" onClick={() => setTemplatesDialogOpen(false)}>Stäng</Button>
@@ -421,13 +445,13 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
              </div>
 
               <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-6">
-                  <TabsList className="w-full bg-white shadow-md rounded-lg p-1 flex flex-wrap gap-1">
+                  <TabsList className="w-full bg-slate-200/80 shadow-sm rounded-lg p-1 flex flex-wrap gap-1 border border-slate-200">
                       <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="cases">
                           Ärenden ({cases.length})
                       </TabsTrigger>
                       {/* Abonnemang */}
                       <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="subscriptions">
-                          Abonnemang ({subscriptions.length})
+                          Abonnemang ({cancellations.length})
                       </TabsTrigger>
                       {/* Värderingar */}
                       <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="valuations">
@@ -472,10 +496,14 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
             />
           </TabsContent>
 
-          {/* Abonnemang */}
-          <TabsContent value="subscriptions">
-    <SubscriptionsView subscriptions={subscriptions} onDataUpdated={fetchData} />
-</TabsContent>
+          {/* Abonnemang / Uppsägningar */}
+          <TabsContent value="subscriptions">
+            <SubscriptionCancellationsView
+              subscriptions={subscriptions}
+              customers={customers}
+              onDataUpdated={fetchData}
+            />
+          </TabsContent>
 
           {/* NY FLIK: Värderingar (visar den nya ValuationsView-komponenten) */}
           <TabsContent value="valuations">

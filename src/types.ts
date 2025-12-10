@@ -135,6 +135,40 @@ export interface Subscription {
   created_at?: string;
 }
 
+// --------------------------------------------------------
+// SUBSCRIPTION CANCELLATIONS
+// --------------------------------------------------------
+
+export type CancellationStatus = "pending" | "processing" | "waiting_customer" | "cancelled" | "completed";
+
+export interface SubscriptionCancellation {
+  id: string;
+  customer_id: string;
+  subscription_id?: string | null;
+  provider?: string | null;
+  service_type?: string | null;
+  custom_service_name?: string | null;
+  notice_period?: string | null;
+  last_due_date?: string | null;
+  provider_contact?: string | null; // kontaktperson hos leverantör
+  notes?: string | null;
+  status: CancellationStatus;
+  documents?: string[] | null; // lagras som jsonb array i kolumn "documents"
+  admin_notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CancellationComment {
+  id: string;
+  cancellation_id: string;
+  user_id: string;
+  message: string;
+  is_internal?: boolean;
+  created_at?: string;
+  // author relation (auth.users) är inte joinad här; presenteras enkelt via user_id
+}
+
 
 // --------------------------------------------------------
 // CONTACT REQUESTS

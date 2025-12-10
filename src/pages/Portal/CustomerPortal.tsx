@@ -148,8 +148,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const [loadingDocuments, setLoadingDocuments] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
-
-    // --- Uppdatera state när customer prop ändras ---
+    
     useEffect(() => {
         setEditingCustomer(customer);
         if (customer.id) {
@@ -253,14 +252,17 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     }, [customer?.id, toast]);
 
     // --- Hämta fullmakter för kund ---
-    const fetchDocuments = useCallback(async (customerId?: string) => {
-        if (!customerId) return;
+    const fetchDocuments = useCallback(async () => {
         setLoadingDocuments(true);
         try {
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (authError || !authData.user) throw authError || new Error('Ingen användare');
+            const userId = authData.user.id;
+
             const { data, error } = await supabase
                 .from('fullmakter')
                 .select('id, fullmaktsgivare, file_name, dokument_url, created_at')
-                .eq('fullmaktsgivare', customerId)
+                .eq('fullmaktsgivare', userId)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -283,22 +285,26 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
 
     // Hämta dokument när dialog öppnas
     useEffect(() => {
-        if (isFullmaktDialogOpen && customer?.id) fetchDocuments(customer.id);
-    }, [isFullmaktDialogOpen, customer?.id, fetchDocuments]);
+        if (isFullmaktDialogOpen) fetchDocuments();
+    }, [isFullmaktDialogOpen, fetchDocuments]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0]);
     };
 
     const handleUploadFullmakt = async () => {
-        if (!selectedFile || !editingCustomer?.id) {
-            toast({ title: 'Varning', description: 'Välj en fil och se till att en kund är aktiv.', variant: 'destructive' });
+        if (!selectedFile) {
+            toast({ title: 'Varning', description: 'Välj en fil att ladda upp.', variant: 'destructive' });
             return;
         }
         setUploading(true);
         try {
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (authError || !authData.user) throw authError || new Error('Ingen användare');
+            const userId = authData.user.id; // kopplad till auth.users (FK)
+
             const fileExtension = selectedFile.name.split('.').pop();
-            const pathPrefix = `fullmakter/kund/${editingCustomer.id}/`;
+            const pathPrefix = `fullmakter/${userId}/`;
             const safeFileName = selectedFile.name.replace(/[^a-z0-9.]/gi, '_');
             const fileName = `${safeFileName}_${Date.now()}.${fileExtension}`;
             const storagePath = `${pathPrefix}${fileName}`;
@@ -308,15 +314,14 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                 .upload(storagePath, selectedFile, { cacheControl: '3600', upsert: false });
             if (uploadError) throw uploadError;
 
-            const { data: userData } = await supabase.auth.getUser();
-            const uploaderId = (userData as any)?.user?.id ?? null;
-            const fullmakthavareId = uploaderId ?? editingCustomer.id;
+            const uploaderId = userId;
+            const fullmakthavareId = userId; // säker FK mot auth.users
             const today = new Date().toISOString().slice(0, 10);
 
             const { error: dbError } = await supabase
                 .from('fullmakter')
                 .insert([{
-                    fullmaktsgivare: editingCustomer.id,
+                    fullmaktsgivare: uploaderId,
                     fullmakthavare: fullmakthavareId,
                     fullmaktstyp: 'uppladdning',
                     giltig_from: today,
@@ -327,7 +332,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
 
             toast({ title: 'Uppladdning klar', description: `${selectedFile.name} sparad.`, variant: 'default' });
             setSelectedFile(null);
-            await fetchDocuments(editingCustomer.id);
+            await fetchDocuments();
         } catch (err) {
             console.error('Uppladdning/DB-fel:', err);
             toast({ title: 'Fel', description: 'Kunde inte ladda upp fil eller spara referens.', variant: 'destructive' });
@@ -378,16 +383,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                             behöver PortalStats anpassas för att ta emot customer.id och filtrera,
                             eller så kan du bygga en enklare vy här. För nu antar vi att PortalStats kan visa relevanta kunddata. */}
                         <PortalStats />
-
-                        {/* Knapp för att öppna fullmaktsmallar — placerad längst ned i "Din Översikt" */}
-                        <div className="mt-4 border-t pt-4 flex justify-end">
-                          <Button
-                            onClick={() => setTemplatesOpen(true)}
-                            className="bg-gradient-to-r from-trust-blue to-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:scale-102 transform transition"
-                          >
-                            Hämta fullmaktsmallar
-                          </Button>
-                        </div>
                     </CardContent>
                 </Card>
 
@@ -399,59 +394,60 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                     <CardContent>
                         <ValuationManager valuations={valuations} onDataUpdated={fetchValuations} customerId={customer.id} />
 
-                        {/* Tip and prominent button for templates directly under valuation overview */}
-                        <div className="mt-4 border-t pt-4">
-                          <p className="text-sm text-gray-600 mb-2">Behöver du en mall? Välj en färdig fullmaktsmall nedan för att ladda ner och fylla i.</p>
-                          <div className="flex items-center gap-3">
-                            <Button
-                              onClick={() => setTemplatesOpen(true)}
-                              className="bg-gradient-to-r from-trust-blue to-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:scale-102 transform transition"
-                            >
-                              Hämta fullmaktsmallar
-                            </Button>
-                          </div>
-                        </div>
+                                             
 
-                        {/* Templates dialog placed under the valuation section */}
-                        <Dialog open={templatesOpen} onOpenChange={setTemplatesOpen}>
-                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Fullmaktsmallar</DialogTitle>
-                            </DialogHeader>
-                            <div className="p-4 space-y-4">
-                              <p className="text-sm text-gray-600">Välj en mall för att ladda ner. Mallarna öppnas i ny flik.</p>
-                              <div className="grid grid-cols-1 gap-3">
-                                {(fullmaktTemplates.length ? fullmaktTemplates : [
-                                  { id: "1", name: "Fullmakt - Enkel mall (PDF)", storage_path: "templates/fullmaktenkel.pdf" }
-                                ]).map(t => (
-                                  <div key={t.id} className="bg-white p-3 rounded shadow flex items-center justify-between">
-                                    <div>
-                                      <div className="font-medium">{t.name}</div>
-                                      <div className="text-xs text-gray-500">{t.storage_path}</div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <Button size="sm" variant="ghost" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Förhandsgranska</Button>
-                                      <Button size="sm" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Hämta</Button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button variant="secondary" onClick={() => setTemplatesOpen(false)}>Stäng</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                                            
                     </CardContent>
                 </Card>
 
                                {/* 4. Mina Fullmakter (NY SEKTION för kunden) */}
+              {/* Knapp före tips-texten */}
+              <div className="mt-4">
+                <div className="flex justify-center mb-4">
+                  <Button
+                    onClick={() => setTemplatesOpen(true)}
+                    className="bg-gradient-to-r from-trust-blue to-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:scale-102 transform transition"
+                  >
+                    Hämta fullmaktsmallar
+                  </Button>
+                </div>
+              </div>
+
               {/* Tip: flyttat ovanför fullmakt-cardet så den syns bättre */}
               <div className="w-full bg-gradient-to-r from-blue-50 to-white border-t border-blue-100">
                 <div className="max-w-4xl mx-auto px-4 py-2 text-sm text-gray-600">
                   Tips: Använd våra färdiga mallar för snabbare hantering — klicka på "Hämta fullmaktsmallar".
                 </div>
               </div>
+                  <Dialog open={templatesOpen} onOpenChange={setTemplatesOpen}>
+                                                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                                        <DialogHeader>
+                                                            <DialogTitle>Fullmaktsmallar</DialogTitle>
+                                                        </DialogHeader>
+                                                        <div className="p-4 space-y-4">
+                                                            <p className="text-sm text-gray-600">Välj en mall för att ladda ner. Mallarna öppnas i ny flik.</p>
+                                                            <div className="grid grid-cols-1 gap-3">
+                                                                {(fullmaktTemplates.length ? fullmaktTemplates : [
+                                                                    { id: "1", name: "Fullmakt - Enkel mall (PDF)", storage_path: "templates/fullmaktenkel.pdf" }
+                                                                ]).map(t => (
+                                                                    <div key={t.id} className="bg-white p-3 rounded shadow flex items-center justify-between">
+                                                                        <div>
+                                                                            <div className="font-medium">{t.name}</div>
+                                                                            <div className="text-xs text-gray-500">{t.storage_path}</div>
+                                                                        </div>
+                                                                        <div className="flex gap-2">
+                                                                            <Button size="sm" variant="ghost" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Förhandsgranska</Button>
+                                                                            <Button size="sm" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Hämta</Button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        <DialogFooter>
+                                                            <Button variant="secondary" onClick={() => setTemplatesOpen(false)}>Stäng</Button>
+                                                        </DialogFooter>
+                                                    </DialogContent>
+                                                </Dialog>
                  <CollapsibleCard
                      title={
                          <div className="flex items-center">
