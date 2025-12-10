@@ -288,25 +288,6 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     });
 }, [contactRequests]);
 
-
-  const customerList = useMemo(() => {
-    return customers.map((c) => (
-      <div
-        key={c.id}
-        className="flex justify-between items-center p-4 bg-white border rounded-lg shadow-sm hover:shadow-md cursor-pointer transition"
-        onClick={() => handleOpenCustomerDialog(c)}
-      >
-        <div className="min-w-0 pr-4">
-          <p className="text-base font-semibold truncate">{c.name}</p>
-          <p className="text-sm text-gray-500 truncate">{c.email}</p>
-        </div>
-        <Badge variant="secondary" className="bg-gray-200 text-gray-800">
-          Kund
-        </Badge>
-      </div>
-    ));
-  }, [customers]);
-
 // Funktion för att konvertera kontaktförfrågan till en kund
 const handleConvertContactToCustomer = useCallback(async (contact: ContactRequest) => {
   // Kombinera firstname och lastname om name inte finns
@@ -462,11 +443,8 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                       <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="contact_requests">
                           Kontakt ({activeContactCount})
                       </TabsTrigger>
-                      <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="customer_management">
-                          Kundhantering
-                      </TabsTrigger>
                   </TabsList>
-          {/* Ärenden */}
+          {/* Ärenden */}
                   <TabsContent value="cases">
             <div className="mb-4 flex items-center justify-between gap-4">
               <div className="text-sm text-gray-600">Filtrera ärenden:</div>
@@ -516,22 +494,9 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
             />
           </TabsContent>
           
-          {/* Kunder */}
-                  <TabsContent value="customers">
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {customerList}
-                      </div>
-                  </TabsContent>
-
-          {/* Kontaktförfrågningar */}
-                  <TabsContent value="contact_requests">
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {contactRequestList}
-                      </div>
-                  </TabsContent>
-
-          {/* NY FLIK: Kundhantering (aktivera/deaktivera kunder) */}
-          <TabsContent value="customer_management">
+          
+          {/* Kunder */}
+          <TabsContent value="customers">
             <div className="space-y-8">
               {/* Aktiva kunder */}
               <div>
@@ -554,6 +519,13 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
               </div>
             </div>
           </TabsContent>
+
+          {/* Kontaktförfrågningar */}
+                  <TabsContent value="contact_requests">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {contactRequestList}
+                      </div>
+                  </TabsContent>
               </Tabs>
           </div>          {/* 1. Kunddialog (CustomersDialog) */}
           {selectedCustomer && (
