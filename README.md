@@ -200,13 +200,14 @@ Säkerhet & drift
 - Håll SUPABASE_SERVICE_ROLE och REVOKE_API_KEY hemliga.  
 - Granska och teckna DPA med Supabase via deras support om ni behandlar personuppgifter. Dokumentera rutiner för registerförfrågningar.
 
-Vanliga kommandon
+**Vanliga kommandon**
 - npm run dev — starta utveckling
 - npm run build — bygg produktion
 - npm run preview — förhandsgranska build
  
  
- @Christina5P ➜ /workspaces/trygghand (main) $ tree -I "node_modules|dist"
+ @Christina5P ➜ /workspaces/trygghand (main) $ 
+ **tree -I "node_modules|dist"**
 .
 ├── CNAME
 ├── Console

@@ -25,7 +25,7 @@ Syfte: Enkel, handlingsorienterad checklista för att uppfylla GDPR-krav och fö
 - [ ] Spara bevis på samtycke (t.ex. trygghand_cookie_consent).
 
 ## Personuppgiftsbiträden (DPA)
-- [ ] Lista alla leverantörer (Supabase, Stripe, Google, mm).
+- [ ] Lista alla leverantörer (Supabase, Brevo, Google, mm).
 - [ ] Begär/insamla leverantörens DPA (Supabase: kontakta support om standard‑DPA).
 - [ ] Kontrollera sub‑processors och datalagrings‑regioner.
 - [ ] Teckna och arkivera undertecknat DPA.
