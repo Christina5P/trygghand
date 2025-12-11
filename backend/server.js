@@ -3,11 +3,14 @@ import multer from "multer";
 import cors from "cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
-import saveValuationRouter from "./routes/save-valuation.js";
+import gdprDeleteRouter from "./routes/gdprDelete.js";
 
 dotenv.config();
 
 const app = express();
+app.use(express.json()); // För att kunna läsa JSON body
+app.use(cors()); // Tillåt cross-origin requests
+
 // Ensure files are available in memory for buffer access
 const upload = multer({ storage: multer.memoryStorage() });
 const PORT = process.env.PORT || 5174;
@@ -21,7 +24,8 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-app.use("/api", saveValuationRouter);
+// Registrera routes
+app.use("/api", gdprDeleteRouter);
 
 /**
  * Konvertera FileBuffer till GenerativeImagePart
