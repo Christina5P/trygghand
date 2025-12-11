@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle2, Loader2, Archive } from "lucide-react";
+import { GDPRDeleteUserDialog } from "@/components/GDPRDeleteUserDialog";
 import type { Customer } from "@/types";
 
 interface CustomerManagementProps {
@@ -19,6 +20,8 @@ interface CustomerManagementProps {
  */
 export default function CustomerManagement({ customers, onDataUpdated }: CustomerManagementProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -28,10 +31,10 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
     try {
       // Deaktivera kunden (alltid false eftersom vi endast visar aktiva här)
       if (currentStatus) {
-        // 1. Arkivera kunden
+        // 1. Arkivera kunden (använd upsert för att undvika duplicate key error)
         const { error: archiveError } = await supabase
           .from("archived_customers")
-          .insert({
+          .upsert({
             id: customer.id,
             email: customer.email || "",
             name: customer.name,
@@ -41,6 +44,8 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
             archived_reason: "Deaktiverad av admin",
             original_created_at: customer.created_at,
             original_data: customer, // Lagra komplett original-data
+          }, {
+            onConflict: 'id' // Om id redan finns, uppdatera istället
           });
 
         if (archiveError) throw archiveError;
@@ -109,6 +114,17 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
                       </>
                     )}
                   </Button>
+
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCustomer(customer);
+                      setDeleteDialog(true);
+                    }}
+                  >
+                    Radera (GDPR)
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -123,6 +139,15 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
           </Card>
         )}
       </div>
+
+      {selectedCustomer && (
+        <GDPRDeleteUserDialog
+          open={deleteDialog}
+          onOpenChange={setDeleteDialog}
+          customer={selectedCustomer}
+          onDeleteSuccess={() => onDataUpdated()}
+        />
+      )}
     </div>
   );
-}
+};

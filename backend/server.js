@@ -1,11 +1,11 @@
+// MUST be first import to load env vars before other modules
+import "./loadEnv.js";
+
 import express from "express";
 import multer from "multer";
 import cors from "cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import dotenv from "dotenv";
 import gdprDeleteRouter from "./routes/gdprDelete.js";
-
-dotenv.config();
 
 const app = express();
 app.use(express.json()); // För att kunna läsa JSON body

@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, RotateCcw, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
+import { GDPRDeleteUserDialog } from "@/components/GDPRDeleteUserDialog";
+import type { Customer } from "@/types";
 
 interface ArchivedCustomer {
   id: string;
@@ -26,6 +28,8 @@ export default function ArchivedCustomersList({ onDataUpdated }: ArchivedCustome
   const [archivedCustomers, setArchivedCustomers] = useState<ArchivedCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -107,36 +111,9 @@ export default function ArchivedCustomersList({ onDataUpdated }: ArchivedCustome
     }
   };
 
-  const deleteArchivedCustomer = async (customerId: string, customerName: string) => {
-    if (!confirm(`Är du säker på att du vill permanent ta bort ${customerName} från arkivet? Detta kan inte ångras.`)) {
-      return;
-    }
-
-    setActionLoadingId(customerId);
-    try {
-      const { error } = await supabase
-        .from("archived_customers")
-        .delete()
-        .eq("id", customerId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Arkiverad kund borttagen",
-        description: `${customerName} har permanent tagits bort från arkivet.`,
-      });
-
-      await fetchArchivedCustomers();
-    } catch (err: any) {
-      console.error("Fel vid radering:", err);
-      toast({
-        title: "Fel",
-        description: err.message || "Kunde inte radera arkiverad kund.",
-        variant: "destructive",
-      });
-    } finally {
-      setActionLoadingId(null);
-    }
+  const deleteArchivedCustomer = (customer: ArchivedCustomer) => {
+    setSelectedCustomer(customer as Customer);
+    setDeleteDialog(true);
   };
 
   if (loading) {
@@ -198,17 +175,10 @@ export default function ArchivedCustomersList({ onDataUpdated }: ArchivedCustome
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => deleteArchivedCustomer(customer.id, customer.name)}
-                      disabled={actionLoadingId === customer.id}
+                      onClick={() => deleteArchivedCustomer(customer)}
                     >
-                      {actionLoadingId === customer.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Radera
-                        </>
-                      )}
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Radera (GDPR)
                     </Button>
                   </div>
                 </div>
@@ -216,6 +186,18 @@ export default function ArchivedCustomersList({ onDataUpdated }: ArchivedCustome
             </Card>
           ))}
         </div>
+      )}
+
+      {selectedCustomer && (
+        <GDPRDeleteUserDialog
+          open={deleteDialog}
+          onOpenChange={setDeleteDialog}
+          customer={selectedCustomer}
+          onDeleteSuccess={async () => {
+            await fetchArchivedCustomers();
+            await onDataUpdated();
+          }}
+        />
       )}
     </div>
   );

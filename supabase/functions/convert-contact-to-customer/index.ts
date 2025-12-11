@@ -110,24 +110,43 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "email required" }), { status: 400, headers: corsHeaders });
     }
     
-    // 1) Create auth user with generated password
-    console.log("Step 1: Creating auth user");
-    const password = generatePassword();
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: fullName ?? "", phone: phone ?? "" },
-    });
+    // 1) Försök hämta befintlig user först
+    console.log("Step 1: Checking if user already exists");
+    let userId: string | undefined;
+    let authData;
+    let password: string | undefined;
+    
+    // Lista alla users för att hitta e-posten
+    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
+    
+    const existingUser = existingUsers?.users?.find((u: any) => u.email === email);
+    
+    if (existingUser) {
+      console.log(`Step 1: User already exists with ID: ${existingUser.id}`);
+      userId = existingUser.id;
+      authData = { user: existingUser };
+    } else {
+      // 2) Skapa ny auth user med genererat lösenord
+      console.log("Step 1: Creating new auth user");
+      password = generatePassword();
+      const { data: newAuthData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName ?? "", phone: phone ?? "" },
+      });
 
-    if (authError) {
-      console.error("createUser failed", authError);
-      return new Response(JSON.stringify({ error: authError.message }), { status: 400, headers: corsHeaders });
+      if (authError) {
+        console.error("createUser failed", authError);
+        return new Response(JSON.stringify({ error: authError.message }), { status: 400, headers: corsHeaders });
+      }
+
+      userId = newAuthData.user?.id;
+      authData = newAuthData;
     }
 
-    const userId = authData.user?.id;
     if (!userId) throw new Error("No user id from auth");
-    console.log(`Step 1: Auth user created with ID: ${userId}`);
+    console.log(`Step 1: Auth user ready with ID: ${userId}`);
 
     // 2) Upsert customer (avoid duplicates)
     console.log("Step 2: Upserting customer");
@@ -154,16 +173,22 @@ serve(async (req: Request) => {
     }
     console.log("Step 2: Customer upserted successfully");
 
-    // 3) Fire-and-forget Brevo email (do not block or fail on email errors)
-    console.log("Step 3: Sending email via Brevo (fire-and-forget)");
-    sendBrevoEmail(email, password, fullName ?? undefined).catch((emailErr) => {
-      console.error("Brevo email send failed (fire-and-forget)", emailErr);
-    });
-
-    const response = {
-      ok: true,
-      message: "Kund skapad. Mail med lösenord skickas strax.",
-    };
+    // 3) Send Brevo email only if new user was created
+    console.log("Step 3: Sending email via Brevo");
+    if (password) {
+      // New user created - send password email
+      await sendBrevoEmail(email, password, fullName ?? undefined);
+      var response = {
+        ok: true,
+        message: "Kund skapad. Mail med lösenord skickas strax.",
+      };
+    } else {
+      // Existing user reused - no email sent
+      var response = {
+        ok: true,
+        message: "Kund associerad till befintligt konto (mail ej skickat).",
+      };
+    }
     
     console.log(`Returning success response: ${JSON.stringify(response)}`);
     return new Response(JSON.stringify(response), { status: 200, headers: corsHeaders });

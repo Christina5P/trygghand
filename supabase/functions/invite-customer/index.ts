@@ -12,7 +12,7 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const brevoApiKey = Deno.env.get("BREVO_API_KEY");
 const appLoginUrl = Deno.env.get("APP_LOGIN_URL") || "https://app.trygghand.se/login";
-const emailFrom = Deno.env.get("BREVO_SENDER_EMAIL") || "no-reply@trygghand.se";
+const emailFrom = Deno.env.get("BREVO_SENDER_EMAIL") || "kontakt@trygghand.com";
 const emailFromName = Deno.env.get("BREVO_SENDER_NAME") || "Trygghand";
 
 if (!supabaseUrl || !serviceRoleKey) {
@@ -110,24 +110,56 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "email required" }), { status: 400, headers: corsHeaders });
     }
     
-    // 1) Create auth user with generated password
-    console.log("Step 1: Creating auth user");
+    // 1) Försök hämta befintlig user först
+    console.log("Step 1: Checking if user already exists");
+    let userId: string | undefined;
+    let authData;
+    
+    // Lista alla users för att hitta e-posten
+    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
+    
+    const existingUser = existingUsers?.users?.find((u: any) => u.email === email);
+    
+    // ALLTID generera nytt lösenord för invite-customer (admin vill skicka ny inbjudan)
     const password = generatePassword();
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: fullName ?? "", phone: phone ?? "" },
-    });
+    
+    if (existingUser) {
+      console.log(`Step 1: User already exists with ID: ${existingUser.id}, updating password`);
+      userId = existingUser.id;
+      
+      // Uppdatera lösenord för befintlig användare
+      const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(
+        existingUser.id,
+        { password, email_confirm: true }
+      );
+      
+      if (updateError) {
+        console.error("updateUserById failed", updateError);
+        return new Response(JSON.stringify({ error: updateError.message }), { status: 400, headers: corsHeaders });
+      }
+      
+      authData = { user: updateData.user };
+    } else {
+      // 2) Skapa ny auth user med genererat lösenord
+      console.log("Step 1: Creating new auth user");
+      const { data: newAuthData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName ?? "", phone: phone ?? "" },
+      });
 
-    if (authError) {
-      console.error("createUser failed", authError);
-      return new Response(JSON.stringify({ error: authError.message }), { status: 400, headers: corsHeaders });
+      if (authError) {
+        console.error("createUser failed", authError);
+        return new Response(JSON.stringify({ error: authError.message }), { status: 400, headers: corsHeaders });
+      }
+
+      userId = newAuthData.user?.id;
+      authData = newAuthData;
     }
 
-    const userId = authData.user?.id;
     if (!userId) throw new Error("No user id from auth");
-    console.log(`Step 1: Auth user created with ID: ${userId}`);
+    console.log(`Step 1: Auth user ready with ID: ${userId}`);
 
     // 2) Upsert customer (avoid duplicates)
     console.log("Step 2: Upserting customer");
@@ -158,7 +190,7 @@ serve(async (req: Request) => {
     console.log("Step 3: Sending email via Brevo");
     const emailResult = await sendBrevoEmail(email, password, fullName ?? undefined);
     console.log(`Step 3: Email result: ${JSON.stringify(emailResult)}`);
-
+    
     const response = {
       ok: true,
       message: emailResult.sent
