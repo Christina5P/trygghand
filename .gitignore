@@ -25,3 +25,6 @@ dist-ssr
 
 # Backups
 backups/
+
+.env.local
+.env
