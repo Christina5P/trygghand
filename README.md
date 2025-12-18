@@ -75,6 +75,8 @@ To design this website I proceeded from calm and confidence colours.
 
 - Colors: 
  
+Bakgrund - softgrey #f0f2f5
+Textfärg -# 1d315f
 
 - Favicon
 I use the same image for favicon 
@@ -82,6 +84,8 @@ I also load the favicon to work on different devices
 
 - Font
  Nunitio
+
+ 
 
  The font is a part of Sans Serif family.
  It is easy to read and thats important for my target group
@@ -101,7 +105,7 @@ Image and content used from media:
 * https://gemini.google.com/ - create satisfied logo
 * https://canva.com - create AI img to Frågor & Tips blog
 * https://fontawesome.com/ -font awesome icons
-
+* https://canva.com - create broschures and buissness card
 
 #### Home
 

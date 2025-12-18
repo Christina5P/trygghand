@@ -12,19 +12,19 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 215 27% 32%;
+    --foreground: 222 53% 24%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 27% 32%;
+    --card-foreground: 222 53% 24%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 27% 32%;
+    --popover-foreground: 222 53% 24%;
 
     --primary: 214 84% 56%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 20% 95%;
-    --secondary-foreground: 215 27% 32%;
+    --secondary-foreground: 222 53% 24%;
 
     --muted: 210 18% 94%;
     --muted-foreground: 215 20% 45%;
@@ -39,14 +39,14 @@ All colors MUST be HSL.
     --input: 214 13% 91%;
     --ring: 214 84% 56%;
 
-    /* Trygg Hand brand colors */
-    --trust-blue: 214 84% 56%;
-    --trust-blue-dark: 214 84% 46%;
-    --trust-green: 142 76% 36%;
-    --trust-green-light: 142 52% 96%;
-    --warm-gray: 215 13% 65%;
-    --soft-gray: 210 20% 95%;
-
+        /* Trygg Hand brand colors */
+            --trust-blue: 214 84% 56%;
+                --trust-blue-dark: 214 84% 46%;
+                    --trust-green: 142 76% 36%;
+                        --trust-green-light: 142 52% 96%;
+                            --warm-gray: 215 13% 65%;
+                                --soft-gray: 210 20% 95%;
+                                
     /* Gradients */
     --gradient-hero: linear-gradient(135deg, hsl(var(--trust-blue)), hsl(var(--trust-blue-dark)));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--soft-gray)));

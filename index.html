@@ -31,12 +31,29 @@
     <link rel="icon" type="image/png" sizes="128x128" href="/favicon-192x192.png" />
     <link rel="icon" type="image/png" sizes="128x128" href="/favicon-512x512.png" />
     <link rel="icon" type="image/png" sizes="128x128" href="/apple-touch-icon.png" />
+    
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Trygg Hand" />
 
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => console.log('Service Worker registered'))
+          .catch(error => console.log('Service Worker registration failed:', error));
+      }
+    </script>
 
   </body>
 </html>

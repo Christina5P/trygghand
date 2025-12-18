@@ -11,7 +11,7 @@ declare const Deno: { env: { get: (key: string) => string | undefined } };
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const brevoApiKey = Deno.env.get("BREVO_API_KEY");
-const appLoginUrl = Deno.env.get("APP_LOGIN_URL") || "https://app.trygghand.se/login";
+const appLoginUrl = Deno.env.get("APP_LOGIN_URL") || "https://app.trygghand.com/portal";
 const emailFrom = Deno.env.get("BREVO_SENDER_EMAIL") || "kontakt@trygghand.com";
 const emailFromName = Deno.env.get("BREVO_SENDER_NAME") || "Trygghand";
 

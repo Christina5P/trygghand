@@ -7,7 +7,7 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-4 gap-8 text-left">
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold">Trygg Hand</h3>
+            <h3 className="text-2xl font-bold text-background/80">Trygg Hand</h3>
             <p className="text-background/80 text-sm leading-relaxed">
               Från beslut till nytt kapitel. Vi erbjuder helhetslösning för livsförändringar, 
               äldreflytt och hantering av dödsbo.
@@ -20,7 +20,7 @@ const Footer = () => {
           </div>
 
           <div className="space-y-4">
-            <h4 className="font-semibold">Tjänster</h4>
+            <h4 className="font-semibold text-background/80">Tjänster</h4>
             <ul className="space-y-2 text-sm text-background/80">
               <li><Link to="/services/RadgivningPlanering" className="hover:underline">Rådgivning & planering</Link></li>
               <li><Link to="/services/Stadning" className="hover:underline">Städning</Link></li>
@@ -33,7 +33,7 @@ const Footer = () => {
           </div>
 
           <div className="space-y-4">
-            <h4 className="font-semibold">Företag</h4>
+            <h4 className="font-semibold text-background/80">Företag</h4>
             <ul className="space-y-2 text-sm text-background/80">
               <li><Link to="/about" className="hover:underline">Om oss</Link></li>
               <li><Link to="/services/Juridikguide" className="hover:underline">Din Juridiska Guide i Fickan</Link></li>
@@ -45,7 +45,7 @@ const Footer = () => {
           </div>
 
           <div className="space-y-4">
-            <h4 className="font-semibold">Kontakt</h4>
+            <h4 className="font-semibold text-background/80">Kontakt</h4>
             <div className="space-y-3 text-sm text-background/80">
               <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4" />
