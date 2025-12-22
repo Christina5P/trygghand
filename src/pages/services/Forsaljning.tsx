@@ -2,9 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, ArrowLeft, CheckCircle, Shield } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 function Forsaljning() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Försäljning - Trygg Hand";
+  }, []);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);

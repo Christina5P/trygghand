@@ -4,10 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node backend/server.js & vite",
     "build": "vite build",
     "start": "vite preview",
-    "start:proxy": "node server/index.js"
+    "start:proxy": "node server/index.js",
+    "build:test": "vite build --mode test",
+    "preview:test": "vite preview --mode test",
+    "test": "vite build --mode test && npx playwright test",
+    "test:contact-flow": "vite build --mode test && npx playwright test tests/system/contact-flow.spec.ts"
   },
   "dependencies": {
     "@google/genai": "^1.28.0",
@@ -76,6 +80,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.57.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.27",

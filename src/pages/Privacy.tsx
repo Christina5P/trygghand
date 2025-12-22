@@ -16,7 +16,7 @@ export default function Privacy() {
 
       <h2 className="font-semibold mt-6">Vem ansvarar för uppgifterna?</h2>
       <p className="mb-2">
-        Trygg Partner (org.nr eller kontakt) är personuppgiftsansvarig. För frågor: <a href="mailto:info@dindoman.example" className="underline">info@dindoman.example</a>
+        Trygg Partner (org.nr ) är personuppgiftsansvarig. Det innebär att Trygg Hand är ansvarig för dina personuppgifter. För frågor: <a href="mailto:kontakt@trygghand.com" className="underline">kontakt@trygghand.com</a>
       </p>
 
       <h2 className="font-semibold mt-6">Vad samlar vi in?</h2>
@@ -39,7 +39,7 @@ export default function Privacy() {
 
       <h2 className="font-semibold mt-6">Tredje parter / leverantörer</h2>
       <p className="mb-2">
-        Vi använder vissa tjänster (Supabase). Dessa är personuppgiftsbiträden och vi har avtal för att skydda dina uppgifter.
+        Vi använder vissa tjänster (databas). Dessa är personuppgiftsbiträden och vi har avtal för att skydda dina uppgifter.
       </p>
 
       <h2 className="font-semibold mt-6">Dina rättigheter</h2>

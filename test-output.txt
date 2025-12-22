@@ -1,0 +1,306 @@
+[dotenv@17.2.3] injecting env (13) from tests/.env.test -- tip: ⚙️  override existing env vars with { override: true }
+✅ Using Supabase service role key for tests
+
+Running 24 tests using 1 worker
+
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: ⚙️  enable debug logging with { debug: true }
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓   1 [chromium] › tests/system/contact-flow.spec.ts:30:3 › 📧 Contact Form - Kontaktformulär › ✅ Ska kunna navigera till kontakt-sektion från startsidan (5.1s)
+✅ Bekräftat: Använder test-databas
+  ✘   2 [chromium] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data (8.0s)
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: ⚙️  override existing env vars with { override: true }
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓   3 [chromium] › tests/system/contact-flow.spec.ts:97:3 › 📧 Contact Form - Kontaktformulär › ✅ Validering - Kontakt-formulär kräver obligatoriska fält (3.5s)
+✅ Bekräftat: Använder test-databas
+  ✘   4 [chromium] › tests/system/contact-flow.spec.ts:114:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil (9.0s)
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓   5 [chromium] › tests/system/contact-flow.spec.ts:141:3 › 📧 Contact Form - Kontaktformulär › ✅ E-post validering - Ogiltigt format avvisas (2.0s)
+✅ Bekräftat: Använder test-databas
+  ✓   6 [chromium] › tests/system/contact-flow.spec.ts:159:3 › 📧 Contact Form - Kontaktformulär › ✅ Privacypolicy-länk - Fungerar från kontaktformulär (3.5s)
+✅ Bekräftat: Använder test-databas
+  ✘   7 [chromium] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit (8.0s)
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓   8 [chromium] › tests/system/contact-flow.spec.ts:205:3 › 📧 Contact Form - Kontaktformulär › ⚠️ Database - Kontrollera att vi använder TEST-miljö (91ms)
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓   9 [firefox] › tests/system/contact-flow.spec.ts:30:3 › 📧 Contact Form - Kontaktformulär › ✅ Ska kunna navigera till kontakt-sektion från startsidan (6.7s)
+✅ Bekräftat: Använder test-databas
+  ✘  10 [firefox] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data (10.3s)
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: ⚙️  write to custom object with { processEnv: myObject }
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓  11 [firefox] › tests/system/contact-flow.spec.ts:97:3 › 📧 Contact Form - Kontaktformulär › ✅ Validering - Kontakt-formulär kräver obligatoriska fält (5.9s)
+✅ Bekräftat: Använder test-databas
+  ✘  12 [firefox] › tests/system/contact-flow.spec.ts:114:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil (10.2s)
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: ⚙️  write to custom object with { processEnv: myObject }
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓  13 [firefox] › tests/system/contact-flow.spec.ts:141:3 › 📧 Contact Form - Kontaktformulär › ✅ E-post validering - Ogiltigt format avvisas (3.9s)
+✅ Bekräftat: Använder test-databas
+  ✓  14 [firefox] › tests/system/contact-flow.spec.ts:159:3 › 📧 Contact Form - Kontaktformulär › ✅ Privacypolicy-länk - Fungerar från kontaktformulär (11.1s)
+✅ Bekräftat: Använder test-databas
+  ✘  15 [firefox] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit (12.4s)
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓  16 [firefox] › tests/system/contact-flow.spec.ts:205:3 › 📧 Contact Form - Kontaktformulär › ⚠️ Database - Kontrollera att vi använder TEST-miljö (2.1s)
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓  17 [webkit] › tests/system/contact-flow.spec.ts:30:3 › 📧 Contact Form - Kontaktformulär › ✅ Ska kunna navigera till kontakt-sektion från startsidan (8.6s)
+✅ Bekräftat: Använder test-databas
+  ✘  18 [webkit] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data (27.1s)
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓  19 [webkit] › tests/system/contact-flow.spec.ts:97:3 › 📧 Contact Form - Kontaktformulär › ✅ Validering - Kontakt-formulär kräver obligatoriska fält (7.8s)
+✅ Bekräftat: Använder test-databas
+  ✘  20 [webkit] › tests/system/contact-flow.spec.ts:114:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil (14.9s)
+[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+✅ Using Supabase service role key for tests
+✅ Bekräftat: Använder test-databas
+  ✓  21 [webkit] › tests/system/contact-flow.spec.ts:141:3 › 📧 Contact Form - Kontaktformulär › ✅ E-post validering - Ogiltigt format avvisas (4.2s)
+✅ Bekräftat: Använder test-databas
+  ✓  22 [webkit] › tests/system/contact-flow.spec.ts:159:3 › 📧 Contact Form - Kontaktformulär › ✅ Privacypolicy-länk - Fungerar från kontaktformulär (4.9s)
+✅ Bekräftat: Använder test-databas
+  ✘  23 [webkit] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit (314ms)
+
+
+  1) [chromium] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Tack för din förfrågan')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Tack för din förfrågan')[22m
+
+
+      75 |     // 5️⃣ Verifiera success-meddelande
+      76 |     const successMessage = page.locator('text=Tack för din förfrågan');
+    > 77 |     await expect(successMessage).toBeVisible({ timeout: 5000 });
+         |                                  ^
+      78 |
+      79 |     // 6️⃣ Verifiera i Supabase att data sparades
+      80 |     await page.waitForTimeout(1000); // Vänta på async insert
+        at /workspaces/trygghand/tests/system/contact-flow.spec.ts:77:34
+
+    Error Context: test-results/system-contact-flow-📧-Con-8bd1a-r---Fylla-i-och-skicka-data-chromium/error-context.md
+
+  2) [chromium] › tests/system/contact-flow.spec.ts:114:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Tack')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Tack')[22m
+
+
+      133 |
+      134 |     await submitButton.click();
+    > 135 |     await expect(page.locator('text=Tack')).toBeVisible({ timeout: 5000 });
+          |                                             ^
+      136 |
+      137 |     // Rensa data
+      138 |     await supabaseService.cleanupContactRequest(testData.email);
+        at /workspaces/trygghand/tests/system/contact-flow.spec.ts:135:45
+
+    Error Context: test-results/system-contact-flow-📧-Con-c33a8----Kontaktformulär-på-mobil-chromium/error-context.md
+
+  3) [chromium] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Tack')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Tack')[22m
+
+
+      192 |
+      193 |     // Vänta på success-meddelande
+    > 194 |     await expect(page.locator('text=Tack')).toBeVisible({ timeout: 5000 });
+          |                                             ^
+      195 |
+      196 |     // Verifiera att form är tom efter reset
+      197 |     const firstNameInput = page.locator('input[name="firstname"]').first();
+        at /workspaces/trygghand/tests/system/contact-flow.spec.ts:194:45
+
+    Error Context: test-results/system-contact-flow-📧-Con-42e55-et-töms-efter-lyckad-submit-chromium/error-context.md
+
+  4) [firefox] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Tack för din förfrågan')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Tack för din förfrågan')[22m
+
+
+      75 |     // 5️⃣ Verifiera success-meddelande
+      76 |     const successMessage = page.locator('text=Tack för din förfrågan');
+    > 77 |     await expect(successMessage).toBeVisible({ timeout: 5000 });
+         |                                  ^
+      78 |
+      79 |     // 6️⃣ Verifiera i Supabase att data sparades
+      80 |     await page.waitForTimeout(1000); // Vänta på async insert
+        at /workspaces/trygghand/tests/system/contact-flow.spec.ts:77:34
+
+    Error Context: test-results/system-contact-flow-📧-Con-8bd1a-r---Fylla-i-och-skicka-data-firefox/error-context.md
+
+  5) [firefox] › tests/system/contact-flow.spec.ts:114:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Tack')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Tack')[22m
+
+
+      133 |
+      134 |     await submitButton.click();
+    > 135 |     await expect(page.locator('text=Tack')).toBeVisible({ timeout: 5000 });
+          |                                             ^
+      136 |
+      137 |     // Rensa data
+      138 |     await supabaseService.cleanupContactRequest(testData.email);
+        at /workspaces/trygghand/tests/system/contact-flow.spec.ts:135:45
+
+    Error Context: test-results/system-contact-flow-📧-Con-c33a8----Kontaktformulär-på-mobil-firefox/error-context.md
+
+  6) [firefox] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Tack')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Tack')[22m
+
+
+      192 |
+      193 |     // Vänta på success-meddelande
+    > 194 |     await expect(page.locator('text=Tack')).toBeVisible({ timeout: 5000 });
+          |                                             ^
+      195 |
+      196 |     // Verifiera att form är tom efter reset
+      197 |     const firstNameInput = page.locator('input[name="firstname"]').first();
+        at /workspaces/trygghand/tests/system/contact-flow.spec.ts:194:45
+
+    Error Context: test-results/system-contact-flow-📧-Con-42e55-et-töms-efter-lyckad-submit-firefox/error-context.md
+
+  7) [webkit] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Tack för din förfrågan')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Tack för din förfrågan')[22m
+
+
+      75 |     // 5️⃣ Verifiera success-meddelande
+      76 |     const successMessage = page.locator('text=Tack för din förfrågan');
+    > 77 |     await expect(successMessage).toBeVisible({ timeout: 5000 });
+         |                                  ^
+      78 |
+      79 |     // 6️⃣ Verifiera i Supabase att data sparades
+      80 |     await page.waitForTimeout(1000); // Vänta på async insert
+        at /workspaces/trygghand/tests/system/contact-flow.spec.ts:77:34
+
+    Error Context: test-results/system-contact-flow-📧-Con-8bd1a-r---Fylla-i-och-skicka-data-webkit/error-context.md
+
+  8) [webkit] › tests/system/contact-flow.spec.ts:114:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Tack')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Tack')[22m
+
+
+      133 |
+      134 |     await submitButton.click();
+    > 135 |     await expect(page.locator('text=Tack')).toBeVisible({ timeout: 5000 });
+          |                                             ^
+      136 |
+      137 |     // Rensa data
+      138 |     await supabaseService.cleanupContactRequest(testData.email);
+        at /workspaces/trygghand/tests/system/contact-flow.spec.ts:135:45
+
+    Error Context: test-results/system-contact-flow-📧-Con-c33a8----Kontaktformulär-på-mobil-webkit/error-context.md
+
+  9) [webkit] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit 
+
+    Test was interrupted.
+
+    Error: page.goto: Test ended.
+    Call log:
+    [2m  - navigating to "http://127.0.0.1:5173/", waiting until "load"[22m
+
+
+      178 |
+      179 |   test('✅ Formulär reset - Formuläret töms efter lyckad submit', async ({ page }) => {
+    > 180 |     await page.goto('/');
+          |                ^
+      181 |     await verifyPageLoaded(page, 'TryggHand');
+      182 |     await acceptCookiesIfPresent(page);
+      183 |
+        at /workspaces/trygghand/tests/system/contact-flow.spec.ts:180:16
+
+  8 failed
+    [chromium] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data 
+    [chromium] › tests/system/contact-flow.spec.ts:114:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil 
+    [chromium] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit 
+    [firefox] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data 
+    [firefox] › tests/system/contact-flow.spec.ts:114:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil 
+    [firefox] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit 
+    [webkit] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data 
+    [webkit] › tests/system/contact-flow.spec.ts:114:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil 
+  1 interrupted
+    [webkit] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit 
+  1 did not run
+  14 passed (3.2m)

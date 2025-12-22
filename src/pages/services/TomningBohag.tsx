@@ -2,9 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, ArrowLeft, CheckCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const TomningBohag = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Tömning av Bohag - Trygg Hand";
+  }, []);
  
    const scrollToSection = (id: string) => {
      const el = document.getElementById(id);

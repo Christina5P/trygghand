@@ -1,13 +1,18 @@
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase"; // Du måste ha denna fil
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 const Contact = () => {
   const formRef = useRef<HTMLFormElement>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (window.location.hash === '#kontakt-form') {
@@ -26,6 +31,10 @@ const Contact = () => {
     const form = formRef.current;
     if (!form) return;
 
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    setIsLoading(true);
+
     const data = {
       firstname: (form as any).firstname.value,
       lastname: (form as any).lastname.value,
@@ -34,13 +43,35 @@ const Contact = () => {
       message: (form as any).message.value,
     };
 
-    const { error } = await supabase.from("contact_requests").insert([data]);
-    if (!error) {
-      alert("Tack för din förfrågan!");
-      form.reset();
-    } else {
-      alert("Något gick fel, försök igen.");
+    console.log("Contact form submitting:", data);
+    try {
+      // 1) Try server-side API (uses service role key in test/dev)
+      const apiRes = await fetch("/api/contact-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (apiRes.ok) {
+        setSuccessMessage("Tack för din förfrågan!");
+        form.reset();
+        setTimeout(() => setSuccessMessage(null), 5000);
+      } else {
+        // 2) Fallback to direct Supabase insert (if API not available)
+        const { error } = await supabase.from("contact_requests").insert([data]).select();
+        if (!error) {
+          setSuccessMessage("Tack för din förfrågan!");
+          form.reset();
+          setTimeout(() => setSuccessMessage(null), 5000);
+        } else {
+          setErrorMessage("Något gick fel, försök igen: " + error.message);
+        }
+      }
+    } catch (e: any) {
+      console.error("Contact form exception:", e);
+      setErrorMessage("Något gick fel, försök igen: " + e.message);
     }
+    setIsLoading(false);
   };
 
   const contactInfo = [
@@ -94,15 +125,33 @@ const Contact = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {successMessage && (
+                    <Alert className="bg-green-50 border-green-200">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-green-800">
+                        {successMessage}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {errorMessage && (
+                    <Alert className="bg-red-50 border-red-200">
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      <AlertDescription className="text-red-800">
+                        {errorMessage}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
-                      <Input name="firstname" placeholder="Förnamn" required className="w-full" />
-                      <Input name="lastname" placeholder="Efternamn" className="w-full" />
+                      <Input name="firstname" placeholder="Förnamn" required className="w-full" disabled={isLoading} />
+                      <Input name="lastname" placeholder="Efternamn" className="w-full" disabled={isLoading} />
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-4">
-                      <Input name="email" placeholder="E-postadress" type="email" className="w-full" />
-                      <Input name="phone" placeholder="Telefonnummer" type="tel" required className="w-full" />
+                      <Input name="email" placeholder="E-postadress" type="email" className="w-full" disabled={isLoading} />
+                      <Input name="phone" placeholder="Telefonnummer" type="tel" required className="w-full" disabled={isLoading} />
                     </div>
 
                     <div>
@@ -110,15 +159,18 @@ const Contact = () => {
                         name="message"
                         placeholder="Beskriv kort din situation och vilken hjälp du behöver..."
                         className="min-h-[120px] w-full"
+                        disabled={isLoading}
                       />
                     </div>
 
-                    <Button type="submit" size="lg" className="w-full bg-gradient-to-r from-primary to-trust-blue-dark">
-                      Skicka förfrågan
+                    <Button type="submit" size="lg" className="w-full bg-gradient-to-r from-primary to-trust-blue-dark" disabled={isLoading}>
+                      {isLoading ? "Skickar..." : "Skicka förfrågan"}
                     </Button>
 
                     <p className="text-xs text-foreground text-center">
-                      Genom att skicka denna förfrågan godkänner du att vi kontaktar dig angående våra tjänster.
+                    De uppgifter du lämnar används för att hantera din förfrågan och kontakta dig.
+                    <br />
+                    Läs mer om hur vi behandlar personuppgifter i vår <a href="/privacy" className="underline">integritetspolicy</a>.
                     </p>
                   </form>
                 </CardContent>

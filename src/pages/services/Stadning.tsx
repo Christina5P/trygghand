@@ -2,9 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, ArrowLeft, CheckCircle, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const Stadning = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Städning - Trygg Hand";
+  }, []);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);

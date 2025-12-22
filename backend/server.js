@@ -6,6 +6,7 @@ import multer from "multer";
 import cors from "cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import gdprDeleteRouter from "./routes/gdprDelete.js";
+import contactRequestsRouter from "./routes/contactRequests.js";
 
 const app = express();
 app.use(express.json()); // För att kunna läsa JSON body
@@ -16,16 +17,17 @@ const upload = multer({ storage: multer.memoryStorage() });
 const PORT = process.env.PORT || 5174;
 
 // Kontrollera Gemini API key
-const apiKey = process.env.GEMINI_API_KEY;
+const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+let genAI = null;
 if (!apiKey) {
-  console.error("GEMINI_API_KEY saknas i .env");
-  process.exit(1);
+  console.warn("GEMINI_API_KEY saknas. /api/gemini kommer vara inaktiv.");
+} else {
+  genAI = new GoogleGenerativeAI(apiKey);
 }
-
-const genAI = new GoogleGenerativeAI(apiKey);
 
 // Registrera routes
 app.use("/api", gdprDeleteRouter);
+app.use("/api", contactRequestsRouter);
 
 /**
  * Konvertera FileBuffer till GenerativeImagePart
@@ -43,6 +45,9 @@ function bufferToGenerativePart(file) {
 // POST /api/gemini
 app.post("/api/gemini", upload.any(), async (req, res) => {
   try {
+    if (!genAI) {
+      return res.status(503).json({ error: "Gemini not configured" });
+    }
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: "Inga filer skickade" });
     }

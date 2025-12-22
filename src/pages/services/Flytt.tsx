@@ -7,6 +7,10 @@ import { Shield, CheckCircle, ArrowLeft } from "lucide-react";
 const Flytt = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.title = "Flytt - Trygg Hand";
+  }, []);
+
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth" });

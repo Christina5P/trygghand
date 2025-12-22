@@ -1,0 +1,1011 @@
+[dotenv@17.2.3] injecting env (16) from tests/.env.test -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+✅ Using Supabase service role key for tests
+
+Running 417 tests using 1 worker
+
+[1A[2K[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: ⚙️  enable debug logging with { debug: true }
+
+[1A[2K[1/417] [chromium] › tests/example.spec.ts:3:1 › has title
+[1A[2K[2/417] [chromium] › tests/example.spec.ts:10:1 › get started link
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[3/417] [chromium] › tests/system/auth-flow.spec.ts:9:3 › 🔐 Autentisering & Inloggning › ✅ Inloggningssida - Visar inloggningsformulär
+[1A[2K[4/417] [chromium] › tests/system/auth-flow.spec.ts:21:3 › 🔐 Autentisering & Inloggning › ✅ Auth Context - Användare kan inte nå kundportal utan inloggning
+[1A[2K[5/417] [chromium] › tests/system/auth-flow.spec.ts:37:3 › 🔐 Autentisering & Inloggning › ✅ Auth Hook - signIn() funktion finns och kan anropas
+[1A[2K[6/417] [chromium] › tests/system/auth-flow.spec.ts:52:3 › 🔐 Autentisering & Inloggning › ✅ Session Management - Auth state ändras vid login/logout
+[1A[2K[7/417] [chromium] › tests/system/auth-flow.spec.ts:74:3 › 🔐 Autentisering & Inloggning › ✅ useAuth Hook - Loading state hanteras korrekt
+[1A[2K[8/417] [chromium] › tests/system/auth-flow.spec.ts:92:3 › 🔐 Autentisering & Inloggning › ✅ Customer Creation - Ny användare skapar customer-post
+[1A[2K[9/417] [chromium] › tests/system/auth-flow.spec.ts:100:3 › 🔐 Autentisering & Inloggning › ✅ isCustomer Flag - Kontrolleras vid portal-access
+[1A[2K[10/417] [chromium] › tests/system/auth-flow.spec.ts:115:3 › 🔐 Autentisering & Inloggning › ✅ Admin Check - Admin users får is_admin flag
+[1A[2K[11/417] [chromium] › tests/system/auth-flow.spec.ts:127:3 › 🔐 Autentisering & Inloggning › ✅ Password Reset - sendPasswordReset() fungerar
+[1A[2K[12/417] [chromium] › tests/system/auth-flow.spec.ts:138:3 › 🔐 Autentisering & Inloggning › ✅ Session Persistence - Session kvarstår vid sidladdning
+[1A[2K[13/417] [chromium] › tests/system/auth-flow.spec.ts:155:3 › 🔐 Autentisering & Inloggning › ✅ Auth Guard - CustomerRoute skyddar kundspecifika rutter
+[1A[2K[14/417] [chromium] › tests/system/auth-flow.spec.ts:177:3 › 🔐 Autentisering & Inloggning › ✅ Auth Error Handling - Felmeddelanden vid inloggningsfel
+[1A[2K[15/417] [chromium] › tests/system/auth-flow.spec.ts:188:8 › 🔐 Autentisering med Supabase Test Data › ✅ Test User - Kan skapa och hämta test-användare
+[1A[2K[16/417] [chromium] › tests/system/auth-flow.spec.ts:196:8 › 🔐 Autentisering med Supabase Test Data › ✅ Customer Flag - is_customer=true för aktiva kunder
+[1A[2K[17/417] [chromium] › tests/system/auth-flow.spec.ts:200:8 › 🔐 Autentisering med Supabase Test Data › ✅ Admin Flag - is_admin kan sättas
+[1A[2K[18/417] [chromium] › tests/system/auth-flow.spec.ts:222:3 › 🔐 Autentisering med Supabase Test Data › ✅ Session Cookie - DATABASE_ENV=test verifieras
+[1A[2K[19/417] [chromium] › tests/system/contact-flow.spec.ts:30:3 › 📧 Contact Form - Kontaktformulär › ✅ Ska kunna navigera till kontakt-sektion från startsidan
+[1A[2K[chromium] › tests/system/contact-flow.spec.ts:30:3 › 📧 Contact Form - Kontaktformulär › ✅ Ska kunna navigera till kontakt-sektion från startsidan
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[20/417] [chromium] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data
+[1A[2K[chromium] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data
+✅ Bekräftat: Använder test-databas
+
+[1A[2K🔵 BROWSER LOG: INFO %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+
+[1A[2K🔵 BROWSER LOG: WARNING Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+
+[1A[2K🔵 BROWSER LOG: WARNING ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+[1A[2K🔵 BROWSER LOG: WARNING ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[1A[2K🔵 BROWSER LOG: LOG Contact form submitting: {firstname: Test, lastname: Användare, email: test_playwright_1766386025239_vexcbk@test.se, phone: 070-6442, message: Det här är ett automatiserat test av kontaktformulären}
+
+[1A[2K✅ Test avslutad och data rensad för: test_playwright_1766386025239_vexcbk@test.se
+
+[1A[2K[21/417] [chromium] › tests/system/contact-flow.spec.ts:135:3 › 📧 Contact Form - Kontaktformulär › ✅ Validering - Kontakt-formulär kräver obligatoriska fält
+[1A[2K[chromium] › tests/system/contact-flow.spec.ts:135:3 › 📧 Contact Form - Kontaktformulär › ✅ Validering - Kontakt-formulär kräver obligatoriska fält
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[22/417] [chromium] › tests/system/contact-flow.spec.ts:152:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil
+[1A[2K[chromium] › tests/system/contact-flow.spec.ts:152:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[23/417] [chromium] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ E-post validering - Ogiltigt format avvisas
+[1A[2K[chromium] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ E-post validering - Ogiltigt format avvisas
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[24/417] [chromium] › tests/system/contact-flow.spec.ts:197:3 › 📧 Contact Form - Kontaktformulär › ✅ Privacypolicy-länk - Fungerar från kontaktformulär
+[1A[2K[chromium] › tests/system/contact-flow.spec.ts:197:3 › 📧 Contact Form - Kontaktformulär › ✅ Privacypolicy-länk - Fungerar från kontaktformulär
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[25/417] [chromium] › tests/system/contact-flow.spec.ts:217:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit
+[1A[2K[chromium] › tests/system/contact-flow.spec.ts:217:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[26/417] [chromium] › tests/system/contact-flow.spec.ts:243:8 › 📧 Contact Form - Kontaktformulär › ⚠️ Database - Kontrollera att vi använder TEST-miljö
+[1A[2K[27/417] [chromium] › tests/system/customer-management.spec.ts:11:8 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Ny Kund - Skapas med is_customer=true
+[1A[2K[28/417] [chromium] › tests/system/customer-management.spec.ts:35:8 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kundaktivering - is_customer kan sättas till true
+[1A[2K[29/417] [chromium] › tests/system/customer-management.spec.ts:70:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kunddeaktivering - is_customer kan sättas till false
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:70:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kunddeaktivering - is_customer kan sättas till false
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[30/417] [chromium] › tests/system/customer-management.spec.ts:104:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kund Filter - Endast is_customer=true hämtas i useAdminData
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:104:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kund Filter - Endast is_customer=true hämtas i useAdminData
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[31/417] [chromium] › tests/system/customer-management.spec.ts:147:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ CustomerRoute Guard - Kontrollerar is_customer för åtkomst
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:147:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ CustomerRoute Guard - Kontrollerar is_customer för åtkomst
+✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[32/417] [chromium] › tests/system/customer-management.spec.ts:161:3 › 👥 Kundhantering - Arkivering › ✅ Arkivera Kund - Flyttas till archived_customers
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:161:3 › 👥 Kundhantering - Arkivering › ✅ Arkivera Kund - Flyttas till archived_customers
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[33/417] [chromium] › tests/system/customer-management.spec.ts:191:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Original data bevaras
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:191:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Original data bevaras
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[34/417] [chromium] › tests/system/customer-management.spec.ts:246:3 › 👥 Kundhantering - Arkivering › ✅ Återställ Kund - Från arkiv till aktiv
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:246:3 › 👥 Kundhantering - Arkivering › ✅ Återställ Kund - Från arkiv till aktiv
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[35/417] [chromium] › tests/system/customer-management.spec.ts:328:3 › 👥 Kundhantering - Arkivering › ✅ Arkiv Lista - archived_at sorteras desc
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:328:3 › 👥 Kundhantering - Arkivering › ✅ Arkiv Lista - archived_at sorteras desc
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[36/417] [chromium] › tests/system/customer-management.spec.ts:376:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Radering från arkiv
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:376:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Radering från arkiv
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[37/417] [chromium] › tests/system/customer-management.spec.ts:412:3 › 👥 Kundhantering - Admin-funktioner › ✅ Admin Flag - is_admin kan sättas
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:412:3 › 👥 Kundhantering - Admin-funktioner › ✅ Admin Flag - is_admin kan sättas
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[38/417] [chromium] › tests/system/customer-management.spec.ts:434:3 › 👥 Kundhantering - Admin-funktioner › ✅ CustomerManagement - Deaktivera & Arkivera i ett steg
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:434:3 › 👥 Kundhantering - Admin-funktioner › ✅ CustomerManagement - Deaktivera & Arkivera i ett steg
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[39/417] [chromium] › tests/system/customer-management.spec.ts:492:3 › 👥 Kundhantering - Admin-funktioner › ✅ Användarhantering - GDPR Radering (separat från arkivering)
+[1A[2K[chromium] › tests/system/customer-management.spec.ts:492:3 › 👥 Kundhantering - Admin-funktioner › ✅ Användarhantering - GDPR Radering (separat från arkivering)
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[40/417] [chromium] › tests/system/customer-management.spec.ts:534:3 › 👥 Kundhantering - Säkerhet › ✅ DATABASE_ENV=test verifieras
+[1A[2K[41/417] [chromium] › tests/system/customer-management.spec.ts:538:3 › 👥 Kundhantering - Säkerhet › ✅ RLS Policies - Endast admin kan arkivera
+[1A[2K[42/417] [chromium] › tests/system/navigation.spec.ts:22:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Startsida - Huvud-sektioner laddas
+[1A[2K[43/417] [chromium] › tests/system/navigation.spec.ts:36:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Navigation - Meny-länk scrollar till korrekt sektion
+[1A[2K[44/417] [chromium] › tests/system/navigation.spec.ts:50:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Responsive - Desktop meny fungerar
+[1A[2K[45/417] [chromium] › tests/system/navigation.spec.ts:68:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Responsive - Mobil meny fungerar
+[1A[2K[46/417] [chromium] › tests/system/navigation.spec.ts:82:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Header - Logo länkar till startsidan
+[1A[2K[47/417] [chromium] › tests/system/navigation.spec.ts:108:5 › 🧭 Navigation & Sektioner › 🎯 Services & Tjänster › ✅ Services - Alla tjänst-länk fungerar
+[1A[2K[48/417] [chromium] › tests/system/navigation.spec.ts:143:5 › 🧭 Navigation & Sektioner › 🎯 Services & Tjänster › ✅ Service-sida - Konsultation-knapp fungerar
+[1A[2K[49/417] [chromium] › tests/system/navigation.spec.ts:157:5 › 🧭 Navigation & Sektioner › 🎯 Services & Tjänster › ✅ Services-grid - Alla tjänster visas på startsida
+[1A[2K[50/417] [chromium] › tests/system/navigation.spec.ts:169:5 › 🧭 Navigation & Sektioner › 📄 Policy & Dokumentation › ✅ Privacy Policy - Sida laddar och innehåller innehål
+[1A[2K[51/417] [chromium] › tests/system/navigation.spec.ts:176:5 › 🧭 Navigation & Sektioner › 📄 Policy & Dokumentation › ✅ Cookie Policy - Sida laddar och innehåller innehål
+[1A[2K[52/417] [chromium] › tests/system/navigation.spec.ts:183:5 › 🧭 Navigation & Sektioner › 📄 Policy & Dokumentation › ✅ Privacy-länk - Finns i Footer
+[1A[2K[53/417] [chromium] › tests/system/navigation.spec.ts:198:5 › 🧭 Navigation & Sektioner › ⚙️ Special Pages › ✅ 404 - Not Found sida fungerar
+[1A[2K[54/417] [chromium] › tests/system/navigation.spec.ts:209:5 › 🧭 Navigation & Sektioner › ⚙️ Special Pages › ✅ 404 - Error-sida erbjuder navigation tillbaka
+[1A[2K[55/417] [chromium] › tests/system/navigation.spec.ts:220:5 › 🧭 Navigation & Sektioner › ⚙️ Special Pages › ✅ Frågor & Tips - Sida laddar
+[1A[2K[56/417] [chromium] › tests/system/navigation.spec.ts:230:5 › 🧭 Navigation & Sektioner › 🔒 Protected Routes › ✅ Min sida - Kräver login (redirect till portal)
+[1A[2K[57/417] [chromium] › tests/system/navigation.spec.ts:251:5 › 🧭 Navigation & Sektioner › 🔒 Protected Routes › ✅ Admin Portal - Kräver admin-access
+[1A[2K[58/417] [chromium] › tests/system/navigation.spec.ts:272:5 › 🧭 Navigation & Sektioner › 🎨 Visual & Performance › ✅ Sidor laddar utan JavaScript-fel
+[1A[2K[59/417] [chromium] › tests/system/navigation.spec.ts:295:5 › 🧭 Navigation & Sektioner › 🎨 Visual & Performance › ✅ Externa länk - Öppnas i ny flik
+[1A[2K[60/417] [chromium] › tests/system/policy-accessibility.spec.ts:19:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Sida existerar och laddar
+[1A[2K[61/417] [chromium] › tests/system/policy-accessibility.spec.ts:26:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Innehåller nödvändig information
+[1A[2K[62/417] [chromium] › tests/system/policy-accessibility.spec.ts:50:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Är tillgänglig från footer
+[1A[2K[63/417] [chromium] › tests/system/policy-accessibility.spec.ts:64:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Länk från kontaktformulär
+[1A[2K[64/417] [chromium] › tests/system/policy-accessibility.spec.ts:84:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Policy - Sida existerar
+[1A[2K[65/417] [chromium] › tests/system/policy-accessibility.spec.ts:90:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Policy - Innehåller cookie-information
+[1A[2K[66/417] [chromium] › tests/system/policy-accessibility.spec.ts:99:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Banner - Visar cookie-disclosure
+[1A[2K[67/417] [chromium] › tests/system/policy-accessibility.spec.ts:110:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Banner - Acceptera-knapp fungerar
+[1A[2K[68/417] [chromium] › tests/system/policy-accessibility.spec.ts:129:5 › 📋 Policies & Compliance › 🛡️ GDPR & Data Protection › ✅ GDPR - Delete user möjlighet
+[1A[2K[69/417] [chromium] › tests/system/policy-accessibility.spec.ts:139:5 › 📋 Policies & Compliance › 🛡️ GDPR & Data Protection › ✅ Kontaktformulär - Privacy notice syns
+[1A[2K[70/417] [chromium] › tests/system/policy-accessibility.spec.ts:151:5 › 📋 Policies & Compliance › 🛡️ GDPR & Data Protection › ✅ Kontaktformulär - Tydlig consent-information
+[1A[2K[71/417] [chromium] › tests/system/policy-accessibility.spec.ts:167:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Huvud-rubrik finns (h1)
+[1A[2K[72/417] [chromium] › tests/system/policy-accessibility.spec.ts:176:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Bildtext/alt finns för ikoner
+[1A[2K[73/417] [chromium] › tests/system/policy-accessibility.spec.ts:198:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Länk-text är meningsfull
+[1A[2K[74/417] [chromium] › tests/system/policy-accessibility.spec.ts:225:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Knappar har aria-labels eller text
+[1A[2K[75/417] [chromium] › tests/system/policy-accessibility.spec.ts:244:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Färgkontrast är tillräcklig
+[1A[2K[76/417] [chromium] › tests/system/policy-accessibility.spec.ts:259:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Formulär har labels
+[1A[2K[77/417] [chromium] › tests/system/policy-accessibility.spec.ts:284:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Keyboard navigation fungerar
+[1A[2K[78/417] [chromium] › tests/system/policy-accessibility.spec.ts:308:5 › 📋 Policies & Compliance › 🔗 Links & References › ✅ Alla interna länk pekar på existerande sidor
+[1A[2K[79/417] [chromium] › tests/system/policy-accessibility.spec.ts:331:5 › 📋 Policies & Compliance › 🔗 Links & References › ✅ Externa länk har target="_blank"
+[1A[2K[80/417] [chromium] › tests/system/policy-accessibility.spec.ts:352:5 › 📋 Policies & Compliance › ⚠️ Security › ✅ Sidan har säkerhetshuvuden (CSP check)
+[1A[2K[81/417] [chromium] › tests/system/policy-accessibility.spec.ts:369:5 › 📋 Policies & Compliance › ⚠️ Security › ✅ Kontaktformulär - Input sanitering
+[1A[2K[82/417] [chromium] › tests/system/policy-accessibility.spec.ts:403:5 › 📋 Policies & Compliance › ⚠️ Security › ✅ Produktion - Aldrig som test-miljö
+[1A[2K[83/417] [chromium] › tests/system/price-calculator.spec.ts:21:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare syns på service-paket
+[1A[2K[84/417] [chromium] › tests/system/price-calculator.spec.ts:38:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare - Input-fält för kvm synligt
+[1A[2K[85/417] [chromium] › tests/system/price-calculator.spec.ts:53:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare - Default-värde är basesqm
+[1A[2K[86/417] [chromium] › tests/system/price-calculator.spec.ts:71:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare - Pris visas dynamiskt
+[1A[2K[87/417] [chromium] › tests/system/price-calculator.spec.ts:93:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Öka kvm - Priset ökar
+[1A[2K[88/417] [chromium] › tests/system/price-calculator.spec.ts:121:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Minska kvm - Priset minskar
+[1A[2K[89/417] [chromium] › tests/system/price-calculator.spec.ts:151:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Minimal kvm (1) - Priset är giltigt
+[1A[2K[90/417] [chromium] › tests/system/price-calculator.spec.ts:183:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Mycket stort kvm - Priset beräknas korrekt
+[1A[2K[91/417] [chromium] › tests/system/price-calculator.spec.ts:211:5 › 💰 Price Calculator - Prisberäknare › 🔢 Prisberäknare - Input-validering › ✅ Negativt tal - Blir konverterad till positiv
+[1A[2K[92/417] [chromium] › tests/system/price-calculator.spec.ts:230:5 › 💰 Price Calculator - Prisberäknare › 🔢 Prisberäknare - Input-validering › ✅ Decimalt tal - Accepteras eller avrundas
+[1A[2K[93/417] [chromium] › tests/system/price-calculator.spec.ts:251:5 › 💰 Price Calculator - Prisberäknare › 🔢 Prisberäknare - Input-validering › ✅ Tomt fält - Får standard-värde
+[1A[2K[94/417] [chromium] › tests/system/price-calculator.spec.ts:281:5 › 💰 Price Calculator - Prisberäknare › 🎨 Prisberäknare - Visuell presentering › ✅ Prisberäknare - Visa RUT-info om applicerbar
+[1A[2K[95/417] [chromium] › tests/system/price-calculator.spec.ts:298:5 › 💰 Price Calculator - Prisberäknare › 🎨 Prisberäknare - Visuell presentering › ✅ Prisberäknare - Formatering av pris (xxx xxx kr)
+[1A[2K[96/417] [chromium] › tests/system/price-calculator.spec.ts:316:5 › 💰 Price Calculator - Prisberäknare › 🎨 Prisberäknare - Visuell presentering › ✅ Prisberäknare - Responsive på mobil
+[1A[2K[97/417] [chromium] › tests/system/price-calculator.spec.ts:344:5 › 💰 Price Calculator - Prisberäknare › 📈 Prisberäknare - Flera paket › ✅ Flera paket - Var och en har eget kvm-fält
+[1A[2K[98/417] [chromium] › tests/system/price-calculator.spec.ts:371:5 › 💰 Price Calculator - Prisberäknare › 📈 Prisberäknare - Flera paket › ✅ Flera paket - Ändringar i ett påverkar inte annat
+[1A[2K[99/417] [chromium] › tests/system/price-calculator.spec.ts:401:5 › 💰 Price Calculator - Prisberäknare › 🔒 Prisberäknare - Test-miljö verifiera › ⚠️ Prisberäknare data - Ingen produktion-data
+[1A[2K[100/417] [chromium] › tests/system/price-calculator.spec.ts:407:5 › 💰 Price Calculator - Prisberäknare › 🔒 Prisberäknare - Test-miljö verifiera › ✅ Prisberäknare - Beräkningar är korrekta
+[1A[2K[101/417] [chromium] › tests/system/services.spec.ts:21:5 › 🔧 Services - Tjänster › 📌 Services Grid - Startsida › ✅ Services-sektion - Alla tjänst-kort synliga
+[1A[2K[102/417] [chromium] › tests/system/services.spec.ts:50:5 › 🔧 Services - Tjänster › 📌 Services Grid - Startsida › ✅ Service-kort - Är interaktiva och clickable
+[1A[2K[103/417] [chromium] › tests/system/services.spec.ts:70:5 › 🔧 Services - Tjänster › 📌 Services Grid - Startsida › ✅ Service-paket - Visar priser och funktioner
+[1A[2K[104/417] [chromium] › tests/system/services.spec.ts:85:5 › 🔧 Services - Tjänster › 🧹 Städning Service › ✅ Städning - Sida laddar med innehål
+[1A[2K[105/417] [chromium] › tests/system/services.spec.ts:98:5 › 🔧 Services - Tjänster › 🧹 Städning Service › ✅ Städning - Innehåller fördelar-lista
+[1A[2K[106/417] [chromium] › tests/system/services.spec.ts:107:5 › 🔧 Services - Tjänster › 🧹 Städning Service › ✅ Städning - Konsultation-knapp fungerar
+[1A[2K[107/417] [chromium] › tests/system/services.spec.ts:120:5 › 🔧 Services - Tjänster › 🚚 Flytt Service › ✅ Flytt - Sida laddar med innehål
+[1A[2K[108/417] [chromium] › tests/system/services.spec.ts:128:5 › 🔧 Services - Tjänster › 🚚 Flytt Service › ✅ Flytt - Back-länk fungerar
+[1A[2K[109/417] [chromium] › tests/system/services.spec.ts:144:5 › 🔧 Services - Tjänster › 🗑️ Tömning av Bohag › ✅ Tömning - Sida laddar
+[1A[2K[110/417] [chromium] › tests/system/services.spec.ts:152:5 › 🔧 Services - Tjänster › 🗑️ Tömning av Bohag › ✅ Tömning - Visar info om processen
+[1A[2K[111/417] [chromium] › tests/system/services.spec.ts:163:5 › 🔧 Services - Tjänster › 🔍 Värdering Service › ✅ Värdering - AI-sida laddar
+[1A[2K[112/417] [chromium] › tests/system/services.spec.ts:172:5 › 🔧 Services - Tjänster › 🔍 Värdering Service › ✅ Värdering AI - Instruktioner syns
+[1A[2K[113/417] [chromium] › tests/system/services.spec.ts:186:5 › 🔧 Services - Tjänster › 💰 Försäljning Service › ✅ Försäljning - Sida laddar
+[1A[2K[114/417] [chromium] › tests/system/services.spec.ts:194:5 › 🔧 Services - Tjänster › 💰 Försäljning Service › ✅ Försäljning - Visar tjänst-detaljer
+[1A[2K[115/417] [chromium] › tests/system/services.spec.ts:212:5 › 🔧 Services - Tjänster › 📦 Magasinering Service › ✅ Magasinering - Sida laddar
+[1A[2K[116/417] [chromium] › tests/system/services.spec.ts:220:5 › 🔧 Services - Tjänster › 📦 Magasinering Service › ✅ Magasinering - Fördelar syns
+[1A[2K[117/417] [chromium] › tests/system/services.spec.ts:231:5 › 🔧 Services - Tjänster › 💡 Rådgivning & Planering › ✅ Rådgivning - Sida laddar
+[1A[2K[118/417] [chromium] › tests/system/services.spec.ts:244:5 › 🔧 Services - Tjänster › 📚 Juridisk Guide › ✅ Juridik Guide - Sida laddar
+[1A[2K[119/417] [chromium] › tests/system/services.spec.ts:258:5 › 🔧 Services - Tjänster › 📚 Juridisk Guide › ✅ Juridik Guide - Länk fungerar från nav
+[1A[2K[120/417] [chromium] › tests/system/services.spec.ts:273:5 › 🔧 Services - Tjänster › 💬 Kontakta oss › ✅ Alla service-sidor - Visar kontakta-knapp
+[1A[2K[121/417] [chromium] › tests/system/services.spec.ts:296:5 › 🔧 Services - Tjänster › 📱 Responsive Services › ✅ Service-sida - Responsive på mobil
+[1A[2K[122/417] [chromium] › tests/system/services.spec.ts:312:5 › 🔧 Services - Tjänster › 📱 Responsive Services › ✅ Service-grid - Responsiv layout
+[1A[2K[123/417] [chromium] › tests/system/status-changes.spec.ts:10:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från pending till in_progress
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:10:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från pending till in_progress
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[124/417] [chromium] › tests/system/status-changes.spec.ts:52:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från in_progress till completed
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:52:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från in_progress till completed
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[125/417] [chromium] › tests/system/status-changes.spec.ts:91:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras till cancelled
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:91:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras till cancelled
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[126/417] [chromium] › tests/system/status-changes.spec.ts:128:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Endast tillåtna statusar accepteras
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:128:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Endast tillåtna statusar accepteras
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[127/417] [chromium] › tests/system/status-changes.spec.ts:157:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Status påverkar portal-diagram
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:157:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Status påverkar portal-diagram
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[128/417] [chromium] › tests/system/status-changes.spec.ts:203:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Flera ärendetyper (avslutad, done, finished) räknas som completed
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:203:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Flera ärendetyper (avslutad, done, finished) räknas som completed
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[129/417] [chromium] › tests/system/status-changes.spec.ts:243:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Status Badge färg baserad på status
+[1A[2K[130/417] [chromium] › tests/system/status-changes.spec.ts:266:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Kan ändras mellan olika statusar
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:266:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Kan ändras mellan olika statusar
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[131/417] [chromium] › tests/system/status-changes.spec.ts:303:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - cancelled status påverkar subscription progress
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:303:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - cancelled status påverkar subscription progress
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[132/417] [chromium] › tests/system/status-changes.spec.ts:337:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Inactive varianter (cancelled, completed)
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:337:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Inactive varianter (cancelled, completed)
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[133/417] [chromium] › tests/system/status-changes.spec.ts:375:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Kan ändras av admin
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:375:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Kan ändras av admin
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[134/417] [chromium] › tests/system/status-changes.spec.ts:411:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Admin kan lägga till notes vid statusändring
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:411:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Admin kan lägga till notes vid statusändring
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[135/417] [chromium] › tests/system/status-changes.spec.ts:453:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Kan ändras från pending till completed
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:453:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Kan ändras från pending till completed
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[136/417] [chromium] › tests/system/status-changes.spec.ts:486:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Flera statusar tillgängliga
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:486:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Flera statusar tillgängliga
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[137/417] [chromium] › tests/system/status-changes.spec.ts:506:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - handleStatusChange uppdaterar korrekt
+[1A[2K[chromium] › tests/system/status-changes.spec.ts:506:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - handleStatusChange uppdaterar korrekt
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[138/417] [chromium] › tests/system/status-changes.spec.ts:538:3 › 📝 Statusändringar - Säkerhet › ✅ DATABASE_ENV=test verifieras
+[1A[2K[139/417] [chromium] › tests/system/status-changes.spec.ts:542:3 › 📝 Statusändringar - Säkerhet › ✅ Produktion-guard aktiv
+[1A[2K[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+[1A[2K[140/417] [firefox] › tests/example.spec.ts:3:1 › has title
+[1A[2K[141/417] [firefox] › tests/example.spec.ts:10:1 › get started link
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[142/417] [firefox] › tests/system/auth-flow.spec.ts:9:3 › 🔐 Autentisering & Inloggning › ✅ Inloggningssida - Visar inloggningsformulär
+[1A[2K[143/417] [firefox] › tests/system/auth-flow.spec.ts:21:3 › 🔐 Autentisering & Inloggning › ✅ Auth Context - Användare kan inte nå kundportal utan inloggning
+[1A[2K[144/417] [firefox] › tests/system/auth-flow.spec.ts:37:3 › 🔐 Autentisering & Inloggning › ✅ Auth Hook - signIn() funktion finns och kan anropas
+[1A[2K[145/417] [firefox] › tests/system/auth-flow.spec.ts:52:3 › 🔐 Autentisering & Inloggning › ✅ Session Management - Auth state ändras vid login/logout
+[1A[2K[146/417] [firefox] › tests/system/auth-flow.spec.ts:74:3 › 🔐 Autentisering & Inloggning › ✅ useAuth Hook - Loading state hanteras korrekt
+[1A[2K[147/417] [firefox] › tests/system/auth-flow.spec.ts:92:3 › 🔐 Autentisering & Inloggning › ✅ Customer Creation - Ny användare skapar customer-post
+[1A[2K[148/417] [firefox] › tests/system/auth-flow.spec.ts:100:3 › 🔐 Autentisering & Inloggning › ✅ isCustomer Flag - Kontrolleras vid portal-access
+[1A[2K[149/417] [firefox] › tests/system/auth-flow.spec.ts:115:3 › 🔐 Autentisering & Inloggning › ✅ Admin Check - Admin users får is_admin flag
+[1A[2K[150/417] [firefox] › tests/system/auth-flow.spec.ts:127:3 › 🔐 Autentisering & Inloggning › ✅ Password Reset - sendPasswordReset() fungerar
+[1A[2K[151/417] [firefox] › tests/system/auth-flow.spec.ts:138:3 › 🔐 Autentisering & Inloggning › ✅ Session Persistence - Session kvarstår vid sidladdning
+[1A[2K[152/417] [firefox] › tests/system/auth-flow.spec.ts:155:3 › 🔐 Autentisering & Inloggning › ✅ Auth Guard - CustomerRoute skyddar kundspecifika rutter
+[1A[2K[153/417] [firefox] › tests/system/auth-flow.spec.ts:177:3 › 🔐 Autentisering & Inloggning › ✅ Auth Error Handling - Felmeddelanden vid inloggningsfel
+[1A[2K[154/417] [firefox] › tests/system/auth-flow.spec.ts:188:8 › 🔐 Autentisering med Supabase Test Data › ✅ Test User - Kan skapa och hämta test-användare
+[1A[2K[155/417] [firefox] › tests/system/auth-flow.spec.ts:196:8 › 🔐 Autentisering med Supabase Test Data › ✅ Customer Flag - is_customer=true för aktiva kunder
+[1A[2K[156/417] [firefox] › tests/system/auth-flow.spec.ts:200:8 › 🔐 Autentisering med Supabase Test Data › ✅ Admin Flag - is_admin kan sättas
+[1A[2K[157/417] [firefox] › tests/system/auth-flow.spec.ts:222:3 › 🔐 Autentisering med Supabase Test Data › ✅ Session Cookie - DATABASE_ENV=test verifieras
+[1A[2K[158/417] [firefox] › tests/system/contact-flow.spec.ts:30:3 › 📧 Contact Form - Kontaktformulär › ✅ Ska kunna navigera till kontakt-sektion från startsidan
+[1A[2K[firefox] › tests/system/contact-flow.spec.ts:30:3 › 📧 Contact Form - Kontaktformulär › ✅ Ska kunna navigera till kontakt-sektion från startsidan
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[159/417] [firefox] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data
+[1A[2K[firefox] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data
+✅ Bekräftat: Använder test-databas
+
+[1A[2K🔵 BROWSER LOG: INFO Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+
+[1A[2K🔵 BROWSER LOG: WARNING Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+
+[1A[2K🔵 BROWSER LOG: WARNING ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+[1A[2K🔵 BROWSER LOG: WARNING ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[1A[2K🔵 BROWSER LOG: LOG Contact form submitting: JSHandle@object
+
+[1A[2K🔵 BROWSER LOG: WARNING [JavaScript Warning: "Content-Security-Policy: Ignoring “'unsafe-inline'” within script-src: nonce-source or hash-source specified" {file: "https://calendar.google.com/calendar/appointments/schedules/AcZssZ1UAZQAx03XE6hyOig-HfYTIaEGIHD2r0nJijTEhzeuviQxvsSF0TOx1sL8lwreiQyfbTzV_Zxx?gv=true/&hl=sv" line: 0}]
+
+[1A[2K🔵 BROWSER LOG: WARNING [JavaScript Warning: "Content-Security-Policy: Couldn’t process unknown directive ‘require-trusted-types-for’" {file: "https://calendar.google.com/calendar/appointments/schedules/AcZssZ1UAZQAx03XE6hyOig-HfYTIaEGIHD2r0nJijTEhzeuviQxvsSF0TOx1sL8lwreiQyfbTzV_Zxx?gv=true/&hl=sv" line: 0}]
+
+[1A[2K🔵 BROWSER LOG: WARNING [JavaScript Warning: "Content-Security-Policy: Ignoring “'unsafe-inline'” within script-src: ‘strict-dynamic’ specified" {file: "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LeQgtsaAAAAAKJXiN5wnkZwd9Mht0YPIIE72N1q&co=aHR0cHM6Ly9jYWxlbmRhci5nb29nbGUuY29tOjQ0Mw..&hl=en&v=7gg7H51Q-naNfhmCP3_R47ho&size=invisible&anchor-ms=20000&execute-ms=30000&cb=fihu1k749db" line: 0}]
+
+[1A[2K🔵 BROWSER LOG: WARNING [JavaScript Warning: "Content-Security-Policy: Ignoring “https:” within script-src: ‘strict-dynamic’ specified" {file: "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LeQgtsaAAAAAKJXiN5wnkZwd9Mht0YPIIE72N1q&co=aHR0cHM6Ly9jYWxlbmRhci5nb29nbGUuY29tOjQ0Mw..&hl=en&v=7gg7H51Q-naNfhmCP3_R47ho&size=invisible&anchor-ms=20000&execute-ms=30000&cb=fihu1k749db" line: 0}]
+
+[1A[2K🔵 BROWSER LOG: WARNING [JavaScript Warning: "Content-Security-Policy: Ignoring “http:” within script-src: ‘strict-dynamic’ specified" {file: "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LeQgtsaAAAAAKJXiN5wnkZwd9Mht0YPIIE72N1q&co=aHR0cHM6Ly9jYWxlbmRhci5nb29nbGUuY29tOjQ0Mw..&hl=en&v=7gg7H51Q-naNfhmCP3_R47ho&size=invisible&anchor-ms=20000&execute-ms=30000&cb=fihu1k749db" line: 0}]
+
+[1A[2K🔵 BROWSER LOG: WARNING [JavaScript Warning: "Content-Security-Policy: Ignoring “'unsafe-inline'” within script-src: nonce-source or hash-source specified" {file: "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LeQgtsaAAAAAKJXiN5wnkZwd9Mht0YPIIE72N1q&co=aHR0cHM6Ly9jYWxlbmRhci5nb29nbGUuY29tOjQ0Mw..&hl=en&v=7gg7H51Q-naNfhmCP3_R47ho&size=invisible&anchor-ms=20000&execute-ms=30000&cb=fihu1k749db" line: 0}]
+
+[1A[2K🔵 BROWSER LOG: WARNING [JavaScript Warning: "Ignoring unsupported entryTypes: longtask." {file: "https://www.gstatic.com/recaptcha/releases/7gg7H51Q-naNfhmCP3_R47ho/recaptcha__en.js" line: 557}]
+
+[1A[2K✅ Test avslutad och data rensad för: test_playwright_1766386276137_5z7g2@test.se
+
+[1A[2K[160/417] [firefox] › tests/system/contact-flow.spec.ts:135:3 › 📧 Contact Form - Kontaktformulär › ✅ Validering - Kontakt-formulär kräver obligatoriska fält
+[1A[2K[firefox] › tests/system/contact-flow.spec.ts:135:3 › 📧 Contact Form - Kontaktformulär › ✅ Validering - Kontakt-formulär kräver obligatoriska fält
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[161/417] [firefox] › tests/system/contact-flow.spec.ts:152:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil
+[1A[2K[firefox] › tests/system/contact-flow.spec.ts:152:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[162/417] [firefox] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ E-post validering - Ogiltigt format avvisas
+[1A[2K[firefox] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ E-post validering - Ogiltigt format avvisas
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[163/417] [firefox] › tests/system/contact-flow.spec.ts:197:3 › 📧 Contact Form - Kontaktformulär › ✅ Privacypolicy-länk - Fungerar från kontaktformulär
+[1A[2K[firefox] › tests/system/contact-flow.spec.ts:197:3 › 📧 Contact Form - Kontaktformulär › ✅ Privacypolicy-länk - Fungerar från kontaktformulär
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[164/417] [firefox] › tests/system/contact-flow.spec.ts:217:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit
+[1A[2K[firefox] › tests/system/contact-flow.spec.ts:217:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[165/417] [firefox] › tests/system/contact-flow.spec.ts:243:8 › 📧 Contact Form - Kontaktformulär › ⚠️ Database - Kontrollera att vi använder TEST-miljö
+[1A[2K[166/417] [firefox] › tests/system/customer-management.spec.ts:11:8 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Ny Kund - Skapas med is_customer=true
+[1A[2K[167/417] [firefox] › tests/system/customer-management.spec.ts:35:8 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kundaktivering - is_customer kan sättas till true
+[1A[2K[168/417] [firefox] › tests/system/customer-management.spec.ts:70:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kunddeaktivering - is_customer kan sättas till false
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:70:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kunddeaktivering - is_customer kan sättas till false
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[169/417] [firefox] › tests/system/customer-management.spec.ts:104:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kund Filter - Endast is_customer=true hämtas i useAdminData
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:104:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kund Filter - Endast is_customer=true hämtas i useAdminData
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[170/417] [firefox] › tests/system/customer-management.spec.ts:147:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ CustomerRoute Guard - Kontrollerar is_customer för åtkomst
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:147:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ CustomerRoute Guard - Kontrollerar is_customer för åtkomst
+✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[171/417] [firefox] › tests/system/customer-management.spec.ts:161:3 › 👥 Kundhantering - Arkivering › ✅ Arkivera Kund - Flyttas till archived_customers
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:161:3 › 👥 Kundhantering - Arkivering › ✅ Arkivera Kund - Flyttas till archived_customers
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[172/417] [firefox] › tests/system/customer-management.spec.ts:191:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Original data bevaras
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:191:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Original data bevaras
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[173/417] [firefox] › tests/system/customer-management.spec.ts:246:3 › 👥 Kundhantering - Arkivering › ✅ Återställ Kund - Från arkiv till aktiv
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:246:3 › 👥 Kundhantering - Arkivering › ✅ Återställ Kund - Från arkiv till aktiv
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[174/417] [firefox] › tests/system/customer-management.spec.ts:328:3 › 👥 Kundhantering - Arkivering › ✅ Arkiv Lista - archived_at sorteras desc
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:328:3 › 👥 Kundhantering - Arkivering › ✅ Arkiv Lista - archived_at sorteras desc
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[175/417] [firefox] › tests/system/customer-management.spec.ts:376:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Radering från arkiv
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:376:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Radering från arkiv
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[176/417] [firefox] › tests/system/customer-management.spec.ts:412:3 › 👥 Kundhantering - Admin-funktioner › ✅ Admin Flag - is_admin kan sättas
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:412:3 › 👥 Kundhantering - Admin-funktioner › ✅ Admin Flag - is_admin kan sättas
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[177/417] [firefox] › tests/system/customer-management.spec.ts:434:3 › 👥 Kundhantering - Admin-funktioner › ✅ CustomerManagement - Deaktivera & Arkivera i ett steg
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:434:3 › 👥 Kundhantering - Admin-funktioner › ✅ CustomerManagement - Deaktivera & Arkivera i ett steg
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[178/417] [firefox] › tests/system/customer-management.spec.ts:492:3 › 👥 Kundhantering - Admin-funktioner › ✅ Användarhantering - GDPR Radering (separat från arkivering)
+[1A[2K[firefox] › tests/system/customer-management.spec.ts:492:3 › 👥 Kundhantering - Admin-funktioner › ✅ Användarhantering - GDPR Radering (separat från arkivering)
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[179/417] [firefox] › tests/system/customer-management.spec.ts:534:3 › 👥 Kundhantering - Säkerhet › ✅ DATABASE_ENV=test verifieras
+[1A[2K[180/417] [firefox] › tests/system/customer-management.spec.ts:538:3 › 👥 Kundhantering - Säkerhet › ✅ RLS Policies - Endast admin kan arkivera
+[1A[2K[181/417] [firefox] › tests/system/navigation.spec.ts:22:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Startsida - Huvud-sektioner laddas
+[1A[2K[182/417] [firefox] › tests/system/navigation.spec.ts:36:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Navigation - Meny-länk scrollar till korrekt sektion
+[1A[2K[183/417] [firefox] › tests/system/navigation.spec.ts:50:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Responsive - Desktop meny fungerar
+[1A[2K[184/417] [firefox] › tests/system/navigation.spec.ts:68:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Responsive - Mobil meny fungerar
+[1A[2K[185/417] [firefox] › tests/system/navigation.spec.ts:82:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Header - Logo länkar till startsidan
+[1A[2K[186/417] [firefox] › tests/system/navigation.spec.ts:108:5 › 🧭 Navigation & Sektioner › 🎯 Services & Tjänster › ✅ Services - Alla tjänst-länk fungerar
+[1A[2K[187/417] [firefox] › tests/system/navigation.spec.ts:143:5 › 🧭 Navigation & Sektioner › 🎯 Services & Tjänster › ✅ Service-sida - Konsultation-knapp fungerar
+[1A[2K[188/417] [firefox] › tests/system/navigation.spec.ts:157:5 › 🧭 Navigation & Sektioner › 🎯 Services & Tjänster › ✅ Services-grid - Alla tjänster visas på startsida
+[1A[2K[189/417] [firefox] › tests/system/navigation.spec.ts:169:5 › 🧭 Navigation & Sektioner › 📄 Policy & Dokumentation › ✅ Privacy Policy - Sida laddar och innehåller innehål
+[1A[2K[190/417] [firefox] › tests/system/navigation.spec.ts:176:5 › 🧭 Navigation & Sektioner › 📄 Policy & Dokumentation › ✅ Cookie Policy - Sida laddar och innehåller innehål
+[1A[2K[191/417] [firefox] › tests/system/navigation.spec.ts:183:5 › 🧭 Navigation & Sektioner › 📄 Policy & Dokumentation › ✅ Privacy-länk - Finns i Footer
+[1A[2K[192/417] [firefox] › tests/system/navigation.spec.ts:198:5 › 🧭 Navigation & Sektioner › ⚙️ Special Pages › ✅ 404 - Not Found sida fungerar
+[1A[2K[193/417] [firefox] › tests/system/navigation.spec.ts:209:5 › 🧭 Navigation & Sektioner › ⚙️ Special Pages › ✅ 404 - Error-sida erbjuder navigation tillbaka
+[1A[2K[194/417] [firefox] › tests/system/navigation.spec.ts:220:5 › 🧭 Navigation & Sektioner › ⚙️ Special Pages › ✅ Frågor & Tips - Sida laddar
+[1A[2K[195/417] [firefox] › tests/system/navigation.spec.ts:230:5 › 🧭 Navigation & Sektioner › 🔒 Protected Routes › ✅ Min sida - Kräver login (redirect till portal)
+[1A[2K[196/417] [firefox] › tests/system/navigation.spec.ts:251:5 › 🧭 Navigation & Sektioner › 🔒 Protected Routes › ✅ Admin Portal - Kräver admin-access
+[1A[2K[197/417] [firefox] › tests/system/navigation.spec.ts:272:5 › 🧭 Navigation & Sektioner › 🎨 Visual & Performance › ✅ Sidor laddar utan JavaScript-fel
+[1A[2K[198/417] [firefox] › tests/system/navigation.spec.ts:295:5 › 🧭 Navigation & Sektioner › 🎨 Visual & Performance › ✅ Externa länk - Öppnas i ny flik
+[1A[2K[199/417] [firefox] › tests/system/policy-accessibility.spec.ts:19:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Sida existerar och laddar
+[1A[2K[200/417] [firefox] › tests/system/policy-accessibility.spec.ts:26:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Innehåller nödvändig information
+[1A[2K[201/417] [firefox] › tests/system/policy-accessibility.spec.ts:50:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Är tillgänglig från footer
+[1A[2K[202/417] [firefox] › tests/system/policy-accessibility.spec.ts:64:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Länk från kontaktformulär
+[1A[2K[203/417] [firefox] › tests/system/policy-accessibility.spec.ts:84:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Policy - Sida existerar
+[1A[2K[204/417] [firefox] › tests/system/policy-accessibility.spec.ts:90:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Policy - Innehåller cookie-information
+[1A[2K[205/417] [firefox] › tests/system/policy-accessibility.spec.ts:99:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Banner - Visar cookie-disclosure
+[1A[2K[206/417] [firefox] › tests/system/policy-accessibility.spec.ts:110:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Banner - Acceptera-knapp fungerar
+[1A[2K[207/417] [firefox] › tests/system/policy-accessibility.spec.ts:129:5 › 📋 Policies & Compliance › 🛡️ GDPR & Data Protection › ✅ GDPR - Delete user möjlighet
+[1A[2K[208/417] [firefox] › tests/system/policy-accessibility.spec.ts:139:5 › 📋 Policies & Compliance › 🛡️ GDPR & Data Protection › ✅ Kontaktformulär - Privacy notice syns
+[1A[2K[209/417] [firefox] › tests/system/policy-accessibility.spec.ts:151:5 › 📋 Policies & Compliance › 🛡️ GDPR & Data Protection › ✅ Kontaktformulär - Tydlig consent-information
+[1A[2K[210/417] [firefox] › tests/system/policy-accessibility.spec.ts:167:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Huvud-rubrik finns (h1)
+[1A[2K[211/417] [firefox] › tests/system/policy-accessibility.spec.ts:176:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Bildtext/alt finns för ikoner
+[1A[2K[212/417] [firefox] › tests/system/policy-accessibility.spec.ts:198:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Länk-text är meningsfull
+[1A[2K[213/417] [firefox] › tests/system/policy-accessibility.spec.ts:225:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Knappar har aria-labels eller text
+[1A[2K[214/417] [firefox] › tests/system/policy-accessibility.spec.ts:244:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Färgkontrast är tillräcklig
+[1A[2K[215/417] [firefox] › tests/system/policy-accessibility.spec.ts:259:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Formulär har labels
+[1A[2K[216/417] [firefox] › tests/system/policy-accessibility.spec.ts:284:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Keyboard navigation fungerar
+[1A[2K[217/417] [firefox] › tests/system/policy-accessibility.spec.ts:308:5 › 📋 Policies & Compliance › 🔗 Links & References › ✅ Alla interna länk pekar på existerande sidor
+[1A[2K[218/417] [firefox] › tests/system/policy-accessibility.spec.ts:331:5 › 📋 Policies & Compliance › 🔗 Links & References › ✅ Externa länk har target="_blank"
+[1A[2K[219/417] [firefox] › tests/system/policy-accessibility.spec.ts:352:5 › 📋 Policies & Compliance › ⚠️ Security › ✅ Sidan har säkerhetshuvuden (CSP check)
+[1A[2K[220/417] [firefox] › tests/system/policy-accessibility.spec.ts:369:5 › 📋 Policies & Compliance › ⚠️ Security › ✅ Kontaktformulär - Input sanitering
+[1A[2K[221/417] [firefox] › tests/system/policy-accessibility.spec.ts:403:5 › 📋 Policies & Compliance › ⚠️ Security › ✅ Produktion - Aldrig som test-miljö
+[1A[2K[222/417] [firefox] › tests/system/price-calculator.spec.ts:21:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare syns på service-paket
+[1A[2K[223/417] [firefox] › tests/system/price-calculator.spec.ts:38:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare - Input-fält för kvm synligt
+[1A[2K[224/417] [firefox] › tests/system/price-calculator.spec.ts:53:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare - Default-värde är basesqm
+[1A[2K[225/417] [firefox] › tests/system/price-calculator.spec.ts:71:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare - Pris visas dynamiskt
+[1A[2K[226/417] [firefox] › tests/system/price-calculator.spec.ts:93:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Öka kvm - Priset ökar
+[1A[2K[227/417] [firefox] › tests/system/price-calculator.spec.ts:121:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Minska kvm - Priset minskar
+[1A[2K[228/417] [firefox] › tests/system/price-calculator.spec.ts:151:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Minimal kvm (1) - Priset är giltigt
+[1A[2K[229/417] [firefox] › tests/system/price-calculator.spec.ts:183:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Mycket stort kvm - Priset beräknas korrekt
+[1A[2K[230/417] [firefox] › tests/system/price-calculator.spec.ts:211:5 › 💰 Price Calculator - Prisberäknare › 🔢 Prisberäknare - Input-validering › ✅ Negativt tal - Blir konverterad till positiv
+[1A[2K[231/417] [firefox] › tests/system/price-calculator.spec.ts:230:5 › 💰 Price Calculator - Prisberäknare › 🔢 Prisberäknare - Input-validering › ✅ Decimalt tal - Accepteras eller avrundas
+[1A[2K[232/417] [firefox] › tests/system/price-calculator.spec.ts:251:5 › 💰 Price Calculator - Prisberäknare › 🔢 Prisberäknare - Input-validering › ✅ Tomt fält - Får standard-värde
+[1A[2K[233/417] [firefox] › tests/system/price-calculator.spec.ts:281:5 › 💰 Price Calculator - Prisberäknare › 🎨 Prisberäknare - Visuell presentering › ✅ Prisberäknare - Visa RUT-info om applicerbar
+[1A[2K[234/417] [firefox] › tests/system/price-calculator.spec.ts:298:5 › 💰 Price Calculator - Prisberäknare › 🎨 Prisberäknare - Visuell presentering › ✅ Prisberäknare - Formatering av pris (xxx xxx kr)
+[1A[2K[235/417] [firefox] › tests/system/price-calculator.spec.ts:316:5 › 💰 Price Calculator - Prisberäknare › 🎨 Prisberäknare - Visuell presentering › ✅ Prisberäknare - Responsive på mobil
+[1A[2K[236/417] [firefox] › tests/system/price-calculator.spec.ts:344:5 › 💰 Price Calculator - Prisberäknare › 📈 Prisberäknare - Flera paket › ✅ Flera paket - Var och en har eget kvm-fält
+[1A[2K[237/417] [firefox] › tests/system/price-calculator.spec.ts:371:5 › 💰 Price Calculator - Prisberäknare › 📈 Prisberäknare - Flera paket › ✅ Flera paket - Ändringar i ett påverkar inte annat
+[1A[2K[238/417] [firefox] › tests/system/price-calculator.spec.ts:401:5 › 💰 Price Calculator - Prisberäknare › 🔒 Prisberäknare - Test-miljö verifiera › ⚠️ Prisberäknare data - Ingen produktion-data
+[1A[2K[239/417] [firefox] › tests/system/price-calculator.spec.ts:407:5 › 💰 Price Calculator - Prisberäknare › 🔒 Prisberäknare - Test-miljö verifiera › ✅ Prisberäknare - Beräkningar är korrekta
+[1A[2K[240/417] [firefox] › tests/system/services.spec.ts:21:5 › 🔧 Services - Tjänster › 📌 Services Grid - Startsida › ✅ Services-sektion - Alla tjänst-kort synliga
+[1A[2K[241/417] [firefox] › tests/system/services.spec.ts:50:5 › 🔧 Services - Tjänster › 📌 Services Grid - Startsida › ✅ Service-kort - Är interaktiva och clickable
+[1A[2K[242/417] [firefox] › tests/system/services.spec.ts:70:5 › 🔧 Services - Tjänster › 📌 Services Grid - Startsida › ✅ Service-paket - Visar priser och funktioner
+[1A[2K[243/417] [firefox] › tests/system/services.spec.ts:85:5 › 🔧 Services - Tjänster › 🧹 Städning Service › ✅ Städning - Sida laddar med innehål
+[1A[2K[244/417] [firefox] › tests/system/services.spec.ts:98:5 › 🔧 Services - Tjänster › 🧹 Städning Service › ✅ Städning - Innehåller fördelar-lista
+[1A[2K[245/417] [firefox] › tests/system/services.spec.ts:107:5 › 🔧 Services - Tjänster › 🧹 Städning Service › ✅ Städning - Konsultation-knapp fungerar
+[1A[2K[246/417] [firefox] › tests/system/services.spec.ts:120:5 › 🔧 Services - Tjänster › 🚚 Flytt Service › ✅ Flytt - Sida laddar med innehål
+[1A[2K[247/417] [firefox] › tests/system/services.spec.ts:128:5 › 🔧 Services - Tjänster › 🚚 Flytt Service › ✅ Flytt - Back-länk fungerar
+[1A[2K[248/417] [firefox] › tests/system/services.spec.ts:144:5 › 🔧 Services - Tjänster › 🗑️ Tömning av Bohag › ✅ Tömning - Sida laddar
+[1A[2K[249/417] [firefox] › tests/system/services.spec.ts:152:5 › 🔧 Services - Tjänster › 🗑️ Tömning av Bohag › ✅ Tömning - Visar info om processen
+[1A[2K[250/417] [firefox] › tests/system/services.spec.ts:163:5 › 🔧 Services - Tjänster › 🔍 Värdering Service › ✅ Värdering - AI-sida laddar
+[1A[2K[251/417] [firefox] › tests/system/services.spec.ts:172:5 › 🔧 Services - Tjänster › 🔍 Värdering Service › ✅ Värdering AI - Instruktioner syns
+[1A[2K[252/417] [firefox] › tests/system/services.spec.ts:186:5 › 🔧 Services - Tjänster › 💰 Försäljning Service › ✅ Försäljning - Sida laddar
+[1A[2K[253/417] [firefox] › tests/system/services.spec.ts:194:5 › 🔧 Services - Tjänster › 💰 Försäljning Service › ✅ Försäljning - Visar tjänst-detaljer
+[1A[2K[254/417] [firefox] › tests/system/services.spec.ts:212:5 › 🔧 Services - Tjänster › 📦 Magasinering Service › ✅ Magasinering - Sida laddar
+[1A[2K[255/417] [firefox] › tests/system/services.spec.ts:220:5 › 🔧 Services - Tjänster › 📦 Magasinering Service › ✅ Magasinering - Fördelar syns
+[1A[2K[256/417] [firefox] › tests/system/services.spec.ts:231:5 › 🔧 Services - Tjänster › 💡 Rådgivning & Planering › ✅ Rådgivning - Sida laddar
+[1A[2K[257/417] [firefox] › tests/system/services.spec.ts:244:5 › 🔧 Services - Tjänster › 📚 Juridisk Guide › ✅ Juridik Guide - Sida laddar
+[1A[2K[258/417] [firefox] › tests/system/services.spec.ts:258:5 › 🔧 Services - Tjänster › 📚 Juridisk Guide › ✅ Juridik Guide - Länk fungerar från nav
+[1A[2K[259/417] [firefox] › tests/system/services.spec.ts:273:5 › 🔧 Services - Tjänster › 💬 Kontakta oss › ✅ Alla service-sidor - Visar kontakta-knapp
+[1A[2K[260/417] [firefox] › tests/system/services.spec.ts:296:5 › 🔧 Services - Tjänster › 📱 Responsive Services › ✅ Service-sida - Responsive på mobil
+[1A[2K[261/417] [firefox] › tests/system/services.spec.ts:312:5 › 🔧 Services - Tjänster › 📱 Responsive Services › ✅ Service-grid - Responsiv layout
+[1A[2K[262/417] [firefox] › tests/system/status-changes.spec.ts:10:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från pending till in_progress
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:10:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från pending till in_progress
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[263/417] [firefox] › tests/system/status-changes.spec.ts:52:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från in_progress till completed
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:52:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från in_progress till completed
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[264/417] [firefox] › tests/system/status-changes.spec.ts:91:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras till cancelled
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:91:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras till cancelled
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[265/417] [firefox] › tests/system/status-changes.spec.ts:128:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Endast tillåtna statusar accepteras
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:128:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Endast tillåtna statusar accepteras
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[266/417] [firefox] › tests/system/status-changes.spec.ts:157:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Status påverkar portal-diagram
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:157:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Status påverkar portal-diagram
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[267/417] [firefox] › tests/system/status-changes.spec.ts:203:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Flera ärendetyper (avslutad, done, finished) räknas som completed
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:203:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Flera ärendetyper (avslutad, done, finished) räknas som completed
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[268/417] [firefox] › tests/system/status-changes.spec.ts:243:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Status Badge färg baserad på status
+[1A[2K[269/417] [firefox] › tests/system/status-changes.spec.ts:266:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Kan ändras mellan olika statusar
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:266:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Kan ändras mellan olika statusar
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[270/417] [firefox] › tests/system/status-changes.spec.ts:303:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - cancelled status påverkar subscription progress
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:303:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - cancelled status påverkar subscription progress
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[271/417] [firefox] › tests/system/status-changes.spec.ts:337:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Inactive varianter (cancelled, completed)
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:337:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Inactive varianter (cancelled, completed)
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[272/417] [firefox] › tests/system/status-changes.spec.ts:375:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Kan ändras av admin
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:375:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Kan ändras av admin
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[273/417] [firefox] › tests/system/status-changes.spec.ts:411:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Admin kan lägga till notes vid statusändring
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:411:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Admin kan lägga till notes vid statusändring
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[274/417] [firefox] › tests/system/status-changes.spec.ts:453:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Kan ändras från pending till completed
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:453:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Kan ändras från pending till completed
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[275/417] [firefox] › tests/system/status-changes.spec.ts:486:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Flera statusar tillgängliga
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:486:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Flera statusar tillgängliga
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[276/417] [firefox] › tests/system/status-changes.spec.ts:506:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - handleStatusChange uppdaterar korrekt
+[1A[2K[firefox] › tests/system/status-changes.spec.ts:506:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - handleStatusChange uppdaterar korrekt
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[277/417] [firefox] › tests/system/status-changes.spec.ts:538:3 › 📝 Statusändringar - Säkerhet › ✅ DATABASE_ENV=test verifieras
+[1A[2K[278/417] [firefox] › tests/system/status-changes.spec.ts:542:3 › 📝 Statusändringar - Säkerhet › ✅ Produktion-guard aktiv
+[1A[2K[dotenv@17.2.3] injecting env (0) from tests/.env.test -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+
+[1A[2K[279/417] [webkit] › tests/example.spec.ts:3:1 › has title
+[1A[2K[280/417] [webkit] › tests/example.spec.ts:10:1 › get started link
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[281/417] [webkit] › tests/system/auth-flow.spec.ts:9:3 › 🔐 Autentisering & Inloggning › ✅ Inloggningssida - Visar inloggningsformulär
+[1A[2K[282/417] [webkit] › tests/system/auth-flow.spec.ts:21:3 › 🔐 Autentisering & Inloggning › ✅ Auth Context - Användare kan inte nå kundportal utan inloggning
+[1A[2K[283/417] [webkit] › tests/system/auth-flow.spec.ts:37:3 › 🔐 Autentisering & Inloggning › ✅ Auth Hook - signIn() funktion finns och kan anropas
+[1A[2K[284/417] [webkit] › tests/system/auth-flow.spec.ts:52:3 › 🔐 Autentisering & Inloggning › ✅ Session Management - Auth state ändras vid login/logout
+[1A[2K[285/417] [webkit] › tests/system/auth-flow.spec.ts:74:3 › 🔐 Autentisering & Inloggning › ✅ useAuth Hook - Loading state hanteras korrekt
+[1A[2K[286/417] [webkit] › tests/system/auth-flow.spec.ts:92:3 › 🔐 Autentisering & Inloggning › ✅ Customer Creation - Ny användare skapar customer-post
+[1A[2K[287/417] [webkit] › tests/system/auth-flow.spec.ts:100:3 › 🔐 Autentisering & Inloggning › ✅ isCustomer Flag - Kontrolleras vid portal-access
+[1A[2K[288/417] [webkit] › tests/system/auth-flow.spec.ts:115:3 › 🔐 Autentisering & Inloggning › ✅ Admin Check - Admin users får is_admin flag
+[1A[2K[289/417] [webkit] › tests/system/auth-flow.spec.ts:127:3 › 🔐 Autentisering & Inloggning › ✅ Password Reset - sendPasswordReset() fungerar
+[1A[2K[290/417] [webkit] › tests/system/auth-flow.spec.ts:138:3 › 🔐 Autentisering & Inloggning › ✅ Session Persistence - Session kvarstår vid sidladdning
+[1A[2K[291/417] [webkit] › tests/system/auth-flow.spec.ts:155:3 › 🔐 Autentisering & Inloggning › ✅ Auth Guard - CustomerRoute skyddar kundspecifika rutter
+[1A[2K[292/417] [webkit] › tests/system/auth-flow.spec.ts:177:3 › 🔐 Autentisering & Inloggning › ✅ Auth Error Handling - Felmeddelanden vid inloggningsfel
+[1A[2K[293/417] [webkit] › tests/system/auth-flow.spec.ts:188:8 › 🔐 Autentisering med Supabase Test Data › ✅ Test User - Kan skapa och hämta test-användare
+[1A[2K[294/417] [webkit] › tests/system/auth-flow.spec.ts:196:8 › 🔐 Autentisering med Supabase Test Data › ✅ Customer Flag - is_customer=true för aktiva kunder
+[1A[2K[295/417] [webkit] › tests/system/auth-flow.spec.ts:200:8 › 🔐 Autentisering med Supabase Test Data › ✅ Admin Flag - is_admin kan sättas
+[1A[2K[296/417] [webkit] › tests/system/auth-flow.spec.ts:222:3 › 🔐 Autentisering med Supabase Test Data › ✅ Session Cookie - DATABASE_ENV=test verifieras
+[1A[2K[297/417] [webkit] › tests/system/contact-flow.spec.ts:30:3 › 📧 Contact Form - Kontaktformulär › ✅ Ska kunna navigera till kontakt-sektion från startsidan
+[1A[2K[webkit] › tests/system/contact-flow.spec.ts:30:3 › 📧 Contact Form - Kontaktformulär › ✅ Ska kunna navigera till kontakt-sektion från startsidan
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[298/417] [webkit] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data
+[1A[2K[webkit] › tests/system/contact-flow.spec.ts:47:3 › 📧 Contact Form - Kontaktformulär › ✅ Kontaktformulär - Fylla i och skicka data
+✅ Bekräftat: Använder test-databas
+
+[1A[2K🔵 BROWSER LOG: WARNING Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+
+[1A[2K🔵 BROWSER LOG: WARNING ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+
+[1A[2K🔵 BROWSER LOG: WARNING ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[1A[2K🔵 BROWSER LOG: LOG Contact form submitting: {firstname: Test, lastname: Användare, email: test_playwright_1766386678861_ritvph@test.se, phone: 070-6358, message: Det här är ett automatiserat test av kontaktformulären}
+
+[1A[2K✅ Test avslutad och data rensad för: test_playwright_1766386678861_ritvph@test.se
+
+[1A[2K[299/417] [webkit] › tests/system/contact-flow.spec.ts:135:3 › 📧 Contact Form - Kontaktformulär › ✅ Validering - Kontakt-formulär kräver obligatoriska fält
+[1A[2K[webkit] › tests/system/contact-flow.spec.ts:135:3 › 📧 Contact Form - Kontaktformulär › ✅ Validering - Kontakt-formulär kräver obligatoriska fält
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[300/417] [webkit] › tests/system/contact-flow.spec.ts:152:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil
+[1A[2K[webkit] › tests/system/contact-flow.spec.ts:152:3 › 📧 Contact Form - Kontaktformulär › ✅ Responsive design - Kontaktformulär på mobil
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[301/417] [webkit] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ E-post validering - Ogiltigt format avvisas
+[1A[2K[webkit] › tests/system/contact-flow.spec.ts:179:3 › 📧 Contact Form - Kontaktformulär › ✅ E-post validering - Ogiltigt format avvisas
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[302/417] [webkit] › tests/system/contact-flow.spec.ts:197:3 › 📧 Contact Form - Kontaktformulär › ✅ Privacypolicy-länk - Fungerar från kontaktformulär
+[1A[2K[webkit] › tests/system/contact-flow.spec.ts:197:3 › 📧 Contact Form - Kontaktformulär › ✅ Privacypolicy-länk - Fungerar från kontaktformulär
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[303/417] [webkit] › tests/system/contact-flow.spec.ts:217:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit
+[1A[2K[webkit] › tests/system/contact-flow.spec.ts:217:3 › 📧 Contact Form - Kontaktformulär › ✅ Formulär reset - Formuläret töms efter lyckad submit
+✅ Bekräftat: Använder test-databas
+
+[1A[2K[304/417] [webkit] › tests/system/contact-flow.spec.ts:243:8 › 📧 Contact Form - Kontaktformulär › ⚠️ Database - Kontrollera att vi använder TEST-miljö
+[1A[2K[305/417] [webkit] › tests/system/customer-management.spec.ts:11:8 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Ny Kund - Skapas med is_customer=true
+[1A[2K[306/417] [webkit] › tests/system/customer-management.spec.ts:35:8 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kundaktivering - is_customer kan sättas till true
+[1A[2K[307/417] [webkit] › tests/system/customer-management.spec.ts:70:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kunddeaktivering - is_customer kan sättas till false
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:70:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kunddeaktivering - is_customer kan sättas till false
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[308/417] [webkit] › tests/system/customer-management.spec.ts:104:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kund Filter - Endast is_customer=true hämtas i useAdminData
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:104:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ Kund Filter - Endast is_customer=true hämtas i useAdminData
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[309/417] [webkit] › tests/system/customer-management.spec.ts:147:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ CustomerRoute Guard - Kontrollerar is_customer för åtkomst
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:147:3 › 👥 Kundhantering - Aktivering & Deaktivering › ✅ CustomerRoute Guard - Kontrollerar is_customer för åtkomst
+✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[310/417] [webkit] › tests/system/customer-management.spec.ts:161:3 › 👥 Kundhantering - Arkivering › ✅ Arkivera Kund - Flyttas till archived_customers
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:161:3 › 👥 Kundhantering - Arkivering › ✅ Arkivera Kund - Flyttas till archived_customers
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[311/417] [webkit] › tests/system/customer-management.spec.ts:191:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Original data bevaras
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:191:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Original data bevaras
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[312/417] [webkit] › tests/system/customer-management.spec.ts:246:3 › 👥 Kundhantering - Arkivering › ✅ Återställ Kund - Från arkiv till aktiv
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:246:3 › 👥 Kundhantering - Arkivering › ✅ Återställ Kund - Från arkiv till aktiv
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[313/417] [webkit] › tests/system/customer-management.spec.ts:328:3 › 👥 Kundhantering - Arkivering › ✅ Arkiv Lista - archived_at sorteras desc
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:328:3 › 👥 Kundhantering - Arkivering › ✅ Arkiv Lista - archived_at sorteras desc
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[314/417] [webkit] › tests/system/customer-management.spec.ts:376:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Radering från arkiv
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:376:3 › 👥 Kundhantering - Arkivering › ✅ Arkiverad Kund - Radering från arkiv
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[315/417] [webkit] › tests/system/customer-management.spec.ts:412:3 › 👥 Kundhantering - Admin-funktioner › ✅ Admin Flag - is_admin kan sättas
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:412:3 › 👥 Kundhantering - Admin-funktioner › ✅ Admin Flag - is_admin kan sättas
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[316/417] [webkit] › tests/system/customer-management.spec.ts:434:3 › 👥 Kundhantering - Admin-funktioner › ✅ CustomerManagement - Deaktivera & Arkivera i ett steg
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:434:3 › 👥 Kundhantering - Admin-funktioner › ✅ CustomerManagement - Deaktivera & Arkivera i ett steg
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[317/417] [webkit] › tests/system/customer-management.spec.ts:492:3 › 👥 Kundhantering - Admin-funktioner › ✅ Användarhantering - GDPR Radering (separat från arkivering)
+[1A[2K[webkit] › tests/system/customer-management.spec.ts:492:3 › 👥 Kundhantering - Admin-funktioner › ✅ Användarhantering - GDPR Radering (separat från arkivering)
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[318/417] [webkit] › tests/system/customer-management.spec.ts:534:3 › 👥 Kundhantering - Säkerhet › ✅ DATABASE_ENV=test verifieras
+[1A[2K[319/417] [webkit] › tests/system/customer-management.spec.ts:538:3 › 👥 Kundhantering - Säkerhet › ✅ RLS Policies - Endast admin kan arkivera
+[1A[2K[320/417] [webkit] › tests/system/navigation.spec.ts:22:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Startsida - Huvud-sektioner laddas
+[1A[2K[321/417] [webkit] › tests/system/navigation.spec.ts:36:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Navigation - Meny-länk scrollar till korrekt sektion
+[1A[2K[322/417] [webkit] › tests/system/navigation.spec.ts:50:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Responsive - Desktop meny fungerar
+[1A[2K[323/417] [webkit] › tests/system/navigation.spec.ts:68:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Responsive - Mobil meny fungerar
+[1A[2K[324/417] [webkit] › tests/system/navigation.spec.ts:82:5 › 🧭 Navigation & Sektioner › 🏠 Startsida Navigation › ✅ Header - Logo länkar till startsidan
+[1A[2K[325/417] [webkit] › tests/system/navigation.spec.ts:108:5 › 🧭 Navigation & Sektioner › 🎯 Services & Tjänster › ✅ Services - Alla tjänst-länk fungerar
+[1A[2K[326/417] [webkit] › tests/system/navigation.spec.ts:143:5 › 🧭 Navigation & Sektioner › 🎯 Services & Tjänster › ✅ Service-sida - Konsultation-knapp fungerar
+[1A[2K[327/417] [webkit] › tests/system/navigation.spec.ts:157:5 › 🧭 Navigation & Sektioner › 🎯 Services & Tjänster › ✅ Services-grid - Alla tjänster visas på startsida
+[1A[2K[328/417] [webkit] › tests/system/navigation.spec.ts:169:5 › 🧭 Navigation & Sektioner › 📄 Policy & Dokumentation › ✅ Privacy Policy - Sida laddar och innehåller innehål
+[1A[2K[329/417] [webkit] › tests/system/navigation.spec.ts:176:5 › 🧭 Navigation & Sektioner › 📄 Policy & Dokumentation › ✅ Cookie Policy - Sida laddar och innehåller innehål
+[1A[2K[330/417] [webkit] › tests/system/navigation.spec.ts:183:5 › 🧭 Navigation & Sektioner › 📄 Policy & Dokumentation › ✅ Privacy-länk - Finns i Footer
+[1A[2K[331/417] [webkit] › tests/system/navigation.spec.ts:198:5 › 🧭 Navigation & Sektioner › ⚙️ Special Pages › ✅ 404 - Not Found sida fungerar
+[1A[2K[332/417] [webkit] › tests/system/navigation.spec.ts:209:5 › 🧭 Navigation & Sektioner › ⚙️ Special Pages › ✅ 404 - Error-sida erbjuder navigation tillbaka
+[1A[2K[333/417] [webkit] › tests/system/navigation.spec.ts:220:5 › 🧭 Navigation & Sektioner › ⚙️ Special Pages › ✅ Frågor & Tips - Sida laddar
+[1A[2K[334/417] [webkit] › tests/system/navigation.spec.ts:230:5 › 🧭 Navigation & Sektioner › 🔒 Protected Routes › ✅ Min sida - Kräver login (redirect till portal)
+[1A[2K[335/417] [webkit] › tests/system/navigation.spec.ts:251:5 › 🧭 Navigation & Sektioner › 🔒 Protected Routes › ✅ Admin Portal - Kräver admin-access
+[1A[2K[336/417] [webkit] › tests/system/navigation.spec.ts:272:5 › 🧭 Navigation & Sektioner › 🎨 Visual & Performance › ✅ Sidor laddar utan JavaScript-fel
+[1A[2K[337/417] [webkit] › tests/system/navigation.spec.ts:295:5 › 🧭 Navigation & Sektioner › 🎨 Visual & Performance › ✅ Externa länk - Öppnas i ny flik
+[1A[2K[338/417] [webkit] › tests/system/policy-accessibility.spec.ts:19:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Sida existerar och laddar
+[1A[2K[339/417] [webkit] › tests/system/policy-accessibility.spec.ts:26:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Innehåller nödvändig information
+[1A[2K[340/417] [webkit] › tests/system/policy-accessibility.spec.ts:50:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Är tillgänglig från footer
+[1A[2K[341/417] [webkit] › tests/system/policy-accessibility.spec.ts:64:5 › 📋 Policies & Compliance › 🔐 Privacy Policy › ✅ Privacy Policy - Länk från kontaktformulär
+[1A[2K[342/417] [webkit] › tests/system/policy-accessibility.spec.ts:84:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Policy - Sida existerar
+[1A[2K[343/417] [webkit] › tests/system/policy-accessibility.spec.ts:90:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Policy - Innehåller cookie-information
+[1A[2K[344/417] [webkit] › tests/system/policy-accessibility.spec.ts:99:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Banner - Visar cookie-disclosure
+[1A[2K[345/417] [webkit] › tests/system/policy-accessibility.spec.ts:110:5 › 📋 Policies & Compliance › 🍪 Cookie Policy › ✅ Cookie Banner - Acceptera-knapp fungerar
+[1A[2K[346/417] [webkit] › tests/system/policy-accessibility.spec.ts:129:5 › 📋 Policies & Compliance › 🛡️ GDPR & Data Protection › ✅ GDPR - Delete user möjlighet
+[1A[2K[347/417] [webkit] › tests/system/policy-accessibility.spec.ts:139:5 › 📋 Policies & Compliance › 🛡️ GDPR & Data Protection › ✅ Kontaktformulär - Privacy notice syns
+[1A[2K[348/417] [webkit] › tests/system/policy-accessibility.spec.ts:151:5 › 📋 Policies & Compliance › 🛡️ GDPR & Data Protection › ✅ Kontaktformulär - Tydlig consent-information
+[1A[2K[349/417] [webkit] › tests/system/policy-accessibility.spec.ts:167:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Huvud-rubrik finns (h1)
+[1A[2K[350/417] [webkit] › tests/system/policy-accessibility.spec.ts:176:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Bildtext/alt finns för ikoner
+[1A[2K[351/417] [webkit] › tests/system/policy-accessibility.spec.ts:198:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Länk-text är meningsfull
+[1A[2K[352/417] [webkit] › tests/system/policy-accessibility.spec.ts:225:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Knappar har aria-labels eller text
+[1A[2K[353/417] [webkit] › tests/system/policy-accessibility.spec.ts:244:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Färgkontrast är tillräcklig
+[1A[2K[354/417] [webkit] › tests/system/policy-accessibility.spec.ts:259:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Formulär har labels
+[1A[2K[355/417] [webkit] › tests/system/policy-accessibility.spec.ts:284:5 › 📋 Policies & Compliance › ♿ Accessibility › ✅ Accessibility - Keyboard navigation fungerar
+[1A[2K[356/417] [webkit] › tests/system/policy-accessibility.spec.ts:308:5 › 📋 Policies & Compliance › 🔗 Links & References › ✅ Alla interna länk pekar på existerande sidor
+[1A[2K[357/417] [webkit] › tests/system/policy-accessibility.spec.ts:331:5 › 📋 Policies & Compliance › 🔗 Links & References › ✅ Externa länk har target="_blank"
+[1A[2K[358/417] [webkit] › tests/system/policy-accessibility.spec.ts:352:5 › 📋 Policies & Compliance › ⚠️ Security › ✅ Sidan har säkerhetshuvuden (CSP check)
+[1A[2K[359/417] [webkit] › tests/system/policy-accessibility.spec.ts:369:5 › 📋 Policies & Compliance › ⚠️ Security › ✅ Kontaktformulär - Input sanitering
+[1A[2K[360/417] [webkit] › tests/system/policy-accessibility.spec.ts:403:5 › 📋 Policies & Compliance › ⚠️ Security › ✅ Produktion - Aldrig som test-miljö
+[1A[2K[361/417] [webkit] › tests/system/price-calculator.spec.ts:21:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare syns på service-paket
+[1A[2K[362/417] [webkit] › tests/system/price-calculator.spec.ts:38:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare - Input-fält för kvm synligt
+[1A[2K[363/417] [webkit] › tests/system/price-calculator.spec.ts:53:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare - Default-värde är basesqm
+[1A[2K[364/417] [webkit] › tests/system/price-calculator.spec.ts:71:5 › 💰 Price Calculator - Prisberäknare › 🧮 Prisberäknarens grundläggande funktionalitet › ✅ Prisberäknare - Pris visas dynamiskt
+[1A[2K[365/417] [webkit] › tests/system/price-calculator.spec.ts:93:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Öka kvm - Priset ökar
+[1A[2K[366/417] [webkit] › tests/system/price-calculator.spec.ts:121:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Minska kvm - Priset minskar
+[1A[2K[367/417] [webkit] › tests/system/price-calculator.spec.ts:151:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Minimal kvm (1) - Priset är giltigt
+[1A[2K[368/417] [webkit] › tests/system/price-calculator.spec.ts:183:5 › 💰 Price Calculator - Prisberäknare › 📊 Prisberäkning - Förändring av kvm › ✅ Mycket stort kvm - Priset beräknas korrekt
+[1A[2K[369/417] [webkit] › tests/system/price-calculator.spec.ts:211:5 › 💰 Price Calculator - Prisberäknare › 🔢 Prisberäknare - Input-validering › ✅ Negativt tal - Blir konverterad till positiv
+[1A[2K[370/417] [webkit] › tests/system/price-calculator.spec.ts:230:5 › 💰 Price Calculator - Prisberäknare › 🔢 Prisberäknare - Input-validering › ✅ Decimalt tal - Accepteras eller avrundas
+[1A[2K[371/417] [webkit] › tests/system/price-calculator.spec.ts:251:5 › 💰 Price Calculator - Prisberäknare › 🔢 Prisberäknare - Input-validering › ✅ Tomt fält - Får standard-värde
+[1A[2K[372/417] [webkit] › tests/system/price-calculator.spec.ts:281:5 › 💰 Price Calculator - Prisberäknare › 🎨 Prisberäknare - Visuell presentering › ✅ Prisberäknare - Visa RUT-info om applicerbar
+[1A[2K[373/417] [webkit] › tests/system/price-calculator.spec.ts:298:5 › 💰 Price Calculator - Prisberäknare › 🎨 Prisberäknare - Visuell presentering › ✅ Prisberäknare - Formatering av pris (xxx xxx kr)
+[1A[2K[374/417] [webkit] › tests/system/price-calculator.spec.ts:316:5 › 💰 Price Calculator - Prisberäknare › 🎨 Prisberäknare - Visuell presentering › ✅ Prisberäknare - Responsive på mobil
+[1A[2K[375/417] [webkit] › tests/system/price-calculator.spec.ts:344:5 › 💰 Price Calculator - Prisberäknare › 📈 Prisberäknare - Flera paket › ✅ Flera paket - Var och en har eget kvm-fält
+[1A[2K[376/417] [webkit] › tests/system/price-calculator.spec.ts:371:5 › 💰 Price Calculator - Prisberäknare › 📈 Prisberäknare - Flera paket › ✅ Flera paket - Ändringar i ett påverkar inte annat
+[1A[2K[377/417] [webkit] › tests/system/price-calculator.spec.ts:401:5 › 💰 Price Calculator - Prisberäknare › 🔒 Prisberäknare - Test-miljö verifiera › ⚠️ Prisberäknare data - Ingen produktion-data
+[1A[2K[378/417] [webkit] › tests/system/price-calculator.spec.ts:407:5 › 💰 Price Calculator - Prisberäknare › 🔒 Prisberäknare - Test-miljö verifiera › ✅ Prisberäknare - Beräkningar är korrekta
+[1A[2K[379/417] [webkit] › tests/system/services.spec.ts:21:5 › 🔧 Services - Tjänster › 📌 Services Grid - Startsida › ✅ Services-sektion - Alla tjänst-kort synliga
+[1A[2K[380/417] [webkit] › tests/system/services.spec.ts:50:5 › 🔧 Services - Tjänster › 📌 Services Grid - Startsida › ✅ Service-kort - Är interaktiva och clickable
+[1A[2K[381/417] [webkit] › tests/system/services.spec.ts:70:5 › 🔧 Services - Tjänster › 📌 Services Grid - Startsida › ✅ Service-paket - Visar priser och funktioner
+[1A[2K[382/417] [webkit] › tests/system/services.spec.ts:85:5 › 🔧 Services - Tjänster › 🧹 Städning Service › ✅ Städning - Sida laddar med innehål
+[1A[2K[383/417] [webkit] › tests/system/services.spec.ts:98:5 › 🔧 Services - Tjänster › 🧹 Städning Service › ✅ Städning - Innehåller fördelar-lista
+[1A[2K[384/417] [webkit] › tests/system/services.spec.ts:107:5 › 🔧 Services - Tjänster › 🧹 Städning Service › ✅ Städning - Konsultation-knapp fungerar
+[1A[2K[385/417] [webkit] › tests/system/services.spec.ts:120:5 › 🔧 Services - Tjänster › 🚚 Flytt Service › ✅ Flytt - Sida laddar med innehål
+[1A[2K[386/417] [webkit] › tests/system/services.spec.ts:128:5 › 🔧 Services - Tjänster › 🚚 Flytt Service › ✅ Flytt - Back-länk fungerar
+[1A[2K[387/417] [webkit] › tests/system/services.spec.ts:144:5 › 🔧 Services - Tjänster › 🗑️ Tömning av Bohag › ✅ Tömning - Sida laddar
+[1A[2K[388/417] [webkit] › tests/system/services.spec.ts:152:5 › 🔧 Services - Tjänster › 🗑️ Tömning av Bohag › ✅ Tömning - Visar info om processen
+[1A[2K[389/417] [webkit] › tests/system/services.spec.ts:163:5 › 🔧 Services - Tjänster › 🔍 Värdering Service › ✅ Värdering - AI-sida laddar
+[1A[2K[390/417] [webkit] › tests/system/services.spec.ts:172:5 › 🔧 Services - Tjänster › 🔍 Värdering Service › ✅ Värdering AI - Instruktioner syns
+[1A[2K[391/417] [webkit] › tests/system/services.spec.ts:186:5 › 🔧 Services - Tjänster › 💰 Försäljning Service › ✅ Försäljning - Sida laddar
+[1A[2K[392/417] [webkit] › tests/system/services.spec.ts:194:5 › 🔧 Services - Tjänster › 💰 Försäljning Service › ✅ Försäljning - Visar tjänst-detaljer
+[1A[2K[393/417] [webkit] › tests/system/services.spec.ts:212:5 › 🔧 Services - Tjänster › 📦 Magasinering Service › ✅ Magasinering - Sida laddar
+[1A[2K[394/417] [webkit] › tests/system/services.spec.ts:220:5 › 🔧 Services - Tjänster › 📦 Magasinering Service › ✅ Magasinering - Fördelar syns
+[1A[2K[395/417] [webkit] › tests/system/services.spec.ts:231:5 › 🔧 Services - Tjänster › 💡 Rådgivning & Planering › ✅ Rådgivning - Sida laddar
+[1A[2K[396/417] [webkit] › tests/system/services.spec.ts:244:5 › 🔧 Services - Tjänster › 📚 Juridisk Guide › ✅ Juridik Guide - Sida laddar
+[1A[2K[397/417] [webkit] › tests/system/services.spec.ts:258:5 › 🔧 Services - Tjänster › 📚 Juridisk Guide › ✅ Juridik Guide - Länk fungerar från nav
+[1A[2K[398/417] [webkit] › tests/system/services.spec.ts:273:5 › 🔧 Services - Tjänster › 💬 Kontakta oss › ✅ Alla service-sidor - Visar kontakta-knapp
+[1A[2K[399/417] [webkit] › tests/system/services.spec.ts:296:5 › 🔧 Services - Tjänster › 📱 Responsive Services › ✅ Service-sida - Responsive på mobil
+[1A[2K[400/417] [webkit] › tests/system/services.spec.ts:312:5 › 🔧 Services - Tjänster › 📱 Responsive Services › ✅ Service-grid - Responsiv layout
+[1A[2K[401/417] [webkit] › tests/system/status-changes.spec.ts:10:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från pending till in_progress
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:10:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från pending till in_progress
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[402/417] [webkit] › tests/system/status-changes.spec.ts:52:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från in_progress till completed
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:52:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras från in_progress till completed
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[403/417] [webkit] › tests/system/status-changes.spec.ts:91:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras till cancelled
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:91:3 › 📝 Statusändringar - Ärenden › ✅ Ärende Status - Kan ändras till cancelled
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[404/417] [webkit] › tests/system/status-changes.spec.ts:128:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Endast tillåtna statusar accepteras
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:128:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Endast tillåtna statusar accepteras
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[405/417] [webkit] › tests/system/status-changes.spec.ts:157:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Status påverkar portal-diagram
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:157:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Status påverkar portal-diagram
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[406/417] [webkit] › tests/system/status-changes.spec.ts:203:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Flera ärendetyper (avslutad, done, finished) räknas som completed
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:203:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Flera ärendetyper (avslutad, done, finished) räknas som completed
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[407/417] [webkit] › tests/system/status-changes.spec.ts:243:3 › 📝 Statusändringar - Ärenden › ✅ Ärendestatus - Status Badge färg baserad på status
+[1A[2K[408/417] [webkit] › tests/system/status-changes.spec.ts:266:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Kan ändras mellan olika statusar
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:266:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Kan ändras mellan olika statusar
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[409/417] [webkit] › tests/system/status-changes.spec.ts:303:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - cancelled status påverkar subscription progress
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:303:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - cancelled status påverkar subscription progress
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[410/417] [webkit] › tests/system/status-changes.spec.ts:337:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Inactive varianter (cancelled, completed)
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:337:3 › 📝 Statusändringar - Abonnemang › ✅ Abonnemang Status - Inactive varianter (cancelled, completed)
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[411/417] [webkit] › tests/system/status-changes.spec.ts:375:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Kan ändras av admin
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:375:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Kan ändras av admin
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[412/417] [webkit] › tests/system/status-changes.spec.ts:411:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Admin kan lägga till notes vid statusändring
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:411:3 › 📝 Statusändringar - Kontaktförfrågningar › ✅ Kontaktförfrågan Status - Admin kan lägga till notes vid statusändring
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[413/417] [webkit] › tests/system/status-changes.spec.ts:453:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Kan ändras från pending till completed
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:453:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Kan ändras från pending till completed
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[414/417] [webkit] › tests/system/status-changes.spec.ts:486:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Flera statusar tillgängliga
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:486:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - Flera statusar tillgängliga
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[415/417] [webkit] › tests/system/status-changes.spec.ts:506:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - handleStatusChange uppdaterar korrekt
+[1A[2K[webkit] › tests/system/status-changes.spec.ts:506:3 › 📝 Statusändringar - Uppsägningar › ✅ Uppsägning Status - handleStatusChange uppdaterar korrekt
+🔧 Initialiserar Supabase test-client
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K✅ Using Supabase service role key for tests
+
+[1A[2K[416/417] [webkit] › tests/system/status-changes.spec.ts:538:3 › 📝 Statusändringar - Säkerhet › ✅ DATABASE_ENV=test verifieras
+[1A[2K[417/417] [webkit] › tests/system/status-changes.spec.ts:542:3 › 📝 Statusändringar - Säkerhet › ✅ Produktion-guard aktiv
+[1A[2K  18 skipped
+  399 passed (16.8m)
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

@@ -2,9 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const Vardering = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "Värdering - Trygg Hand";
+  }, []);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
