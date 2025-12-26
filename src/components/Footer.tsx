@@ -1,7 +1,19 @@
 import { Phone, Mail, MapPin, Facebook, Linkedin, Instagram } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleAboutClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (location.pathname === "/about") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      navigate("/about");
+      setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 50);
+    }
+  };
   return (
     <footer className="bg-foreground text-background py-8 text-center text-sm text-muted-foreground">
       <div className="container mx-auto px-4">
@@ -35,7 +47,11 @@ const Footer = () => {
           <div className="space-y-4">
             <h4 className="font-semibold text-background/80">Företag</h4>
             <ul className="space-y-2 text-sm text-background/80">
-              <li><Link to="/about" className="hover:underline">Om oss</Link></li>
+              <li>
+                <button type="button" onClick={handleAboutClick} className="hover:underline text-left">
+                  Om oss
+                </button>
+              </li>
               <li><Link to="/services/Juridikguide" className="hover:underline">Din Juridiska Guide i Fickan</Link></li>
               <li><Link to="/partners" className="hover:underline">Partners</Link></li>
               <li><Link to="/privacy" className="hover:underline">Integritetspolicy</Link></li>
