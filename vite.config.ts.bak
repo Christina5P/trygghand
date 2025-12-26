@@ -1,0 +1,71 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+import fs from "fs";
+
+export default defineConfig(({ command }) => {
+  const isTestMode = process.env.VITE_ENV === "test";
+
+  // Load .env.test explicitly when serving in test mode
+  if (isTestMode && command === "serve") {
+    const envTestPath = path.resolve(__dirname, ".env.test");
+    if (fs.existsSync(envTestPath)) {
+      const content = fs.readFileSync(envTestPath, "utf-8");
+      content.split("\n").forEach((line) => {
+        const [key, ...valueParts] = line.split("=");
+        if (key && valueParts.length > 0) {
+          process.env[key.trim()] = valueParts.join("=").trim();
+        }
+      });
+    }
+  }
+
+  return {
+    plugins: [react()],
+
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "src"),
+      },
+    },
+
+    server: {
+      host: true,              // 🔑 REQUIRED for Codespaces
+      port: 5173,
+      strictPort: true,
+
+      // Prevent GitHub auth redirect → CORS error
+      origin: "http://localhost:5173",
+
+      proxy: {
+        "/api": {
+          target: "http://localhost:5174",
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+
+      fs: {
+        allow: ["."], // allow serving manifest.json etc
+      },
+    },
+
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ["react", "react-dom"],
+          },
+        },
+      },
+    },
+
+    envPrefix: "VITE_",
+
+    base: "/",
+    publicDir: "public",
+    build: {
+      assetsDir: "assets",
+    },
+  };
+});
