@@ -82,7 +82,7 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
               </div>
             </div>
             <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-              AI-Analys
+              {getCustomerName(v.customer_id)}
             </Badge>
           </div>
 
