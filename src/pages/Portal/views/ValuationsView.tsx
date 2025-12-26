@@ -1,5 +1,5 @@
 // src/components/admin/ValuationsView.tsx
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import type { Valuation, Customer } from "@/types";
 import {
   Card,
@@ -32,6 +32,13 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
   onOpenDetails,
   onDelete,
 }) => {
+  useEffect(() => {
+    if (valuations && valuations.length > 0) {
+      console.debug("ValuationsView sample valuation:", valuations[0]);
+    } else {
+      console.debug("ValuationsView: no valuations available");
+    }
+  }, [valuations]);
   const getCustomerName = (customerId: string | null): string => {
     if (!customerId) return "Gästvärdering";
     const customer = customers.find((c) => c.id === customerId);
