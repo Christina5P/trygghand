@@ -1,0 +1,3 @@
+id,price_sek,price_min_sek,price_max_sek,varde_min_from_analysis,varde_max_from_analysis
+# example:
+# 123e4567-89ab-cdef-0123-456789abcdef,2500,2500,4500,2500,4500
