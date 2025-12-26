@@ -7,7 +7,7 @@ export default function CookiePolicy() {
     <div className="container mx-auto px-4 py-12">
       <Link to="/" className="inline-flex items-center text-primary hover:underline mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Tillbaka till startsidan
+        Tillbaka
       </Link>
       <h1 className="text-2xl font-bold mb-4">Cookie‑policy</h1>
 
