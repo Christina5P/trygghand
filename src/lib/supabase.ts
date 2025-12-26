@@ -1,5 +1,6 @@
 // src/lib/supabase.ts
 import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -8,8 +9,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
-// Skapa en enda instans som hela appen använder
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// HMR-säker singleton för att undvika flera GoTrueClient-instanser
+const globalForSupabase = globalThis as unknown as {
+  __supabase?: SupabaseClient;
+};
+
+export const supabase: SupabaseClient =
+  globalForSupabase.__supabase ??
+  (globalForSupabase.__supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      // Unik nyckel för den här appen så att parallella instanser inte krockar
+      storageKey: "sb-trygghand-auth",
+    },
+  }));
 
 
 // ---------- IMAGE UPLOAD (for valuations etc) ----------

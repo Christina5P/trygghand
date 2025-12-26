@@ -1,7 +1,4 @@
 import { useState, useEffect } from "react";
-// Update the import path if needed, or create the client file as shown below
-//import { supabase } from "src/integrations/supabase/client";
-import { createClient } from '@supabase/supabase-js'
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

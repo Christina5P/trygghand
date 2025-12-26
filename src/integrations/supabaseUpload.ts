@@ -1,16 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-
-// --- 1. Initialisering och klientuppsättning (Körs på klienten) ---
-// Variablerna MÅSTE nu heta VITE_SUPABASE_URL etc. i din .env-fil.
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-
-let supabase: SupabaseClient | null = null;
-
-// En extra kontroll behövs eftersom import.meta.env.VITE_... kan vara undefined
-if (supabaseUrl && supabaseAnonKey) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
-}
+import { supabase } from '@/lib/supabase';
 
 /**
  * Kontrollerar att Supabase-klienten är korrekt konfigurerad.
@@ -56,7 +44,7 @@ export async function uploadImages(files: File[]): Promise<string[]> {
     }
     
     // Hämta den publika URL:en för den uppladdade filen
-    const { data } = supabase!.storage.from(uploadBucket).getPublicUrl(result.data.path);
+    const { data } = supabase.storage.from(uploadBucket).getPublicUrl(result.data.path);
     urls.push(data.publicUrl);
   }
 
@@ -85,4 +73,4 @@ export async function uploadToSupabase(file: File, options?: { bucket?: string }
 }
 
 // Exporterar klienten för andra funktioner om nödvändigt
-export { supabase };
+// supabase-klienten kommer från '@/lib/supabase'

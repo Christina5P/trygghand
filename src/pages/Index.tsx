@@ -34,24 +34,7 @@ const Index = () => {
 export default Index;
 
 export async function loader({ request }: LoaderArgs) {
-  const { supabase } = createClient(request);
-  const { data: todos } = await supabase.from("todos").select();
-
-  return { todos };
-}
-
-export function Home({ loaderData }: ComponentProps) {
-  return (
-    <>
-      <ul>
-        {loaderData.todos?.map((todo) => (
-          <li key={todo.id}>{todo.name}</li>
-        ))}
-      </ul>
-    </>
-  );
-}
-function createClient(request: Request): { supabase: any; } {
-  throw new Error("Function not implemented.");
+  // loader inte använd — Index använder inte SSR
+  return {};
 }
 

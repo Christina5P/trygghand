@@ -259,19 +259,22 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   };
 
   const activeContactCount = useMemo(() => {
-    
+    // Räkna INTE converted kontakter
     return contactRequests.filter(
-        (c) => c.status === "new" || c.status === "in_progress"
+        (c) => c.status !== "converted" && (c.status === "new" || c.status === "in_progress")
     ).length;
 }, [contactRequests]);
 
    const contactRequestList = useMemo(() => {
     return contactRequests
-        .filter((c) => c.status === "new" || c.status === "in_progress")
-        .map((contact) => {
+    .filter((c) => c.status !== "converted" && (c.status === "new" || c.status === "in_progress"))
+    .map((contact) => {
       const badge = getStatusBadge(contact.status);
-      // Kombinera firstname/lastname om name saknas
-      const displayName = contact.name || `${contact.firstname || ''} ${contact.lastname || ''}`.trim() || 'Namnlös';
+      // Förbättrad namnlogik
+      const displayName =
+        contact.name && contact.name.trim()
+          ? contact.name
+          : `${contact.firstname || ""} ${contact.lastname || ""}`.trim() || "Namnlös";
       return (
         <div
           key={contact.id}
@@ -282,7 +285,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
             <p className="text-base font-semibold truncate">{displayName}</p>
             <p className="text-sm text-gray-500 truncate">{contact.email}</p>
           </div>
-          <Badge className={badge.colorClass}>{badge.text}</Badge>
+          <Badge className={badge.colorClass}>
+            {badge.text}
+            {contact.status === "converted" && (
+              <span className="ml-2 px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold">Kund</span>
+            )}
+          </Badge>
         </div>
       );
     });
@@ -308,7 +316,6 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
   setSelectedContact(null);
   
   try {
-    // 1. Call edge function to create auth user + customer + password email
     const { data, error: functionError } = await supabase.functions.invoke("convert-contact-to-customer", {
       body: {
         email: contact.email.trim(),
@@ -324,17 +331,25 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
       throw new Error(data?.message || "Edge Function failed");
     }
 
+    const createdCustomer = data?.customer as Customer | undefined;
+
     toast({
       title: "Konvertering slutförd!",
       description: `${fullName} är nu kund. Mail med lösenord har skickats (om leveransen lyckas).`,
       duration: 8000,
     });
+
     await fetchData();
+
+    if (createdCustomer) {
+      setMainTab("customers");
+      setSelectedCustomer(createdCustomer);
+    }
   } catch (err: any) {
     console.error("Konvertering misslyckades:", err);
     toast({ title: "Fel", description: err.message, variant: "destructive" });
   }
-  }, [fetchData, toast]);
+  }, [fetchData, toast, setMainTab]);
 
   // Funktion för att skapa nytt ärende (öppnar NewCaseForm)
   const handleNewCaseFromCustomerDialog = (customerId: string) => {
