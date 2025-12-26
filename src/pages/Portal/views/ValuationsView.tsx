@@ -40,6 +40,23 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
       : `Okänd Kund (${customerId.substring(0, 4)}...)`;
   };
 
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(price) + " kr";
+
+  const getPriceDisplay = (v: Valuation): string | null => {
+    // Kontrollera vanliga fält som kan innehålla pris
+    const maybe = (v as any).price ?? v.analysis_result?.price ?? v.analysis?.price ?? null;
+    if (typeof maybe === "number" && Number.isFinite(maybe)) return formatPrice(maybe);
+
+    // AI-analys kan ha värdeintervall
+    const min = v.analysis_result?.varde_min_sek ?? v.analysis?.varde_min_sek ?? null;
+    const max = v.analysis_result?.varde_max_sek ?? v.analysis?.varde_max_sek ?? null;
+    if (min && max) return `${formatPrice(Number(min))} - ${formatPrice(Number(max))}`;
+    if (min) return formatPrice(Number(min));
+
+    return null;
+  };
+
   if (valuations.length === 0) {
     return (
       <Card className="p-6 text-center">
@@ -72,6 +89,11 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
               <div className="text-sm font-medium truncate">
                 {v.foremal_beskrivning || `Värdering #${v.id}`}
               </div>
+              {getPriceDisplay(v) && (
+                <div className="text-sm font-semibold text-foreground mt-1">
+                  {getPriceDisplay(v)}
+                </div>
+              )}
               <div className="text-xs text-gray-500">
                 Kund: {getCustomerName(v.customer_id)}
               </div>

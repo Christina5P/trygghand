@@ -45,6 +45,16 @@ const ValuationDetailsDialog: React.FC<ValuationDetailsDialogProps> = ({
     parsedAnalysis?.motivering ??
     "AI:n returnerade ingen motivering för denna värdering.";
 
+  const getPriceDisplay = (): string | null => {
+    if (!valuation) return null;
+    const rawPrice = (valuation as any).price ?? parsedAnalysis?.varde_min_sek ?? null;
+    const rawMax = parsedAnalysis?.varde_max_sek ?? null;
+    const fmt = (n: number) => new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(n) + " kr";
+    if (rawPrice && rawMax) return `${fmt(Number(rawPrice))} - ${fmt(Number(rawMax))}`;
+    if (rawPrice) return fmt(Number(rawPrice));
+    return null;
+  };
+
   if (!valuation) return null;
 
   const customer =
@@ -57,6 +67,9 @@ const ValuationDetailsDialog: React.FC<ValuationDetailsDialogProps> = ({
           <DialogTitle>Värdering #{valuation.id}</DialogTitle>
           <DialogDescription>
             {customer ? `Kund: ${customer.name}` : "Gästvärdering"}
+            {getPriceDisplay() && (
+              <div className="text-sm text-foreground/80 mt-1">{getPriceDisplay()}</div>
+            )}
           </DialogDescription>
         </DialogHeader>
 
