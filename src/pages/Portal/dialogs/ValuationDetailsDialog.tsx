@@ -68,7 +68,7 @@ const ValuationDetailsDialog: React.FC<ValuationDetailsDialogProps> = ({
           <DialogDescription>
             {customer ? `Kund: ${customer.name}` : "Gästvärdering"}
             {getPriceDisplay() && (
-              <div className="text-sm text-foreground/80 mt-1">{getPriceDisplay()}</div>
+              <div className="text-sm text-black mt-1">{getPriceDisplay()}</div>
             )}
           </DialogDescription>
         </DialogHeader>
