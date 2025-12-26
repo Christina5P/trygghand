@@ -90,7 +90,7 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
                 {v.foremal_beskrivning || `Värdering #${v.id}`}
               </div>
               {getPriceDisplay(v) && (
-                <div className="text-sm font-semibold text-foreground mt-1">
+                <div className="text-sm font-semibold text-black mt-1">
                   {getPriceDisplay(v)}
                 </div>
               )}
