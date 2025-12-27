@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,10 +22,33 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
+  useEffect(() => {
+    // Kontrollera admin-status vid mount
+    const checkAdmin = async () => {
+      if (!user?.id) return setIsAdmin(false);
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin"); // Ta bort .single() och använd korrekt filter
+      setIsAdmin(Array.isArray(data) && data.length > 0 && !error);
+    };
+    checkAdmin();
+  }, [user]);
+
   const toggleCustomerStatus = async (customer: Customer, currentStatus: boolean) => {
+    if (!isAdmin) {
+      toast({
+        title: "Behörighetsfel",
+        description: "Du saknar admin-behörighet för att arkivera/deaktivera kunder.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLoadingId(customer.id);
 
     try {
@@ -65,14 +88,16 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
       });
 
       await onDataUpdated();
-    } catch (err: any) {
-      console.error("Fel vid uppdatering:", err);
-      toast({
-        title: "Fel",
-        description: err.message || "Kunde inte uppdatera kundstatus.",
-        variant: "destructive",
-      });
-    } finally {
+   } catch (err: any) {
+      // Fånga och logga Supabase-felobjektet mer detaljerat
+      console.error("Detaljerat fel vid uppdatering:", err); 
+      toast({
+        title: "Databasfel", // Ändrad titel
+        // Använd err.message för RLS-fel eller ett fallback-meddelande
+        description: err.message || "Kunde inte uppdatera kundstatus. Kontrollera behörigheter (RLS).", 
+        variant: "destructive",
+      });
+    } finally {
       setLoadingId(null);
     }
   };

@@ -7,6 +7,7 @@ import cors from "cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import gdprDeleteRouter from "./routes/gdprDelete.js";
 import contactRequestsRouter from "./routes/contactRequests.js";
+import adminRouter from "./routes/admin.js";
 
 const app = express();
 app.use(express.json()); // För att kunna läsa JSON body
@@ -28,6 +29,7 @@ if (!apiKey) {
 // Registrera routes
 app.use("/api", gdprDeleteRouter);
 app.use("/api", contactRequestsRouter);
+app.use("/api/admin", adminRouter);
 
 /**
  * Konvertera FileBuffer till GenerativeImagePart

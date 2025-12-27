@@ -8,6 +8,8 @@
     "build": "vite build",
     "start": "vite preview",
     "start:proxy": "node server/index.js",
+    "build:dev": "vite build --mode development",
+
     "build:test": "vite build --mode test",
     "preview:test": "vite preview --mode test",
     "test": "vite build --mode test && npx playwright test",
