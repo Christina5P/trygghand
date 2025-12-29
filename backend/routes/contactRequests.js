@@ -24,13 +24,25 @@ router.post("/contact-request", async (req, res) => {
       return res.status(500).json({ error: "Server not configured for database access" });
     }
 
-    const { firstname, lastname, email, phone, message } = req.body || {};
+    const { firstname, lastname, email, phone, message, gdpr_consent, consent_timestamp } = req.body || {};
 
     if (!firstname || !email || !phone) {
       return res.status(400).json({ error: "firstname, email and phone are required" });
     }
 
-    const payload = { firstname, lastname: lastname || "", email, phone, message: message || "" };
+    if (!gdpr_consent) {
+      return res.status(400).json({ error: "GDPR consent is required" });
+    }
+
+    const payload = {
+      firstname,
+      lastname: lastname || "",
+      email,
+      phone,
+      message: message || "",
+      gdpr_consent: gdpr_consent || false,
+      consent_timestamp: consent_timestamp || new Date().toISOString()
+    };
 
     const { data, error } = await supabase
       .from("contact_requests")

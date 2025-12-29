@@ -1,13 +1,29 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Privacy() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, []);
+
+  const handleBack = () => {
+    navigate("/");
+    setTimeout(() => {
+      const footer = document.getElementById("footer");
+      if (footer) footer.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
-      <Link to="/" className="inline-flex items-center text-primary hover:underline mb-4">
+      <button onClick={handleBack} className="inline-flex items-center text-primary hover:underline mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" />
         Tillbaka
-      </Link>
+      </button>
       <h1 className="text-2xl font-bold mb-4">Integritet & personuppgifter</h1>
 
       <p className="mb-4 text-lg">

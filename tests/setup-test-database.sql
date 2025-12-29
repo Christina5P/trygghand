@@ -184,6 +184,8 @@ CREATE TABLE IF NOT EXISTS contact_requests (
   message TEXT NOT NULL,
   status TEXT DEFAULT 'new' CHECK (status IN ('new', 'contacted', 'quoted', 'converted', 'closed')),
   admin_notes TEXT,
+  gdpr_consent BOOLEAN DEFAULT false,
+  consent_timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -15,17 +15,19 @@ const Footer = () => {
     }
   };
   return (
-    <footer className="bg-foreground text-background py-8 text-center text-sm text-muted-foreground">
+    <footer id="footer" className="bg-foreground text-background py-8 text-center text-sm text-muted-foreground">
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-4 gap-8 text-left">
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-background/80">Trygg Hand</h3>
+            <h3 className="text-2xl font-bold text-background/80">Trygg Hand AB</h3>
             <p className="text-background/80 text-sm leading-relaxed">
               Från beslut till nytt kapitel. Vi erbjuder helhetslösning för livsförändringar, 
               äldreflytt och hantering av dödsbo.
             </p>
             <div className="flex space-x-4 mt-6">
-              <Facebook className="h-5 w-5 text-background/80 hover:text-background cursor-pointer transition-colors" />
+              <a href="https://www.facebook.com/profile.php?id=61583353061701" target="_blank" rel="noopener noreferrer">
+                <Facebook className="h-5 w-5 text-background/80 hover:text-background cursor-pointer transition-colors" />
+              </a>
               <Linkedin className="h-5 w-5 text-background/80 hover:text-background cursor-pointer transition-colors" />
               <Instagram className="h-5 w-5 text-background/80 hover:text-background cursor-pointer transition-colors" />
             </div>
@@ -77,13 +79,17 @@ const Footer = () => {
                 <MapPin className="h-4 w-4" />
                 <span>Sundsvall, Sverige</span>
               </div>
+              <div className="flex items-center space-x-2">
+                <span className="font-medium">Org. nr:</span>
+                <span>559564-3445</span>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="border-t border-background/20 mt-12 pt-8 text-center">
           <p className="text-sm text-background/60">
-            © 2025 Trygg Hand. ❤️ Egenutvecklad och noggrant designad. Alla rättigheter förbehållna.
+            © 2025 Trygg Hand AB. ❤️ Egenutvecklad och noggrant designad. Alla rättigheter förbehållna.
           </p>
         </div>
       </div>

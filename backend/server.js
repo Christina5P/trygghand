@@ -15,7 +15,7 @@ app.use(cors()); // Tillåt cross-origin requests
 
 // Ensure files are available in memory for buffer access
 const upload = multer({ storage: multer.memoryStorage() });
-const PORT = process.env.PORT || 5174;
+const PORT = process.env.PORT || 3001;
 
 // Kontrollera Gemini API key
 const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
@@ -67,6 +67,43 @@ Analysera bilderna och ge kategori, skick, uppskattat värde, rekommendation, mo
   } catch (err) {
     console.error("Gemini proxy error:", err && (err.message || err));
     return res.status(500).json({ error: "Proxy error", details: err && (err.message || String(err)) });
+  }
+});
+
+// Template download endpoint
+app.get('/api/templates/download', async (req, res) => {
+  try {
+    const { path } = req.query;
+
+    if (!path) {
+      return res.status(400).json({ error: 'Path parameter required' });
+    }
+
+    // Use service role client to generate signed URL
+    const { createClient } = await import('@supabase/supabase-js');
+    const serviceClient = createClient(
+      process.env.VITE_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    const { data, error } = await serviceClient.storage
+      .from('fullmakts-filer')
+      .createSignedUrl(path, 3600); // 1 hour expiry
+
+    if (error) {
+      console.error('Storage error:', error);
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    const signedUrl = data?.signedUrl || data?.signed_url;
+    if (!signedUrl) {
+      return res.status(500).json({ error: 'Could not generate signed URL' });
+    }
+
+    res.json({ signedUrl });
+  } catch (err) {
+    console.error('Template download error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -41,6 +41,8 @@ const Contact = () => {
       email: (form as any).email.value,
       phone: (form as any).phone.value,
       message: (form as any).message.value,
+      gdpr_consent: (form as any)['gdpr-consent'].checked,
+      consent_timestamp: new Date().toISOString(),
     };
 
     console.log("Contact form submitting:", data);
@@ -163,15 +165,24 @@ const Contact = () => {
                       />
                     </div>
 
+                    <div className="space-y-3">
+                      <div className="flex items-start space-x-2">
+                        <input
+                          type="checkbox"
+                          id="gdpr-consent"
+                          required
+                          className="mt-1 h-4 w-4 text-trust-blue focus:ring-trust-blue border-gray-300 rounded"
+                        />
+                        <label htmlFor="gdpr-consent" className="text-sm text-foreground">
+                          Jag godkänner att mina personuppgifter behandlas för att hantera min kontaktförfrågan. Behandlingen sker enligt dataskyddsförordningen (GDPR).
+                          Läs mer i vår <a href="/privacy" className="underline text-trust-blue">integritetspolicy</a>.
+                        </label>
+                      </div>
+                    </div>
+
                     <Button type="submit" size="lg" className="w-full bg-gradient-to-r from-primary to-trust-blue-dark" disabled={isLoading}>
                       {isLoading ? "Skickar..." : "Skicka förfrågan"}
                     </Button>
-
-                    <p className="text-xs text-foreground text-center">
-                    De uppgifter du lämnar används för att hantera din förfrågan och kontakta dig.
-                    <br />
-                    Läs mer om hur vi behandlar personuppgifter i vår <a href="/privacy" className="underline">integritetspolicy</a>.
-                    </p>
                   </form>
                 </CardContent>
               </Card>

@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Heart, Clock, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Review } from "./Reviews";
 
 
@@ -36,6 +36,7 @@ const About = () => {
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -44,15 +45,17 @@ const About = () => {
   return (
     <section id="about" className="py-20 bg-soft-gray/30">
       <div className="container mx-auto px-4">
-        <div className="mb-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-sm text-primary hover:underline"
-            aria-label="Gå tillbaka"
-          >
-            ← Tillbaka
-          </button>
-        </div>
+        {location.pathname === "/about" && (
+          <div className="mb-6">
+            <button
+              onClick={() => navigate(-1)}
+              className="text-sm text-primary hover:underline"
+              aria-label="Gå tillbaka"
+            >
+              ← Tillbaka
+            </button>
+          </div>
+        )}
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-8">
             <div className="space-y-4">

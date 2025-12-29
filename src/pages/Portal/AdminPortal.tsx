@@ -163,19 +163,29 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         return;
       }
 
-      // Generera signerad URL från rätt bucket
-      const { data, error } = await supabase.storage
-        .from(FULLMAKT_BUCKET)
-        .createSignedUrl(storagePath, 3600);
+      // För storage-filer, använd backend API för att få signerad URL
+      const response = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Kunde inte hämta mall');
+      }
 
-      if (error) throw error;
-
-      const url = (data as any)?.signedUrl || (data as any)?.signed_url;
+      const data = await response.json();
+      const url = data.signedUrl || data.signed_url;
       if (!url) throw new Error("Ingen signerad URL genererades");
 
       window.open(url, "_blank");
     } catch (err: any) {
       console.error("Failed to open template:", err);
+      // Handle specific storage errors
+      if (err.message?.includes('Object not found') || err.message?.includes('not found') || err.message?.includes('Kunde inte hämta mall')) {
+        toast({
+          title: "Mall inte tillgänglig",
+          description: "Denna mall finns inte tillgänglig för tillfället. Kontakta administratören.",
+          variant: "destructive"
+        });
+        return;
+      }
       toast({ title: "Fel", description: err.message || "Kunde inte öppna mallen.", variant: "destructive" });
     }
   };
@@ -410,6 +420,11 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
      </DialogHeader>
      <div className="p-4 space-y-4">
        <p className="text-sm text-gray-600">Välj en mall för att ladda ner. Mallarna öppnas i ny flik.</p>
+       <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+         <p className="text-sm text-yellow-800">
+           <strong>Obs:</strong> Vissa mallar kan vara under utveckling och inte tillgängliga än. Kontakta administratören om en mall inte kan laddas ner.
+         </p>
+       </div>
       <div className="grid grid-cols-1 gap-3">
                {(fullmaktTemplates && fullmaktTemplates.length ? fullmaktTemplates : [
                  { id: "1", name: "Fullmakt - Apoteksärenden", storage_path: "fullmaktsmallar/Apoteksarenden Fullmakt.pdf" },

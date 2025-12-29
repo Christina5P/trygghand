@@ -94,14 +94,28 @@ const Portal = () => {
         return;
       }
 
-      // Annars anta Supabase storage-path och skapa signerad länk
-      const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(storagePath, 60);
-      if (error) throw error;
-      const url = (data as any).signedUrl ?? (data as any).signed_url;
+      // För storage-filer, använd backend API för att få signerad URL
+      const response = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Kunde inte hämta mall');
+      }
+
+      const data = await response.json();
+      const url = data.signedUrl || data.signed_url;
       if (!url) throw new Error("Kunde inte generera länk");
       window.open(url, "_blank");
     } catch (err) {
       console.error("Kunde inte hämta mall:", err);
+      // Handle specific storage errors
+      if (err.message?.includes('Object not found') || err.message?.includes('not found') || err.message?.includes('Kunde inte hämta mall')) {
+        toast?.({
+          title: "Mall inte tillgänglig",
+          description: "Denna mall finns inte tillgänglig för tillfället.",
+          variant: "destructive"
+        });
+        return;
+      }
       toast?.({ title: "Fel", description: "Kunde inte öppna mallen.", variant: "destructive" });
     }
   };

@@ -427,6 +427,11 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                                                         </DialogHeader>
                                                         <div className="p-4 space-y-4">
                                                             <p className="text-sm text-gray-600">Välj en mall för att ladda ner. Mallarna öppnas i ny flik.</p>
+                                                            <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                                                                <p className="text-sm text-yellow-800">
+                                                                    <strong>Obs:</strong> Vissa mallar kan vara under utveckling och inte tillgängliga än.
+                                                                </p>
+                                                            </div>
                                                             <div className="grid grid-cols-1 gap-3">
                                                                 {(fullmaktTemplates.length ? fullmaktTemplates : [
                                                                     { id: "1", name: "Fullmakt - Enkel mall (PDF)", storage_path: "templates/fullmaktenkel.pdf" }

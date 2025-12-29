@@ -34,7 +34,7 @@ export default defineConfig(({ command }) => {
       proxy: {
         // forward /api/* requests to local proxy server
         "/api": {
-          target: "http://localhost:5174",
+          target: "http://localhost:3001",
           changeOrigin: true,
           secure: false,
         },

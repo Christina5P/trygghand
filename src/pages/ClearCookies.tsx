@@ -6,6 +6,7 @@ export default function ClearCookies() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
     try {
       // Ta bort vår consent-cookie i denna webbläsare
       document.cookie = "trygghand_cookie_consent=; path=/; max-age=0; SameSite=Lax";
@@ -35,7 +36,13 @@ export default function ClearCookies() {
               Ladda om sidan
             </button>
             <button
-              onClick={() => navigate("/")}
+              onClick={() => {
+                navigate("/");
+                setTimeout(() => {
+                  const footer = document.getElementById("footer");
+                  if (footer) footer.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+              }}
               className="px-4 py-2 border rounded-md"
             >
               Till startsidan
