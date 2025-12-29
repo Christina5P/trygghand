@@ -5,7 +5,7 @@
 BEGIN;
 
 -- Enable RLS on storage.objects if not already enabled
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY; -- Commented out - not owner
 
 -- Policy to allow anonymous users to read template files
 -- This allows anyone to download templates from the fullmaktsmallar/ directory

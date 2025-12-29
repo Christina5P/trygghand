@@ -180,10 +180,10 @@ export interface ContactRequest {
   name?: string; // Kan vara kombinerat namn eller tomt
   firstname?: string; // Från kontaktformuläret
   lastname?: string; // Från kontaktformuläret
-  email: string;
+  email?: string; // Nu optional
   phone?: string;
   message?: string;
-  status?: "new" | "in_progress" | "contacted" | "converted" | "completed" | "cancelled";
+  status?: "new" | "contacted" | "closed" | "converted";
   created_at?: string;
   company?: string;
   address?: string;
@@ -191,4 +191,5 @@ export interface ContactRequest {
   postal_code?: string;
   service_type?: string;
   admin_notes?: string | null;
+  customer_id?: string | null; // Länkar till kund om konverterad
 }

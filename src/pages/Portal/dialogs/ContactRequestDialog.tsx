@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase";
@@ -65,6 +66,8 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({
           phone: editingContact.phone,
           email: editingContact.email || null,
           message: editingContact.message,
+          status: editingContact.status,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", editingContact.id);
 
@@ -95,11 +98,6 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({
         <DialogHeader>
           <DialogTitle>
             Kontaktförfrågan
-            {editingContact.status === "converted" && (
-              <span className="ml-2 px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold align-middle">
-                Konverterad till kund
-              </span>
-            )}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
@@ -158,10 +156,20 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({
 
           {/* Status */}
           <div>
-            <Label>Status</Label>
-            <p className={`text-sm ${editingContact.status === "converted" ? "text-green-700 font-semibold" : "text-gray-500"}`}>
-              {editingContact.status === "converted" ? "Konverterad till kund" : editingContact.status}
-            </p>
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={editingContact.status || "new"}
+              onValueChange={(value) => setEditingContact((prev) => ({ ...prev, status: value as ContactRequest['status'] }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Välj status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="new">Ny</SelectItem>
+                <SelectItem value="contacted">Kontaktad</SelectItem>
+                <SelectItem value="closed">Avbruten</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -174,14 +182,12 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({
           </Button>
           <Button
             onClick={handleConvert}
-            disabled={isConverting || editingContact.status === "converted"}
+            disabled={isConverting}
             className="bg-trust-green hover:bg-trust-green/90"
           >
-            {editingContact.status === "converted"
-              ? "Redan konverterad"
-              : isConverting
-                ? "Konverterar..."
-                : "Konvertera till Kund"}
+            {isConverting
+              ? "Konverterar..."
+              : "Konvertera till Kund"}
           </Button>
         </DialogFooter>
       </DialogContent>

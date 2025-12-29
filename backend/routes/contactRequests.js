@@ -26,8 +26,8 @@ router.post("/contact-request", async (req, res) => {
 
     const { firstname, lastname, email, phone, message, gdpr_consent, consent_timestamp } = req.body || {};
 
-    if (!firstname || !email || !phone) {
-      return res.status(400).json({ error: "firstname, email and phone are required" });
+    if (!firstname || !phone) {
+      return res.status(400).json({ error: "firstname and phone are required" });
     }
 
     if (!gdpr_consent) {
@@ -37,11 +37,10 @@ router.post("/contact-request", async (req, res) => {
     const payload = {
       firstname,
       lastname: lastname || "",
-      email,
+      email: email || null,
       phone,
       message: message || "",
       gdpr_consent: gdpr_consent || false,
-      consent_timestamp: consent_timestamp || new Date().toISOString()
     };
 
     const { data, error } = await supabase

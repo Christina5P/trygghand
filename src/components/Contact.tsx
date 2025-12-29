@@ -42,36 +42,39 @@ const Contact = () => {
       phone: (form as any).phone.value,
       message: (form as any).message.value,
       gdpr_consent: (form as any)['gdpr-consent'].checked,
-      consent_timestamp: new Date().toISOString(),
     };
 
     console.log("Contact form submitting:", data);
     try {
-      // 1) Try server-side API (uses service role key in test/dev)
-      const apiRes = await fetch("/api/contact-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (apiRes.ok) {
+      // Try direct Supabase insert first (more reliable in dev environments)
+      const { error } = await supabase.from("contact_requests").insert([data]).select();
+      if (!error) {
         setSuccessMessage("Tack för din förfrågan!");
         form.reset();
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
-        // 2) Fallback to direct Supabase insert (if API not available)
-        const { error } = await supabase.from("contact_requests").insert([data]).select();
-        if (!error) {
+        console.error("Supabase error:", error);
+        // Fallback to server-side API if Supabase fails
+        console.log("Supabase failed, trying API fallback");
+        const apiRes = await fetch("/api/contact-request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        console.log("API response status:", apiRes.status, apiRes.statusText);
+
+        if (apiRes.ok) {
           setSuccessMessage("Tack för din förfrågan!");
           form.reset();
           setTimeout(() => setSuccessMessage(null), 5000);
         } else {
-          setErrorMessage("Något gick fel, försök igen: " + error.message);
+          setErrorMessage("Något gick fel, försök igen senare eller kontakta oss direkt via telefon.");
         }
       }
     } catch (e: any) {
       console.error("Contact form exception:", e);
-      setErrorMessage("Något gick fel, försök igen: " + e.message);
+      setErrorMessage("Något gick fel, försök igen senare eller kontakta oss direkt via telefon.");
     }
     setIsLoading(false);
   };

@@ -78,9 +78,10 @@ const STATUS_DEFINITIONS: { code: string; label: string; colorClass: string }[] 
   { code: "pending", label: "Väntar", colorClass: "bg-yellow-100 text-yellow-800" },
   { code: "in_progress", label: "Pågår", colorClass: "bg-blue-100 text-blue-800" },
   { code: "completed", label: "Avslutat", colorClass: "bg-green-100 text-green-800" },
-  { code: "cancelled", label: "Avbruten", colorClass: "bg-red-100 text-red-800" },
+  { code: "closed", label: "Avbruten", colorClass: "bg-red-100 text-red-800" },
   { code: "declined", label: "Avböjd", colorClass: "bg-red-100 text-red-800" },
   { code: "converted", label: "Kund", colorClass: "bg-indigo-100 text-indigo-800" },
+  { code: "contacted", label: "Kontaktad", colorClass: "bg-blue-100 text-blue-800" },
 ];
 
 const normalizeStatus = (s?: string) => (s ?? "okand").toLowerCase().trim();
@@ -135,6 +136,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   >("cases");
   // Statusfilter för ärenden — använder normalizeStatus + STATUS_DEFINITIONS
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  // Statusfilter för kontaktförfrågningar
+  const [contactStatusFilter, setContactStatusFilter] = useState<string>("all");
 
   const statusOptions = useMemo(() => {
     const opts = Array.from(new Set((cases || []).map((c) => normalizeStatus(c.status))));
@@ -269,15 +272,23 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   };
 
   const activeContactCount = useMemo(() => {
-    // Räkna INTE converted kontakter
-    return contactRequests.filter(
-        (c) => c.status !== "converted" && (c.status === "new" || c.status === "in_progress")
-    ).length;
-}, [contactRequests]);
+    // Räkna kontakter baserat på valt filter
+    if (contactStatusFilter === "all") {
+      return contactRequests.filter((c) => c.status !== "converted").length;
+    }
+    return contactRequests.filter((c) => c.status === contactStatusFilter).length;
+  }, [contactRequests, contactStatusFilter]);
 
    const contactRequestList = useMemo(() => {
-    return contactRequests
-    .filter((c) => c.status !== "converted" && (c.status === "new" || c.status === "in_progress"))
+    // Filtrera kontakter baserat på valt filter
+    let filtered = contactRequests;
+    if (contactStatusFilter !== "all") {
+      filtered = contactRequests.filter((c) => c.status === contactStatusFilter);
+    }
+    // För "all" inkludera alla utom converted (som hanteras separat)
+    return filtered
+    .filter((contact) => contact.created_at && contact.status !== "converted") // Filtrera bort de utan created_at och converted
+    .sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime())
     .map((contact) => {
       const badge = getStatusBadge(contact.status);
       // Förbättrad namnlogik
@@ -297,9 +308,6 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
           <Badge className={badge.colorClass}>
             {badge.text}
-            {contact.status === "converted" && (
-              <span className="ml-2 px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold">Kund</span>
-            )}
           </Badge>
         </div>
       );
@@ -316,10 +324,11 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
     return;
   }
   
-  if (!contact.email || !contact.email.trim()) {
-    toast({ title: "Fel", description: "Kontaktförfrågan saknar e-postadress.", variant: "destructive" });
-    return;
-  }
+  // E-post är nu frivillig - ta bort denna kontroll
+  // if (!contact.email || !contact.email.trim()) {
+  //   toast({ title: "Fel", description: "Kontaktförfrågan saknar e-postadress.", variant: "destructive" });
+  //   return;
+  // }
   
   if (!window.confirm(`Konvertera ${fullName} till kund?`)) return;
 
@@ -328,10 +337,12 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
   try {
     const { data, error: functionError } = await supabase.functions.invoke("convert-contact-to-customer", {
       body: {
-        email: contact.email.trim(),
-        fullName: fullName,
-        phone: (contact as any).phone || null,
-        contactId: contact.id,
+        contactRequestId: contact.id,
+        customerData: {
+          email: contact.email && contact.email.trim() ? contact.email.trim() : null,
+          fullName: fullName,
+          phone: (contact as any).phone || null,
+        },
       },
     });
 
@@ -345,9 +356,17 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
 
     toast({
       title: "Konvertering slutförd!",
-      description: `${fullName} är nu kund. Mail med lösenord har skickats (om leveransen lyckas).`,
+      description: contact.email && contact.email.trim() 
+        ? `${fullName} är nu kund. Mail med lösenord har skickats (om leveransen lyckas).`
+        : `${fullName} är nu kund. Inget mail skickades eftersom e-post saknas.`,
       duration: 8000,
     });
+
+    // Ta bort från contact_requests efter lyckad konvertering
+    await supabase
+      .from("contact_requests")
+      .delete()
+      .eq("id", contact.id);
 
     await fetchData();
 
@@ -552,7 +571,21 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 
           {/* Kontaktförfrågningar */}
                   <TabsContent value="contact_requests">
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="mb-4">
+                      <Select value={contactStatusFilter} onValueChange={setContactStatusFilter}>
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="Välj status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Alla</SelectItem>
+                          <SelectItem value="new">Nya</SelectItem>
+                          <SelectItem value="contacted">Kontaktade</SelectItem>
+                          <SelectItem value="closed">Avbrutna</SelectItem>
+                          <SelectItem value="converted">Kund</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {contactRequestList}
                       </div>
                   </TabsContent>

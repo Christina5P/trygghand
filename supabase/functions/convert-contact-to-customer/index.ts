@@ -140,147 +140,65 @@ serve(async (req: Request) => {
       });
     }
 
-    const { email, fullName, phone, contactId } = await req.json();
-    console.log(`Processing convert for: ${email}, contactId: ${contactId}`);
+    const { contactRequestId, customerData } = await req.json();
+    console.log(`Processing convert for contactRequestId: ${contactRequestId}, customerData:`, customerData);
 
-    // Tillåt konvertering även om email saknas, men kräver minst telefon eller namn
-    if (!email || !email.trim()) {
-      // Om email saknas, men namn och telefon finns, skapa ändå kund utan auth-user
-      if ((fullName && fullName.trim()) && (phone && phone.trim())) {
-        // Skapa en "kund" utan auth-user (ingen inloggning, bara i customers-tabellen)
-        const nowIso = new Date().toISOString();
-        const customerPayload = {
-          // id: genereras av supabase (om tabellen tillåter det, annars måste du hantera det själv)
-          email: null,
-          name: fullName,
-          phone: phone,
-          is_admin: false,
-          is_customer: true,
-          created_at: nowIso,
-          updated_at: nowIso,
-        };
+    const { email, fullName, phone } = customerData;
+    const contactId = contactRequestId;
 
-        const { data: customerRecord, error: customerError } = await supabase
-          .from("customers")
-          .insert(customerPayload)
-          .select()
-          .single();
+    // Tillåt konvertering, kräver minst namn och telefon
+    console.log("Creating customer without auth user");
+    // Skapa en "kund" utan auth-user (ingen inloggning, bara i customers-tabellen)
+    if ((fullName && fullName.trim()) && (phone && phone.trim())) {
+      // Skapa en "kund" utan auth-user (ingen inloggning, bara i customers-tabellen)
+      const nowIso = new Date().toISOString();
+      const customerPayload = {
+        // id kommer att genereras av default
+        email: email || null,
+        name: fullName,
+        phone: phone,
+        is_admin: false,
+        is_customer: true,
+        created_at: nowIso,
+        updated_at: nowIso,
+      };
 
-        if (customerError) {
-          console.error("customers insert failed", customerError);
-          throw customerError;
-        }
+      const { data: customerRecord, error: customerError } = await supabase
+        .from("customers")
+        .insert(customerPayload)
+        .select()
+        .single();
 
-        // Uppdatera contact_requests status till "converted" om contactId finns
-        if (contactId) {
-          const { error: contactUpdateError } = await supabase
-            .from("contact_requests")
-            .update({ status: "converted", customer_id: customerRecord?.id })
-            .eq("id", contactId);
-
-          if (contactUpdateError) {
-            console.error("contact_requests update failed", contactUpdateError);
-            throw contactUpdateError;
-          }
-        }
-
-        const response = {
-          ok: true,
-          customer: customerRecord,
-          message: "Kund skapad utan e-post (ingen inloggning möjlig).",
-        };
-
-        return new Response(JSON.stringify(response), { status: 200, headers: corsHeaders });
-      } else {
-        // Saknar både email och tillräcklig info för att skapa kund
-        return new Response(JSON.stringify({ error: "E-postadress saknas. Minst namn och telefon krävs för att skapa kund." }), { status: 400, headers: corsHeaders });
+      if (customerError) {
+        console.error("customers insert failed", customerError);
+        throw customerError;
       }
-    }
 
-    // 1) Försök hämta befintlig user först
-    let userId: string | undefined;
-    let authData;
-    let password: string | undefined;
+      // Uppdatera contact_requests status till "converted" om contactId finns
+      if (contactId) {
+        console.log(`Updating contact request ${contactId} to converted status`);
+        const { error: contactUpdateError } = await supabase
+          .from("contact_requests")
+          .update({ status: "converted", customer_id: customerRecord?.id })
+          .eq("id", contactId);
 
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find((u: any) => u.email === email);
+        if (contactUpdateError) {
+          console.error("contact_requests update failed", contactUpdateError);
+          throw contactUpdateError;
+        }
+      }
 
-    if (existingUser) {
-      userId = existingUser.id;
-      authData = { user: existingUser };
+      const response = {
+        ok: true,
+        customer: customerRecord,
+        message: "Kund skapad.",
+      };
+
+      return new Response(JSON.stringify(response), { status: 200, headers: corsHeaders });
     } else {
-      password = generatePassword();
-      const { data: newAuthData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { full_name: fullName ?? "", phone: phone ?? "" },
-      });
-
-      if (authError) {
-        console.error("createUser failed", authError);
-        return new Response(JSON.stringify({ error: authError.message }), { status: 400, headers: corsHeaders });
-      }
-
-      userId = newAuthData.user?.id;
-      authData = newAuthData;
+      // Saknar tillräcklig info för att skapa kund
+      return new Response(JSON.stringify({ error: "Minst namn och telefon krävs för att skapa kund." }), { status: 400, headers: corsHeaders });
     }
-
-    if (!userId) throw new Error("No user id from auth");
-
-    // 2) Upsert customer (avoid duplicates)
-    const nowIso = new Date().toISOString();
-    const customerPayload = {
-      id: userId,
-      email,
-      name: fullName ?? email.split("@")[0],
-      phone: phone ?? null,
-      is_admin: false,
-      is_customer: true,
-      created_at: nowIso,
-      updated_at: nowIso,
-    };
-
-    const { data: customerRecord, error: customerError } = await supabase
-      .from("customers")
-      .upsert(customerPayload, { onConflict: "id" })
-      .select()
-      .single();
-
-    if (customerError) {
-      console.error("customers upsert failed", customerError);
-      throw customerError;
-    }
-
-    // Uppdatera contact_requests status till "converted" om contactId finns
-    if (contactId) {
-      const { error: contactUpdateError } = await supabase
-        .from("contact_requests")
-        .update({ status: "converted", customer_id: userId })
-        .eq("id", contactId);
-
-      if (contactUpdateError) {
-        console.error("contact_requests update failed", contactUpdateError);
-        throw contactUpdateError;
-      }
-    }
-
-    // 3) Send Brevo email only if new user was created
-    let emailResult = { sent: false };
-    if (password) {
-      // New user created - send password email
-      emailResult = await sendBrevoEmail(email, password, fullName);
-    }
-
-    const response = {
-      ok: true,
-      customer: customerRecord,
-      message: emailResult.sent
-        ? "Kund skapad och mail med lösenord skickat."
-        : "Kund skapad, men mail kunde inte skickas. Kontrollera Brevo-konfiguration.",
-    };
-
-    return new Response(JSON.stringify(response), { status: 200, headers: corsHeaders });
   } catch (err: any) {
     console.error("convert-contact-to-customer error", err);
     return new Response(JSON.stringify({ error: err.message || "Server error" }), {
