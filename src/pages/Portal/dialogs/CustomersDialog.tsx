@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Loader2, Edit, Upload, FileText, Download, FileWarning, MessageCircle } from "lucide-react"; // Lade till FileWarning
 import { format } from "date-fns";
@@ -35,6 +37,13 @@ const getStatusText = (status: string) => {
   }
 };
 
+const statusOptions = [
+  { value: "pending", label: "Väntar" },
+  { value: "in_progress", label: "Pågår" },
+  { value: "completed", label: "Klar" },
+  { value: "cancelled", label: "Avbruten" },
+];
+
 interface CustomersDialogProps {
   customer: Customer | null;
   onClose: () => void;
@@ -55,6 +64,7 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
   const [isFullmaktManagementOpen, setIsFullmaktManagementOpen] = useState(false);
   const [caseComments, setCaseComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [caseCommentsCounts, setCaseCommentsCounts] = useState<Record<string, number>>({});
   const [isFullmaktDialogOpen, setIsFullmaktDialogOpen] = useState(false); 
  
   // NYTT STATE FÖR FULLMAKT HANTERING
@@ -135,6 +145,9 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
 
       if (error) throw error;
       setCustomerCases(data as Case[] || []);
+      if (data) {
+        data.forEach(caseItem => fetchCaseCommentsCount(caseItem.id));
+      }
     } catch (err) {
       console.error("Error fetching customer cases:", err);
       toast({ title: "Fel", description: "Kunde inte hämta kundens ärenden", variant: "destructive" });
@@ -175,6 +188,21 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
       setCaseComments([]);
     } finally {
       setLoadingComments(false);
+    }
+  }, []);
+
+  const fetchCaseCommentsCount = useCallback(async (caseId: string) => {
+    try {
+      const { count, error } = await supabase
+        .from("case_comments")
+        .select("*", { count: "exact", head: true })
+        .eq("case_id", caseId);
+
+      if (error) throw error;
+      setCaseCommentsCounts(prev => ({ ...prev, [caseId]: count || 0 }));
+    } catch (err) {
+      console.error("Error fetching case comments count:", err);
+      setCaseCommentsCounts(prev => ({ ...prev, [caseId]: 0 }));
     }
   }, []);
 
@@ -334,6 +362,22 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
     }
     setDeletingCustomer(false);
     setShowDeleteConfirm(false);
+  };
+
+  const handleStatusChange = async (caseId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("cases")
+        .update({ status: newStatus })
+        .eq("id", caseId);
+
+      if (error) throw error;
+      // Uppdatera lokalt state
+      setCustomerCases(prev => prev.map(c => c.id === caseId ? { ...c, status: newStatus } : c));
+    } catch (err) {
+      console.error("Error updating case status:", err);
+      toast({ title: "Fel", description: "Kunde inte uppdatera status.", variant: "destructive" });
+    }
   };
 
   // UPPDATERA useEffect FÖR ATT KONTROLLERA ADMIN VID ÖPPNING
@@ -548,24 +592,32 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
                       </div>
              
                 {customerCases.map((caseItem) => (
-                  <div 
+                  <Card 
                     key={caseItem.id} 
-                    className="border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition"
+                    className="cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => handleEditCustomerCase(caseItem)} 
                   >
-                    <div>
-                      <div className="font-semibold">{caseItem.title}</div>
-                      <p className="text-sm text-gray-600">{caseItem.service_type?.name || "Okänd tjänst"}</p>
-                      <p className="text-xs text-gray-500">
-                        Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge className={`${getStatusColor(caseItem.status)} text-sm`}>
-                        {getStatusText(caseItem.status)}
-                      </Badge>
-                    </div>
-                  </div>
+                    <CardHeader className="relative">
+                      <CardTitle>{caseItem.title}</CardTitle>
+                      <CardDescription>Kund: {editingCustomer?.name || "Okänd"} - Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}</CardDescription>
+                      <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+                        <Select defaultValue={caseItem.status} onValueChange={(s) => handleStatusChange(caseItem.id, s)}>
+                          <SelectTrigger className="w-32 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusOptions.map((s) => (
+                              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="absolute bottom-2 right-2 flex items-center gap-1 text-sm text-gray-500">
+                        <MessageCircle className="h-4 w-4" />
+                        {caseCommentsCounts[caseItem.id] || 0}
+                      </div>
+                    </CardHeader>
+                  </Card>
                 ))}
             </div>
             )}

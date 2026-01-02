@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { Button, Textarea } from "@/components/ui"; 
+import { Upload } from "lucide-react";
 // Se till att dessa typer finns och importeras korrekt i din Typescript-struktur
 import type { Customer, Case, Comment } from "../../../types";
 //import { saveCaseComment } from "@/services/caseCommentService";
@@ -63,6 +64,8 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
   const [message, setMessage] = useState<string | null>(null);
   const [localNewComment, setLocalNewComment] = useState("");
   const [localLoadingComments, setLocalLoadingComments] = useState(false);
+  const [caseDocuments, setCaseDocuments] = useState<any[]>([]);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
 
   useEffect(() => {
     setSelectedCustomer(defaultCustomerId || customers[0]?.id || "");
@@ -181,7 +184,29 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
       setLocalLoadingComments(false);
     }
   };
-  
+
+  const handleDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !caseToEdit?.id) return;
+
+    setUploadingDocument(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${caseToEdit.id}/${Date.now()}.${fileExt}`;
+      const { error } = await supabase.storage
+        .from('case-documents')
+        .upload(fileName, file);
+
+      if (error) throw error;
+      setMessage('Dokument uppladdat!');
+    } catch (err) {
+      console.error("Error uploading document:", err);
+      setMessage('Kunde inte ladda upp dokumentet.');
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
+
   return (
     <div className="p-4">
       {/* Kommentarstråd (om caseToEdit) */}
@@ -208,6 +233,26 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
           <div className="flex gap-2">
             <Textarea value={localNewComment} onChange={(e) => setLocalNewComment(e.target.value)} placeholder="Skriv kommentar..." />
             <Button onClick={addCaseComment} disabled={!localNewComment.trim() || localLoadingComments}>Skicka</Button>
+          </div>
+        </div>
+      )}
+      {/* Dokument-sektion (om caseToEdit) */}
+      {caseToEdit && (
+        <div className="mb-4">
+          <h3 className="font-semibold mb-2">Dokument</h3>
+          <div className="flex items-center gap-2">
+            <label htmlFor="document-upload" className="cursor-pointer flex items-center gap-2 px-3 py-2 border rounded hover:bg-gray-50">
+              <Upload className="h-4 w-4" />
+              Ladda upp dokument
+            </label>
+            <input
+              id="document-upload"
+              type="file"
+              className="hidden"
+              onChange={handleDocumentUpload}
+              disabled={uploadingDocument}
+            />
+            {uploadingDocument && <span className="text-sm text-gray-500">Laddar upp...</span>}
           </div>
         </div>
       )}
