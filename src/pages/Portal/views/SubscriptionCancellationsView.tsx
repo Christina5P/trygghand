@@ -28,7 +28,7 @@ const statusOptions: { value: CancellationStatus; label: string; color: string }
   { value: "completed", label: "Klar", color: "bg-green-100 text-green-800" },
 ];
 
-const providerOptions = ["Telia", "Telenor", "E.ON", "Vattenfall", "Comviq", "Tre", "Bredbandsbolaget", "Annat"];
+const providerOptions = ["Telia", "Telenor", "Tele2", "Comhem", "Bahnhof", "E.ON", "Vattenfall", "Comviq", "Tre", "Bredbandsbolaget", "Annat"];
 const serviceTypeOptions = ["Mobil", "Bredband", "El", "Hemtjänst", "Övrigt"];
 const noticeOptions = ["Ingen", "1 mån", "3 mån", "Datum"];
 
@@ -66,6 +66,8 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
   const [comments, setComments] = useState<CancellationComment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [showDialog, setShowDialog] = useState(false);
+  const [providers, setProviders] = useState<string[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<string[]>([]);
 
   const customerMap = useMemo(() => {
     const map: Record<string, Customer> = {};
@@ -88,6 +90,22 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
       files: undefined,
     },
   });
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      const { data: subs, error } = await supabase
+        .from("subscriptions")
+        .select("provider, category");
+
+      if (!error && subs) {
+        const uniqueProviders = [...new Set(subs.map(s => s.provider).filter(Boolean))];
+        const uniqueServiceTypes = [...new Set(subs.map(s => s.category).filter(Boolean))];
+        setProviders(uniqueProviders);
+        setServiceTypes(uniqueServiceTypes);
+      }
+    };
+    fetchOptions();
+  }, []);
 
   const FileLink = ({ filePath, fileName }: { filePath: string; fileName: string }) => {
     const [signedUrl, setSignedUrl] = useState<string>("");
@@ -147,7 +165,10 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
   const fetchComments = async (cancellationId: string) => {
     const { data, error } = await supabase
       .from("cancellation_comments")
-      .select("*")
+      .select(`
+        *,
+        user_profiles!inner(name)
+      `)
       .eq("cancellation_id", cancellationId)
       .order("created_at", { ascending: true });
 
@@ -345,57 +366,53 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
               const vals = isEditing ? editingValues : c;
               
               return (
-                <Card key={c.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        {isEditing ? (
-                          <Input
-                            value={vals.provider || ""}
-                            onChange={(e) => setEditingValues({ ...editingValues, provider: e.target.value })}
-                            placeholder="Leverantör"
-                            className="mb-2"
-                          />
-                        ) : (
-                          <>
-                            <CardTitle className="text-base cursor-pointer hover:text-blue-600" onClick={() => handleEditStart(c)}>
-                              {c.provider || "Abonnemang"}
-                            </CardTitle>
-                            <CardDescription className="cursor-pointer hover:text-blue-600" onClick={() => handleEditStart(c)}>
-                              {c.custom_service_name || c.service_type || "-"}
-                            </CardDescription>
-                          </>
-                        )}
-                      </div>
-                      
+                <Card key={c.id} className="hover:bg-gray-100 transition cursor-pointer relative" onClick={() => !isEditing && handleEditStart(c)}>
+                  <CardHeader className="pb-3 flex justify-between items-start">
+                    <div className="flex-1">
                       {isEditing ? (
-                        <div className="flex gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => handleEditSave(c.id)}>
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={handleEditCancel}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Input
+                          value={vals.provider || ""}
+                          onChange={(e) => setEditingValues({ ...editingValues, provider: e.target.value })}
+                          placeholder="Leverantör"
+                          className="mb-2"
+                        />
                       ) : (
-                        <div className="flex items-center gap-2">
-                          {renderStatusBadge(c.status)}
-                          <Select defaultValue={c.status} onValueChange={(s) => handleStatusChange(c.id, s as CancellationStatus)}>
-                            <SelectTrigger className="w-32 h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {statusOptions.map((s) => (
-                                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <>
+                          <CardTitle className="text-base">
+                            {c.custom_service_name || c.service_type || "Tjänst"}
+                          </CardTitle>
+                          <CardDescription>
+                            {c.provider} - {c.service_type}
+                          </CardDescription>
+                        </>
                       )}
                     </div>
+                    
+                    {isEditing ? (
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => handleEditSave(c.id)}>
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={handleEditCancel}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Select defaultValue={c.status} onValueChange={(s) => handleStatusChange(c.id, s as CancellationStatus)}>
+                          <SelectTrigger className="w-32 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusOptions.map((s) => (
+                              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </CardHeader>
-                  
-                  <CardContent className="space-y-2 text-sm">
+                  <CardContent className="space-y-2 text-sm relative">
                     {isEditing && (
                       <>
                         <Input
@@ -403,14 +420,11 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
                           onChange={(e) => setEditingValues({ ...editingValues, custom_service_name: e.target.value })}
                           placeholder="Tjänstnamn"
                         />
-                        <Select value={vals.service_type || ""} onValueChange={(v) => setEditingValues({ ...editingValues, service_type: v })}>
-                          <SelectTrigger><SelectValue placeholder="Typ av abonnemang" /></SelectTrigger>
-                          <SelectContent>
-                            {serviceTypeOptions.map((s) => (
-                              <SelectItem key={s} value={s}>{s}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Input
+                          value={vals.service_type || ""}
+                          onChange={(e) => setEditingValues({ ...editingValues, service_type: e.target.value })}
+                          placeholder="Typ av abonnemang"
+                        />
                         <Input
                           value={vals.notice_period || ""}
                           onChange={(e) => setEditingValues({ ...editingValues, notice_period: e.target.value })}
@@ -453,14 +467,9 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
                         <div className="text-xs text-muted-foreground">
                           Skapad: {c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd") : "-"}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full mt-2"
-                          onClick={() => handleOpenDetails(c)}
-                        >
-                          <MessageCircle className="h-4 w-4 mr-2" /> Visa detaljer
-                        </Button>
+                        <div className="absolute bottom-2 right-2">
+                          <MessageCircle className="h-4 w-4 text-gray-500 cursor-pointer hover:text-blue-500" onClick={(e) => { e.stopPropagation(); handleOpenDetails(c); }} />
+                        </div>
                       </>
                     )}
                   </CardContent>
@@ -556,7 +565,7 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
                       <Select onValueChange={field.onChange} value={field.value}>
                         <SelectTrigger><SelectValue placeholder="Välj leverantör" /></SelectTrigger>
                         <SelectContent>
-                          {providerOptions.map((p) => (
+                          {providers.map((p) => (
                             <SelectItem key={p} value={p}>{p}</SelectItem>
                           ))}
                         </SelectContent>
@@ -575,7 +584,7 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
                       <Select onValueChange={field.onChange} value={field.value}>
                         <SelectTrigger><SelectValue placeholder="Välj typ" /></SelectTrigger>
                         <SelectContent>
-                          {serviceTypeOptions.map((s) => (
+                          {serviceTypes.map((s) => (
                             <SelectItem key={s} value={s}>{s}</SelectItem>
                           ))}
                         </SelectContent>
@@ -753,7 +762,7 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
                   {comments.length === 0 && <div className="text-sm text-muted-foreground">Inga kommentarer ännu.</div>}
                   {comments.map((c) => (
                     <div key={c.id} className="text-sm">
-                      <div className="font-medium">{c.user_id ? c.user_id.slice(0, 8) : "Användare"} <span className="text-muted-foreground text-xs">{c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd HH:mm") : ""}</span></div>
+                      <div className="font-medium">{(c as any).user_profiles?.name || c.user_id.slice(0, 8)} <span className="text-muted-foreground text-xs">{c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd HH:mm") : ""}</span></div>
                       <div>{c.message}</div>
                     </div>
                   ))}

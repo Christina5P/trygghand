@@ -108,62 +108,55 @@ export default function CustomerManagement({ customers, onDataUpdated, onOpenCus
     <div className="space-y-4">
       <div className="grid gap-4">
         {customers.map((customer) => (
-          <Card key={customer.id}>
+          <Card key={customer.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onOpenCustomer?.(customer)}>
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{customer.name}</p>
-                  <p className="text-sm text-gray-500 truncate">{customer.email}</p>
-                  {customer.phone && <p className="text-sm text-gray-500">{customer.phone}</p>}
-                </div>
+              <div className="flex items-center gap-3 mb-4">
+                <Badge
+                  variant="default"
+                  className="bg-green-100 text-green-800"
+                >
+                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                  Aktiv
+                </Badge>
 
-                <div className="flex items-center gap-3">
-                  <Badge
-                    variant="default"
-                    className="bg-green-100 text-green-800"
-                  >
-                    <CheckCircle2 className="mr-1 h-3 w-3" />
-                    Aktiv
-                  </Badge>
-
-                  {onOpenCustomer && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onOpenCustomer(customer)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Redigera
-                    </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCustomerStatus(customer, true);
+                  }}
+                  disabled={loadingId === customer.id}
+                >
+                  {loadingId === customer.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Archive className="h-4 w-4 mr-2" />
+                      Arkivera
+                    </>
                   )}
+                </Button>
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => toggleCustomerStatus(customer, true)}
-                    disabled={loadingId === customer.id}
-                  >
-                    {loadingId === customer.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Archive className="h-4 w-4 mr-2" />
-                        Deaktivera & Arkivera
-                      </>
-                    )}
-                  </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCustomer(customer);
+                    setDeleteDialog(true);
+                  }}
+                >
+                  Radera (GDPR)
+                </Button>
+              </div>
 
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedCustomer(customer);
-                      setDeleteDialog(true);
-                    }}
-                  >
-                    Radera (GDPR)
-                  </Button>
-                </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold truncate">{customer.name}</p>
+                <p className="text-sm text-gray-500 truncate">{customer.email}</p>
+                {customer.phone && <p className="text-sm text-gray-500">{customer.phone}</p>}
               </div>
             </CardContent>
           </Card>

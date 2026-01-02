@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Loader2, Edit, Upload, FileText, Download, FileWarning } from "lucide-react"; // Lade till FileWarning
+import { Plus, Loader2, Edit, Upload, FileText, Download, FileWarning, MessageCircle } from "lucide-react"; // Lade till FileWarning
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -161,7 +161,10 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
     try {
       const { data, error } = await supabase
         .from("case_comments")
-        .select(`*`) 
+        .select(`
+          *,
+          user_profiles!inner(name)
+        `) 
         .eq("case_id", caseId)
         .order("created_at", { ascending: true });
 
@@ -484,32 +487,6 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Spara Kundinformation
           </Button>
 
-          {/* NY KNAPP: Aktivera/Deaktivera Kund (Endast för admin) */}
-          {isAdmin && (
-            <Button 
-              onClick={handleToggleActive} 
-              disabled={togglingActive} 
-              variant={editingCustomer.active ? "destructive" : "default"}
-              className="w-full mt-2"
-            >
-              {togglingActive ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {editingCustomer.active ? "Deaktivera Kund" : "Aktivera Kund"}
-            </Button>
-          )}
-
-          {/* NY KNAPP: Radera Kund (Endast för admin, röd) */}
-          {isAdmin && (
-            <Button 
-              onClick={() => setShowDeleteConfirm(true)} 
-              disabled={deletingCustomer} 
-              variant="destructive"
-              className="w-full mt-2"
-            >
-              {deletingCustomer ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Radera Kund
-            </Button>
-          )}
-
           {/* BEKRÄFTELSEDIALOG FÖR RADERING */}
           {showDeleteConfirm && (
             <Dialog open={true} onOpenChange={setShowDeleteConfirm}>
@@ -573,7 +550,7 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
                 {customerCases.map((caseItem) => (
                   <div 
                     key={caseItem.id} 
-                    className="border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition"
+                    className="border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition"
                     onClick={() => handleEditCustomerCase(caseItem)} 
                   >
                     <div>
@@ -587,16 +564,6 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
                       <Badge className={`${getStatusColor(caseItem.status)} text-sm`}>
                         {getStatusText(caseItem.status)}
                       </Badge>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={(e) => {
-                          e.stopPropagation(); 
-                          handleEditCustomerCase(caseItem); 
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 ))}

@@ -26,6 +26,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { AlertCircle, Trash2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import type { Customer } from "@/types";
 
 interface GDPRDeleteUserDialogProps {
@@ -69,41 +70,27 @@ export function GDPRDeleteUserDialog({
 
     setIsLoading(true);
     try {
-      // Anropa server-side API
-      const response = await fetch("/api/admin/gdpr-delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: customer.id,
-          adminId: user.id,
-          reason: reason,
-          adminPassword: import.meta.env.VITE_ADMIN_DELETE_KEY,
-        }),
+      // Anropa RPC med endast p_customer_id och p_reason
+      const { error } = await supabase.rpc("admin_delete_customer_permanently", {
+        p_customer_id: customer.id,
+        p_reason: reason
       });
 
-      const data = await response.json();
+      if (error) throw error;
 
-      if (data.success) {
-        toast({
-          title: "✓ Användare raderad",
-          description: `${customer.email} och all relaterad data har raderats permanent enligt GDPR.`,
-          variant: "default",
-        });
-        onDeleteSuccess();
-        onOpenChange(false);
-        setConfirmEmail("");
-        setReason("");
-      } else {
-        toast({
-          title: "Fel vid borttagning",
-          description: data.error || "Okänt fel",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "✓ Användare raderad",
+        description: `${customer.email} och all relaterad data har raderats permanent enligt GDPR.`,
+        variant: "default",
+      });
+      onDeleteSuccess();
+      onOpenChange(false);
+      setConfirmEmail("");
+      setReason("");
     } catch (error: any) {
       toast({
-        title: "Anslutningsfel",
-        description: error.message,
+        title: "Fel vid borttagning",
+        description: error.message || "Okänt fel",
         variant: "destructive",
       });
     } finally {
