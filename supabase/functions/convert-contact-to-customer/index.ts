@@ -157,8 +157,7 @@ serve(async (req: Request) => {
         email: email || null,
         name: fullName,
         phone: phone,
-        is_admin: false,
-        is_customer: true,
+        status: 'active', // Use status instead of is_admin/is_customer
         created_at: nowIso,
         updated_at: nowIso,
       };

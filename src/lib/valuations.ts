@@ -12,25 +12,20 @@ export async function saveValuation(customerId: string | null, analysis: string,
     throw new Error("Missing analysis text when saving valuation");
   }
 
-  const payload = {
-    customer_id: customerId,
-    analysis: analysis,      // skriv till 'analysis' om DB-kolumnen heter så
-    image_urls: imageUrls,
-  };
-
-  const { data, error } = await supabase
-    .from("valuations")      // eller public.valuations beroende på vy/tabell
-    .insert(payload)
-    .select(); // Se till att du faktiskt väljer data du vill ha tillbaka
+  const { data, error } = await supabase.rpc("customer_create_valuation", {
+    p_analysis: analysis,
+    p_image_urls: imageUrls
+  });
 
   if (error) {
-    console.error("ERROR saving valuation:", error, { payload });
+    console.error("ERROR saving valuation:", error);
     throw new Error(error.message ?? JSON.stringify(error));
   }
 
-  // Returnera insatta raden så anropare kan bekrefta och trigga reload
-  return data?.[0] ?? null;
+  return data;
 }
+
+// Returnera insatta raden så anropare kan bekräfta och trigga reload
 
 /**
  * Ladda upp filer till storage-bucket 'images' och returnera URL:er.

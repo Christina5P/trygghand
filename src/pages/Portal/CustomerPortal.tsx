@@ -237,11 +237,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         if (!customer?.id) return;
         setLoadingValuations(true);
         try {
-            const { data, error } = await supabase
-                .from("valuations")
-                .select("*")
-                .eq("customer_id", customer.id)
-                .order("created_at", { ascending: false });
+            const { data, error } = await supabase.rpc("customer_get_own_valuations");
             if (error) throw error;
             setValuations(data as Valuation[] || []);
         } catch (err) {

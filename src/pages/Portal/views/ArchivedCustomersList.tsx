@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RotateCcw, Trash2 } from "lucide-react";
+import { Loader2, RotateCcw, Trash2, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { GDPRDeleteUserDialog } from "@/components/GDPRDeleteUserDialog";
@@ -22,9 +22,10 @@ interface ArchivedCustomer {
 
 interface ArchivedCustomersListProps {
   onDataUpdated: () => Promise<void>;
+  onOpenCustomer?: (customer: Customer) => void;
 }
 
-export default function ArchivedCustomersList({ onDataUpdated }: ArchivedCustomersListProps) {
+export default function ArchivedCustomersList({ onDataUpdated, onOpenCustomer }: ArchivedCustomersListProps) {
   const [archivedCustomers, setArchivedCustomers] = useState<ArchivedCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -70,35 +71,16 @@ export default function ArchivedCustomersList({ onDataUpdated }: ArchivedCustome
 
       if (fetchError) throw fetchError;
 
-      // 2. Infoga eller uppdatera kunden i customers-tabellen med is_customer = true
-      const { error: upsertError } = await supabase
-        .from("customers")
-        .upsert({
-          id: archivedData.id,
-          email: archivedData.email,
-          name: archivedData.name,
-          phone: archivedData.phone,
-          is_admin: archivedData.is_admin,
-          is_customer: true,
-        }, { onConflict: 'id' });
-
-      if (upsertError) throw upsertError;
-
-      // 3. Ta bort från arkiv
-      const { error: deleteError } = await supabase
-        .from("archived_customers")
-        .delete()
-        .eq("id", customerId);
-
-      if (deleteError) throw deleteError;
-
-      toast({
-        title: "Kund återställd",
-        description: `${customerName} har återaktiverats och tagits bort från arkiv.`,
+      // 2. Återställ kunden med säker RPC-funktion
+      await supabase.rpc('admin_restore_customer', {
+        p_customer_id: customerId
       });
 
+      // VIKTIGT: uppdatera UI
       await fetchArchivedCustomers();
       await onDataUpdated();
+
+      // ev. navigera - hanteras av parent component
     } catch (err: any) {
       console.error("Fel vid återställning:", err);
       toast({
@@ -156,6 +138,17 @@ export default function ArchivedCustomersList({ onDataUpdated }: ArchivedCustome
                     <Badge variant="secondary" className="bg-gray-300 text-gray-800 whitespace-nowrap">
                       Arkiverad
                     </Badge>
+                    {onOpenCustomer && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onOpenCustomer(customer as Customer)}
+                        className="text-green-600 border-green-200 hover:bg-green-50"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Redigera
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"

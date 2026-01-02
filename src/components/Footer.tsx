@@ -56,7 +56,9 @@ const Footer = () => {
               </li>
               <li><Link to="/services/Juridikguide" className="hover:underline">Din Juridiska Guide i Fickan</Link></li>
               <li><Link to="/partners" className="hover:underline">Partners</Link></li>
-              <li><Link to="/privacy" className="hover:underline">Integritetspolicy</Link></li>
+              <li><Link to="/privacy" className="hover:underline">Integritet & Cookies</Link></li>
+              <li><Link to="/cookiepolicy" className="hover:underline">Cookie-policy</Link></li>
+              <li><Link to="/terms" className="hover:underline">Allmänna villkor</Link></li>
               <li><Link to="/cookiepolicy" className="hover:underline">Cookie-policy</Link></li>
               <li><Link to="/clearcookies" className="hover:underline">Rensa cookies</Link></li>
             </ul>

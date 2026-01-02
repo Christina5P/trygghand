@@ -5,20 +5,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle2, Loader2, Archive } from "lucide-react";
+import { CheckCircle2, Loader2, Archive, Edit } from "lucide-react";
 import { GDPRDeleteUserDialog } from "@/components/GDPRDeleteUserDialog";
 import type { Customer } from "@/types";
 
 interface CustomerManagementProps {
   customers: Customer[];
   onDataUpdated: () => Promise<void>;
+  onOpenCustomer?: (customer: Customer) => void;
 }
 
 /**
  * CustomerManagement: Administratörsverktyg för att aktivera/deaktivera kundstatus
  * Vid deaktivering arkiveras kunden automatiskt i archived_customers-tabellen
  */
-export default function CustomerManagement({ customers, onDataUpdated }: CustomerManagementProps) {
+export default function CustomerManagement({ customers, onDataUpdated, onOpenCustomer }: CustomerManagementProps) {
+  console.log("Customers in CustomerManagement:", customers); // TEMP LOG
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -123,6 +125,17 @@ export default function CustomerManagement({ customers, onDataUpdated }: Custome
                     <CheckCircle2 className="mr-1 h-3 w-3" />
                     Aktiv
                   </Badge>
+
+                  {onOpenCustomer && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onOpenCustomer(customer)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Redigera
+                    </Button>
+                  )}
 
                   <Button
                     size="sm"

@@ -85,11 +85,7 @@ export const useCustomerData = () => {
     if (!customer?.id) return;
     setLoadingVals(true);
     try {
-      const { data, error } = await supabase
-        .from("valuations")
-        .select("*")
-        .eq("customer_id", customer.id)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("customer_get_own_valuations");
       if (error) throw error;
       setValuations(data ?? []);
     } catch (err) {
@@ -104,7 +100,7 @@ export const useCustomerData = () => {
     if (!id) return;
     setLoadingVals(true);
     try {
-      const { error } = await supabase.from("valuations").delete().eq("id", id);
+      const { error } = await supabase.rpc("customer_delete_valuation", { p_valuation_id: id });
       if (error) throw error;
       setValuations((p) => p.filter((v) => v.id !== id));
       toast({ title: "Raderad", description: "Värdering borttagen." });

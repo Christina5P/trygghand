@@ -129,6 +129,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     fetchValuations,   
   } = useAdminData();
 
+  console.log("Customers in AdminPortal:", customers); // TEMP LOG
+
 
   // MODAL STATE
   const [mainTab, setMainTab] = useState<
@@ -243,10 +245,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   };
 
   const handleDeleteValuation = async (id: string) => {
-    const { error } = await supabase
-      .from("valuations")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.rpc("admin_delete_valuation", { p_valuation_id: id });
 
     if (error) {
       console.error(error);
@@ -284,34 +283,35 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     let filtered = contactRequests;
     if (contactStatusFilter !== "all") {
       filtered = contactRequests.filter((c) => c.status === contactStatusFilter);
+    } else {
+      // För "all" exkludera converted
+      filtered = contactRequests.filter((c) => c.status !== "converted");
     }
-    // För "all" inkludera alla utom converted (som hanteras separat)
     return filtered
-    .filter((contact) => contact.created_at && contact.status !== "converted") // Filtrera bort de utan created_at och converted
-    .sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime())
-    .map((contact) => {
-      const badge = getStatusBadge(contact.status);
-      // Förbättrad namnlogik
-      const displayName =
-        contact.name && contact.name.trim()
-          ? contact.name
-          : `${contact.firstname || ""} ${contact.lastname || ""}`.trim() || "Namnlös";
-      return (
-        <div
-          key={contact.id}
-          className="flex justify-between items-center p-4 bg-white border rounded-lg shadow-sm hover:shadow-md cursor-pointer transition"
-          onClick={() => handleOpenContactDialog(contact)}
-        >
-          <div className="min-w-0 pr-4">
-            <p className="text-base font-semibold truncate">{displayName}</p>
-            <p className="text-sm text-gray-500 truncate">{contact.email}</p>
+      .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
+      .map((contact) => {
+        const badge = getStatusBadge(contact.status);
+        // Förbättrad namnlogik
+        const displayName =
+          contact.name && contact.name.trim()
+            ? contact.name
+            : `${contact.firstname || ""} ${contact.lastname || ""}`.trim() || "Namnlös";
+        return (
+          <div
+            key={contact.id}
+            className="flex justify-between items-center p-4 bg-white border rounded-lg shadow-sm hover:shadow-md cursor-pointer transition"
+            onClick={() => handleOpenContactDialog(contact)}
+          >
+            <div className="min-w-0 pr-4">
+              <p className="text-base font-semibold truncate">{displayName}</p>
+              <p className="text-sm text-gray-500 truncate">{contact.email}</p>
+            </div>
+            <Badge className={badge.colorClass}>
+              {badge.text}
+            </Badge>
           </div>
-          <Badge className={badge.colorClass}>
-            {badge.text}
-          </Badge>
-        </div>
-      );
-    });
+        );
+      });
 }, [contactRequests]);
 
 // Funktion för att konvertera kontaktförfrågan till en kund
@@ -335,24 +335,18 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
   setSelectedContact(null);
   
   try {
-    const { data, error: functionError } = await supabase.functions.invoke("convert-contact-to-customer", {
-      body: {
-        contactRequestId: contact.id,
-        customerData: {
-          email: contact.email && contact.email.trim() ? contact.email.trim() : null,
-          fullName: fullName,
-          phone: (contact as any).phone || null,
-        },
-      },
+    const { data: customerId, error } = await supabase.rpc("admin_convert_contact_to_customer", {
+      p_contact_request_id: contact.id
     });
 
-    if (functionError) throw functionError;
-    if (!data?.ok) {
-      console.error("Function response:", data);
-      throw new Error(data?.message || "Edge Function failed");
-    }
+    if (error) throw error;
 
-    const createdCustomer = data?.customer as Customer | undefined;
+    // Hämta kunden separat om UI behöver data
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("id, name, email, phone")
+      .eq("id", customerId)
+      .single();
 
     toast({
       title: "Konvertering slutförd!",
@@ -370,9 +364,9 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
 
     await fetchData();
 
-    if (createdCustomer) {
+    if (customer) {
       setMainTab("customers");
-      setSelectedCustomer(createdCustomer);
+      setSelectedCustomer(customer);
     }
   } catch (err: any) {
     console.error("Konvertering misslyckades:", err);
@@ -552,7 +546,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                 <div className="grid gap-8 lg:grid-cols-3">
                   <div className="lg:col-span-2">
                     <h3 className="text-lg font-semibold mb-4">Hantera Kundstatus</h3>
-                    <CustomerManagement customers={customers} onDataUpdated={fetchData} />
+                    <CustomerManagement customers={customers} onDataUpdated={fetchData} onOpenCustomer={handleOpenCustomerDialog} />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold mb-4">Skapa Ny Kund</h3>
@@ -564,7 +558,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
               {/* Arkiverade kunder */}
               <div className="border-t pt-8">
                 <h3 className="text-lg font-semibold mb-4">Arkiverade Kunder</h3>
-                <ArchivedCustomersList onDataUpdated={fetchData} />
+                <ArchivedCustomersList onDataUpdated={fetchData} onOpenCustomer={handleOpenCustomerDialog} />
               </div>
             </div>
           </TabsContent>
@@ -581,11 +575,10 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                           <SelectItem value="new">Nya</SelectItem>
                           <SelectItem value="contacted">Kontaktade</SelectItem>
                           <SelectItem value="closed">Avbrutna</SelectItem>
-                          <SelectItem value="converted">Kund</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {contactRequestList}
                       </div>
                   </TabsContent>

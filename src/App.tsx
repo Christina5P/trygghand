@@ -13,9 +13,9 @@ import GoogleAnalytics from "@/components/GoogleAnalytics";
 import CustomerRoute from "@/components/CustomerRoute";
 import About from "@/components/About";
 
-import CookiePolicy from "@/pages/CookiePolicy";
 import ClearCookies from "@/pages/ClearCookies";
 import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import FragorTips from "@/components/FragorTips";
@@ -83,9 +83,9 @@ function App() {
               {/* ❓ Frågor & Policy */}
               <Route path="/fragor-tips" element={<FragorTips />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/cookiepolicy" element={<CookiePolicy />} />
               <Route path="/clearcookies" element={<ClearCookies />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/services/Juridikguide" element={<Juridikguide />} />
 
               {/* 🚫 404 */}

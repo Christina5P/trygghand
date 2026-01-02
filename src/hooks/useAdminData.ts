@@ -44,13 +44,13 @@ export const useAdminData = () => {
 
   const fetchCustomers = useCallback(async () => {
     try {
-      // Only fetch active customers (is_customer = true)
+      // Fetch all customers (removed is_customer filter to ensure restored customers appear)
       const { data, error } = await supabase
         .from("customers")
         .select("*")
-        .eq("is_customer", true)
         .order("name", { ascending: true });
       if (error) throw error;
+      console.log("Fetched customers:", data); // TEMP LOG
       setCustomers(data ?? []);
     } catch (err: any) {
       console.error("fetchCustomers error", err);
@@ -82,7 +82,7 @@ export const useAdminData = () => {
 
   const fetchValuations = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("valuations").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("admin_get_all_valuations");
       if (error) throw error;
       setValuations(data ?? []);
     } catch (err: any) {
@@ -104,6 +104,7 @@ export const useAdminData = () => {
 
   // fetch all
   const fetchAll = useCallback(async () => {
+    console.log("fetchAll called"); // TEMP LOG
     setLoading(true);
     try {
       await Promise.all([

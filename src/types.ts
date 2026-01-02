@@ -9,6 +9,7 @@ export interface Customer {
   phone?: string;
   created_at?: string;
   personal_number?: string;
+  active?: boolean;
   is_admin?: boolean;
   is_customer?: boolean; // NYTT: true om användaren är aktiv kund
 }export type CustomerMap = Record<string, Customer>;
