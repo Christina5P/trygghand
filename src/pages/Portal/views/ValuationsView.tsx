@@ -51,13 +51,22 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
     new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(price) + " kr";
 
   const getPriceDisplay = (v: Valuation): string | null => {
+    let parsedAnalysis: any = null;
+    if (v.analysis && typeof v.analysis === "string") {
+      try {
+        parsedAnalysis = JSON.parse(v.analysis);
+      } catch (e) {
+        console.warn("Failed to parse analysis JSON", e);
+      }
+    }
+
     // Kontrollera vanliga fält som kan innehålla pris
-    const maybe = (v as any).price ?? v.analysis_result?.price ?? v.analysis?.price ?? null;
+    const maybe = (v as any).price ?? v.analysis_result?.price ?? parsedAnalysis?.price ?? null;
     if (typeof maybe === "number" && Number.isFinite(maybe)) return formatPrice(maybe);
 
     // AI-analys kan ha värdeintervall
-    const min = v.analysis_result?.varde_min_sek ?? v.analysis?.varde_min_sek ?? null;
-    const max = v.analysis_result?.varde_max_sek ?? v.analysis?.varde_max_sek ?? null;
+    const min = v.analysis_result?.varde_min_sek ?? parsedAnalysis?.varde_min_sek ?? null;
+    const max = v.analysis_result?.varde_max_sek ?? parsedAnalysis?.varde_max_sek ?? null;
     if (min && max) return `${formatPrice(Number(min))} - ${formatPrice(Number(max))}`;
     if (min) return formatPrice(Number(min));
 

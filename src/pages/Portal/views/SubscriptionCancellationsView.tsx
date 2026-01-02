@@ -50,15 +50,15 @@ type NewCancellationValues = z.infer<typeof newCancellationSchema>;
 interface Props {
   customers: Customer[];
   subscriptions: Subscription[];
+  cancellations: SubscriptionCancellation[];
   onDataUpdated: () => Promise<void>;
 }
 
-export function SubscriptionCancellationsView({ customers, subscriptions, onDataUpdated }: Props) {
+export function SubscriptionCancellationsView({ customers, subscriptions, cancellations, onDataUpdated }: Props) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [cancellations, setCancellations] = useState<SubscriptionCancellation[]>([]);
   const [selected, setSelected] = useState<SubscriptionCancellation | null>(null);
   type EditableCancellation = Partial<SubscriptionCancellation> & { notes?: string | null };
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -88,21 +88,6 @@ export function SubscriptionCancellationsView({ customers, subscriptions, onData
       files: undefined,
     },
   });
-
-  const fetchCancellations = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("subscription_cancellations")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      toast({ title: "Kunde inte hämta uppsägningar", description: error.message, variant: "destructive" });
-    } else {
-      setCancellations(data as SubscriptionCancellation[]);
-    }
-    setLoading(false);
-  };
 
   const FileLink = ({ filePath, fileName }: { filePath: string; fileName: string }) => {
     const [signedUrl, setSignedUrl] = useState<string>("");
@@ -169,10 +154,6 @@ export function SubscriptionCancellationsView({ customers, subscriptions, onData
     if (!error && data) setComments(data as CancellationComment[]);
   };
 
-  useEffect(() => {
-    fetchCancellations();
-  }, []);
-
   const resetDialog = () => {
     form.reset();
     setShowDialog(false);
@@ -214,35 +195,31 @@ export function SubscriptionCancellationsView({ customers, subscriptions, onData
     try {
       setSaving(true);
       const { files, notes, ...rest } = values;
-      const insertPayload = {
-        ...rest,
-        status: "pending" as CancellationStatus,
-        custom_service_name: rest.custom_service_name || null,
-        notice_period: rest.notice_period || null,
-        last_due_date: rest.last_due_date || null,
-        provider_contact: (rest as any).provider_contact || null,
-        notes: notes || null,
-      } as any;
+      const rpcPayload = {
+        p_custom_service_name: rest.custom_service_name || null,
+        p_customer_id: rest.customer_id,
+        p_last_due_date: rest.last_due_date || null,
+        p_notes: notes || null,
+        p_notice_period: rest.notice_period || null,
+        p_provider: rest.provider,
+        p_provider_contact: (rest as any).provider_contact || null,
+        p_service_type: rest.service_type,
+        p_subscription_id: rest.subscription_id
+      };
 
-      const { data, error } = await supabase
-        .from("subscription_cancellations")
-        .insert([insertPayload])
-        .select("*")
-        .single();
+      const { data: createdId, error } = await supabase.rpc("admin_create_subscription_cancellation", rpcPayload);
 
       if (error) throw error;
-      const created = data as SubscriptionCancellation;
 
-      const uploaded = await uploadFiles(insertPayload.customer_id, created.id, files as FileList | undefined);
+      const uploaded = await uploadFiles(rest.customer_id, createdId, files as FileList | undefined);
       if (uploaded.length > 0) {
         await supabase
           .from("subscription_cancellations")
           .update({ documents: uploaded })
-          .eq("id", created.id);
+          .eq("id", createdId);
       }
 
       toast({ title: "Uppsägning registrerad", description: "Ärendet är skapat och kan följas upp." });
-      await fetchCancellations();
       await onDataUpdated();
       resetDialog();
     } catch (err: any) {
@@ -285,7 +262,7 @@ export function SubscriptionCancellationsView({ customers, subscriptions, onData
       toast({ title: "Uppdaterat" });
       setEditingId(null);
       setEditingValues({});
-      await fetchCancellations();
+      await onDataUpdated();
     } catch (err: any) {
       toast({ title: "Kunde inte spara", description: err.message, variant: "destructive" });
     }
@@ -299,7 +276,7 @@ export function SubscriptionCancellationsView({ customers, subscriptions, onData
         .eq("id", cancellationId);
       if (error) throw error;
       toast({ title: "Status uppdaterad" });
-      await fetchCancellations();
+      await onDataUpdated();
       if (selected?.id === cancellationId) {
         setSelected({ ...selected, status });
       }
@@ -755,7 +732,7 @@ export function SubscriptionCancellationsView({ customers, subscriptions, onData
                             .eq("id", selected.id);
                           if (error) throw error;
                           toast({ title: "Filer uppladdade" });
-                          await fetchCancellations();
+                          await onDataUpdated();
                           setSelected({ ...selected, documents: updatedDocs });
                         } catch (err: any) {
                           toast({ title: "Kunde inte ladda upp", description: err.message, variant: "destructive" });

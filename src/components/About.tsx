@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Heart, Clock, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Review } from "./Reviews";
+import Review, { Review as ReviewType } from "./Reviews";
 
 
 const About = () => {
@@ -34,7 +34,7 @@ const About = () => {
     "Sekretessavtal för din trygghet"
   ];
 
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<ReviewType[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
 

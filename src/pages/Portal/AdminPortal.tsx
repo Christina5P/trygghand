@@ -160,6 +160,36 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [fullmaktTemplates, setFullmaktTemplates] = useState<FullmaktTemplate[] | null>(null);
   const FULLMAKT_BUCKET = "fullmakts-filer";
 
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const { data, error } = await supabase.storage.from(FULLMAKT_BUCKET).list('fullmaktsmallar/');
+        if (error) throw error;
+        const templates = data?.map((file, index) => ({
+          id: (index + 1).toString(),
+          name: file.name.replace('.pdf', '').replace(/_/g, ' '),
+          storage_path: `fullmaktsmallar/${file.name}`
+        })) || [];
+        // Add the external link
+        templates.push({
+          id: (templates.length + 1).toString(),
+          name: "Telia - webbsida för fullmakter",
+          storage_path: "https://www.telia.se/mitt-telia/mitt-konto/fullmakter"
+        });
+        setFullmaktTemplates(templates);
+      } catch (err) {
+        console.error('Failed to fetch templates:', err);
+        // Fallback to hardcoded
+        setFullmaktTemplates([
+          { id: "1", name: "Fullmakt - Apoteksärenden", storage_path: "fullmaktsmallar/Apoteksarenden Fullmakt.pdf" },
+          { id: "2", name: "Fullmakt - Tele2", storage_path: "fullmaktsmallar/Tele2 Fullmakt.pdf" },
+          { id: "3", name: "Telia - webbsida för fullmakter", storage_path: "https://www.telia.se/mitt-telia/mitt-konto/fullmakter" }
+        ]);
+      }
+    };
+    fetchTemplates();
+  }, []);
+
   const handleDownloadTemplate = async (storagePath: string) => {
     try {
       // Öppna externa länkar direkt
@@ -441,7 +471,8 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
       <div className="grid grid-cols-1 gap-3">
                {(fullmaktTemplates && fullmaktTemplates.length ? fullmaktTemplates : [
                  { id: "1", name: "Fullmakt - Apoteksärenden", storage_path: "fullmaktsmallar/Apoteksarenden Fullmakt.pdf" },
-                 { id: "2", name: "Fullmakt - Tele2", storage_path: "fullmaktsmallar/Tele2 Fullmakt.pdf" }
+                 { id: "2", name: "Fullmakt - Tele2", storage_path: "fullmaktsmallar/Tele2 Fullmakt.pdf" },
+                 { id: "3", name: "Telia - webbsida för fullmakter", storage_path: "https://www.telia.se/mitt-telia/mitt-konto/fullmakter" }
                ]).map(t => (
                  <div key={t.id} className="bg-white p-3 rounded border border-slate-200 shadow-sm flex items-center justify-between">
                    <div>
@@ -521,6 +552,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
             <SubscriptionCancellationsView
               subscriptions={subscriptions}
               customers={customers}
+              cancellations={cancellations}
               onDataUpdated={fetchData}
             />
           </TabsContent>

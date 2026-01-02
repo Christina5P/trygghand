@@ -132,10 +132,14 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
         }
         setMessage('Ärendet uppdaterades!');
       } else {
-        const { error } = await supabase.from('cases').insert(payload);
+        const { data: newCaseId, error } = await supabase.rpc("admin_create_case", {
+          p_customer_id: custId,
+          p_title: title.trim(),
+          p_description: description.trim() || null
+        });
         setLoading(false);
         if (error) {
-          console.error('Supabase insert error:', error);
+          console.error('Supabase RPC error:', error);
           setMessage('Kunde inte skapa ärende: ' + error.message);
           return;
         }
@@ -163,12 +167,9 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
 
     try {
       setLocalLoadingComments(true);
-      const { error } = await supabase.from("case_comments").insert({
-        case_id: caseToEdit.id,
-        author_id: adminId, 
-        author_type: "admin",
-        content: localNewComment.trim(),
-        customer_id: customerId, // <-- KRITISKT: Detta måste inkluderas
+      const { error } = await supabase.rpc("admin_add_case_comment", {
+        p_case_id: caseToEdit.id,
+        p_comment: localNewComment.trim()
       });
       if (error) throw error;
       setLocalNewComment("");

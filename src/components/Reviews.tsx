@@ -7,6 +7,8 @@ interface Review {
   relative_time_description: string;
 }
 
+export type { Review };
+
 export default function Reviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
 

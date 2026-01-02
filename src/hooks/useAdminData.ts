@@ -93,7 +93,8 @@ export const useAdminData = () => {
 
   const fetchCancellations = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("subscription_cancellations").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("admin_get_all_subscription_cancellations")
+
       if (error) throw error;
       setCancellations(data ?? []);
     } catch (err: any) {

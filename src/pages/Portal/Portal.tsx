@@ -108,7 +108,8 @@ const Portal = () => {
     } catch (err) {
       console.error("Kunde inte hämta mall:", err);
       // Handle specific storage errors
-      if (err.message?.includes('Object not found') || err.message?.includes('not found') || err.message?.includes('Kunde inte hämta mall')) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('Object not found') || message.includes('not found') || message.includes('Kunde inte hämta mall')) {
         toast?.({
           title: "Mall inte tillgänglig",
           description: "Denna mall finns inte tillgänglig för tillfället.",
