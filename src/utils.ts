@@ -49,6 +49,36 @@ export const keysToCamel = (o: any): any => {
   return o;
 };
 
+// Valuation helpers
+export const getCleanDescription = (analysis: string): string => {
+  if (!analysis) return "";
+  try {
+    const parsed = typeof analysis === "string" ? JSON.parse(analysis) : analysis;
+    return parsed?.analysis_result?.foremal_beskrivning ??
+           parsed?.analysis_result?.motivering ??
+           parsed?.foremal_beskrivning ??
+           parsed?.motivering ??
+           "";
+  } catch {
+    return "";
+  }
+};
+
+export const getPriceLabel = (analysis: string): string | null => {
+  if (!analysis) return null;
+  try {
+    const parsed = typeof analysis === "string" ? JSON.parse(analysis) : analysis;
+    const min = parsed?.analysis_result?.varde_min_sek ?? parsed?.varde_min_sek ?? null;
+    const max = parsed?.analysis_result?.varde_max_sek ?? parsed?.varde_max_sek ?? null;
+    const fmt = (n: number) => new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(n);
+    if (min && max) return `Värde: ${fmt(Number(min))} – ${fmt(Number(max))} kr`;
+    if (min) return `Värde: ${fmt(Number(min))} kr`;
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 export const normalizeCustomer = (raw: any) => {
   if (!raw) return raw;
   const n = keysToCamel(raw);

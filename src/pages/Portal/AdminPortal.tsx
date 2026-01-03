@@ -274,24 +274,14 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     setSelectedValuation(valuation);
   };
 
-  const handleDeleteValuation = async (id: string) => {
-    const { error } = await supabase.rpc("admin_delete_valuation", { p_valuation_id: id });
+  const handleDeleteValuation = async (valuationId: string) => {
+    console.log("DELETE valuationId:", valuationId, typeof valuationId);
 
-    if (error) {
-      console.error(error);
-      toast({
-        title: "Fel",
-        description: "Kunde inte ta bort värdering.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Raderad",
-      description: "Värdering borttagen.",
+    const { error } = await supabase.rpc("admin_delete_valuation", {
+      p_valuation_id: valuationId
     });
 
+    if (error) throw error;
     // uppdatera listan
     await fetchValuations();
   };

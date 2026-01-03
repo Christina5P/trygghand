@@ -81,15 +81,23 @@ export const useAdminData = () => {
   }, []);
 
   const fetchValuations = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.rpc("admin_get_all_valuations");
-      if (error) throw error;
-      setValuations(data ?? []);
-    } catch (err: any) {
-      console.error("fetchValuations error", err);
-      setValuations([]);
-    }
-  }, []);
+  try {
+    const { data, error } = await supabase.rpc("admin_get_all_valuations");
+    if (error) throw error;
+
+    const normalized: Valuation[] = (data ?? []).map((v: any) => ({
+      ...v,
+      id: String(v.id), // ✅ TVINGA UUID SOM STRING
+    }));
+
+    console.log("fetchValuations normalized sample", normalized[0]);
+    setValuations(normalized);
+  } catch (err: any) {
+    console.error("fetchValuations error", err);
+    setValuations([]);
+  }
+}, []);
+
 
   const fetchCancellations = useCallback(async () => {
     try {

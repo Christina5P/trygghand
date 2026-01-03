@@ -7,25 +7,45 @@ import { supabase } from "@/lib/supabase";
  * @param analysis Den rena JSON-strängen från AI-analysen.
  * @param imageUrls Array med publika URL:er till de uppladdade bilderna.
  */
-export async function saveValuation(customerId: string | null, analysis: string, imageUrls: string[]) {
-  if (!analysis || typeof analysis !== "string" || analysis.trim() === "") {
-    throw new Error("Missing analysis text when saving valuation");
-  }
+export async function saveValuation(
+  analysis: unknown,
+  imageUrls?: unknown
+) {
+  const safeAnalysis =
+    typeof analysis === "string"
+      ? analysis
+      : JSON.stringify(analysis);
 
-  const { data, error } = await supabase.rpc("customer_create_valuation", {
-    p_analysis: analysis,
-    p_image_urls: imageUrls
-  });
+  const safeImages =
+    Array.isArray(imageUrls)
+      ? imageUrls.map(String)
+      : [];
 
-  if (error) {
-    console.error("ERROR saving valuation:", error);
-    throw new Error(error.message ?? JSON.stringify(error));
-  }
+  console.log("DEBUG image_urls BEFORE RPC", imageUrls);
+  console.log(
+    "DEBUG image_urls types",
+    Array.isArray(imageUrls)
+      ? imageUrls.map(v => ({ value: v, type: typeof v }))
+      : imageUrls
+  );
 
-  return data;
+  const payload = {
+    p_analysis: safeAnalysis,
+    p_image_urls: safeImages,
+  };
+
+  console.log("RPC FINAL PAYLOAD", payload);
+
+  const { error } = await supabase.rpc(
+    "customer_create_valuation",
+    payload
+  );
+
+  if (error) {
+    console.error("ERROR saving valuation:", error);
+    throw error;
+  }
 }
-
-// Returnera insatta raden så anropare kan bekräfta och trigga reload
 
 /**
  * Ladda upp filer till storage-bucket 'images' och returnera URL:er.
@@ -68,10 +88,9 @@ export async function uploadImages(files: File[], folder = "valuations"): Promis
 /**
  * Wrapper: ladda upp filer först, spara sedan valuation med de resulterande URL:erna.
  */
-export async function uploadAndSaveValuation(customerId: string | null, analysis: string, files: File[]) {
-  const imageUrls = files && files.length ? await uploadImages(files, `valuations/${customerId ?? "anon"}`) : [];
-  const saved = await saveValuation(customerId, analysis, imageUrls);
-  return saved;
+export async function uploadAndSaveValuation(analysis: unknown, files: File[]) {
+  const imageUrls = files && files.length ? await uploadImages(files, `valuations/anon`) : [];
+  await saveValuation(analysis, imageUrls);
 }
 
 // Sanera filnamn så att Supabase Storage får en giltig key

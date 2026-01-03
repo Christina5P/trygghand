@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
+import { getCleanDescription, getPriceLabel } from "@/utils";
 import type { Valuation } from "@/types";
 
 
@@ -38,19 +39,8 @@ return <p className="text-gray-500">Inga sparade värderingar.</p>;
 return (
 <div className="grid gap-4">
 {valuations.map((v: Valuation) => (
-<div key={String(v.id)} className="p-4 border rounded bg-white relative">
-{/* Ta bort knapp */}
-<button
-onClick={async () => {
-await deleteValuation(String(v.id));
-await fetchValuations();
-}}
-className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
-aria-label="Ta bort värdering"
->
-<X className="w-4 h-4" />
-</button>
-<div className="flex items-start gap-4 pr-6">
+<div key={String(v.id)} className="p-4 border rounded bg-white">
+<div className="flex items-start gap-4">
           {/* Bild / Placeholder */}
           {v.image_urls && v.image_urls.length > 0 ? (
             <img
@@ -66,19 +56,24 @@ aria-label="Ta bort värdering"
 
           <div className="flex-1">
             <div className="text-sm font-medium">Värdering #{String(v.id)}</div>
+            {getPriceLabel((v as any).analysis_result ?? (v as any).analysis ?? "") && (
+              <div className="text-sm font-semibold text-black mt-1">
+                {getPriceLabel((v as any).analysis_result ?? (v as any).analysis ?? "")}
+              </div>
+            )}
             <div className="text-xs text-gray-500">
               {v.created_at ? format(new Date(v.created_at), "yyyy-MM-dd", { locale: sv }) : ""}
             </div>
             <div className="mt-1 text-xs text-gray-600 line-clamp-2">
-              {(() => {
-                const text = (v as any).analysis_result ?? (v as any).analysis ?? "";
-                try {
-                  const parsed = typeof text === "string" ? JSON.parse(text) : text;
-                  return parsed?.foremal_beskrivning ?? parsed?.motivering ?? String(text);
-                } catch {
-                  return String(text);
-                }
-              })()}
+              {getCleanDescription((v as any).analysis_result ?? (v as any).analysis ?? "")}
+            </div>
+            <div className="mt-2">
+              <button
+                onClick={() => deleteValuation(v.id)}
+                className="text-xs text-red-600 hover:underline"
+              >
+                Radera
+              </button>
             </div>
           </div>
         </div>

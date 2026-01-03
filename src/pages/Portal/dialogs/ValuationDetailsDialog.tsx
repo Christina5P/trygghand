@@ -7,6 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { getCleanDescription } from "@/utils";
 
 interface ValuationDetailsDialogProps {
   valuation: Valuation | null;
@@ -37,13 +38,6 @@ const ValuationDetailsDialog: React.FC<ValuationDetailsDialogProps> = ({
       return null;
     }
   }, [valuation]);
-
-  const foremalBeskrivning =
-    parsedAnalysis?.foremal_beskrivning ??
-    "AI:n kunde inte generera en beskrivning för denna värdering.";
-  const motivering =
-    parsedAnalysis?.motivering ??
-    "AI:n returnerade ingen motivering för denna värdering.";
 
   const getPriceDisplay = (): string | null => {
     if (!valuation) return null;
@@ -82,19 +76,11 @@ const ValuationDetailsDialog: React.FC<ValuationDetailsDialogProps> = ({
           />
         )}
 
-        {/* Motivering */}
-        <section className="mb-4">
-          <h3 className="font-semibold mb-1">Motivering</h3>
-          <p className="whitespace-pre-wrap text-sm text-gray-700">
-            {motivering}
-          </p>
-        </section>
-
-        {/* Föremålsbeskrivning */}
+        {/* Beskrivning från analys */}
         <section>
-          <h3 className="font-semibold mb-1">Föremålsbeskrivning</h3>
+          <h3 className="font-semibold mb-1">Beskrivning</h3>
           <p className="whitespace-pre-wrap text-sm text-gray-700">
-            {foremalBeskrivning}
+            {getCleanDescription((valuation as any).analysis_result ?? (valuation as any).analysis ?? "") || "Ingen beskrivning tillgänglig."}
           </p>
         </section>
       </DialogContent>

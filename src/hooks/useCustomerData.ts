@@ -85,8 +85,9 @@ export const useCustomerData = () => {
     if (!customer?.id) return;
     setLoadingVals(true);
     try {
-      const { data, error } = await supabase.rpc("customer_get_own_valuations");
+      const { data, error } = await supabase.rpc("customer_get_my_valuations");
       if (error) throw error;
+      console.log("fetchValuations data", data);
       setValuations(data ?? []);
     } catch (err) {
       console.error("fetchValuations error", err);
@@ -96,20 +97,16 @@ export const useCustomerData = () => {
     }
   }, [customer?.id]);
 
-  const deleteValuation = useCallback(async (id: string) => {
-    if (!id) return;
-    setLoadingVals(true);
-    try {
-      const { error } = await supabase.rpc("customer_delete_valuation", { p_valuation_id: id });
-      if (error) throw error;
-      setValuations((p) => p.filter((v) => v.id !== id));
-      toast({ title: "Raderad", description: "Värdering borttagen." });
-    } catch (err) {
-      console.error("deleteValuation error", err);
-      toast({ title: "Fel", description: "Kunde inte ta bort värdering.", variant: "destructive" });
-    } finally {
-      setLoadingVals(false);
-    }
+  const deleteValuation = useCallback(async (valuationId: string) => {
+    console.log("DELETE valuationId:", valuationId, typeof valuationId);
+
+    const { error } = await supabase.rpc("admin_delete_valuation", {
+      p_valuation_id: valuationId
+    });
+
+    if (error) throw error;
+    setValuations((p) => p.filter((v) => v.id !== valuationId));
+    toast({ title: "Raderad", description: "Värdering borttagen." });
   }, [toast]);
 
   useEffect(() => {

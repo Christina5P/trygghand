@@ -249,8 +249,8 @@ export async function analyzeAndSaveImages(
   
   // Använd de permanenta URL:erna vid lagring i databasen
   try {
-    const saved = await saveValuation(customerIdToSend, analysisResult, permanentImageUrls);
-    return { analysis: analysisResult, saved };
+    await saveValuation(analysisResult, permanentImageUrls);
+    return { analysis: analysisResult };
   } catch (err) {
     console.error("Error saving valuation via saveValuation:", err);
     throw err;

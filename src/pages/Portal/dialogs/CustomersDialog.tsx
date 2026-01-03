@@ -373,7 +373,7 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
 
       if (error) throw error;
       // Uppdatera lokalt state
-      setCustomerCases(prev => prev.map(c => c.id === caseId ? { ...c, status: newStatus } : c));
+      setCustomerCases(prev => prev.map(c => c.id === caseId ? { ...c, status: newStatus as Case['status'] } : c));
     } catch (err) {
       console.error("Error updating case status:", err);
       toast({ title: "Fel", description: "Kunde inte uppdatera status.", variant: "destructive" });

@@ -163,23 +163,15 @@ const ValueEstimator: React.FC<Props> = ({ customerId = null, onSaved, ...props 
 
         // STEG 2: Spara värdering och URL:er (med Klient-Fetch till din säkra Backend/Edge Function)
         console.debug("2. Saving valuation to backend API...");
-        const analysisJsonString = JSON.stringify(analysisResult);
-        // imageUrls är nu garanterat string[], vilket löser ditt tidigare typfel!
-        const saved = await saveValuation(customerId, analysisJsonString, imageUrls);
-
-
-      console.debug("Save response:", saved);
-
-      if (!saved || !saved.id) {
-        throw new Error(`Sparning misslyckades: ogiltigt svar från servern: ${JSON.stringify(saved)}`);
-      }
-
-      const savedIdStr = String(saved.id);
-      toast({
-        title: "Sparat",
-        description: `Värdering #${savedIdStr.substring(0, 8)} sparad.`
-      });
-
+        // imageUrls är nu garanterat string[], vilket löser ditt tidigare typfel!
+        const analysisPayload = {
+          analysis_result: analysisResult,
+          source: "value_estimator",
+        };
+        await saveValuation(analysisPayload, imageUrls);
+      toast({
+        title: "Sparat",
+        description: `Värdering sparad.`});
       setFiles([]);
       setAnalysisResult(null);
       onSaved?.();
