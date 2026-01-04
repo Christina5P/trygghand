@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Terms: React.FC = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
@@ -117,7 +120,7 @@ const Terms: React.FC = () => {
               <p className="mb-4">Vi arbetar professionellt och omsorgfullt. Om vi gör fel som orsakar dig skada ansvarar vi för det.</p>
 
               <p className="font-semibold mb-2">Försäkring:</p>
-              <p className="mb-4">Trygg Hand har en ansvarsförsäkring hos If Skadeförsäkring som täcker skador på egendom som vi eller våra underleverantörer orsakar under uppdraget (vid flytt, städning, hantering av bohag).</p>
+              <p className="mb-4">Trygg Hand har en ansvarsförsäkring som täcker skador på egendom som vi eller våra underleverantörer orsakar under uppdraget (vid flytt, städning, hantering av bohag).</p>
 
               <p className="font-semibold mb-2">Skadeanmälan:</p>
               <p className="mb-4">Upptäcker du en skada måste du anmäla den skriftligt till oss inom 7 dagar.</p>
