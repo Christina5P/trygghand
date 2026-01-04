@@ -1,0 +1,45 @@
+Options -MultiViews
+RewriteEngine On
+
+# Handle Angular and React Router
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/service-worker\.js$
+RewriteCond %{REQUEST_URI} !^/manifest\.json$
+RewriteCond %{REQUEST_URI} !^/favicon\.ico$
+RewriteCond %{REQUEST_URI} !^/favicon-.*\.png$
+RewriteCond %{REQUEST_URI} !^/apple-touch-icon\.png$
+RewriteRule . /index.html [L]
+
+# Security headers for PWA
+<Files "service-worker.js">
+  <RequireAll>
+    Require method GET
+    Require expr "%{HTTP_HOST} == 'trygghand.com'"
+  </RequireAll>
+</Files>
+
+# Cache headers for static assets
+<FilesMatch "\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
+  <IfModule mod_expires.c>
+    ExpiresActive on
+    ExpiresDefault "access plus 1 year"
+  </IfModule>
+  <IfModule mod_headers.c>
+    Header set Cache-Control "public, immutable"
+  </IfModule>
+</FilesMatch>
+
+# PWA specific headers
+<Files "manifest.json">
+  <IfModule mod_headers.c>
+    Header set Content-Type "application/manifest+json"
+  </IfModule>
+</Files>
+
+<Files "service-worker.js">
+  <IfModule mod_headers.c>
+    Header set Service-Worker-Allowed "/"
+    Header set Cache-Control "no-cache"
+  </IfModule>
+</Files>

@@ -48,7 +48,10 @@ export default defineConfig(({ command }) => {
           },
         },
       },
+      outDir: 'dist',
+      assetsDir: 'assets',
     },
+    publicDir: 'public',
     envPrefix: 'VITE_',
   };
 });
