@@ -1,6 +1,18 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, ArrowLeft, CheckCircle, MessageSquare, Clock, UserCheck, Shield } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ArrowLeft,
+  CheckCircle,
+  Shield,
+  FileText,
+  KeyRound,
+  ClipboardList,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const RadgivningPlanering = () => {
@@ -12,13 +24,11 @@ const RadgivningPlanering = () => {
   };
 
   const handleConsultationClick = () => {
-    // Om vi redan är på startsidan kan vi bara scrolla
     if (window.location.pathname === "/") {
       scrollToSection("kontakt");
     } else {
-      // Navigera till startsidan först och scrolla efter render
       navigate("/", { replace: false });
-      setTimeout(() => scrollToSection("kontakt"), 100); // öka timeout lite
+      setTimeout(() => scrollToSection("kontakt"), 100);
     }
   };
 
@@ -34,146 +44,139 @@ const RadgivningPlanering = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <button
-            onClick={handleBackToServicesClick}
-            className="inline-flex items-center text-primary hover:text-primary/80 mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Tillbaka till tjänster
-          </button>
+        {/* Tillbaka */}
+        <button
+          onClick={handleBackToServicesClick}
+          className="inline-flex items-center text-primary hover:text-primary/80 mb-8"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Tillbaka till tjänster
+        </button>
 
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+        {/* ================= HERO ================= */}
+        <div className="max-w-4xl mx-auto mb-12">
+          <div className="flex items-start gap-5">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
               <Shield className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Rådgivning & Planering</h1>
-              <p className="text-xl text-muted-foreground">Vägledning genom hela processen</p>
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Rådgivning & planering – när du behöver struktur och trygghet
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Vi hjälper dig att förstå vad som behöver göras, i vilken
+                ordning – och ser till att inget viktigt faller mellan stolarna.
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <Card className="mb-8 transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
+        {/* ================= INNEHÅLL ================= */}
+        <div className="max-w-4xl mx-auto space-y-10">
+          {/* Vad vi hjälper till med */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Personlig vägledning hela vägen</CardTitle>
+              <CardTitle>Vad rådgivningen omfattar</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <p className="text-muted-foreground leading-relaxed text-lg">
-                Vi erbjuder snabbt svar på många frågor direkt på hemsidan och ni kan följa hela processen 
-                när ni loggat in på mina sidor.
-              </p>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-foreground">Vad vi hjälper dig med:</h3>
-                  <ul className="space-y-2">
-                    {[
-                      "Initial behovsanalys",
-                      "Planering av hela processen",
-                      "Information och stöd i olika boendealternativ ",
-                      "Kontakt med Landsting, Skatteverket, Abonnemangstjänster m.m.",
-                      "Hjälp att planera vita arkivet",
-                      "Information om framtidsfullmakt, god man och testamente",
-                      "Information om hjälpmedel och hur man får dem",
-                      "Digitalt stöd för att hålla kontakt med vänner och familj",
-                      "Hjälp att förstå och samordna kontakter med hemtjänst, vårdcentral, sjukhus, biståndshandläggare",
-                      "Råd kring juridiska frågor",
-                      "Stöd vid försäljning av bostad",
-                    ].map((item, index) => (
-                      <li key={index} className="flex items-start">
-                        <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
-                        <span className="text-muted-foreground text-sm">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-foreground">Din kontaktperson:</h3>
-                  <ul className="space-y-2">
-                    {[
-                      "Personlig koordinator",
-                      "Tillgänglig via telefon och e-post",
-                      "Regelbunden uppföljning",
-                      "Stöd genom hela processen",
-                      "Expertkunskap inom området",
-                      "Empati och förståelse"
-                    ].map((item, index) => (
-                      <li key={index} className="flex items-start">
-                        <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
-                        <span className="text-muted-foreground text-sm">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+            <CardContent>
+              <ul className="space-y-3 text-muted-foreground text-sm">
+                {[
+                  "Initial behovsanalys och överblick",
+                  "Planering av hela processen vid äldreflytt eller dödsbo",
+                  "Stöd kring boendealternativ och nästa steg",
+                  "Samordning av viktiga kontakter (myndigheter, tjänster, abonnemang)",
+                  "Stöd i planering av Vita Arkivet",
+                  "Översiktlig information om framtidsfullmakt, testamente och god man",
+                  "Rådgivning inför värdering, försäljning eller avveckling",
+                ].map((item, index) => (
+                  <li key={index} className="flex items-start">
+                    <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
-              <CardContent className="pt-6 text-center">
-                <MessageSquare className="h-12 w-12 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Snabba svar</h3>
-                <p className="text-sm text-muted-foreground">
-                  Få svar på dina frågor direkt via vår hemsida eller genom din personliga kontakt
-                </p>
-              </CardContent>
-            </Card>
+          {/* Digitalt arv */}
+          <Card className="bg-muted/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <KeyRound className="h-5 w-5 text-primary" />
+                Digitalt arv – något många inte tänker på
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-muted-foreground text-sm">
+              <p>
+                Digitalt arv handlar om allt det som finns digitalt i dag –
+                konton, bilder, mejl och abonnemang – och vad som händer med dem
+                när någon inte längre kan hantera dem själv.
+              </p>
 
-            <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
-              <CardContent className="pt-6 text-center">
-                <Clock className="h-12 w-12 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Följ processen</h3>
-                <p className="text-sm text-muted-foreground">
-                  Logga in på "Mina sidor" för att följa hela processen och se uppdateringar i realtid
-                </p>
-              </CardContent>
-            </Card>
+              <ul className="space-y-2">
+                {[
+                  "Översikt av digitala konton och tjänster",
+                  "Stöd i att dokumentera inloggningar och önskemål",
+                  "Råd kring sociala medier, e-post och molntjänster",
+                  "Avslut eller överlämning av digitala abonnemang",
+                ].map((item, index) => (
+                  <li key={index} className="flex items-start">
+                    <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
 
-            <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
-              <CardContent className="pt-6 text-center">
-                <UserCheck className="h-12 w-12 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Personlig service</h3>
-                <p className="text-sm text-muted-foreground">
-                  Din dedikerade koordinator guidar dig genom varje steg av processen
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+              <p className="italic">
+                Målet är att skapa trygghet, respekt och tydlighet – både nu och
+                för framtiden.
+              </p>
+            </CardContent>
+          </Card>
 
+          {/* Process */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Så fungerar vår rådgivning:</CardTitle>
+              <CardTitle>Så fungerar rådgivningen</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[1, 2, 3, 4].map((step) => (
-                  <div key={step} className="flex items-start">
-                    <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold mr-4 mt-1">{step}</div>
-                    <div>
-                      <h4 className="font-medium text-foreground">
-                        {step === 1 && "Första konsultationen"}
-                        {step === 2 && "Planering"}
-                        {step === 3 && "Genomförande"}
-                        {step === 4 && "Uppföljning"}
-                      </h4>
-                      <p className="text-muted-foreground text-sm">
-                        {step === 1 && "Vi träffas för att förstå dina behov och situation"}
-                        {step === 2 && "Vi skapar en detaljerad plan anpassad efter dina behov"}
-                        {step === 3 && "Vi följer planen med regelbundna uppdateringar"}
-                        {step === 4 && "Vi säkerställer att allt genomförts enligt plan"}
-                      </p>
-                    </div>
+            <CardContent className="space-y-4">
+              {[
+                {
+                  step: "Första samtal",
+                  text: "Vi går igenom din situation och skapar en tydlig överblick.",
+                },
+                {
+                  step: "Planering",
+                  text: "Vi tar fram en strukturerad plan anpassad efter dina behov.",
+                },
+                {
+                  step: "Samordning",
+                  text: "Vi stöttar och följer upp under processens gång.",
+                },
+                {
+                  step: "Avslut & uppföljning",
+                  text: "Vi säkerställer att inget viktigt missas.",
+                },
+              ].map((item, index) => (
+                <div key={index} className="flex items-start">
+                  <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold mr-4 mt-1">
+                    {index + 1}
                   </div>
-                ))}
-              </div>
+                  <div>
+                    <h4 className="font-medium text-foreground">
+                      {item.step}
+                    </h4>
+                    <p className="text-muted-foreground text-sm">
+                      {item.text}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
 
+        {/* CTA */}
         <div className="mt-12 text-center">
           <Button
             size="lg"

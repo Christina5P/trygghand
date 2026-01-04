@@ -9,6 +9,7 @@ const Magasinering = () => {
 
   useEffect(() => {
     document.title = "Magasinering - Trygg Hand";
+    window.scrollTo(0, 0);
   }, []);
   
     const scrollToSection = (id: string) => {
@@ -31,7 +32,7 @@ const Magasinering = () => {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
-          <div className="mb-8">
+          <div className="max-w-4xl mx-auto mb-8">
             <button
               onClick={handleBackToServicesClick}
               className="inline-flex items-center text-primary hover:text-primary/80 mb-4"
@@ -53,7 +54,7 @@ const Magasinering = () => {
         <div className="max-w-4xl mx-auto">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Säker förvaring för dina värdesaker</CardTitle>
+              <CardTitle className="text-xl">Säker förvaring för dina föremål</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <p className="text-muted-foreground leading-relaxed text-lg">

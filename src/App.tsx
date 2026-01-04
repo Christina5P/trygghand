@@ -28,7 +28,7 @@ import Forsaljning from "@/pages/services/Forsaljning";
 import Stadning from "@/pages/services/Stadning";
 import Flytt from "@/pages/services/Flytt";
 import TomningBohag from "@/pages/services/TomningBohag";
-import Vardering from "@/pages/services/vardering-ai";
+import Vardering from "@/pages/services/Vardering-ai";
 import Magasinering from "@/pages/services/Magasinering";
 import RadgivningPlanering from "@/pages/services/RadgivningPlanering";
 import Juridikguide from "@/pages/services/Juridikguide";
@@ -64,13 +64,13 @@ function App() {
               <Route path="/services/stadning" element={<Stadning />} />
               <Route path="/services/flytt" element={<Flytt />} />
               <Route path="/services/tomning-bohag" element={<TomningBohag />} />
-              {/*<Route path="/services/vardering" element={<Vardering />} />*/}
+              <Route path="/services/vardering" element={<Vardering />} />
               <Route path="/services/magasinering" element={<Magasinering />} />
-              <Route path="/services/RadgivningPlanering" element={<RadgivningPlanering />} />
+              <Route path="/services/radgivning-planering" element={<RadgivningPlanering />} />
 
         
               {/* 🧠 AI Värdering */}
-              <Route path="/vardering-ai" element={<Vardering />} />
+              {/*<Route path="/vardering-ai" element={<Vardering />} />*/}
               {/* 🧑‍💼 Portaler */}
               <Route path="/portal" element={<Portal />} />
               <Route path="/adminportal" element={<AdminPortal />} />

@@ -9,6 +9,7 @@ const Stadning = () => {
 
   useEffect(() => {
     document.title = "Städning - Trygg Hand";
+    window.scrollTo(0, 0);
   }, []);
 
   const scrollToSection = (id: string) => {
