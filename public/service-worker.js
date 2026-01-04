@@ -2,7 +2,13 @@ const CACHE_NAME = 'trygg-hand-v1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/favicon.ico',
+  '/favicon-16x16.png',
+  '/favicon-32x32.png',
+  '/favicon-192x192.png',
+  '/favicon-512x512.png',
+  '/apple-touch-icon.png'
 ];
 
 // Install event - cache assets
