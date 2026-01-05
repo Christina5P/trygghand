@@ -11,10 +11,13 @@ const Hero = () => {
           <div className="space-y-8">
             <div className="space-y-4">
               <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                Från beslut till nytt kapitel
+                Helhetskoordinator för dödsbo och seniorförändring
               </h1>
+              <h2 className="text-2xl lg:text-4xl font-semibold text-foreground/80 leading-tight">
+                Från beslut till nytt kapitel
+              </h2>
               <p className="text-xl text-foreground leading-relaxed">
-                Vi erbjuder helhetslösning för livsförändringar, äldreflytt och hantering av dödsbo. 
+                Vi erbjuder servicepaket för seniorförändring och dödsbohantering. 
                 Med digital uppföljning och komplett koordinering – all hjälp du behöver, på ett tryggt och smidigt sätt.
               </p>
             </div>
@@ -26,7 +29,7 @@ const Hero = () => {
     <ArrowRight className="ml-2 h-5 w-5" />
   </Button>
 </a>
-             <a href="#las-mer-tjanster">
+             <a href="#paketlosningar">
     <Button variant="outline" size="lg" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"> Läs mer om våra tjänster
  </Button>
 </a>

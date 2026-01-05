@@ -14,6 +14,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 
 const RadgivningPlanering = () => {
   const navigate = useNavigate();
@@ -43,6 +44,11 @@ const RadgivningPlanering = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Rådgivning & planering | Trygg Hand"
+        description="Professionell rådgivning och planering för dödsbohantering, äldreflytt och framtidsplanering. Struktur och trygghet i svåra situationer."
+        canonical="https://www.trygghand.com/services/radgivning-planering"
+      />
       <div className="container mx-auto px-4 py-8">
         {/* Tillbaka */}
         <button
@@ -185,6 +191,9 @@ const RadgivningPlanering = () => {
           >
             Boka kostnadsfri konsultation
           </Button>
+          <p className="text-muted-foreground mt-4">
+            Denna tjänst ingår ofta i våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering och seniorförändring</a>.
+          </p>
         </div>
       </div>
     </div>

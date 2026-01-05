@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Shield, CheckCircle, ArrowLeft } from "lucide-react";
+import Seo from "@/components/Seo";
 
 const Flytt = () => {
   const navigate = useNavigate();
@@ -30,6 +31,11 @@ const Flytt = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Flytt och tömning av dödsbo | Trygg Hand"
+        description="Professionell flytt och tömning som del av våra servicepaket vid seniorförändring – säker och omsorgsfull hantering."
+        canonical="https://www.trygghand.com/services/flytt"
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <button
@@ -46,6 +52,7 @@ const Flytt = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground">Flytt</h1>
+              <h2 className="text-xl font-semibold text-foreground/80">Del av våra servicepaket vid seniorförändring</h2>
               <p className="text-xl text-muted-foreground">Sortering och borttransport</p>
             </div>
           </div>
@@ -120,6 +127,12 @@ const Flytt = () => {
           >
             Boka kostnadsfri konsultation
           </Button>
+        </div>
+
+        <div className="mt-12 text-center">
+          <p className="text-muted-foreground mb-4">
+            Denna tjänst ingår ofta i våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket vid seniorförändring</a>.
+          </p>
         </div>
       </div>
     </div>

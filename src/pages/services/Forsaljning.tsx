@@ -4,12 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle, Clock, TrendingUp } from "lucide-react"; 
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import Seo from "@/components/Seo";
 
 function Forsaljning() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Förmedling & Försäljning - Trygg Hand";
+    // document.title = "Förmedling & Försäljning - Trygg Hand";
   }, []);
 
   const scrollToSection = (id: string) => {
@@ -31,6 +32,11 @@ function Forsaljning() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Förmedling & Försäljning av dödsbo | Trygg Hand"
+        description="Professionell försäljning av dödsboegendom – auktioner, direktförsäljning och värdering i Sundsvall."
+        canonical="https://www.trygghand.com/services/forsaljning"
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto mb-8">
           <button
@@ -162,6 +168,9 @@ function Forsaljning() {
           >
             Boka kostnadsfri konsultation & värdering
           </Button>
+          <p className="text-muted-foreground mt-4">
+            Denna tjänst ingår ofta i våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering</a>.
+          </p>
         </div>
       </div>
     </div>

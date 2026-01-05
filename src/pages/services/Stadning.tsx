@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, ArrowLeft, CheckCircle, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import Seo from "@/components/Seo";
 
 const Stadning = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Städning - Trygg Hand";
+    // document.title = "Städning - Trygg Hand";
     window.scrollTo(0, 0);
   }, []);
 
@@ -29,6 +30,11 @@ const Stadning = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Städning av dödsbo i Sundsvall – samordnat & tryggt"
+        description="Professionell städning av dödsbo i Sundsvall."
+        canonical="https://www.trygghand.com/services/stadning"
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <button
@@ -131,6 +137,9 @@ const Stadning = () => {
           >
             Boka kostnadsfri konsultation
           </Button>
+          <p className="text-muted-foreground mt-4">
+            Denna tjänst ingår ofta i våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering och seniorförändring</a>.
+          </p>
         </div>
       </div>
     </div>

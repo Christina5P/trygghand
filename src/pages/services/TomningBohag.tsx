@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Shield, ArrowLeft, CheckCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import Seo from "@/components/Seo";
 
 const TomningBohag = () => {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    document.title = "Tömning av Bohag - Trygg Hand";
-  }, []);
+  // useEffect(() => {
+  //   document.title = "Tömning av Bohag - Trygg Hand";
+  // }, []);
  
    const scrollToSection = (id: string) => {
      const el = document.getElementById(id);
@@ -30,6 +31,11 @@ const TomningBohag = () => {
  
    return (
      <div className="min-h-screen bg-background">
+       <Seo
+         title="Tömning av bohag | Trygg Hand"
+        description="Professionell tömning av bohag som del av våra servicepaket för dödsbohantering – sortering och borttransport."
+         canonical="https://www.trygghand.com/services/tomning-bohag"
+       />
        <div className="container mx-auto px-4 py-8">
          <div className="mb-8">
            <button
@@ -46,6 +52,7 @@ const TomningBohag = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground">Tömning av Bohag</h1>
+              <h2 className="text-xl font-semibold text-foreground/80">Del av våra servicepaket för dödsbohantering</h2>
               <p className="text-xl text-muted-foreground">Sortering och borttransport</p>
             </div>
           </div>
@@ -116,6 +123,9 @@ const TomningBohag = () => {
             </Button>
           </Link>
 
+          <p className="text-muted-foreground mt-4 text-center">
+            Denna tjänst ingår ofta i våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering</a>.
+          </p>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import Seo from "./Seo";
 
 const FragorTips = () => {
   useEffect(() => {
@@ -270,6 +271,11 @@ content: (
 
   return (
     <div className="min-h-screen">
+      <Seo
+        title="Frågor & Tips om dödsbo | Trygg Hand"
+        description="Få svar på vanliga frågor om dödsbohantering, bouppteckning och arv i Sverige."
+        canonical="https://www.trygghand.com/fragor-tips"
+      />
       {/* Global header — visa utan utloggning på denna sida */}
       <Header />
 
@@ -398,6 +404,12 @@ content: (
           </Card>
         </div>
       </main>
+
+      <div className="text-center py-8 bg-muted/50">
+        <p className="text-muted-foreground">
+          För professionell hjälp med dödsbohantering, se våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering</a>.
+        </p>
+      </div>
       
       <Footer />
     </div>

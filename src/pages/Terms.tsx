@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import Seo from "@/components/Seo";
 
 const Terms: React.FC = () => {
   useEffect(() => {
@@ -10,6 +11,12 @@ const Terms: React.FC = () => {
   }, []);
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <Seo
+        title="Allmänna Villkor | Trygg Hand"
+        description="Läs våra allmänna villkor för tjänster inom dödsbohantering och äldreflytt."
+        canonical="https://www.trygghand.com/terms"
+        robots="noindex, follow"
+      />
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <Button variant="ghost" asChild className="mb-4">

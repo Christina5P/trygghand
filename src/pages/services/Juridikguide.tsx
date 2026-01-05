@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import Seo from "@/components/Seo";
 
 export default function Juridikguide() {
   const navigate = useNavigate();
@@ -20,6 +21,11 @@ export default function Juridikguide() {
       className="prose max-w-3xl mx-auto py-12 px-4"
       style={{ backgroundImage: "linear-gradient(180deg, rgba(250,250,250,0.6), transparent)" }}
     >
+      <Seo
+        title="Juridisk guide | Trygg Hand"
+        description="En vägledande juridisk översikt för anhöriga vid dödsbo. Ej juridisk rådgivning."
+        canonical="https://www.trygghand.com/services/juridikguide"
+      />
       <div className="mb-6">
         <button
           onClick={() => navigate(-1)}
@@ -100,6 +106,10 @@ export default function Juridikguide() {
               Genom att skicka denna förfrågan godkänner du att vi kontaktar dig angående våra tjänster.
             </p>
           </form>
+
+          <p className="text-muted-foreground mt-4 text-center">
+            För kompletta lösningar, se våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering</a>.
+          </p>
         </div>
       </div>
     </main>

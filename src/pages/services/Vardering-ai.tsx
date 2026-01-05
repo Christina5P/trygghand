@@ -8,12 +8,13 @@ import {
 import { ArrowLeft, ClipboardCheck, Lock, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import Seo from "@/components/Seo";
 
 const Vardering = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = "Värdering & beslutsunderlag - Trygg Hand";
+    // document.title = "Värdering & beslutsunderlag - Trygg Hand";
   }, []);
 
   const scrollToSection = (id: string) => {
@@ -33,6 +34,11 @@ const Vardering = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Digital värderingshjälp för bohag – vägledande bedömning | Trygg Hand"
+        description="En digital, vägledande värderingshjälp som stöd för planering – ej juridisk eller marknadsvärdering."
+        canonical="https://www.trygghand.com/services/vardering"
+      />
       <div className="container mx-auto px-4 py-8">
         {/* Tillbaka */}
         <button
@@ -164,6 +170,9 @@ const Vardering = () => {
           >
             Boka kostnadsfri första bedömning
           </Button>
+          <p className="text-muted-foreground mt-4">
+            Denna tjänst ingår ofta i våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering</a>.
+          </p>
         </div>
       </div>
     </div>

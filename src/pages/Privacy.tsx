@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 
 export default function Privacy() {
   const navigate = useNavigate();
@@ -20,6 +21,12 @@ export default function Privacy() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
+      <Seo
+        title="Integritetspolicy | Trygg Hand"
+        description="Läs vår integritetspolicy och cookie-policy för att förstå hur vi hanterar dina personuppgifter."
+        canonical="https://www.trygghand.com/privacy"
+        robots="noindex, follow"
+      />
       <button onClick={handleBack} className="inline-flex items-center text-primary hover:underline mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" />
         Tillbaka

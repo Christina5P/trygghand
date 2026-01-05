@@ -4,6 +4,7 @@ import Services from "@/components/Services";
 import About from "@/components/About";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import Seo from "@/components/Seo";
 import { supabase } from "@/lib/supabase";
 // Define Route types directly here
 type LoaderArgs = { request: Request };
@@ -19,6 +20,11 @@ export const Route = {
 const Index = () => {
   return (
     <div className="min-h-screen">
+      <Seo
+        title="Helhetskoordinator för dödsbo & äldreflytt i Sundsvall"
+        description="Vi erbjuder servicepaket för seniorförändring och dödsbohantering i Sundsvall – samordning, städ, uppsägningar och digital översikt."
+        canonical="https://www.trygghand.com/"
+      />
       <Header />
       <main>
         <Hero />

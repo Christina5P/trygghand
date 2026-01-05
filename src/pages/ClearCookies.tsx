@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Seo from "@/components/Seo";
 
 export default function ClearCookies() {
   const [done, setDone] = useState(false);
@@ -19,6 +20,12 @@ export default function ClearCookies() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-xl text-center">
+      <Seo
+        title="Rensa Cookies | Trygg Hand"
+        description="Rensa dina cookies och återställ cookie-inställningar för Trygg Hand."
+        canonical="https://www.trygghand.com/clearcookies"
+        robots="noindex, follow"
+      />
       <h1 className="text-2xl font-bold mb-4">Rensa cookies</h1>
 
       {done ? (

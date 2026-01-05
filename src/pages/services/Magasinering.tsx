@@ -3,14 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Shield, ArrowLeft, CheckCircle, Heart, MapPin } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import Seo from "@/components/Seo";
 
 const Magasinering = () => {
  const navigate = useNavigate();
 
-  useEffect(() => {
-    document.title = "Magasinering - Trygg Hand";
-    window.scrollTo(0, 0);
-  }, []);
+  // useEffect(() => {
+  //   document.title = "Magasinering - Trygg Hand";
+  //   window.scrollTo(0, 0);
+  // }, []);
   
     const scrollToSection = (id: string) => {
       const el = document.getElementById(id);
@@ -31,6 +32,11 @@ const Magasinering = () => {
   
     return (
       <div className="min-h-screen bg-background">
+        <Seo
+          title="Magasinering av dödsbo | Trygg Hand"
+          description="Säker och klimatkontrollerad magasinering av dina värdefulla föremål. Flexibla lösningar för tillfällig förvaring."
+          canonical="https://www.trygghand.com/services/magasinering"
+        />
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto mb-8">
             <button
@@ -139,6 +145,9 @@ const Magasinering = () => {
             </Button>
           </Link>
 
+          <p className="text-muted-foreground mt-4">
+            Denna tjänst ingår ofta i våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering och seniorförändring</a>.
+          </p>
         </div>
       </div>
     </div>

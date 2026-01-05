@@ -3,6 +3,7 @@ import { Shield, Heart, Clock, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Review, { Review as ReviewType } from "./Reviews";
+import Seo from "./Seo";
 
 
 const About = () => {
@@ -44,6 +45,13 @@ const About = () => {
 
   return (
     <section id="about" className="py-20 bg-soft-gray/30">
+      {location.pathname === "/about" && (
+        <Seo
+          title="Om oss | Trygg Hand"
+          description="Läs mer om Trygg Hand – din pålitliga partner för dödsbohantering och äldreflytt i Sundsvall."
+          canonical="https://www.trygghand.com/about"
+        />
+      )}
       <div className="container mx-auto px-4">
         {location.pathname === "/about" && (
           <div className="mb-6">
@@ -116,6 +124,14 @@ const About = () => {
             </div>
           </div>
         </div>
+
+        {location.pathname === "/about" && (
+          <div className="text-center py-8 bg-muted/50 mt-12">
+            <p className="text-muted-foreground">
+              Utforska våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering och seniorförändring</a>.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );
