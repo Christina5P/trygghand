@@ -39,7 +39,7 @@ export default function Privacy() {
 
       <h2 className="font-semibold mt-6">Vem ansvarar för uppgifterna?</h2>
       <p className="mb-2">
-        Trygg Partner (org.nr ) är personuppgiftsansvarig. Det innebär att Trygg Hand är ansvarig för dina personuppgifter. För frågor: <a href="mailto:kontakt@trygghand.com" className="underline">kontakt@trygghand.com</a>
+        Trygg Partner (559564-3445) är personuppgiftsansvarig. Det innebär att Trygg Hand är ansvarig för dina personuppgifter. För frågor: <a href="mailto:kontakt@trygghand.com" className="underline">kontakt@trygghand.com</a>
       </p>
 
       <h2 className="font-semibold mt-6">Vad samlar vi in?</h2>
@@ -62,7 +62,7 @@ export default function Privacy() {
 
       <h2 className="font-semibold mt-6">Tredje parter / leverantörer</h2>
       <p className="mb-2">
-        Vi använder vissa tjänster (databas). Dessa är personuppgiftsbiträden och vi har avtal för att skydda dina uppgifter.
+        Vi använder vissa tjänster (databas). Dessa är personuppgiftsbiträden och vi har avtal för att skydda dina uppgifter. För statistik använder vi Google (Google Ireland Limited) som personuppgiftsbiträde.
       </p>
 
       <h2 className="font-semibold mt-6">Dina rättigheter</h2>
@@ -86,6 +86,14 @@ export default function Privacy() {
       <h2 className="font-semibold mt-8">Cookies - detaljerad information</h2>
       <p className="mb-4 text-base">
         Vi använder några enkla cookies. Här förklarar vi kort vad de gör och varför.
+      </p>
+
+      <h3 className="font-semibold mt-4">Användning av Google Tag Manager och Google Analytics</h3>
+      <p className="mb-2 text-base">
+        Vi använder Google Tag Manager som ett tekniskt verktyg för att hantera trafik till hemsidan. Google Tag Manager i sig lagrar inte några personuppgifter.
+      </p>
+      <p className="mb-2 text-base">
+        Google Analytics 4 används endast för statistik och förbättring av vår tjänst, men endast efter att du har gett ditt aktiva samtycke. Vi använder Google Consent Mode, vilket innebär att analyscookies är blockerade som standard. Ingen statistik skickas innan du aktivt godkänner det. Du kan återkalla ditt samtycke när som helst genom att använda länken "Rensa cookies" längst ned på sidan.
       </p>
 
       <h3 className="font-semibold mt-4">Cookies vi använder</h3>
@@ -117,7 +125,7 @@ export default function Privacy() {
        Det ska vara enkelt att ändra sig! Du kan alltid klicka på länken <a href="/clearcookies" className="text-primary underline hover:text-primary/80">Rensa cookies</a> längst ned på sidan för att enkelt ändra dina inställningar. Självklart kan du också ringa oss så hjälper vi dig.
       </p>
 
-      <p className="text-sm text-muted-foreground">Senast uppdaterad: 2025-10-16</p>
+      <p className="text-sm text-muted-foreground">Senast uppdaterad: 2026-01-07</p>
     </div>
   );
 }

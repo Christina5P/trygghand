@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Seo from "@/components/Seo";
+import { clearCookieConsent } from "@/utils/cookies";
 
 export default function ClearCookies() {
   const [done, setDone] = useState(false);
@@ -8,13 +9,7 @@ export default function ClearCookies() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
-    try {
-      // Ta bort vår consent-cookie i denna webbläsare
-      document.cookie = "trygghand_cookie_consent=; path=/; max-age=0; SameSite=Lax";
-      // (valfritt) ta bort andra cookies här om behövligt
-    } catch (err) {
-      console.error("Could not clear cookies", err);
-    }
+    clearCookieConsent();
     setDone(true);
   }, []);
 

@@ -33,13 +33,18 @@ import Magasinering from "@/pages/services/Magasinering";
 import RadgivningPlanering from "@/pages/services/RadgivningPlanering";
 import Juridikguide from "@/pages/services/Juridikguide";
 import { AuthProvider } from "@/hooks/useAuth";
+import { getCookieConsent, acceptStatisticsCookies } from "@/utils/cookies";
 // 🧠 AI-värdering (ny)
 
 const queryClient = new QueryClient();
 
 function App() {
   useEffect(() => {
-    // här kan du initiera analytics eller liknande
+    // Initiera cookie consent vid sidladdning
+    const consent = getCookieConsent();
+    if (consent === true) {
+      acceptStatisticsCookies();
+    }
   }, []);
 
   return (
