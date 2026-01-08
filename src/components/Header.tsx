@@ -139,6 +139,8 @@ const Header: React.FC = () => {
               >
                 <div className="py-2">
                   <Link to="/#paketlosningar" className="block px-4 py-2 text-primary font-semibold hover:bg-primary/5" onClick={() => setDesktopServicesOpen(false)}>Servicepaket</Link>
+                  <Link to="/#paketlosningar" className="block px-4 py-2 text-primary font-semibold hover:bg-primary/5" onClick={() => setDesktopServicesOpen(false)}>Seniorförändring</Link>
+                  <Link to="/#paketlosningar" className="block px-4 py-2 text-primary font-semibold hover:bg-primary/5" onClick={() => setDesktopServicesOpen(false)}>Dödsbohantering</Link>
                   <Link to="/#las-mer-tjanster" className="block px-4 py-2 text-primary font-semibold hover:bg-primary/5" onClick={() => setDesktopServicesOpen(false)}>Läs mer om våra tjänster</Link>
                   <a href="/services/radgivning-planering" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Rådgivning & planering</a>
                   <a href="/services/stadning" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Städning</a>
@@ -193,6 +195,9 @@ const Header: React.FC = () => {
 
                 {servicesOpen && (
                   <div id="mobile-services-list" className="pl-4">
+                    <span className="block py-2 text-xs font-semibold text-primary">Paketeringar</span>
+                    <Link to="/#paketlosningar" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Seniorförändring</Link>
+                    <Link to="/#paketlosningar" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Dödsbohantering</Link>
                     <Link to="/#las-mer-tjanster" className="block py-2 text-primary font-semibold" onClick={closeMobileMenu}>Läs mer om våra tjänster</Link>
                     <a href="/services/radgivning-planering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Rådgivning & planering</a>
                     <a href="/services/stadning" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Städning</a>
@@ -201,9 +206,6 @@ const Header: React.FC = () => {
                     <a href="/services/vardering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Värdering</a>
                     <a href="/services/forsaljning" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Försäljning</a>
                     <a href="/services/magasinering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Magasinering</a>
-                    <span className="block py-2 text-xs font-semibold text-primary">Paketeringar</span>
-                    <Link to="/#las-mer-tjanster" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Seniorförändring</Link>
-                    <Link to="/#las-mer-tjanster" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Dödsbohantering</Link>
                   </div>
                 )}
               </div>

@@ -59,12 +59,13 @@ const Terms: React.FC = () => {
                 <li>Myndighetsutövning eller beslut</li>
               </ul>
               <p>Den exakta omfattningen av ditt uppdrag framgår av din <strong>uppdragsbekräftelse</strong>, som alltid har företräde framför dessa allmänna villkor.</p>
+              <p>Vi förbehåller oss rätten att avsäga oss en städning ifall vi anser att lägenheten är onormalt nedsmutsad. I sådana fall erbjuder vi möjligheten till timdebitering eller ett nytt fast pris baserat på lägenhetens befintliga skick.</p>
             </section>
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. Innan vi börjar</h2>
               <p className="font-semibold mb-2">Fullmakter:</p>
-              <p className="mb-4">För att vi ska kunna jobba åt dig behöver du ge oss skriftliga fullmakter som visar att du har rätt att agera (särskilt vid dödsbo eller andras bostäder).</p>
+              <p className="mb-4">För att vi ska kunna utföra vissa arbeten åt dig, såsom hantering av dödsbo eller andras bostäder, behöver du ge oss skriftliga fullmakter som visar att du har rätt att agera. För andra typer av uppdrag kan detta inte vara nödvändigt.</p>
 
               <p className="font-semibold mb-2">Korrekta uppgifter:</p>
               <p className="mb-4">Du ansvarar för att informationen du ger oss är korrekt, särskilt om ägarförhållanden, skulder och tillgångar.</p>

@@ -32,7 +32,13 @@ export default function ClearCookies() {
 
           <div className="flex justify-center gap-3">
             <button
-              onClick={() => location.reload()}
+              onClick={() => {
+                navigate("/");
+                setTimeout(() => {
+                  const footer = document.getElementById("footer");
+                  if (footer) footer.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+              }}
               className="px-4 py-2 bg-[#2f6f99] text-white rounded-md"
             >
               Ladda om sidan

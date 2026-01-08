@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
 // Hämta GA Measurement ID från miljövariabler
@@ -6,28 +6,31 @@ const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
 
 export default function GoogleAnalytics() {
   const { user } = useAuth();
+  const [hasAnalyticsConsent, setHasAnalyticsConsent] = useState(false);
 
   useEffect(() => {
-    // Kontrollera cookie-samtycke
-    const getCookie = (name: string) => {
-      return document.cookie
-        .split("; ")
-        .find((row) => row.startsWith(name + "="))
-        ?.split("=")[1];
+    const checkConsent = () => {
+      const getCookie = (name: string) => {
+        return document.cookie
+          .split("; ")
+          .find((row) => row.startsWith(name + "="))
+          ?.split("=")[1];
+      };
+
+      const consentCookie = getCookie("trygghand_cookie_consent");
+      const newConsent = consentCookie === "true";
+      setHasAnalyticsConsent(newConsent);
     };
 
-    const consentCookie = getCookie("trygghand_cookie_consent");
-    let hasAnalyticsConsent = false;
+    checkConsent();
 
-    if (consentCookie) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(consentCookie));
-        hasAnalyticsConsent = parsed.analytics === true;
-      } catch {
-        hasAnalyticsConsent = false;
-      }
-    }
+    // Lyssna på cookie-ändringar genom att kolla regelbundet
+    const interval = setInterval(checkConsent, 1000);
 
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     // Ladda ENDAST om:
     // 1. GA Measurement ID är konfigurerat
     // 2. Användaren är UTLOGGAD (user === null)
@@ -74,8 +77,18 @@ export default function GoogleAnalytics() {
           (window as any).gtag = undefined;
         }
       };
+    } else if (!hasAnalyticsConsent) {
+      // Om consent tas bort, ta bort GA
+      const gaScript = document.getElementById("ga-script");
+      if (gaScript) gaScript.remove();
+      if (window.dataLayer) {
+        (window as any).dataLayer = undefined;
+      }
+      if (window.gtag) {
+        (window as any).gtag = undefined;
+      }
     }
-  }, [user]);
+  }, [user, hasAnalyticsConsent]);
 
   return null;
 }
