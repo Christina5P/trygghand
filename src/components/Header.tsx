@@ -142,13 +142,13 @@ const Header: React.FC = () => {
                   <Link to="/#paketlosningar" className="block px-4 py-2 text-primary font-semibold hover:bg-primary/5" onClick={() => setDesktopServicesOpen(false)}>Seniorförändring</Link>
                   <Link to="/#paketlosningar" className="block px-4 py-2 text-primary font-semibold hover:bg-primary/5" onClick={() => setDesktopServicesOpen(false)}>Dödsbohantering</Link>
                   <Link to="/#las-mer-tjanster" className="block px-4 py-2 text-primary font-semibold hover:bg-primary/5" onClick={() => setDesktopServicesOpen(false)}>Läs mer om våra tjänster</Link>
-                  <a href="/services/radgivning-planering" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Rådgivning & planering</a>
-                  <a href="/services/stadning" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Städning</a>
-                  <a href="/services/tomning-bohag" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Tömning av bohag</a>
-                  <a href="/services/flytt" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Flytt</a>
-                  <a href="/services/vardering" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Värdering</a>
-                  <a href="/services/forsaljning" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Försäljning</a>
-                  <a href="/services/magasinering" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Magasinering</a>
+                  <Link to="/services/radgivning-planering" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Rådgivning & planering</Link>
+                  <Link to="/services/stadning" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Städning</Link>
+                  <Link to="/services/tomning-bohag" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Tömning av bohag</Link>
+                  <Link to="/services/flytt" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Flytt</Link>
+                  <Link to="/services/vardering" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Värdering</Link>
+                  <Link to="/services/forsaljning" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Försäljning</Link>
+                  <Link to="/services/magasinering" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Magasinering</Link>
                 </div>
               </div>
             )}
@@ -199,13 +199,13 @@ const Header: React.FC = () => {
                     <Link to="/#paketlosningar" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Seniorförändring</Link>
                     <Link to="/#paketlosningar" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Dödsbohantering</Link>
                     <Link to="/#las-mer-tjanster" className="block py-2 text-primary font-semibold" onClick={closeMobileMenu}>Läs mer om våra tjänster</Link>
-                    <a href="/services/radgivning-planering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Rådgivning & planering</a>
-                    <a href="/services/stadning" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Städning</a>
-                    <a href="/services/tomning-bohag" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Tömning av bohag</a>
-                    <a href="/services/flytt" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Flytt</a>
-                    <a href="/services/vardering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Värdering</a>
-                    <a href="/services/forsaljning" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Försäljning</a>
-                    <a href="/services/magasinering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Magasinering</a>
+                    <Link to="/services/radgivning-planering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Rådgivning & planering</Link>
+                    <Link to="/services/stadning" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Städning</Link>
+                    <Link to="/services/tomning-bohag" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Tömning av bohag</Link>
+                    <Link to="/services/flytt" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Flytt</Link>
+                    <Link to="/services/vardering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Värdering</Link>
+                    <Link to="/services/forsaljning" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Försäljning</Link>
+                    <Link to="/services/magasinering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Magasinering</Link>
                   </div>
                 )}
               </div>

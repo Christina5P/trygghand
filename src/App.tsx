@@ -18,6 +18,11 @@ import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
+import DodsbohanteringSundsvall from "@/pages/DodsbohanteringSundsvall";
+import TomningAvBohagSundsvall from "@/pages/TomningAvBohagSundsvall";
+import ForsaljningAvBohagSundsvall from "@/pages/ForsaljningAvBohagSundsvall";
+import ChecklistaVidDodsfallSundsvall from "@/pages/ChecklistaVidDodsfallSundsvall";
+import VadIngarIDodsbohantering from "@/pages/VadIngarIDodsbohantering";
 import FragorTips from "@/components/FragorTips";
 import AdminPortal from "@/pages/Portal/AdminPortal";
 import Portal from "@/pages/Portal/Portal";
@@ -59,6 +64,11 @@ function App() {
             <Routes>
               {/* 🌍 Startsida */}
               <Route path="/" element={<Index />} />
+              <Route path="/dodsbohantering-sundsvall" element={<DodsbohanteringSundsvall />} />
+              <Route path="/tomning-av-bohag-sundsvall" element={<TomningAvBohagSundsvall />} />
+              <Route path="/forsaljning-av-bohag-sundsvall" element={<ForsaljningAvBohagSundsvall />} />
+              <Route path="/checklista-vid-dodsfall-sundsvall" element={<ChecklistaVidDodsfallSundsvall />} />
+              <Route path="/vad-ingar-i-dodsbohantering" element={<VadIngarIDodsbohantering />} />
 
               {/* About */}
               <Route path="/about" element={<About />} />

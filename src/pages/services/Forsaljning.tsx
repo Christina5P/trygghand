@@ -56,7 +56,7 @@ function Forsaljning() {
              
               <h1 className="text-3xl font-bold text-foreground"> Försäljningsförmedling</h1> 
              
-              <p className="text-xl text-muted-foreground">Maximera värdet ur dödsboet eller äldreflytten</p> 
+              <p className="text-xl text-muted-foreground">Maximera värdet ur dödsboet eller äldreflytten. För komplett hantering av dödsbo, se vår <Link to="/dodsbohantering-sundsvall" className="text-primary underline">dödsbohantering i Sundsvall</Link>.</p> 
             </div>
           </div>
         </div>

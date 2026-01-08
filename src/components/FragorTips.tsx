@@ -43,7 +43,7 @@ const FragorTips = () => {
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm font-medium">Tips:</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Kontakta oss för professionell hjälp med bouppteckning och tömning i rätt ordning.
+              Kontakta oss för professionell hjälp med bouppteckning och tömning i rätt ordning. Läs mer om vår <Link to="/dodsbohantering-sundsvall" className="text-primary underline">dödsbohantering i Sundsvall</Link>.
             </p>
           </div>
         </div>
