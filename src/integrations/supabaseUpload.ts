@@ -18,7 +18,7 @@ function checkSupabaseIsConfigured(): void {
  * @param files Arrayen av File-objekt att ladda upp.
  * @returns Ett Promise som löser till en array av publika bild-URL:er.
  */
-export async function uploadImages(files: File[]): Promise<string[]> {
+export async function uploadImages(files: File[], folder = "valuations"): Promise<string[]> {
   checkSupabaseIsConfigured();
   
   const uploadBucket = 'images'; // Använder bucket-namnet från din aktiva kod
@@ -26,7 +26,7 @@ export async function uploadImages(files: File[]): Promise<string[]> {
   const uploadPromises = files.map(file => {
     // Skapa ett unikt filnamn och sökväg (t.ex. public/1678888888-image.jpg)
     const safeName = file.name.replace(/\s/g, '_');
-    const fileName = `public/${Date.now()}-${safeName}`;
+    const fileName = folder ? `${folder}/${Date.now()}-${safeName}` : `${Date.now()}-${safeName}`;
     
     // Skicka uppladdningsbegäran
     return supabase!.storage.from(uploadBucket).upload(fileName, file);

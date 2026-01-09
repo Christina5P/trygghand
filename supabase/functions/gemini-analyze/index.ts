@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+/**
+ * ============================
+ * CORS
+ * ============================
+ */
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -8,7 +13,9 @@ const corsHeaders = {
 };
 
 /**
- * 🔐 Deno-säker base64
+ * ============================
+ * Deno-safe Base64 helpers
+ * ============================
  */
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   let binary = "";
@@ -25,7 +32,9 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 
 async function fetchImageAsBase64(url: string) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Kunde inte hämta bild: ${url}`);
+  if (!res.ok) {
+    throw new Error(`Kunde inte hämta bild: ${url}`);
+  }
 
   const mimeType = res.headers.get("content-type") ?? "image/jpeg";
   const buffer = await res.arrayBuffer();
@@ -37,22 +46,30 @@ async function fetchImageAsBase64(url: string) {
 }
 
 /**
- * 🧠 Extrahera JSON ur Gemini-text
+ * ============================
+ * Robust JSON extraction
+ * ============================
  */
 function extractJson(text: string) {
-  // Försök hitta första {...} som är giltig JSON
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) {
     throw new Error("Ingen JSON hittades i Gemini-svaret");
   }
-
   return JSON.parse(match[0]);
 }
 
+/**
+ * ============================
+ * Edge Function
+ * ============================
+ */
 serve(async (req: Request): Promise<Response> => {
-  // ===== CORS =====
+  // ---- CORS preflight ----
   if (req.method === "OPTIONS") {
-    return new Response("ok", { status: 200, headers: corsHeaders });
+    return new Response("ok", {
+      status: 200,
+      headers: corsHeaders,
+    });
   }
 
   if (req.method !== "POST") {
@@ -67,14 +84,17 @@ serve(async (req: Request): Promise<Response> => {
 
     if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
       return new Response(
-        JSON.stringify({ error: "imageUrls saknas" }),
+        JSON.stringify({ error: "imageUrls saknas eller är tom" }),
         { status: 400, headers: corsHeaders }
       );
     }
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) throw new Error("GEMINI_API_KEY saknas");
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY saknas i environment variables");
+    }
 
+    // Dynamisk import (Edge-safe)
     const { GoogleGenerativeAI } = await import(
       "npm:@google/generative-ai"
     );
@@ -84,7 +104,7 @@ serve(async (req: Request): Promise<Response> => {
       model: "gemini-2.5-flash",
     });
 
-    // ===== Bilder → inlineData =====
+    // ---- Images -> inlineData ----
     const imageParts = [];
     for (const url of imageUrls) {
       const img = await fetchImageAsBase64(url);
@@ -96,24 +116,55 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
+    /**
+     * ============================
+     * FINAL PROMPT – Trygg Hand
+     * ============================
+     */
     const prompt = `
-Du är en professionell värderare.
+Du är en professionell värderare specialiserad på den svenska andrahandsmarknaden
+(Blocket, Tradera, auktioner, dödsbon och bohagsavveckling).
 
-Analysera föremålet/föremålen i bilderna.
-Returnera ENDAST ett JSON-objekt.
+Uppgift:
+Analysera föremålet/föremålen i bilderna och uppskatta ett realistiskt
+andrahandsvärde i SEK.
+
+Värderingen ska baseras på:
+- faktiska försäljningspriser (inte annonser)
+- vad privatpersoner och dödsbon rimligen får betalt
+- försäljning inom 1–3 månader
+- normalt skick för ålder och användning
+
+Antaganden:
+- Om information saknas: gör rimliga, försiktiga antaganden
+- Om skick är oklart: anta normalt begagnat skick
+- Var hellre något konservativ än optimistisk
+
+Värdeintervall:
+- varde_min_sek = realistiskt lägsta pris vid snabb försäljning
+- varde_max_sek = rimligt högsta pris vid rätt köpare
+- Skillnaden mellan min och max ska normalt vara 20–40 %
+
+Nypris (viktigt):
+- Ange nypris ENDAST om det går att uppskatta rimligt
+- Nypris ska vara informativt, inte styrande
+- Nypris ska anges inom parentes i beskrivningen, t.ex. "(nypris ca 4 000 kr)"
+- Om nypris är okänt eller irrelevant: utelämna helt
+
+Svara ENDAST med giltig JSON.
 Ingen markdown. Ingen text före eller efter.
 
-Struktur:
+JSON-struktur:
 {
-  "foremal_beskrivning": string,
-  "skick": string,
+  "foremal_beskrivning": "Kort, tydlig beskrivning (eventuellt med nypris inom parentes)",
+  "skick": "Kort bedömning av skick (t.ex. mycket bra, bra, normalt slitage)",
   "varde_min_sek": number,
   "varde_max_sek": number,
-  "motivering": string
+  "motivering": "Kort motivering kopplad till andrahandsmarknaden"
 }
 
-Kommentarer från användaren:
-${comments || "Inga"}
+Användarens kompletterande information:
+${comments || "Ingen extra information"}
 `;
 
     const result = await model.generateContent([
@@ -123,8 +174,18 @@ ${comments || "Inga"}
 
     const rawText = result.response.text();
 
-    // 🔑 ROBUST PARSING
     const parsed = extractJson(rawText);
+
+    // ---- Basic structure validation (safety) ----
+    if (
+      typeof parsed.foremal_beskrivning !== "string" ||
+      typeof parsed.skick !== "string" ||
+      typeof parsed.varde_min_sek !== "number" ||
+      typeof parsed.varde_max_sek !== "number" ||
+      typeof parsed.motivering !== "string"
+    ) {
+      throw new Error("Ogiltig struktur i Gemini-svar");
+    }
 
     return new Response(JSON.stringify(parsed), {
       status: 200,
@@ -134,7 +195,7 @@ ${comments || "Inga"}
       },
     });
   } catch (err) {
-    console.error("Edge error:", err);
+    console.error("Edge function error:", err);
 
     return new Response(
       JSON.stringify({

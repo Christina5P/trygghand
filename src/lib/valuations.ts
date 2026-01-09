@@ -93,6 +93,27 @@ export async function uploadAndSaveValuation(analysis: unknown, files: File[]) {
   await saveValuation(analysis, imageUrls);
 }
 
+export async function deleteValuation(valuationId: string): Promise<void> {
+  if (!valuationId) throw new Error("Missing valuationId");
+
+  // Prefer a dedicated customer RPC if it exists in the DB.
+  const { error: rpcError } = await supabase.rpc("customer_delete_valuation", {
+    p_valuation_id: valuationId,
+  });
+
+  if (!rpcError) return;
+
+  // Fall back only if the RPC is missing.
+  const rpcCode = (rpcError as any)?.code as string | undefined;
+  const rpcMsg = String((rpcError as any)?.message ?? "");
+  const rpcMissing = rpcCode === "PGRST202" || /could not find the function|customer_delete_valuation/i.test(rpcMsg);
+
+  if (!rpcMissing) throw rpcError;
+
+  const { error } = await supabase.from("valuations").delete().eq("id", valuationId);
+  if (error) throw error;
+}
+
 // Sanera filnamn så att Supabase Storage får en giltig key
 const sanitizeFilename = (name: string) =>
   name

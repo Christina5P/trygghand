@@ -1,10 +1,13 @@
-import React, { useState, useRef, useEffect, DragEvent } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { uploadImages } from "../integrations/supabaseUpload";
-import { saveValuation } from "@/lib/valuations";
-import { PlusCircle, Save, Camera, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { saveValuation, deleteValuation } from "@/lib/valuations";
+import { PlusCircle, Save, Camera, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 
+// =====================
+// Typer
+// =====================
 interface ValuationResult {
   foremal_beskrivning: string;
   skick: string;
@@ -15,129 +18,285 @@ interface ValuationResult {
 
 interface Props {
   customerId?: string | null;
+  valuationId?: string | null; // krävs för radering
   onSaved?: () => void;
+  onDeleted?: () => void;
 }
 
-const ValueEstimator: React.FC<Props> = ({ customerId, onSaved }) => {
+// =====================
+// Komponent
+// =====================
+const ValueEstimator: React.FC<Props> = ({
+  customerId = null,
+  valuationId = null,
+  onSaved,
+  onDeleted,
+}) => {
   const [files, setFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
-  const [comments, setComments] = useState("");
-  const [analysis, setAnalysis] = useState<ValuationResult | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [analysisResult, setAnalysisResult] = useState<ValuationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [extraPrompt, setExtraPrompt] = useState("");
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+  // =====================
+  // Preview cleanup
+  // =====================
   useEffect(() => {
-    previews.forEach(URL.revokeObjectURL);
-    setPreviews(files.map((f) => URL.createObjectURL(f)));
+    previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setPreviewUrls(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [files]);
 
-  const addFiles = (list: File[]) => {
-    const images = list.filter((f) => f.type.startsWith("image/"));
-    setFiles(images);
-    setAnalysis(null);
+  // =====================
+  // Filhantering
+  // =====================
+  const addFiles = (incoming: File[]) => {
+    const images = incoming.filter((f) => f.type.startsWith("image/"));
+
+    if (images.some((f) => f.size > MAX_FILE_SIZE)) {
+      setError("En eller flera bilder är för stora (max 50 MB).");
+      return;
+    }
+
+    setFiles((prev) => [...prev, ...images]);
+    setAnalysisResult(null);
   };
 
-  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    if (e.target.files) addFiles(Array.from(e.target.files));
+    e.target.value = "";
+  };
+
+  const handleCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    if (e.target.files) addFiles(Array.from(e.target.files));
+    e.target.value = "";
+  };
+
+  // =====================
+  // Drag & Drop
+  // =====================
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setError(null);
     addFiles(Array.from(e.dataTransfer.files));
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  // =====================
+  // Analys
+  // =====================
   const runAnalysis = async () => {
     setError(null);
     setLoading(true);
+    setAnalysisResult(null);
+
+    if (files.length === 0) {
+      setError("Välj minst en bild att analysera.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const functionBase = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      const imageUrls = await uploadImages(files);
+      const imageUrls = await uploadImages(files, "analysis-temp");
 
-      const res = await fetch(`${functionBase}/analyze-item`, {
+      const response = await fetch(`${functionBase}/analyze-item`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           apikey: anonKey,
           Authorization: `Bearer ${anonKey}`,
         },
-        body: JSON.stringify({ imageUrls, comments }),
+        body: JSON.stringify({
+          imageUrls,
+          comments: extraPrompt || undefined,
+        }),
       });
 
-      if (!res.ok) {
-        const e = await res.json();
-        throw new Error(e.error || "Analys misslyckades");
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: "Okänt fel" }));
+        throw new Error(err.error || "Analysen misslyckades");
       }
 
-      setAnalysis(await res.json());
-    } catch (e: any) {
-      setError(e.message);
+      const result: ValuationResult = await response.json();
+      setAnalysisResult(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Okänt fel vid analys.");
     } finally {
       setLoading(false);
     }
   };
 
-  const save = async () => {
-    if (!analysis || !customerId) return;
-    const imageUrls = await uploadImages(files);
-    await saveValuation({ analysis_result: analysis, source: "value_estimator" }, imageUrls);
-    toast({ title: "Sparat", description: "Värdering sparad" });
-    onSaved?.();
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("sv-SE", {
+      style: "currency",
+      currency: "SEK",
+      maximumFractionDigits: 0,
+    }).format(price);
+
+  // =====================
+  // Spara
+  // =====================
+  const handleSaveValuation = async () => {
+    if (!customerId || !analysisResult) {
+      setError("Ingen värdering att spara.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const imageUrls = await uploadImages(files, "valuations");
+
+      await saveValuation(
+        { analysis_result: analysisResult, source: "value_estimator" },
+        imageUrls
+      );
+
+      toast({
+        title: "Sparat",
+        description: "Värderingen har sparats.",
+      });
+
+      setFiles([]);
+      setAnalysisResult(null);
+      onSaved?.();
+    } catch {
+      toast({
+        title: "Fel",
+        description: "Kunde inte spara värderingen.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // =====================
+  // Radera värdering
+  // =====================
+  const handleDeleteValuation = async () => {
+    if (!valuationId) return;
+
+    if (!confirm("Vill du radera denna värdering? Detta går inte att ångra.")) {
+      return;
+    }
+
+    try {
+      await deleteValuation(valuationId);
+      toast({ title: "Raderad", description: "Värderingen har raderats." });
+      onDeleted?.();
+    } catch {
+      toast({
+        title: "Fel",
+        description: "Kunde inte radera värderingen.",
+      });
+    }
+  };
+
+  // =====================
+  // Render
+  // =====================
   return (
-    <div
-      className="border rounded-lg p-4 bg-white"
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={onDrop}
-    >
-      <input ref={inputRef} type="file" hidden multiple accept="image/*" onChange={(e) => addFiles(Array.from(e.target.files || []))} />
-      <input ref={cameraRef} type="file" hidden accept="image/*" capture="environment" onChange={(e) => addFiles(Array.from(e.target.files || []))} />
+    <div className="w-full max-w-4xl mx-auto px-4">
+      {/* Hidden inputs */}
+      <input ref={inputRef} type="file" multiple accept="image/*" onChange={handleFiles} className="hidden" />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleCameraCapture} className="hidden" />
 
-      <div className="flex gap-2">
-        <Button onClick={() => inputRef.current?.click()}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Välj
-        </Button>
-        <Button variant="outline" onClick={() => cameraRef.current?.click()}>
-          <Camera className="mr-2 h-4 w-4" /> Kamera
-        </Button>
-      </div>
-
-      <textarea
-        className="w-full mt-4 border rounded p-2"
-        placeholder="Kommentarer om föremålet (valfritt)"
-        value={comments}
-        onChange={(e) => setComments(e.target.value)}
-      />
-
-      <div className="flex gap-2 mt-4">
-        <Button onClick={runAnalysis} disabled={loading || files.length === 0}>
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Analysera
-        </Button>
-        <Button onClick={save} disabled={!analysis}>
-          <Save className="mr-2 h-4 w-4" /> Spara
-        </Button>
-      </div>
-
-      {error && <div className="text-red-600 mt-2">{error}</div>}
-
-      <div className="grid grid-cols-3 gap-2 mt-4">
-        {previews.map((p, i) => (
-          <img key={i} src={p} className="rounded border object-cover" />
-        ))}
-      </div>
-
-      {analysis && (
-        <div className="mt-4 p-3 bg-green-50 border rounded">
-          <strong>
-            {analysis.varde_min_sek} – {analysis.varde_max_sek} SEK
-          </strong>
-          <p>{analysis.foremal_beskrivning}</p>
-          <p>{analysis.motivering}</p>
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        className="mt-6 bg-white border rounded-lg shadow p-4 md:p-6"
+      >
+        {/* Upload controls */}
+        <div className="flex gap-2 mb-4">
+          <Button onClick={() => inputRef.current?.click()} className="bg-trust-blue text-white">
+            <PlusCircle className="w-4 h-4 mr-2" /> Välj ({files.length})
+          </Button>
+          <Button onClick={() => cameraInputRef.current?.click()} variant="outline">
+            <Camera className="w-4 h-4 mr-2" /> Kamera
+          </Button>
         </div>
-      )}
+
+        {/* Action buttons */}
+        <div className="flex gap-2 mb-4">
+          <Button
+            onClick={runAnalysis}
+            disabled={loading || files.length === 0}
+            className="bg-trust-green text-white hover:bg-trust-green/90"
+          >
+            {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            Analysera
+          </Button>
+
+          <Button
+            onClick={handleSaveValuation}
+            disabled={loading || !analysisResult}
+            className="bg-trust-blue text-white"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Spara
+          </Button>
+
+          {valuationId && (
+            <Button onClick={handleDeleteValuation} variant="destructive">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Radera
+            </Button>
+          )}
+        </div>
+
+        {/* Extra information – placeholder återställd */}
+        <textarea
+          value={extraPrompt}
+          onChange={(e) => setExtraPrompt(e.target.value)}
+          placeholder="Beskriv ålder, märke, material, skick och andra detaljer som hjälper analysen"
+          className="w-full border rounded p-2 min-h-[80px] text-sm mb-3"
+        />
+
+        {/* GDPR-korttext */}
+        <p className="text-xs text-gray-500 mb-3">
+          Bilder som används för analys raderas automatiskt inom 24 timmar om värderingen inte sparas.
+        </p>
+
+        {error && (
+          <div className="text-red-600 bg-red-100 border border-red-300 p-2 rounded text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Resultat */}
+        {analysisResult && (
+          <div className="mt-4 border border-trust-green bg-green-50 p-4 rounded">
+            <h3 className="font-bold text-trust-green mb-2">AI-värderingsresultat</h3>
+            <p className="text-xl font-bold mb-2">
+              {formatPrice(analysisResult.varde_min_sek)} – {formatPrice(analysisResult.varde_max_sek)}
+            </p>
+            <p><strong>Beskrivning:</strong> {analysisResult.foremal_beskrivning}</p>
+            <p><strong>Skick:</strong> {analysisResult.skick}</p>
+            <p><strong>Motivering:</strong> {analysisResult.motivering}</p>
+          </div>
+        )}
+
+        {/* Preview */}
+        <div className="grid grid-cols-3 gap-2 mt-4">
+          {previewUrls.map((url, i) => (
+            <img key={i} src={url} className="h-24 w-full object-cover rounded border" />
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
