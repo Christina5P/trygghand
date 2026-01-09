@@ -36,6 +36,7 @@ const ValueEstimator: React.FC<Props> = ({
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [analysisResult, setAnalysisResult] = useState<ValuationResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [extraPrompt, setExtraPrompt] = useState("");
 
@@ -94,12 +95,53 @@ const ValueEstimator: React.FC<Props> = ({
     e.preventDefault();
   };
 
+  const resizeImage = async (file: File, maxDimension = 1280): Promise<File> => {
+    try {
+      if (!file.type.startsWith("image/")) return file;
+
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+
+      if (scale >= 1) return file;
+
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
+
+      ctx.drawImage(bitmap, 0, 0, width, height);
+
+      const blob: Blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error("Kunde inte skapa bildblob"))),
+          "image/jpeg",
+          0.85
+        );
+      });
+
+      const baseName = file.name.replace(/\.[^/.]+$/, "");
+      return new File([blob], `${baseName}-1280.jpg`, {
+        type: "image/jpeg",
+        lastModified: file.lastModified,
+      });
+    } catch (e) {
+      console.warn("resizeImage failed, using original", e);
+      return file;
+    }
+  };
+
   // =====================
   // Analys
   // =====================
   const runAnalysis = async () => {
     setError(null);
     setLoading(true);
+    setLoadingText("");
     setAnalysisResult(null);
 
     if (files.length === 0) {
@@ -108,11 +150,22 @@ const ValueEstimator: React.FC<Props> = ({
       return;
     }
 
+    if (files.length > 3) {
+      setError("Välj max 3 bilder för analys.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const functionBase = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      const imageUrls = await uploadImages(files, "analysis-temp");
+      setLoadingText("Analyserar bilder…");
+      const resizedFiles = await Promise.all(files.map((f) => resizeImage(f, 1280)));
+
+      const imageUrls = await uploadImages(resizedFiles, "analysis-temp");
+
+      setLoadingText("Bedömer skick…");
 
       const response = await fetch(`${functionBase}/analyze-item`, {
         method: "POST",
@@ -132,12 +185,14 @@ const ValueEstimator: React.FC<Props> = ({
         throw new Error(err.error || "Analysen misslyckades");
       }
 
+      setLoadingText("Beräknar värde…");
       const result: ValuationResult = await response.json();
       setAnalysisResult(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Okänt fel vid analys.");
     } finally {
       setLoading(false);
+      setLoadingText("");
     }
   };
 
@@ -257,6 +312,10 @@ const ValueEstimator: React.FC<Props> = ({
             </Button>
           )}
         </div>
+
+        {loading && loadingText && (
+          <div className="text-sm text-gray-600 mb-3">{loadingText}</div>
+        )}
 
         {/* Extra information – placeholder återställd */}
         <textarea

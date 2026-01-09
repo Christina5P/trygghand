@@ -61,6 +61,8 @@ type CustomerPortalProps = {
 const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTemplates = [], handleDownloadTemplate }) => {
   const [templatesOpen, setTemplatesOpen] = useState(false);
 
+    const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
+
   // example controlled state — adapt to your actual state variable
   const [editingCustomer, setEditingCustomer] = useState<Customer>(customer);
 
@@ -326,6 +328,48 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         } catch (err) {
             console.error('Nedladdning misslyckades:', err);
             toast({ title: 'Fel', description: 'Kunde inte skapa nedladdningslänk.', variant: 'destructive' });
+        }
+    };
+
+    const handleDeleteDocument = async (doc: FullmaktDocument) => {
+        if (!doc?.id) {
+            toast({ title: 'Fel', description: 'Saknar dokument-id.', variant: 'destructive' });
+            return;
+        }
+
+        if (!confirm('Vill du ta bort detta dokument? Detta går inte att ångra.')) return;
+
+        setDeletingDocumentId(doc.id);
+        try {
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            if (authError || !authData.user) throw authError || new Error('Ingen användare');
+            const userId = authData.user.id;
+
+            // 1) Delete DB row first (authorization should be enforced by RLS)
+            const { error: dbError } = await supabase
+                .from('fullmakter')
+                .delete()
+                .eq('id', doc.id)
+                .eq('fullmaktsgivare', userId);
+            if (dbError) throw dbError;
+
+            // 2) Best-effort remove from storage
+            if (doc.storage_path) {
+                const { error: storageError } = await supabase.storage
+                    .from('fullmakts-filer')
+                    .remove([doc.storage_path]);
+                if (storageError) {
+                    console.warn('Storage remove failed:', storageError);
+                }
+            }
+
+            setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+            toast({ title: 'Borttaget', description: 'Dokumentet har tagits bort.' });
+        } catch (err) {
+            console.error('Borttagning misslyckades:', err);
+            toast({ title: 'Fel', description: 'Kunde inte ta bort dokumentet.', variant: 'destructive' });
+        } finally {
+            setDeletingDocumentId(null);
         }
     };
 
@@ -637,6 +681,14 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Button variant="outline" size="sm" onClick={() => handleDownload(doc)}>Ladda ner</Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        disabled={deletingDocumentId === doc.id}
+                                                        onClick={() => handleDeleteDocument(doc)}
+                                                    >
+                                                        {deletingDocumentId === doc.id ? 'Tar bort…' : 'Ta bort'}
+                                                    </Button>
                                                 </div>
                                             </li>
                                         ))}

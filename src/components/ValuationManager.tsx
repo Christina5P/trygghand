@@ -28,6 +28,7 @@ deleteValuation,
 } = useCustomerData();
 
 const [mainTab, setMainTab] = useState<"new" | "saved">("new");
+const [newEstimatorKey, setNewEstimatorKey] = useState(0);
 
 const savedValsContent = useMemo(() => {
 if (loadingVals) {
@@ -99,7 +100,10 @@ Hjälpmedel för att uppskatta värdet på dina bilder och föremål.
 {/* Tabs */}
 <div className="flex space-x-2 mb-4">
 <Button
-onClick={() => setMainTab("new")}
+onClick={() => {
+setMainTab("new");
+setNewEstimatorKey((k) => k + 1);
+}}
 variant={mainTab === "new" ? "default" : "outline"}
 size="sm"
 >
@@ -119,17 +123,11 @@ Sparade värderingar
  {/* Innehåll */}
     {mainTab === "new" && (
       <ValueEstimator
+        key={newEstimatorKey}
         customerId={customer?.id}
         onSaved={() => {
           setMainTab("saved");
           fetchValuations();
-        }}
-        onOpenSaved={() => {
-          setMainTab("saved");
-          fetchValuations();
-        }}
-        onNew={() => {
-          setMainTab("new");
         }}
       />
     )}

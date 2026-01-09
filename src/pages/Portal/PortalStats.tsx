@@ -61,7 +61,7 @@ export const PortalStats: React.FC = () => {
                             }}
                         />
                     </div>
-                    <span className="mt-2 text-sm text-gray-500">Abonnemang aktiva</span>
+                    <span className="mt-2 text-sm text-gray-500">Abonnemang Åtgärdade</span>
                 </div>
             </div>
         </div>
