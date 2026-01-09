@@ -107,4 +107,40 @@ app.get('/api/templates/download', async (req, res) => {
   }
 });
 
+// Template list endpoint (service role)
+app.get('/api/templates/list', async (req, res) => {
+  try {
+    const prefix = (req.query.prefix || 'fullmaktsmallar') + '';
+
+    const { createClient } = await import('@supabase/supabase-js');
+    const serviceClient = createClient(
+      process.env.VITE_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    // Supabase list expects a folder path without leading slash.
+    const normalizedPrefix = prefix.replace(/^\/+/, '').replace(/\/+$/, '');
+    const { data, error } = await serviceClient.storage
+      .from('fullmakts-filer')
+      .list(normalizedPrefix, { limit: 100 });
+
+    if (error) {
+      console.error('Storage list error:', error);
+      return res.status(500).json({ error: 'Could not list templates' });
+    }
+
+    const templates = (data || [])
+      .filter((f) => !!f?.name)
+      .map((f) => ({
+        name: f.name,
+        storage_path: `${normalizedPrefix}/${f.name}`,
+      }));
+
+    res.json({ templates });
+  } catch (err) {
+    console.error('Template list error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.listen(PORT, () => console.log(`Proxy server running on http://localhost:${PORT}`));

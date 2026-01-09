@@ -77,14 +77,46 @@ const Portal = () => {
   const { toast } = useToast();
   const [templatesOpen, setTemplatesOpen] = useState(false);
 
-  // Korrigerade sökvägar — använd faktiskt mappnamn i din bucket (exempel: "fullmaktsmallar/...")
-  const fullmaktTemplates: { id: string; name: string; storage_path: string }[] = [
-    { id: "1", name: "Fullmakt - Apoteksärenden", storage_path: "fullmaktsmallar/Apoteksarenden Fullmakt.pdf" },
-    { id: "2", name: "Fullmakt - Tele2", storage_path: "fullmaktsmallar/Tele2 Fullmakt.pdf" },
-    { id: "3", name: "Telia - webbsida för fullmakter", storage_path: "https://www.telia.se/mitt-telia/mitt-konto/fullmakter" }
-  ];
+  const [fullmaktTemplates, setFullmaktTemplates] = useState<{ id: string; name: string; storage_path: string }[]>([]);
 
   const BUCKET = "fullmakts-filer";
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const resp = await fetch('/api/templates/list?prefix=fullmaktsmallar');
+        if (!resp.ok) throw new Error('Could not list templates');
+        const payload = await resp.json();
+        const files = (payload?.templates ?? []) as Array<{ name: string; storage_path: string }>;
+
+        const templates = files.map((f, index) => ({
+          id: (index + 1).toString(),
+          name: (f.name || '')
+            .replace(/\.pdf$/i, '')
+            .replace(/_/g, ' '),
+          storage_path: f.storage_path,
+        }));
+
+        templates.push({
+          id: (templates.length + 1).toString(),
+          name: 'Telia - webbsida för fullmakter',
+          storage_path: 'https://www.telia.se/mitt-telia/mitt-konto/fullmakter',
+        });
+
+        setFullmaktTemplates(templates);
+      } catch (err) {
+        console.error('Failed to fetch templates:', err);
+        // Fallback to hardcoded list
+        setFullmaktTemplates([
+          { id: "1", name: "Fullmakt - Apoteksärenden", storage_path: "fullmaktsmallar/Apoteksarenden Fullmakt.pdf" },
+          { id: "2", name: "Fullmakt - Tele2", storage_path: "fullmaktsmallar/Tele2 Fullmakt.pdf" },
+          { id: "3", name: "Telia - webbsida för fullmakter", storage_path: "https://www.telia.se/mitt-telia/mitt-konto/fullmakter" }
+        ]);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
   const openTemplate = async (storagePath: string) => {
     try {

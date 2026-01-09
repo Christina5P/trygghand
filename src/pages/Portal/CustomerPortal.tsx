@@ -13,35 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import CollapsibleCard from "@/components/ui/CollapsibleCard"; // Se till att denna komponent finns
 import ValuationManager from "@/components/ValuationManager"; // Se till att denna komponent finns
 import { PortalStats } from '@/pages/Portal/PortalStats'; // Se till att denna komponent finns
-import CustomersDialog from "./dialogs/CustomersDialog";
 import Tidio from "@/components/Tidio"; // Se till att denna komponent finns    
-// Inline fallback FullmaktManagement component to avoid missing module during development
-type FullmaktManagementProps = {
-    customerId?: string | null;
-    customerName?: string | null;
-    onClose: () => void;
-};
-
-const FullmaktManagement: React.FC<FullmaktManagementProps> = ({ customerId, customerName, onClose }) => {
-    return (
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-                <DialogTitle>Fullmakter och Dokument</DialogTitle>
-            </DialogHeader>
-            <div className="p-4 border rounded-md bg-gray-50">
-                <p className="text-gray-700 mb-4">
-                    Hanterar dokument för {customerName || "kunden"} (ID: {customerId || "N/A"}).
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-sm text-gray-800">
-                    <li>Inga dokument att visa i utvecklingsläge.</li>
-                </ul>
-                <div className="mt-4 flex justify-end">
-                    <Button variant="secondary" onClick={onClose}>Stäng</Button>
-                </div>
-            </div>
-        </DialogContent>
-    );
-};
 
 import {
   MessageSquare,
@@ -467,17 +439,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                      </div>
                  </CollapsibleCard>
 
-                  {/*  DIALOG FÖR FULLMAKTSHANTERING */}
-            {isFullmaktDialogOpen && (
-                <Dialog open={true} onOpenChange={setIsFullmaktDialogOpen}>
-                    <FullmaktManagement
-                        // SKICKA MED KUND-ID och NAMN
-                        customerId={customer?.id}
-                        customerName={customer?.name}
-                        onClose={() => setIsFullmaktDialogOpen(false)}
-                    />
-                </Dialog>
-            )}
+
 
                 {/* 5. Ärendehantering (Krav: Fällbara kort, ingen Nytt ärende-knapp) */}
                 <CollapsibleCard
