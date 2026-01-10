@@ -59,22 +59,14 @@ export default function ArchivedCustomersList({ onDataUpdated, onOpenCustomer }:
     }
   };
 
-  const restoreCustomer = async (customerId: string, customerName: string) => {
+  const restoreCustomer = async (customerId: string) => {
     setActionLoadingId(customerId);
     try {
-      // 1. Hämta den arkiverade kundens originaldata
-      const { data: archivedData, error: fetchError } = await supabase
-        .from("archived_customers")
-        .select("*")
-        .eq("id", customerId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // 2. Återställ kunden med säker RPC-funktion
-      await supabase.rpc('admin_restore_customer', {
-        p_customer_id: customerId
+      const { error } = await supabase.functions.invoke("admin-restore-customer", {
+        body: { customer_id: customerId, confirm: true },
       });
+
+      if (error) throw error;
 
       // VIKTIGT: uppdatera UI
       await fetchArchivedCustomers();
@@ -152,7 +144,7 @@ export default function ArchivedCustomersList({ onDataUpdated, onOpenCustomer }:
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => restoreCustomer(customer.id, customer.name)}
+                      onClick={() => restoreCustomer(customer.id)}
                       disabled={actionLoadingId === customer.id}
                       className="text-blue-600 border-blue-200 hover:bg-blue-50"
                     >

@@ -32,9 +32,13 @@ const EditSubscriptionDialog: React.FC<EditSubscriptionFormProps> = ({ subscript
     console.debug('handleEndAndCreateCase called', { currentSubscription, isSaving });
      setIsSaving(true);
      try {
-       // markera som cancelled om inte satt
-       const payload: Partial<Subscription> = { ...currentSubscription, status: currentSubscription.status ?? 'cancelled', cancelled_date: currentSubscription.cancelled_date ?? new Date().toISOString() };
+       // Markera som avslutad via cancelled_date (status-kolumn saknas i vissa DB-varianter)
+       const payload: Partial<Subscription> = {
+         ...currentSubscription,
+         cancelled_date: currentSubscription.cancelled_date ?? new Date().toISOString(),
+       };
        delete (payload as any).id;
+       delete (payload as any).status;
  
        const { data, error } = await supabase
          .from('subscriptions')
@@ -82,6 +86,7 @@ const EditSubscriptionDialog: React.FC<EditSubscriptionFormProps> = ({ subscript
           
           <label className="text-sm">Status</label>
           <select value={currentSubscription.status ?? ''} onChange={e => updateField('status', e.target.value)} className="w-full border rounded px-2 py-1">
+            <option value="">(ej lagrat)</option>
             <option value="active">Active</option>
             <option value="cancelled">Cancelled</option>
             <option value="pending">Pending</option>

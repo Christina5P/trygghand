@@ -24,10 +24,10 @@ export default function CreateCustomerForm({ onCustomerCreated }: { onCustomerCr
 
     try {
       // 1. Validering
-      if (!formData.name.trim() || !formData.email.trim()) {
+      if (!formData.name.trim()) {
         toast({
           title: "Fel",
-          description: "Namn och e-post är obligatoriska.",
+          description: "Namn är obligatoriskt.",
           variant: "destructive",
         });
         setLoading(false);
@@ -37,7 +37,7 @@ export default function CreateCustomerForm({ onCustomerCreated }: { onCustomerCr
       // 2. Skicka invite via edge function (kör med Service Role på servern)
       const { data, error } = await supabase.functions.invoke("invite-customer", {
         body: {
-          email: formData.email.trim(),
+          email: formData.email.trim() || null,
           fullName: formData.name.trim(),
           phone: formData.phone.trim() || null,
         },
@@ -46,10 +46,20 @@ export default function CreateCustomerForm({ onCustomerCreated }: { onCustomerCr
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.message || "Kunde inte skapa kund");
 
-      // 3. Klart – Supabase skickar invitationsemail via edge-funktionen
+      const invited = (data as any)?.invited === true;
+      const authCreated = (data as any)?.auth_created === true;
+      const hasEmail = !!formData.email.trim();
+      const hasPhone = !!formData.phone.trim();
+
       toast({
         title: "Kund skapad!",
-        description: `${formData.name} (${formData.email}) är nu registrerad som kund. En invitationsemail har skickats.`,
+        description: invited
+          ? `${formData.name} (${formData.email}) är nu registrerad som kund. En inbjudan har skickats via e-post.`
+          : authCreated && !hasEmail && hasPhone
+            ? `${formData.name} är nu registrerad som kund utan e-post. Inloggning sker via SMS-kod till ${formData.phone}.`
+            : !hasEmail && !hasPhone
+              ? `${formData.name} är nu registrerad som kund utan e-post och telefon. Ingen inloggning är möjlig förrän uppgifter kompletteras.`
+              : `${formData.name} är nu registrerad som kund utan e-post. Ingen inbjudan skickades.`,
       });
 
       // Rensa formulär
@@ -72,7 +82,7 @@ export default function CreateCustomerForm({ onCustomerCreated }: { onCustomerCr
       <CardHeader>
         <CardTitle>Skapa Ny Kund</CardTitle>
         <CardDescription>
-          Lågg till en ny kund och skicka invitationsemail automatiskt
+          Om e-post anges skickas en inbjudan. Utan e-post kan kunden logga in via SMS om telefon anges.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -91,7 +101,7 @@ export default function CreateCustomerForm({ onCustomerCreated }: { onCustomerCr
           </div>
 
           <div>
-            <Label htmlFor="email">E-post *</Label>
+            <Label htmlFor="email">E-post (valfritt)</Label>
             <Input
               id="email"
               type="email"
@@ -99,7 +109,6 @@ export default function CreateCustomerForm({ onCustomerCreated }: { onCustomerCr
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               disabled={loading}
-              required
             />
           </div>
 
@@ -108,11 +117,12 @@ export default function CreateCustomerForm({ onCustomerCreated }: { onCustomerCr
             <Input
               id="phone"
               type="tel"
-              placeholder="t.ex. 070-123 45 67"
+              placeholder="t.ex. +46701234567"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               disabled={loading}
             />
+            <p className="mt-1 text-xs text-muted-foreground">Tips: skriv i internationellt format (+46...) för SMS-inloggning.</p>
           </div>
 
           <Button type="submit" disabled={loading} className="w-full">
@@ -124,7 +134,11 @@ export default function CreateCustomerForm({ onCustomerCreated }: { onCustomerCr
             ) : (
               <>
                 <Mail className="mr-2 h-4 w-4" />
-                Skapa & Skicka Inbjudan
+                {formData.email.trim()
+                  ? "Skapa & Skicka Inbjudan"
+                  : formData.phone.trim()
+                    ? "Skapa kund (SMS-inloggning)"
+                    : "Skapa kund"}
               </>
             )}
           </Button>

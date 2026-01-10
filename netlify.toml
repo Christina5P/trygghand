@@ -1,3 +1,23 @@
 [build]
   command = "npm run build"
   publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/templates/download"
+  to = "/.netlify/functions/templates-download"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/templates/list"
+  to = "/.netlify/functions/templates-list"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

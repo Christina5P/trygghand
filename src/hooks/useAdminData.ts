@@ -44,13 +44,14 @@ export const useAdminData = () => {
 
   const fetchCustomers = useCallback(async () => {
     try {
-      // Fetch all customers (removed is_customer filter to ensure restored customers appear)
+      // Fetch active customers only.
+      // Customers that are archived/soft-deleted should not appear in the active list.
       const { data, error } = await supabase
         .from("customers")
         .select("*")
+        .is("deleted_at", null)
         .order("name", { ascending: true });
       if (error) throw error;
-      console.log("Fetched customers:", data); // TEMP LOG
       setCustomers(data ?? []);
     } catch (err: any) {
       console.error("fetchCustomers error", err);
@@ -71,9 +72,22 @@ export const useAdminData = () => {
 
   const fetchSubscriptions = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("subscriptions").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.functions.invoke("admin-get-subscriptions", { body: {} });
       if (error) throw error;
-      setSubscriptions(data ?? []);
+
+      if ((data as any)?.ok === false) {
+        const msg = (data as any)?.message || (data as any)?.error || "Kunde inte hämta abonnemang.";
+        throw new Error(msg);
+      }
+
+      const subs = ((data as any)?.subscriptions ?? []) as any[];
+      const normalized: Subscription[] = subs.map((s: any) => ({
+        ...s,
+        id: String(s.id),
+        customer_id: String(s.customer_id),
+      }));
+
+      setSubscriptions(normalized);
     } catch (err: any) {
       console.error("fetchSubscriptions error", err);
       setSubscriptions([]);
@@ -81,30 +95,49 @@ export const useAdminData = () => {
   }, []);
 
   const fetchValuations = useCallback(async () => {
-  try {
-    const { data, error } = await supabase.rpc("admin_get_all_valuations");
-    if (error) throw error;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-get-all-valuations", { body: {} });
+      if (error) throw error;
 
-    const normalized: Valuation[] = (data ?? []).map((v: any) => ({
-      ...v,
-      id: String(v.id), // ✅ TVINGA UUID SOM STRING
-    }));
+      if ((data as any)?.ok === false) {
+        const msg = (data as any)?.message || (data as any)?.error || "Kunde inte hämta värderingar.";
+        throw new Error(msg);
+      }
 
-    console.log("fetchValuations normalized sample", normalized[0]);
-    setValuations(normalized);
-  } catch (err: any) {
-    console.error("fetchValuations error", err);
-    setValuations([]);
-  }
-}, []);
+      const vals = ((data as any)?.valuations ?? []) as any[];
+      const normalized: Valuation[] = vals.map((v: any) => ({
+        ...v,
+        id: String(v.id),
+        customer_id: String(v.customer_id),
+      }));
+
+      setValuations(normalized);
+    } catch (err: any) {
+      console.error("fetchValuations error", err);
+      setValuations([]);
+    }
+  }, []);
 
 
   const fetchCancellations = useCallback(async () => {
     try {
-      const { data, error } = await supabase.rpc("admin_get_all_subscription_cancellations")
-
+      const { data, error } = await supabase.functions.invoke("admin-get-all-subscription-cancellations", { body: {} });
       if (error) throw error;
-      setCancellations(data ?? []);
+
+      if ((data as any)?.ok === false) {
+        const msg = (data as any)?.message || (data as any)?.error || "Kunde inte hämta uppsägningar.";
+        throw new Error(msg);
+      }
+
+      const items = ((data as any)?.cancellations ?? []) as any[];
+      const normalized: SubscriptionCancellation[] = items.map((c: any) => ({
+        ...c,
+        id: String(c.id),
+        customer_id: String(c.customer_id),
+        subscription_id: c.subscription_id != null ? String(c.subscription_id) : null,
+      }));
+
+      setCancellations(normalized);
     } catch (err: any) {
       console.error("fetchCancellations error", err);
       setCancellations([]);
@@ -113,7 +146,6 @@ export const useAdminData = () => {
 
   // fetch all
   const fetchAll = useCallback(async () => {
-    console.log("fetchAll called"); // TEMP LOG
     setLoading(true);
     try {
       await Promise.all([

@@ -91,6 +91,10 @@ export interface Comment {
      author_type?: "admin" | "customer" | string | null;
     content: string | null; 
 
+    // Soft delete
+    deleted_at?: string | null;
+    deleted_by?: string | null;
+
     // Relation (från SELECT *, author:customers(name))
     author: {
         name: string | null;
@@ -154,7 +158,26 @@ export interface SubscriptionCancellation {
   provider_contact?: string | null; // kontaktperson hos leverantör
   notes?: string | null;
   status: CancellationStatus;
-  documents?: string[] | null; // lagras som jsonb array i kolumn "documents"
+
+  /**
+   * Documents are stored in `subscription_cancellations.documents` (jsonb).
+   * Backward compatible:
+   * - older rows may be string paths
+   * - newer rows may store objects with metadata
+   */
+  documents?: Array<
+    | string
+    | {
+        path: string;
+        display_name?: string | null;
+        mime_type?: string | null;
+        uploaded_at?: string | null;
+        uploaded_by?: string | null;
+        uploaded_by_role?: "admin" | "customer" | null;
+        deleted_at?: string | null;
+        deleted_by?: string | null;
+      }
+  > | null;
   admin_notes?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -168,6 +191,8 @@ export interface CancellationComment {
   message: string;
   is_internal?: boolean;
   created_at?: string;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
   // author relation (auth.users) är inte joinad här; presenteras enkelt via user_id
 }
 

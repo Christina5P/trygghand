@@ -98,10 +98,9 @@ export const useCustomerData = () => {
   }, [customer?.id]);
 
   const deleteValuation = useCallback(async (valuationId: string) => {
-    console.log("DELETE valuationId:", valuationId, typeof valuationId);
-
-    const { error } = await supabase.rpc("admin_delete_valuation", {
-      p_valuation_id: valuationId
+    // Customer view: soft delete via Edge Function (GDPR safe)
+    const { error } = await supabase.functions.invoke("customer-soft-delete-valuation", {
+      body: { valuation_id: valuationId, confirm: true },
     });
 
     if (error) throw error;

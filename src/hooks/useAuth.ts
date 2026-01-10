@@ -10,6 +10,8 @@ interface AuthContextType {
   loading: boolean;
   isCustomer: boolean; // NYTT: convenience flag
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  requestPhoneOtp: (phone: string) => Promise<{ error: any }>;
+  verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, name?: string, phone?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<{ error: any }>;
@@ -23,13 +25,73 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchCustomerForUser = async (authUser: User | null) => {
+    if (!authUser) {
+      setCustomer(null);
+      return;
+    }
+
+    const userId = authUser.id;
+    const userEmail = authUser.email ?? undefined;
+    const userPhone = (authUser as any)?.phone as string | undefined;
+
+    try {
+      // Primärt: customers.id == auth.users.id
+      {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (!error && data) {
+          setCustomer(data);
+          return;
+        }
+      }
+
+      // Fallback: äldre data kan vara kopplad via email
+      if (userEmail) {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('email', userEmail)
+          .maybeSingle();
+
+        if (!error && data) {
+          setCustomer(data);
+          return;
+        }
+      }
+
+      // Fallback: telefonkoppling
+      if (userPhone) {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('phone', userPhone)
+          .maybeSingle();
+
+        if (!error && data) {
+          setCustomer(data);
+          return;
+        }
+      }
+
+      setCustomer(null);
+    } catch (err) {
+      console.error("fetchCustomerForUser error:", err);
+      setCustomer(null);
+    }
+  };
+
   // Initiera session
   useEffect(() => {
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user?.email) await fetchCustomer(session.user.email);
+      await fetchCustomerForUser(session?.user ?? null);
       setLoading(false);
     };
 
@@ -38,70 +100,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user?.email) fetchCustomer(session.user.email);
-      else setCustomer(null);
+      fetchCustomerForUser(session?.user ?? null);
     });
 
     return () => listener?.subscription.unsubscribe();
   }, []);
 
-  const fetchCustomer = async (email?: string) => {
-    if (!email) {
-      setCustomer(null);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (!error && data) {
-        setCustomer(data);
-      } else if (error && error.code !== 'PGRST116') {
-        // PGRST116 = not found
-        console.error("Error fetching customer:", error);
-        setCustomer(null);
-      } else {
-        // Kund existerar inte - skapa en
-        const session = await supabase.auth.getSession();
-        const userId = session?.data?.session?.user?.id;
-        
-        if (userId) {
-          const { data: newCustomer, error: createError } = await supabase
-            .from('customers')
-            .insert([{
-              id: userId,
-              email,
-              name: email.split('@')[0],
-              is_admin: false,
-              is_customer: true,
-            }])
-            .select('*')
-            .maybeSingle();
-
-          if (!createError && newCustomer) {
-            setCustomer(newCustomer);
-          } else {
-            console.error("Error creating customer:", createError);
-            setCustomer(null);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("fetchCustomer error:", err);
-      setCustomer(null);
-    }
-  };
-
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (!error && data.user) {
       setUser(data.user);
-      await fetchCustomer(data.user.email);
+      await fetchCustomerForUser(data.user);
     }
+    return { error };
+  };
+
+  const requestPhoneOtp = async (phone: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      phone,
+      options: {
+        // Viktigt: undvik att skapa nya användare via klienten
+        shouldCreateUser: false,
+      },
+    });
+
+    return { error };
+  };
+
+  const verifyPhoneOtp = async (phone: string, token: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone,
+      token,
+      type: 'sms',
+    });
+
+    if (!error && data.user) {
+      setUser(data.user);
+      await fetchCustomerForUser(data.user);
+    }
+
     return { error };
   };
 
@@ -180,9 +217,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
-  const value: AuthContextType = { user, customer, session, loading, isCustomer: customer?.is_customer === true, signIn, signUp, signOut, sendPasswordReset };
+  const valueWithOtp: AuthContextType = {
+    user,
+    customer,
+    session,
+    loading,
+    isCustomer: customer?.is_customer === true,
+    signIn,
+    requestPhoneOtp,
+    verifyPhoneOtp,
+    signUp,
+    signOut,
+    sendPasswordReset,
+  };
 
-  return React.createElement(AuthContext.Provider, { value }, children);
+  return React.createElement(AuthContext.Provider, { value: valueWithOtp }, children);
 };
 
 export const useAuth = () => {

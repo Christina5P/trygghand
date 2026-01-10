@@ -37,6 +37,7 @@ import Vardering from "@/pages/services/Vardering-ai";
 import Magasinering from "@/pages/services/Magasinering";
 import RadgivningPlanering from "@/pages/services/RadgivningPlanering";
 import Juridikguide from "@/pages/services/Juridikguide";
+import AuthPostbackTunnel from "@/pages/AuthPostbackTunnel";
 import { AuthProvider } from "@/hooks/useAuth";
 import { getCookieConsent, acceptStatisticsCookies } from "@/utils/cookies";
 // 🧠 AI-värdering (ny)
@@ -62,6 +63,9 @@ function App() {
             <Toaster />
             <Sonner />
             <Routes>
+              {/* Codespaces Dev Tunnel postback */}
+              <Route path="/auth/postback/tunnel" element={<AuthPostbackTunnel />} />
+
               {/* 🌍 Startsida */}
               <Route path="/" element={<Index />} />
               <Route path="/dodsbohantering-sundsvall" element={<DodsbohanteringSundsvall />} />

@@ -83,11 +83,13 @@ const Portal = () => {
 
   useEffect(() => {
     const fetchTemplates = async () => {
+      if (!customer) return;
       try {
-        const resp = await fetch('/api/templates/list?prefix=fullmaktsmallar');
-        if (!resp.ok) throw new Error('Could not list templates');
-        const payload = await resp.json();
-        const files = (payload?.templates ?? []) as Array<{ name: string; storage_path: string }>;
+        const { data: payload, error } = await supabase.functions.invoke("templates-list", {
+          body: { prefix: "fullmaktsmallar" },
+        });
+        if (error) throw error;
+        const files = ((payload as any)?.templates ?? []) as Array<{ name: string; storage_path: string }>;
 
         const templates = files.map((f, index) => ({
           id: (index + 1).toString(),
@@ -116,7 +118,7 @@ const Portal = () => {
     };
 
     fetchTemplates();
-  }, []);
+  }, [customer]);
 
   const openTemplate = async (storagePath: string) => {
     try {
@@ -126,15 +128,12 @@ const Portal = () => {
         return;
       }
 
-      // För storage-filer, använd backend API för att få signerad URL
-      const response = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Kunde inte hämta mall');
-      }
+      const { data, error } = await supabase.functions.invoke("templates-download", {
+        body: { path: storagePath },
+      });
+      if (error) throw error;
 
-      const data = await response.json();
-      const url = data.signedUrl || data.signed_url;
+      const url = (data as any)?.signedUrl || (data as any)?.signed_url;
       if (!url) throw new Error("Kunde inte generera länk");
       window.open(url, "_blank");
     } catch (err) {
@@ -191,7 +190,28 @@ const Portal = () => {
         );
     }
 
-  if (!customer) return <AuthLayout />;
+  if (!user) return <AuthLayout />;
+
+  if (!customer) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 space-y-4">
+            <div className="text-lg font-semibold">Kontot är inte aktiverat</div>
+            <p className="text-sm text-gray-600">
+              Vi hittade ingen kundprofil kopplad till ditt konto. Kontakta oss så hjälper vi dig att aktivera åtkomst.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => (window.location.href = "mailto:kontakt@trygghand.com")}>
+                Kontakta oss
+              </Button>
+              <Button onClick={handleSignOut}>Logga ut</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Render header centrally only for portals
   return (

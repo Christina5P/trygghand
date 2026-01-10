@@ -119,10 +119,9 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
 
   const handleStatusChange = async (caseId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from("cases")
-        .update({ status: newStatus })
-        .eq("id", caseId);
+      const { error } = await supabase.functions.invoke("admin-set-case-status", {
+        body: { case_id: caseId, status: newStatus },
+      });
 
       if (error) throw error;
       await onDataUpdated();

@@ -34,30 +34,8 @@ export const usePortalStats = (): PortalStats => {
 
                 // 2. SUBSCRIPTIONS: Räkna aktiva abonnemang
                 let subsPct = 0;
-                try {
-                    // Försök läsa status-kolumn
-                    const { data: subsData } = await supabase
-                        .from("subscriptions")
-                        .select("id,status");
-                    
-                    const totalSubs = subsData?.length ?? 0;
-                    
-                    const hasStatus = totalSubs > 0 && Object.prototype.hasOwnProperty.call(subsData![0], "status");
-                    
-                    if (hasStatus) {
-                        const inactiveSubs = (subsData ?? []).filter((s: any) => {
-                            const st = (s.status ?? "").toString().toLowerCase();
-                            return ["cancelled", "ended", "inactive", "cancelled_by_user"].includes(st);
-                        }).length;
-                        const activeSubs = totalSubs - inactiveSubs;
-                        subsPct = totalSubs > 0 ? Math.round((activeSubs / totalSubs) * 100) : 0;
-                    } else {
-                        // Fallback om status-kolumn saknas: behandla alla som 100% aktiva
-                        subsPct = totalSubs > 0 ? 100 : 0;
-                    }
-                } catch (err: any) {
-                    // Vid SQL-fel (t.ex. kolumn saknas), använd fallback
-                    console.warn("Fel vid läsning av subscriptions.status — använder fallback:", err);
+                {
+                    // Status-kolumnen saknas i vissa databaser. Håll detta robust och enkelt.
                     const { data: subsOnly } = await supabase.from("subscriptions").select("id");
                     subsPct = (subsOnly?.length ?? 0) > 0 ? 100 : 0;
                 }

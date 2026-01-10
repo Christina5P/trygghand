@@ -4,9 +4,9 @@
  * 
  * Säkerhet:
  * - Kräver bekräftelse via email-inmatning
- * - Kräver anledning (minst 20 tecken för att förhindra oavsiktlig borttagning)
- * - Anropar server-side API (aldrig direkt från frontend)
- * - Visar varning om permanent radering
+ * - Kräver bekräftelse via email-inmatning
+ * - Utför en soft delete (återställbar)
+ * - Inga fritextfält skickas i request body
  */
 
 import { useState } from "react";
@@ -21,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -45,7 +44,6 @@ export function GDPRDeleteUserDialog({
   const { toast } = useToast();
   const { user } = useAuth();
   const [confirmEmail, setConfirmEmail] = useState("");
-  const [reason, setReason] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // Null-check: Stäng om customer är null
@@ -53,10 +51,8 @@ export function GDPRDeleteUserDialog({
     return null;
   }
 
-  // Validering: Email måste matcha + anledning minst 20 tecken
-  const isConfirmed =
-    confirmEmail === customer.email &&
-    reason.length >= 20;
+  // Validering: Email måste matcha (endast lokalt, skickas ej)
+  const isConfirmed = confirmEmail === customer.email;
 
   const handleDelete = async () => {
     if (!user?.id) {
@@ -70,23 +66,20 @@ export function GDPRDeleteUserDialog({
 
     setIsLoading(true);
     try {
-      // Anropa RPC med endast p_customer_id och p_reason
-      const { error } = await supabase.rpc("admin_delete_customer_permanently", {
-        p_customer_id: customer.id,
-        p_reason: reason
+      const { error } = await supabase.functions.invoke("admin-soft-delete-customer", {
+        body: { customer_id: customer.id, confirm: true },
       });
 
       if (error) throw error;
 
       toast({
-        title: "✓ Användare raderad",
-        description: `${customer.email} och all relaterad data har raderats permanent enligt GDPR.`,
+        title: "✓ Kund avaktiverad",
+        description: `${customer.email} har avaktiverats (soft delete).`,
         variant: "default",
       });
       onDeleteSuccess();
       onOpenChange(false);
       setConfirmEmail("");
-      setReason("");
     } catch (error: any) {
       toast({
         title: "Fel vid borttagning",
@@ -104,25 +97,20 @@ export function GDPRDeleteUserDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Trash2 className="h-5 w-5" />
-            Radera användare (GDPR)
+            Avaktivera kund (GDPR)
           </DialogTitle>
           <DialogDescription>
-            Denna åtgärd raderar användaren och ALL relaterad data permanent
-            och kan INTE ångras.
+            Denna åtgärd avaktiverar kunden via soft delete och kan återställas.
           </DialogDescription>
         </DialogHeader>
 
         <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>VARNING:</strong> All data för {customer.email} kommer att
-            raderas permanent:
+            <strong>VARNING:</strong> Kunden {customer.email} kommer att avaktiveras:
             <ul className="mt-2 ml-4 list-disc text-sm">
-              <li>Ärenden och kommentarer</li>
-              <li>Prenumerationer och avslut</li>
-              <li>Fullmakter</li>
-              <li>Kontaktuppgifter</li>
-              <li>Auth-konto</li>
+              <li>Portalinlogg kan blockeras</li>
+              <li>Åtgärden loggas för compliance</li>
             </ul>
             <p className="mt-3">Denna åtgärd loggades för compliance.</p>
           </AlertDescription>
@@ -154,21 +142,6 @@ export function GDPRDeleteUserDialog({
             )}
           </div>
 
-          <div>
-            <Label htmlFor="reason" className="font-semibold">
-              Anledning till radering (minst 20 tecken)
-            </Label>
-            <Textarea
-              id="reason"
-              placeholder="T.ex. 'Användare begärt GDPR-rättighet: rätten att bli glömd enligt artikel 17 i GDPR'"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="h-24 resize-none"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {reason.length}/20 tecken (minimum)
-            </p>
-          </div>
         </div>
 
         <DialogFooter>
@@ -186,7 +159,7 @@ export function GDPRDeleteUserDialog({
             className="gap-2"
           >
             <Trash2 className="h-4 w-4" />
-            {isLoading ? "Raderar..." : "Radera permanent"}
+            {isLoading ? "Avaktiverar..." : "Avaktivera"}
           </Button>
         </DialogFooter>
       </DialogContent>

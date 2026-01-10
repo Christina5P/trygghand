@@ -257,23 +257,18 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
       const currentCustomer = customer; // Ursprungliga värden
       const personalNumberChanged = currentCustomer?.personal_number !== editingCustomer.personal_number;
 
-      if (personalNumberChanged && editingCustomer.personal_number) {
-        // Använd särskild funktion för personnummer med audit logging
-        await supabase.rpc('safe_update_personal_number', {
-          p_customer_id: editingCustomer.id,
-          p_personal_number: editingCustomer.personal_number,
-          p_reason: 'Updated via admin interface',
-        });
-      }
-
-      // Uppdatera andra fält (exklusive personnummer som redan hanterats)
-      await supabase.rpc('safe_update_customer', {
-        p_customer_id: editingCustomer.id,
-        p_name: editingCustomer.name,
-        p_email: editingCustomer.email || null,
-        p_phone: editingCustomer.phone,
-        p_personal_number: personalNumberChanged ? null : editingCustomer.personal_number, // null om redan uppdaterad
+      const { error } = await supabase.functions.invoke("admin-update-customer", {
+        body: {
+          customer_id: editingCustomer.id,
+          name: editingCustomer.name,
+          email: editingCustomer.email || null,
+          phone: editingCustomer.phone || null,
+          personal_number: editingCustomer.personal_number || null,
+          personal_number_changed: personalNumberChanged,
+        },
       });
+
+      if (error) throw error;
 
       toast({ title: "Kund uppdaterad", description: "Kundinformationen har sparats med full audit trail." });
       await onCustomerUpdated();
@@ -300,9 +295,9 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
     try {
       const newActive = !(editingCustomer.active ?? true); // Default till true om undefined
 
-      // Använd RPC som bypassar RLS
-      const { error } = await supabase.rpc('safe_toggle_customer_active', {
-        p_customer_id: editingCustomer.id,
+      const fnName = newActive ? 'admin-restore-customer' : 'admin-soft-delete-customer';
+      const { error } = await supabase.functions.invoke(fnName, {
+        body: { customer_id: editingCustomer.id, confirm: true },
       });
 
       if (error) throw error;
@@ -339,10 +334,11 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
 
     setDeletingCustomer(true);
     try {
-      // Radera kund
-      await supabase.rpc('delete_customer', {
-        p_customer_id: editingCustomer.id,
+      const { error } = await supabase.functions.invoke('admin-soft-delete-customer', {
+        body: { customer_id: editingCustomer.id, confirm: true },
       });
+
+      if (error) throw error;
 
       toast({
         title: "Kund raderad",

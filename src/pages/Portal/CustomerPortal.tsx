@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Import för Fullmakt Dialog
@@ -14,6 +13,8 @@ import CollapsibleCard from "@/components/ui/CollapsibleCard"; // Se till att de
 import ValuationManager from "@/components/ValuationManager"; // Se till att denna komponent finns
 import { PortalStats } from '@/pages/Portal/PortalStats'; // Se till att denna komponent finns
 import Tidio from "@/components/Tidio"; // Se till att denna komponent finns    
+import { CaseCommentsThread } from "./components/cases/CaseCommentsThread";
+import { CaseDocumentsSection, type CaseDocument } from "./components/cases/CaseDocumentsSection";
 
 import {
   MessageSquare,
@@ -108,10 +109,10 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const [cases, setCases] = useState<Case[]>([]);
     const [selectedCase, setSelectedCase] = useState<Case | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
-    const [newComment, setNewComment] = useState("");
     const [loadingCases, setLoadingCases] = useState(true);
     const [loadingComments, setLoadingComments] = useState(false);
-    const [addingComment, setAddingComment] = useState(false);
+    const [caseDocuments, setCaseDocuments] = useState<CaseDocument[]>([]);
+    const [loadingCaseDocuments, setLoadingCaseDocuments] = useState(false);
 
     // --- State för Värderingshantering ---
     const [valuations, setValuations] = useState<Valuation[]>([]);
@@ -176,35 +177,24 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         }
     }, []);
 
-    // --- Lägg till kommentar ---
-    const handleAddComment = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.stopPropagation(); // VÄLDIGT VIKTIGT: Förhindrar att klicket når Card-komponenten och stänger den.
-
-        if (!newComment.trim() || !selectedCase || !user?.id) {
-            toast({ title: "Fel", description: "Vänligen skriv en kommentar och se till att ett ärende är valt och du är inloggad.", variant: "destructive" });
-            return;
-        }
-        setAddingComment(true);
+    const fetchCaseDocuments = useCallback(async (caseId: string) => {
+        setLoadingCaseDocuments(true);
         try {
-            const { error } = await supabase.from("case_comments").insert({
-        case_id: selectedCase.id,
-        author_id: user.id, 
-        customer_id: customer.id, 
-        author_type: "customer", // <--- MÅSTE VARA "customer" HÄR
-        content: newComment.trim(),
-    });
-
+            const { data, error } = await supabase.functions.invoke("case-list-documents", {
+                body: { case_id: caseId },
+            });
             if (error) throw error;
-            setNewComment("");
-            await fetchComments(selectedCase.id);
-            toast({ title: "Kommentar tillagd", description: "Din kommentar har skickats" });
+            if ((data as any)?.ok !== true) throw new Error((data as any)?.error || "Kunde inte hämta dokument");
+
+            const docs = (data as any)?.documents;
+            setCaseDocuments(Array.isArray(docs) ? (docs as CaseDocument[]) : []);
         } catch (err) {
-            console.error("Error adding comment:", err);
-            toast({ title: "Fel", description: "Kunde inte skicka kommentar", variant: "destructive" });
+            console.error("Error fetching case documents:", err);
+            setCaseDocuments([]);
         } finally {
-            setAddingComment(false);
+            setLoadingCaseDocuments(false);
         }
-    };
+    }, []);
     
     // --- Hämta Värderingar ---
     const fetchValuations = useCallback(async () => {
@@ -234,6 +224,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                 .from('fullmakter')
                 .select('id, fullmaktsgivare, file_name, dokument_url, created_at')
                 .eq('fullmaktsgivare', userId)
+                .is('deleted_at', null)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -270,36 +261,30 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         }
         setUploading(true);
         try {
-            const { data: authData, error: authError } = await supabase.auth.getUser();
-            if (authError || !authData.user) throw authError || new Error('Ingen användare');
-            const userId = authData.user.id; // kopplad till auth.users (FK)
+            const ext = (selectedFile.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
 
-            const fileExtension = selectedFile.name.split('.').pop();
-            const pathPrefix = `fullmakter/${userId}/`;
-            const safeFileName = selectedFile.name.replace(/[^a-z0-9.]/gi, '_');
-            const fileName = `${safeFileName}_${Date.now()}.${fileExtension}`;
-            const storagePath = `${pathPrefix}${fileName}`;
+            // 1) Ask Edge Function for signed upload token + path
+            const { data, error } = await supabase.functions.invoke('fullmakt-create-upload', {
+                body: { file_ext: ext, mime_type: selectedFile.type || null },
+            });
+            if (error) throw error;
+            if (!(data as any)?.ok) throw new Error((data as any)?.error || 'Kunde inte initiera uppladdning');
 
-            const { error: uploadError } = await supabase.storage
+            const path = (data as any).path as string;
+            const token = (data as any).token as string;
+
+            // 2) Upload to signed URL
+            const { error: upErr } = await supabase.storage
                 .from('fullmakts-filer')
-                .upload(storagePath, selectedFile, { cacheControl: '3600', upsert: false });
-            if (uploadError) throw uploadError;
+                .uploadToSignedUrl(path, token, selectedFile);
+            if (upErr) throw upErr;
 
-            const uploaderId = userId;
-            const fullmakthavareId = userId; // säker FK mot auth.users
-            const today = new Date().toISOString().slice(0, 10);
-
-            const { error: dbError } = await supabase
-                .from('fullmakter')
-                .insert([{
-                    fullmaktsgivare: uploaderId,
-                    fullmakthavare: fullmakthavareId,
-                    fullmaktstyp: 'uppladdning',
-                    giltig_from: today,
-                    file_name: selectedFile.name,
-                    dokument_url: storagePath,
-                }]);
-            if (dbError) throw dbError;
+            // 3) Attach document row in DB (server-side)
+            const { data: attachData, error: attachErr } = await supabase.functions.invoke('fullmakt-attach', {
+                body: { path, file_name: selectedFile.name, fullmaktstyp: 'uppladdning' },
+            });
+            if (attachErr) throw attachErr;
+            if ((attachData as any)?.ok !== true) throw new Error((attachData as any)?.error || 'Kunde inte spara dokument');
 
             toast({ title: 'Uppladdning klar', description: `${selectedFile.name} sparad.`, variant: 'default' });
             setSelectedFile(null);
@@ -337,7 +322,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             return;
         }
 
-        if (!confirm('Vill du ta bort detta dokument? Detta går inte att ångra.')) return;
+        if (!confirm('Vill du ta bort detta dokument?')) return;
 
         setDeletingDocumentId(doc.id);
         try {
@@ -345,26 +330,18 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             if (authError || !authData.user) throw authError || new Error('Ingen användare');
             const userId = authData.user.id;
 
-            // 1) Delete DB row first (authorization should be enforced by RLS)
+            // Soft delete in DB (customer should NOT physically delete the file in Storage).
+            const now = new Date().toISOString();
             const { error: dbError } = await supabase
                 .from('fullmakter')
-                .delete()
+                .update({ deleted_at: now, deleted_by: userId })
                 .eq('id', doc.id)
-                .eq('fullmaktsgivare', userId);
+                .eq('fullmaktsgivare', userId)
+                .is('deleted_at', null);
             if (dbError) throw dbError;
 
-            // 2) Best-effort remove from storage
-            if (doc.storage_path) {
-                const { error: storageError } = await supabase.storage
-                    .from('fullmakts-filer')
-                    .remove([doc.storage_path]);
-                if (storageError) {
-                    console.warn('Storage remove failed:', storageError);
-                }
-            }
-
             setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-            toast({ title: 'Borttaget', description: 'Dokumentet har tagits bort.' });
+            toast({ title: 'Borttaget', description: 'Dokumentet är borttaget för dig.' });
         } catch (err) {
             console.error('Borttagning misslyckades:', err);
             toast({ title: 'Fel', description: 'Kunde inte ta bort dokumentet.', variant: 'destructive' });
@@ -377,10 +354,12 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     useEffect(() => {
         if (selectedCase?.id) {
             fetchComments(selectedCase.id);
+            fetchCaseDocuments(selectedCase.id);
         } else {
             setComments([]);
+            setCaseDocuments([]);
         }
-    }, [selectedCase?.id, fetchComments]);
+    }, [selectedCase?.id, fetchComments, fetchCaseDocuments]);
     
     return (
         <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
@@ -537,54 +516,34 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                                                 <h4 className="font-semibold text-md mb-3 flex items-center">
                                                     <MessageSquare className="w-4 h-4 mr-2 text-gray-600" /> Kommunikationshistorik
                                                 </h4>
-                                                <div className="space-y-3 mb-4 max-h-60 overflow-y-auto pr-2 flex flex-col">
-                                                    {loadingComments ? (
-                                                        <p className="text-center text-gray-500">Laddar kommentarer...</p>
-                                                    ) : comments.length === 0 ? (
-                                                        <p className="text-gray-500 text-sm italic">Inga kommentarer ännu. Skriv den första!</p>
-                                                    ) : (
-                                                        comments.map((comment) => (
-                                                            <div
-                                                                key={comment.id}
-                                                                // Kundkommentarer till höger, Admin till vänster
-                                                                className={`p-3 rounded-lg text-sm ${comment.author_type === "customer" ? "bg-blue-100 self-end" : "bg-gray-100 self-start"}`}
-                                                                style={{ maxWidth: '80%' }}
-                                                            >
-                                                                <div className="font-medium text-xs">
-                                                                    {comment.author_type === "customer" ? "Du" : (comment.author?.name || "Trygg Hand")}
-                                                                    <span className="text-xs text-gray-500 ml-2">
-                                                                        {format(new Date(comment.created_at!), "dd MMM HH:mm", { locale: sv })}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-gray-800">{comment.content}</p>
-                                                            </div>
-                                                        ))
-                                                    )}
-                                                </div>
 
-                                                {/* Ny kommentar-formulär */}
-                                                <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-                                                    <Textarea
-                                                        placeholder="Skriv din kommentar här..."
-                                                        value={newComment}
-                                                        onChange={(e) => setNewComment(e.target.value)}
-                                                        rows={3}
-                                                        className="resize-none"
-                                                        disabled={addingComment}
+                                                <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
+                                                    {loadingComments && (
+                                                        <div className="text-sm text-muted-foreground">Laddar kommentarer…</div>
+                                                    )}
+                                                    <CaseCommentsThread
+                                                        caseId={caseItem.id}
+                                                        currentUserId={user?.id}
+                                                        isAdmin={false}
+                                                        comments={comments}
+                                                        onRefresh={async () => {
+                                                            await fetchComments(caseItem.id);
+                                                        }}
+                                                        canComment={true}
                                                     />
-                                                    <Button
-                                                        onClick={handleAddComment}
-                                                        disabled={!newComment.trim() || addingComment}
-                                                        className="self-end bg-trust-blue hover:bg-trust-blue/90"
-                                                    >
-                                                        {addingComment ? (
-                                                            <>
-                                                                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Skickar...
-                                                            </>
-                                                        ) : (
-                                                            "Skicka kommentar"
-                                                        )}
-                                                    </Button>
+
+                                                    {loadingCaseDocuments ? (
+                                                        <div className="text-sm text-muted-foreground">Laddar dokument…</div>
+                                                    ) : (
+                                                        <CaseDocumentsSection
+                                                            caseId={caseItem.id}
+                                                            documents={caseDocuments}
+                                                            canUpload={true}
+                                                            onRefresh={async () => {
+                                                                await fetchCaseDocuments(caseItem.id);
+                                                            }}
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
 

@@ -163,13 +163,17 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const { data, error } = await supabase.storage.from(FULLMAKT_BUCKET).list('fullmaktsmallar/');
+        const { data: payload, error } = await supabase.functions.invoke("templates-list", {
+          body: { prefix: "fullmaktsmallar" },
+        });
         if (error) throw error;
-        const templates = data?.map((file, index) => ({
+        const files = ((payload as any)?.templates ?? []) as Array<{ name: string; storage_path: string }>;
+
+        const templates = files.map((file, index) => ({
           id: (index + 1).toString(),
-          name: file.name.replace('.pdf', '').replace(/_/g, ' '),
-          storage_path: `fullmaktsmallar/${file.name}`
-        })) || [];
+          name: (file.name || '').replace(/\.pdf$/i, '').replace(/_/g, ' '),
+          storage_path: file.storage_path
+        }));
         // Add the external link
         templates.push({
           id: (templates.length + 1).toString(),
@@ -198,15 +202,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         return;
       }
 
-      // För storage-filer, använd backend API för att få signerad URL
-      const response = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Kunde inte hämta mall');
-      }
+      const { data, error } = await supabase.functions.invoke("templates-download", {
+        body: { path: storagePath },
+      });
+      if (error) throw error;
 
-      const data = await response.json();
-      const url = data.signedUrl || data.signed_url;
+      const url = (data as any)?.signedUrl || (data as any)?.signed_url;
       if (!url) throw new Error("Ingen signerad URL genererades");
 
       window.open(url, "_blank");
@@ -277,10 +278,9 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const handleDeleteValuation = async (valuationId: string) => {
     console.log("DELETE valuationId:", valuationId, typeof valuationId);
 
-    const { error } = await supabase.rpc("admin_delete_valuation", {
-      p_valuation_id: valuationId
+    const { error } = await supabase.functions.invoke("admin-soft-delete-valuation", {
+      body: { valuation_id: valuationId, confirm: true },
     });
-
     if (error) throw error;
     // uppdatera listan
     await fetchValuations();
@@ -355,11 +355,17 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
   setSelectedContact(null);
   
   try {
-    const { data: customerId, error } = await supabase.rpc("admin_convert_contact_to_customer", {
-      p_contact_request_id: contact.id
+    const { data, error } = await supabase.functions.invoke("convert-contact-to-customer", {
+      body: { contact_request_id: contact.id, confirm: true },
     });
 
     if (error) throw error;
+
+    const customerId = (data as any)?.customer_id;
+    if (!customerId) throw new Error("Kunde inte skapa kund");
+
+    const passwordSent = (data as any)?.password_sent === true;
+    const authCreated = (data as any)?.auth_created === true;
 
     // Hämta kunden separat om UI behöver data
     const { data: customer } = await supabase
@@ -370,17 +376,15 @@ const handleConvertContactToCustomer = useCallback(async (contact: ContactReques
 
     toast({
       title: "Konvertering slutförd!",
-      description: contact.email && contact.email.trim() 
-        ? `${fullName} är nu kund. Mail med lösenord har skickats (om leveransen lyckas).`
-        : `${fullName} är nu kund. Inget mail skickades eftersom e-post saknas.`,
+      description: contact.email && contact.email.trim()
+        ? (passwordSent
+            ? `${fullName} är nu kund. Mail med lösenord har skickats (om leveransen lyckas).`
+            : `${fullName} är nu kund. Inloggning är aktiverad, men inget lösenords-mail skickades.`)
+        : (authCreated
+            ? `${fullName} är nu kund utan e-post. Inloggning sker via SMS-kod på telefonnumret.`
+            : `${fullName} är nu kund utan e-post. Ingen inloggning är möjlig förrän uppgifter kompletteras.`),
       duration: 8000,
     });
-
-    // Ta bort från contact_requests efter lyckad konvertering
-    await supabase
-      .from("contact_requests")
-      .delete()
-      .eq("id", contact.id);
 
     await fetchData();
 

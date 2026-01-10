@@ -1,10 +1,10 @@
 // src/pages/Portal/views/NewCaseForm.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import { Button, Textarea } from "@/components/ui"; 
-import { Upload } from "lucide-react";
+import { CaseCommentsThread } from "../components/cases/CaseCommentsThread";
+import { CaseDocumentsSection, type CaseDocument } from "../components/cases/CaseDocumentsSection";
 // Se till att dessa typer finns och importeras korrekt i din Typescript-struktur
 import type { Customer, Case, Comment } from "../../../types";
 //import { saveCaseComment } from "@/services/caseCommentService";
@@ -62,10 +62,21 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
   const [status, setStatus] = useState<string>("pending");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [localNewComment, setLocalNewComment] = useState("");
-  const [localLoadingComments, setLocalLoadingComments] = useState(false);
-  const [caseDocuments, setCaseDocuments] = useState<any[]>([]);
-  const [uploadingDocument, setUploadingDocument] = useState(false);
+    const [caseDocuments, setCaseDocuments] = useState<CaseDocument[]>([]);
+
+    const isAdmin = !!authUser?.is_admin;
+
+    const fetchCaseDocuments = useCallback(async (caseId: string) => {
+        try {
+            const { data, error } = await supabase.from("cases").select("documents").eq("id", caseId).maybeSingle();
+            if (error) throw error;
+            const docs = (data as any)?.documents;
+            setCaseDocuments(Array.isArray(docs) ? (docs as CaseDocument[]) : []);
+        } catch (err) {
+            console.error("Error fetching case documents:", err);
+            setCaseDocuments([]);
+        }
+    }, []);
 
   useEffect(() => {
     setSelectedCustomer(defaultCustomerId || customers[0]?.id || "");
@@ -80,6 +91,7 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
       setCreatedDate(formatISODateOnly(caseToEdit.created_at ?? null));
       setScheduledDate(formatISODateOnly((caseToEdit as any).scheduled_date ?? null)); // Gissar på scheduled_date
       setStatus(caseToEdit.status ?? "pending");
+            void fetchCaseDocuments(caseToEdit.id);
     } else {
       setTitle("");
       setDescription("");
@@ -87,9 +99,10 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
       setCreatedDate(null);
       setScheduledDate(null);
       setStatus("pending");
+            setCaseDocuments([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caseToEdit]);
+    }, [caseToEdit, fetchCaseDocuments]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,32 +135,30 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
     if (created_at_iso) payload.created_at = created_at_iso;
     if (scheduled_date_iso) payload.scheduled_date = scheduled_date_iso; 
 
-    console.debug("NewCase payload:", payload);
+            console.debug("NewCase payload:", payload);
     try {
-      if (caseToEdit && caseToEdit.id) {
-        payload.updated_at = new Date().toISOString(); 
-        const { error } = await supabase.from('cases').update(payload).eq('id', caseToEdit.id);
-        setLoading(false);
-        if (error) {
-          console.error('Supabase update error:', error);
-          setMessage('Kunde inte uppdatera ärendet: ' + error.message);
-          return;
-        }
-        setMessage('Ärendet uppdaterades!');
-      } else {
-        const { data: newCaseId, error } = await supabase.rpc("admin_create_case", {
-          p_customer_id: custId,
-          p_title: title.trim(),
-          p_description: description.trim() || null
-        });
-        setLoading(false);
-        if (error) {
-          console.error('Supabase RPC error:', error);
-          setMessage('Kunde inte skapa ärende: ' + error.message);
-          return;
-        }
-        setMessage('Ärendet har skapats!');
-      }
+                const { data, error } = await supabase.functions.invoke("admin-save-case", {
+                    body: {
+                        case_id: caseToEdit?.id ?? null,
+                        customer_id: custId,
+                        title: title.trim(),
+                        description: description.trim() || null,
+                        status: safeStatus,
+                        created_at: created_at_iso ?? null,
+                        scheduled_date: scheduled_date_iso ?? null,
+                    },
+                });
+                setLoading(false);
+                if (error) {
+                    console.error('Supabase Edge error:', error);
+                    setMessage('Kunde inte spara ärendet: ' + error.message);
+                    return;
+                }
+                const savedCaseId = (data as any)?.case_id;
+                if (!caseToEdit && savedCaseId && fetchCaseComments) {
+                    await fetchCaseComments(savedCaseId);
+                }
+                setMessage(caseToEdit ? 'Ärendet uppdaterades!' : 'Ärendet har skapats!');
       if (onCaseSaved) await onCaseSaved();
     } catch (err: any) {
       setLoading(false);
@@ -155,108 +166,37 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
     }
   };
 
-// Öppna ärende-kommentarer och lägg till ny kommentar
-  const addCaseComment = async () => {
-    if (!caseToEdit?.id || !localNewComment.trim()) return;
-    
-    const adminId = authUser?.id; // Inloggad administratörs ID
-    const customerId = caseToEdit.customer_id; // <-- Hämta kund-ID från ärendet
-
-    if (!adminId || !customerId) {
-        console.error("Saknar administratörs- eller kund-ID.");
-        setMessage("Kunde inte skicka kommentar: Saknar nödvändig information.");
-        return;
-    }
-
-    try {
-      setLocalLoadingComments(true);
-      const { error } = await supabase.rpc("admin_add_case_comment", {
-        p_case_id: caseToEdit.id,
-        p_comment: localNewComment.trim()
-      });
-      if (error) throw error;
-      setLocalNewComment("");
-      if (fetchCaseComments) await fetchCaseComments(caseToEdit.id);
-    } catch (err) {
-      console.error("Error adding comment:", err);
-      setMessage("Kunde inte skicka kommentar. RLS/databasfel: " + String(err));
-    } finally {
-      setLocalLoadingComments(false);
-    }
-  };
-
-  const handleDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !caseToEdit?.id) return;
-
-    setUploadingDocument(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${caseToEdit.id}/${Date.now()}.${fileExt}`;
-      const { error } = await supabase.storage
-        .from('case-documents')
-        .upload(fileName, file);
-
-      if (error) throw error;
-      setMessage('Dokument uppladdat!');
-    } catch (err) {
-      console.error("Error uploading document:", err);
-      setMessage('Kunde inte ladda upp dokumentet.');
-    } finally {
-      setUploadingDocument(false);
-    }
-  };
-
   return (
     <div className="p-4">
-      {/* Kommentarstråd (om caseToEdit) */}
-      {caseToEdit && (
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2">Kommentarer</h3>
-          <div className="space-y-3 max-h-48 overflow-auto mb-2">
-            {/* Korrigerad ternär operator och cm:Comment typing */}
-            {caseComments.length === 0 ? (
-                <div className="text-sm text-gray-500">Ingen tidigare konversation.</div>
+            {caseToEdit ? (
+                <div className="mb-6 space-y-6">
+                    <CaseCommentsThread
+                        caseId={caseToEdit.id}
+                        currentUserId={authUser?.id}
+                        isAdmin={isAdmin}
+                        comments={caseComments}
+                        onRefresh={async () => {
+                            if (fetchCaseComments) await fetchCaseComments(caseToEdit.id);
+                        }}
+                        canComment={true}
+                    />
+
+                    <CaseDocumentsSection
+                        caseId={caseToEdit.id}
+                        documents={caseDocuments}
+                        canUpload={true}
+                        onRefresh={async () => {
+                            await fetchCaseDocuments(caseToEdit.id);
+                        }}
+                    />
+                </div>
             ) : (
-              caseComments.map((cm: Comment) => (
-                <div key={cm.id} className={`p-2 rounded ${cm.author_type === "customer" ? "bg-trust-blue/10" : "bg-gray-100"}`}>
-                  <div className="text-xs text-gray-500 mb-1">
-                        {cm.author_type === "customer" ? "Kund" : "Trygg Hand"} 
-                        • 
-                        {cm.created_at ? new Date(cm.created_at).toLocaleString('sv-SE') : ""}
-                    </div>
-                  <div className="text-sm whitespace-pre-wrap">{cm.content ?? ''}</div>
-                </div>
-              ))
+                <div className="mb-6 rounded border p-3 text-sm text-muted-foreground">
+                    Spara ärendet först för att kunna lägga till kommentarer och dokument.
+                </div>
             )}
-          </div>
-          <div className="flex gap-2">
-            <Textarea value={localNewComment} onChange={(e) => setLocalNewComment(e.target.value)} placeholder="Skriv kommentar..." />
-            <Button onClick={addCaseComment} disabled={!localNewComment.trim() || localLoadingComments}>Skicka</Button>
-          </div>
-        </div>
-      )}
-      {/* Dokument-sektion (om caseToEdit) */}
-      {caseToEdit && (
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2">Dokument</h3>
-          <div className="flex items-center gap-2">
-            <label htmlFor="document-upload" className="cursor-pointer flex items-center gap-2 px-3 py-2 border rounded hover:bg-gray-50">
-              <Upload className="h-4 w-4" />
-              Ladda upp dokument
-            </label>
-            <input
-              id="document-upload"
-              type="file"
-              className="hidden"
-              onChange={handleDocumentUpload}
-              disabled={uploadingDocument}
-            />
-            {uploadingDocument && <span className="text-sm text-gray-500">Laddar upp...</span>}
-          </div>
-        </div>
-      )}
-      <h2 className="text-xl font-bold">{caseToEdit ? "Redigera Ärende" : "Skapa Nytt Ärende"}</h2>
+
+            <h2 className="text-xl font-bold">{caseToEdit ? "Redigera Ärende" : "Skapa Nytt Ärende"}</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4 mt-4">
         <div>

@@ -8,12 +8,17 @@ const AuthLayout = () => {
   // använd auth-objekt så vi kan nå optional reset-funktion säkert
   const auth = useAuth();
   const signIn = auth.signIn;
+  const requestPhoneOtp = auth.requestPhoneOtp;
+  const verifyPhoneOtp = auth.verifyPhoneOtp;
    const { toast } = useToast();
    const [isLoading, setIsLoading] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
  
    const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -56,6 +61,41 @@ const AuthLayout = () => {
       setIsLoading(false);
     }
   };
+
+  const handleSendOtp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!phone) {
+      toast({ title: "Fyll i telefon", description: "Ange ditt nummer i format +46…", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await requestPhoneOtp(phone);
+    if (error) {
+      toast({ title: "Kunde inte skicka kod", description: error.message, variant: "destructive" });
+    } else {
+      setOtpSent(true);
+      toast({ title: "Kod skickad", description: "Kontrollera SMS och ange koden." });
+    }
+    setIsLoading(false);
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!phone || !otp) {
+      toast({ title: "Fyll i uppgifter", description: "Ange både telefon och kod.", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await verifyPhoneOtp(phone, otp);
+    if (error) {
+      toast({ title: "Verifiering misslyckades", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Välkommen!", description: "Du är nu inloggad." });
+    }
+    setIsLoading(false);
+  };
  
    return (
      <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-gray-50 flex flex-col items-center">
@@ -78,12 +118,13 @@ const AuthLayout = () => {
              <CardDescription className="mb-2">Logga in för att hantera dina ärenden</CardDescription>
            </CardHeader>
            <CardContent>
-             <Tabs defaultValue="signin">
-               <TabsList className="grid w-full grid-cols-1">
-                 <TabsTrigger value="signin">Logga in</TabsTrigger>
+             <Tabs defaultValue="email">
+               <TabsList className="grid w-full grid-cols-2">
+                 <TabsTrigger value="email">E-post</TabsTrigger>
+                 <TabsTrigger value="phone">Telefon</TabsTrigger>
                </TabsList>
- 
-               <TabsContent value="signin">
+
+               <TabsContent value="email">
                  {!forgotMode ? (
                    <form onSubmit={handleSignIn} className="space-y-4">
                      <Label htmlFor="email">E-post</Label>
@@ -115,6 +156,64 @@ const AuthLayout = () => {
                        <Button type="submit" disabled={isLoading}>{isLoading ? "Skickar..." : "Skicka återställning"}</Button>
                        <button type="button" onClick={() => setForgotMode(false)} className="text-sm text-warm-gray hover:underline">
                          Avbryt
+                       </button>
+                     </div>
+                   </form>
+                 )}
+               </TabsContent>
+
+               <TabsContent value="phone">
+                 {!otpSent ? (
+                   <form onSubmit={handleSendOtp} className="space-y-4">
+                     <div className="space-y-2">
+                       <Label htmlFor="phone">Telefonnummer</Label>
+                       <Input
+                         id="phone"
+                         value={phone}
+                         onChange={(e) => setPhone(e.target.value)}
+                         type="tel"
+                         placeholder="+46701234567"
+                         required
+                       />
+                       <p className="text-xs text-muted-foreground">Ange i internationellt format (t.ex. +46…)</p>
+                     </div>
+                     <Button type="submit" disabled={isLoading}>{isLoading ? "Skickar..." : "Skicka kod"}</Button>
+                   </form>
+                 ) : (
+                   <form onSubmit={handleVerifyOtp} className="space-y-4">
+                     <div className="space-y-2">
+                       <Label htmlFor="phone_verify">Telefonnummer</Label>
+                       <Input
+                         id="phone_verify"
+                         value={phone}
+                         onChange={(e) => setPhone(e.target.value)}
+                         type="tel"
+                         placeholder="+46701234567"
+                         required
+                       />
+                     </div>
+                     <div className="space-y-2">
+                       <Label htmlFor="otp">Kod</Label>
+                       <Input
+                         id="otp"
+                         value={otp}
+                         onChange={(e) => setOtp(e.target.value)}
+                         inputMode="numeric"
+                         placeholder="123456"
+                         required
+                       />
+                     </div>
+                     <div className="flex items-center gap-2">
+                       <Button type="submit" disabled={isLoading}>{isLoading ? "Verifierar..." : "Verifiera"}</Button>
+                       <button
+                         type="button"
+                         onClick={() => {
+                           setOtpSent(false);
+                           setOtp("");
+                         }}
+                         className="text-sm text-warm-gray hover:underline"
+                       >
+                         Ändra nummer
                        </button>
                      </div>
                    </form>
