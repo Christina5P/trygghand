@@ -40,6 +40,48 @@ async function isAdmin(service: any, userId: string): Promise<boolean> {
   return false;
 }
 
+async function getCustomerForAuthUser(service: any, user: any): Promise<any | null> {
+  const userId = user?.id as string | undefined;
+  const email = user?.email as string | undefined;
+  const phone = (user as any)?.phone as string | undefined;
+
+  if (userId) {
+    const { data } = await service
+      .from("customers")
+      .select("id, is_customer, deleted_at")
+      .eq("id", userId)
+      .maybeSingle();
+    if (data) return data;
+
+    const { data: byUserId } = await service
+      .from("customers")
+      .select("id, is_customer, deleted_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (byUserId) return byUserId;
+  }
+
+  if (email) {
+    const { data } = await service
+      .from("customers")
+      .select("id, is_customer, deleted_at")
+      .eq("email", email)
+      .maybeSingle();
+    if (data) return data;
+  }
+
+  if (phone) {
+    const { data } = await service
+      .from("customers")
+      .select("id, is_customer, deleted_at")
+      .eq("phone", phone)
+      .maybeSingle();
+    if (data) return data;
+  }
+
+  return null;
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { status: 200, headers: corsHeaders(req) });
@@ -87,13 +129,8 @@ serve(async (req: Request): Promise<Response> => {
 
   const admin = await isAdmin(service, user.id);
   if (!admin) {
-    const { data: cust, error: custErr } = await service
-      .from("customers")
-      .select("id, is_customer, deleted_at")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (custErr || !cust) return json(req, 403, { error: "Forbidden" });
+    const cust = await getCustomerForAuthUser(service, user);
+    if (!cust) return json(req, 403, { error: "Forbidden" });
     if ((cust as any)?.deleted_at) return json(req, 403, { error: "Forbidden" });
     if ((cust as any)?.is_customer !== true) return json(req, 403, { error: "Forbidden" });
   }

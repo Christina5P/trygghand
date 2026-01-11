@@ -1,11 +1,11 @@
 // src/components/customer/ValuationManager.tsx
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useCustomerData } from "@/hooks/useCustomerData";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import CollapsibleCard from "@/components/ui/CollapsibleCard";
 import ValueEstimator from "@/components/ValueEstimator";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { getCleanDescription, getPriceLabel } from "@/utils";
@@ -21,25 +21,54 @@ interface ValuationManagerProps {
 export const ValuationManager: React.FC<ValuationManagerProps> = ({ valuations, onDataUpdated }) => {
 const { customer } = useAuth();
 const isAdmin = Boolean(customer?.is_admin);
+const { toast } = useToast();
 const {
 loadingVals,
-fetchValuations,
 deleteValuation,
 } = useCustomerData();
 
+const [deletingValuationId, setDeletingValuationId] = useState<string | null>(null);
+
 const [mainTab, setMainTab] = useState<"new" | "saved">("new");
 const [newEstimatorKey, setNewEstimatorKey] = useState(0);
+
+const visibleValuations = useMemo(() => {
+  // If the backend includes soft-delete metadata, hide deleted rows.
+  // This keeps the UI consistent even if the caller passes through deleted rows.
+  return (valuations ?? []).filter((v) => !(v as any)?.deleted_at);
+}, [valuations]);
+
+const handleDelete = useCallback(
+  async (valuationId: string) => {
+    if (!valuationId) return;
+    setDeletingValuationId(valuationId);
+    try {
+      await deleteValuation(valuationId);
+      await onDataUpdated();
+    } catch (err) {
+      console.error("delete valuation failed", err);
+      toast({
+        title: "Fel",
+        description: "Kunde inte radera värderingen.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingValuationId(null);
+    }
+  },
+  [deleteValuation, onDataUpdated, toast]
+);
 
 const savedValsContent = useMemo(() => {
 if (loadingVals) {
 return <p className="text-gray-500">Laddar sparade värderingar…</p>;
 }
-if (!loadingVals && valuations.length === 0) {
+if (!loadingVals && visibleValuations.length === 0) {
 return <p className="text-gray-500">Inga sparade värderingar.</p>;
 }
 return (
 <div className="grid gap-4">
-{valuations.map((v: Valuation) => (
+{visibleValuations.map((v: Valuation) => (
 <div key={String(v.id)} className="p-4 border rounded bg-white">
 <div className="flex items-start gap-4">
           {/* Bild / Placeholder */}
@@ -70,10 +99,11 @@ return (
             </div>
             <div className="mt-2">
               <button
-                onClick={() => deleteValuation(v.id)}
-                className="text-xs text-red-600 hover:underline"
+                onClick={() => handleDelete(String(v.id))}
+                disabled={deletingValuationId === String(v.id)}
+                className="text-xs text-red-600 hover:underline disabled:opacity-50"
               >
-                Radera
+                {deletingValuationId === String(v.id) ? "Raderar…" : "Radera"}
               </button>
             </div>
           </div>
@@ -82,7 +112,7 @@ return (
     ))}
   </div>
 );
-}, [loadingVals, valuations, deleteValuation, fetchValuations]);
+}, [loadingVals, visibleValuations, handleDelete, deletingValuationId]);
 
 return (
 <div className="mb-6">
@@ -112,7 +142,7 @@ Ny värdering
 <Button
 onClick={() => {
 setMainTab("saved");
-fetchValuations();
+onDataUpdated();
 }}
 variant={mainTab === "saved" ? "default" : "outline"}
 size="sm"
@@ -127,7 +157,7 @@ Sparade värderingar
         customerId={customer?.id}
         onSaved={() => {
           setMainTab("saved");
-          fetchValuations();
+          onDataUpdated();
         }}
       />
     )}

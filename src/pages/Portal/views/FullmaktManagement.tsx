@@ -2,7 +2,7 @@
 // src/pages/Portal/views/FullmaktManagement.tsx
 
 import { useState, useEffect } from 'react';
-import { supabase } from "@/lib/supabase";
+import { isMissingColumnError, isUnauthorizedError, supabase, tryRefreshSession } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
@@ -41,6 +41,24 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
     const [loadingDocuments, setLoadingDocuments] = useState(false);
     const [documents, setDocuments] = useState<FullmaktDocument[]>([]);
 
+    const handleUnauthorized = async () => {
+        const refreshed = await tryRefreshSession();
+        if (refreshed) return true;
+
+        try {
+            await supabase.auth.signOut();
+        } catch {
+            // ignore
+        }
+        toast({
+            title: "Sessionen har gått ut",
+            description: "Logga in igen för att fortsätta.",
+            variant: "destructive",
+        });
+        window.location.href = "/portal";
+        return false;
+    };
+
     const fetchDocuments = async () => {
         setLoadingDocuments(true);
         try {
@@ -54,7 +72,18 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
                 query = query.is('fullmaktsgivare', null).is('fullmakthavare', null); 
             }
 
-            const { data, error } = await query.order('created_at', { ascending: false });
+            const run = () => query.is('deleted_at', null).order('created_at', { ascending: false });
+            let { data, error } = await run();
+            if (error && isUnauthorizedError(error)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data, error } = await run());
+            }
+
+            // Backward-compat: production might not have soft-delete columns yet.
+            if (error && isMissingColumnError(error, "deleted_at")) {
+                const runNoSoftDelete = () => query.order('created_at', { ascending: false });
+                ({ data, error } = await runNoSoftDelete());
+            }
 
             if (error) throw error;
             
@@ -93,7 +122,12 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
         setUploading(true);
         const fileExtension = selectedFile.name.split('.').pop();
         
-                const { data, error } = await supabase.auth.getUser();
+                const runUser = () => supabase.auth.getUser();
+                let { data, error } = await runUser();
+                if ((error || !data.user) && isUnauthorizedError(error)) {
+                    const ok = await handleUnauthorized();
+                    if (ok) ({ data, error } = await runUser());
+                }
                 if (error || !data.user) {
                     console.error("Failed to get user", error);
                     toast({ title: "Inloggning krävs", description: "Kunde inte hämta användare.", variant: "destructive" });
@@ -110,26 +144,36 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
         const storagePath = `${pathPrefix}/${uniqueFileName}`; 
 
         try {
-            const { error: uploadError } = await supabase.storage
-                .from('fullmakts-filer')
-                .upload(storagePath, selectedFile, {
+            const runUpload = () =>
+                supabase.storage.from('fullmakts-filer').upload(storagePath, selectedFile, {
                     cacheControl: '3600',
                     upsert: false,
                 });
 
+            let { error: uploadError } = await runUpload();
+            if (uploadError && isUnauthorizedError(uploadError)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ error: uploadError } = await runUpload());
+            }
+
             if (uploadError) throw uploadError;
 
-            const { error: dbError } = await supabase
-                .from('fullmakter')
-                .insert({
+            const runInsert = () =>
+                supabase.from('fullmakter').insert({
                     fullmaktsgivare: uploaderId, // FK mot auth.users
                     fullmakthavare: customerId || uploaderId, // fallback
-                    fullmaktstyp: 'Allmän fullmakt', 
-                    status: 'Aktiv', 
-                    dokument_url: storagePath, 
+                    fullmaktstyp: 'Allmän fullmakt',
+                    status: 'Aktiv',
+                    dokument_url: storagePath,
                     file_name: selectedFile.name,
                     storage_path: storagePath,
                 });
+
+            let { error: dbError } = await runInsert();
+            if (dbError && isUnauthorizedError(dbError)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ error: dbError } = await runInsert());
+            }
 
             if (dbError) throw dbError;
 
@@ -147,9 +191,12 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
 
     const handleDownload = async (document: FullmaktDocument) => {
         try {
-            const { data, error } = await supabase.storage
-                .from('fullmakts-filer') 
-                .createSignedUrl(document.storage_path, 60);
+            const run = () => supabase.storage.from('fullmakts-filer').createSignedUrl(document.storage_path, 60);
+            let { data, error } = await run();
+            if (error && isUnauthorizedError(error)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data, error } = await run());
+            }
 
             if (error) throw error;
 

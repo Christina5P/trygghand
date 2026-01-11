@@ -25,6 +25,42 @@ export const supabase: SupabaseClient =
     },
   }));
 
+export function isUnauthorizedError(err: unknown): boolean {
+  const e = err as any;
+  const status = e?.status ?? e?.context?.status;
+  const message = typeof e?.message === "string" ? e.message.toLowerCase() : "";
+  const name = typeof e?.name === "string" ? e.name.toLowerCase() : "";
+  return (
+    status === 401 ||
+    name.includes("unauthorized") ||
+    message === "unauthorized" ||
+    message.includes("jwt expired") ||
+    message.includes("invalid jwt") ||
+    message.includes("missing authorization")
+  );
+}
+
+export function isMissingColumnError(err: unknown, columnName?: string): boolean {
+  const e = err as any;
+  const code = typeof e?.code === "string" ? e.code : undefined;
+  const message = typeof e?.message === "string" ? e.message.toLowerCase() : "";
+  if (code !== "42703") return false;
+  if (!columnName) return true;
+  return message.includes(columnName.toLowerCase()) && message.includes("does not exist");
+}
+
+export async function tryRefreshSession(): Promise<boolean> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) return false;
+    const { data: refreshed, error } = await supabase.auth.refreshSession();
+    if (error) return false;
+    return !!refreshed.session;
+  } catch {
+    return false;
+  }
+}
+
 
 // ---------- IMAGE UPLOAD (for valuations etc) ----------
 /** ligger i supabaseUploads istället

@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useCallback, useMemo, useState } from "react";
+import { isUnauthorizedError, supabase, tryRefreshSession } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +42,24 @@ export function CaseDocumentsSection({
   const [uploading, setUploading] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
+  const handleUnauthorized = useCallback(async () => {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) return true;
+
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
+    toast({
+      title: "Sessionen har gått ut",
+      description: "Logga in igen för att fortsätta.",
+      variant: "destructive",
+    });
+    window.location.href = "/portal";
+    return false;
+  }, [toast]);
+
   const visibleDocs = useMemo<CaseDocumentView[]>(() => {
     const normalized: CaseDocumentView[] = (Array.isArray(documents) ? documents : [])
       .map((d) => {
@@ -66,9 +84,16 @@ export function CaseDocumentsSection({
   }, [documents, showDeleted]);
 
   const openFile = async (path: string) => {
-    const { data, error } = await supabase.functions.invoke("case-create-document-download", {
-      body: { case_id: caseId, path },
-    });
+    const run = () =>
+      supabase.functions.invoke("case-create-document-download", {
+        body: { case_id: caseId, path },
+      });
+
+    let { data, error } = await run();
+    if (error && isUnauthorizedError(error)) {
+      const ok = await handleUnauthorized();
+      if (ok) ({ data, error } = await run());
+    }
     if (error) throw error;
     if ((data as any)?.ok !== true) throw new Error((data as any)?.error || "Kunde inte skapa länk");
     const url = (data as any)?.signedUrl as string | undefined;
@@ -83,9 +108,16 @@ export function CaseDocumentsSection({
         const ext = fileExt(file.name) || "bin";
         const displayName = `${safeDisplayNameFromFilename(file.name)}.${ext}`;
 
-        const { data, error } = await supabase.functions.invoke("case-create-document-upload", {
-          body: { case_id: caseId, file_ext: ext, mime_type: file.type || null },
-        });
+        const runCreate = () =>
+          supabase.functions.invoke("case-create-document-upload", {
+            body: { case_id: caseId, file_ext: ext, mime_type: file.type || null },
+          });
+
+        let { data, error } = await runCreate();
+        if (error && isUnauthorizedError(error)) {
+          const ok = await handleUnauthorized();
+          if (ok) ({ data, error } = await runCreate());
+        }
         if (error) throw error;
         if (!(data as any)?.ok) throw new Error((data as any)?.error || "Kunde inte initiera uppladdning");
 
@@ -93,11 +125,30 @@ export function CaseDocumentsSection({
         const token = (data as any).token as string;
 
         const { error: upErr } = await supabase.storage.from("case-documents").uploadToSignedUrl(path, token, file);
-        if (upErr) throw upErr;
+        if (upErr && isUnauthorizedError(upErr)) {
+          const ok = await handleUnauthorized();
+          if (ok) {
+            const { error: upErr2 } = await supabase.storage
+              .from("case-documents")
+              .uploadToSignedUrl(path, token, file);
+            if (upErr2) throw upErr2;
+          } else {
+            throw upErr;
+          }
+        } else if (upErr) {
+          throw upErr;
+        }
 
-        const { data: attachData, error: attachErr } = await supabase.functions.invoke("case-attach-document", {
-          body: { case_id: caseId, path, display_name: displayName, mime_type: file.type || null },
-        });
+        const runAttach = () =>
+          supabase.functions.invoke("case-attach-document", {
+            body: { case_id: caseId, path, display_name: displayName, mime_type: file.type || null },
+          });
+
+        let { data: attachData, error: attachErr } = await runAttach();
+        if (attachErr && isUnauthorizedError(attachErr)) {
+          const ok = await handleUnauthorized();
+          if (ok) ({ data: attachData, error: attachErr } = await runAttach());
+        }
         if (attachErr) throw attachErr;
         if ((attachData as any)?.ok !== true) throw new Error((attachData as any)?.error || "Kunde inte spara dokument");
       }
@@ -116,9 +167,16 @@ export function CaseDocumentsSection({
     if (!ok) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke("case-soft-delete-document", {
-        body: { case_id: caseId, path },
-      });
+      const run = () =>
+        supabase.functions.invoke("case-soft-delete-document", {
+          body: { case_id: caseId, path },
+        });
+
+      let { data, error } = await run();
+      if (error && isUnauthorizedError(error)) {
+        const ok = await handleUnauthorized();
+        if (ok) ({ data, error } = await run());
+      }
       if (error) throw error;
       if ((data as any)?.ok !== true) throw new Error((data as any)?.error || "Kunde inte ta bort");
 

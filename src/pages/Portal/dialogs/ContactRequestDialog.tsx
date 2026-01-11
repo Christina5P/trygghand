@@ -43,15 +43,24 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({
   };
 
   const validateForm = () => {
-    // Mandatory: name och phone
+    // Mandatory: name + at least one contact method (phone or email)
     if (!editingContact.name || !editingContact.name.trim()) {
       toast({ title: "Fel", description: "Namn är obligatoriskt.", variant: "destructive" });
       return false;
     }
-    if (!editingContact.phone || !editingContact.phone.trim()) {
-      toast({ title: "Fel", description: "Telefonnummer är obligatoriskt.", variant: "destructive" });
+
+    const hasEmail = !!(editingContact.email && String(editingContact.email).trim());
+    const hasPhone = !!(editingContact.phone && String(editingContact.phone).trim());
+
+    if (!hasEmail && !hasPhone) {
+      toast({
+        title: "Fel",
+        description: "Ange antingen telefonnummer eller e-postadress.",
+        variant: "destructive",
+      });
       return false;
     }
+
     return true;
   };
 
@@ -114,9 +123,9 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({
             />
           </div>
 
-          {/* Telefon (Mandatory) */}
+          {/* Telefon (required only if email is missing) */}
           <div>
-            <Label htmlFor="phone">Telefon *</Label>
+            <Label htmlFor="phone">Telefon</Label>
             <Input
               id="phone"
               name="phone"
@@ -124,7 +133,6 @@ const ContactRequestDialog: React.FC<ContactRequestDialogProps> = ({
               value={editingContact.phone || ""}
               onChange={handleInputChange}
               placeholder="Ange telefonnummer"
-              required
             />
           </div>
 

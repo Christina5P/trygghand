@@ -66,6 +66,40 @@ function normalizePhone(raw: unknown): string | null {
   return cleaned;
 }
 
+async function findAuthUserIdByEmail(service: any, email: string): Promise<string | null> {
+  const target = email.trim().toLowerCase();
+  if (!target) return null;
+
+  const perPage = 1000;
+  for (let page = 1; page <= 25; page++) {
+    const { data: listData, error: listErr } = await service.auth.admin.listUsers({ page, perPage });
+    if (listErr) break;
+    const users = Array.isArray((listData as any)?.users) ? ((listData as any).users as any[]) : [];
+    const match = users.find((u) => typeof u?.email === "string" && u.email.toLowerCase() === target);
+    if (match?.id) return String(match.id);
+    if (users.length < perPage) break;
+  }
+
+  return null;
+}
+
+async function findAuthUserIdByPhone(service: any, phoneE164: string): Promise<string | null> {
+  const target = phoneE164.trim();
+  if (!target) return null;
+
+  const perPage = 1000;
+  for (let page = 1; page <= 25; page++) {
+    const { data: listData, error: listErr } = await service.auth.admin.listUsers({ page, perPage });
+    if (listErr) break;
+    const users = Array.isArray((listData as any)?.users) ? ((listData as any).users as any[]) : [];
+    const match = users.find((u) => typeof u?.phone === "string" && u.phone === target);
+    if (match?.id) return String(match.id);
+    if (users.length < perPage) break;
+  }
+
+  return null;
+}
+
 type EmailResult = { sent: boolean; error?: string; skipped?: boolean };
 
 async function sendBrevoEmail(opts: {
@@ -181,12 +215,13 @@ serve(async (req: Request): Promise<Response> => {
   const fullName =
     (contact as any).name ||
     `${(contact as any).firstname || ""} ${(contact as any).lastname || ""}`.trim();
-  const phone = normalizePhone((contact as any).phone) || "";
+  const phone = normalizePhone((contact as any).phone);
   const email = ((contact as any).email || "").trim() || null;
 
   if (!fullName) return json(req, 409, { error: "Contact request missing name" });
-  if (!phone) return json(req, 409, { error: "Contact request missing phone" });
-  // NOTE: email is optional. If missing, we still create a customer row (no auth user).
+  // Phone is required only when email is missing (SMS OTP login).
+  if (!email && !phone) return json(req, 409, { error: "Contact request missing phone" });
+  // NOTE: email is optional.
 
   // 3) If customer already exists for this email, just link & mark converted.
   let createdCustomerId: string | null = null;
@@ -217,7 +252,7 @@ serve(async (req: Request): Promise<Response> => {
       let authUserId: string | null = null;
 
       const { data: createdUser, error: createUserErr } = await service.auth.admin.createUser({
-        phone,
+        phone: phone!,
         phone_confirm: false,
         user_metadata: { full_name: fullName },
       });
@@ -228,13 +263,7 @@ serve(async (req: Request): Promise<Response> => {
       } else {
         // Most common: phone already exists. Locate the user id and reuse it.
         try {
-          const { data: listData, error: listErr } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 });
-          if (!listErr && Array.isArray((listData as any)?.users)) {
-            const match = ((listData as any).users as any[]).find(
-              (u) => typeof u?.phone === "string" && u.phone === phone,
-            );
-            if (match?.id) authUserId = String(match.id);
-          }
+          authUserId = await findAuthUserIdByPhone(service, phone!);
         } catch {
           // ignore
         }
@@ -260,7 +289,6 @@ serve(async (req: Request): Promise<Response> => {
               phone,
               is_admin: false,
               is_customer: true,
-              active: true,
               updated_at: nowIso,
             },
           ],
@@ -285,7 +313,7 @@ serve(async (req: Request): Promise<Response> => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name: fullName, phone },
+      user_metadata: { full_name: fullName, phone: phone ?? null },
     });
 
     if (createUserErr || !createdUser?.user?.id) {
@@ -306,44 +334,36 @@ serve(async (req: Request): Promise<Response> => {
       } else {
         // If the auth user exists but the customers row doesn't, try to find the auth user id and upsert the customer.
         try {
-          const { data: listData, error: listErr } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 });
-          if (!listErr && Array.isArray((listData as any)?.users)) {
-            const match = ((listData as any).users as any[]).find(
-              (u) => typeof u?.email === "string" && u.email.toLowerCase() === email.toLowerCase(),
-            );
+          const userId = await findAuthUserIdByEmail(service, email);
+          if (userId) {
+            const nowIso = new Date().toISOString();
+            const { data: customerRow, error: customerErr } = await service
+              .from("customers")
+              .upsert(
+                [
+                  {
+                    id: userId,
+                    email,
+                    name: fullName,
+                    phone,
+                    is_admin: false,
+                    is_customer: true,
+                    updated_at: nowIso,
+                  },
+                ],
+                { onConflict: "id" },
+              )
+              .select("id")
+              .single();
 
-            const userId = match?.id;
-            if (typeof userId === "string" && userId.length > 0) {
-              const nowIso = new Date().toISOString();
-              const { data: customerRow, error: customerErr } = await service
-                .from("customers")
-                .upsert(
-                  [
-                    {
-                      id: userId,
-                      email,
-                      name: fullName,
-                      phone,
-                      is_admin: false,
-                      is_customer: true,
-                      active: true,
-                      updated_at: nowIso,
-                    },
-                  ],
-                  { onConflict: "id" },
-                )
-                .select("id")
-                .single();
-
-              if (!customerErr) {
-                createdCustomerId = (customerRow as any)?.id ?? null;
-                passwordForBrevo = null;
-              } else {
-                console.error("convert-contact-to-customer: customer upsert after listUsers failed", {
-                  code: (customerErr as any)?.code,
-                  message: (customerErr as any)?.message,
-                });
-              }
+            if (!customerErr) {
+              createdCustomerId = (customerRow as any)?.id ?? null;
+              passwordForBrevo = null;
+            } else {
+              console.error("convert-contact-to-customer: customer upsert after email lookup failed", {
+                code: (customerErr as any)?.code,
+                message: (customerErr as any)?.message,
+              });
             }
           }
         } catch {
@@ -368,7 +388,6 @@ serve(async (req: Request): Promise<Response> => {
               phone,
               is_admin: false,
               is_customer: true,
-              active: true,
               updated_at: nowIso,
             },
           ],

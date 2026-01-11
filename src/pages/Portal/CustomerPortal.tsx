@@ -30,6 +30,7 @@ import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import type { Customer, Case, Comment, Valuation, FullmaktDocument } from '@/types'; // Importera dina typer
 import { ChangePasswordSection } from "./components/ChangePasswordSection";
+import { isMissingColumnError, isUnauthorizedError, tryRefreshSession } from "@/lib/supabase";
 
 import type { Dispatch, SetStateAction } from "react";
  
@@ -102,6 +103,25 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const { user } = useAuth(); // Används för auth.uid() vid kommentarer
     const { toast } = useToast();
 
+    const handleUnauthorized = useCallback(async () => {
+        // Try to refresh once; if it fails, force a clean re-login.
+        const refreshed = await tryRefreshSession();
+        if (refreshed) return true;
+
+        try {
+            await supabase.auth.signOut();
+        } catch {
+            // ignore
+        }
+        toast({
+            title: "Sessionen har gått ut",
+            description: "Logga in igen för att fortsätta.",
+            variant: "destructive",
+        });
+        window.location.href = "/portal";
+        return false;
+    }, [toast]);
+
     // --- State för kundinformation ---
     const [loadingSave, setLoadingSave] = useState(false);
 
@@ -141,12 +161,18 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         if (!customer?.id) return;
         setLoadingCases(true);
         try {
-            const { data, error } = await supabase
-                .from("cases")
-                .select(`*, service_type:service_type_id(name, description)`)
-                .eq("customer_id", customer.id)
-                .order("created_at", { ascending: false });
+            const run = () =>
+                supabase
+                    .from("cases")
+                    .select(`*, service_type:service_type_id(name, description)`)
+                    .eq("customer_id", customer.id)
+                    .order("created_at", { ascending: false });
 
+            let { data, error } = await run();
+            if (error && isUnauthorizedError(error)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data, error } = await run());
+            }
             if (error) throw error;
             setCases(data as Case[] || []);
         } catch (err) {
@@ -155,7 +181,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         } finally {
             setLoadingCases(false);
         }
-    }, [customer?.id, toast]);
+    }, [customer?.id, toast, handleUnauthorized]);
 
     // --- Hämta Kommentarer ---
     const fetchComments = useCallback(async (caseId: string) => {
@@ -180,9 +206,16 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const fetchCaseDocuments = useCallback(async (caseId: string) => {
         setLoadingCaseDocuments(true);
         try {
-            const { data, error } = await supabase.functions.invoke("case-list-documents", {
-                body: { case_id: caseId },
-            });
+            const run = () =>
+                supabase.functions.invoke("case-list-documents", {
+                    body: { case_id: caseId },
+                });
+
+            let { data, error } = await run();
+            if (error && isUnauthorizedError(error)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data, error } = await run());
+            }
             if (error) throw error;
             if ((data as any)?.ok !== true) throw new Error((data as any)?.error || "Kunde inte hämta dokument");
 
@@ -194,7 +227,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         } finally {
             setLoadingCaseDocuments(false);
         }
-    }, []);
+    }, [handleUnauthorized]);
     
     // --- Hämta Värderingar ---
     const fetchValuations = useCallback(async () => {
@@ -216,17 +249,40 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const fetchDocuments = useCallback(async () => {
         setLoadingDocuments(true);
         try {
-            const { data: authData, error: authError } = await supabase.auth.getUser();
+            const runUser = () => supabase.auth.getUser();
+            let { data: authData, error: authError } = await runUser();
+            if ((authError || !authData.user) && isUnauthorizedError(authError)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data: authData, error: authError } = await runUser());
+            }
             if (authError || !authData.user) throw authError || new Error('Ingen användare');
             const userId = authData.user.id;
 
-            const { data, error } = await supabase
-                .from('fullmakter')
-                .select('id, fullmaktsgivare, file_name, dokument_url, created_at')
-                .eq('fullmaktsgivare', userId)
-                .is('deleted_at', null)
-                .order('created_at', { ascending: false });
+            const run = () =>
+                supabase
+                    .from('fullmakter')
+                    .select('id, fullmaktsgivare, file_name, dokument_url, created_at')
+                    .eq('fullmaktsgivare', userId)
+                    .is('deleted_at', null)
+                    .order('created_at', { ascending: false });
 
+            let { data, error } = await run();
+            if (error && isUnauthorizedError(error)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data, error } = await run());
+            }
+
+            // Backward-compat: production might not have soft-delete columns yet.
+            if (error && isMissingColumnError(error, "deleted_at")) {
+                const runNoSoftDelete = () =>
+                    supabase
+                        .from('fullmakter')
+                        .select('id, fullmaktsgivare, file_name, dokument_url, created_at')
+                        .eq('fullmaktsgivare', userId)
+                        .order('created_at', { ascending: false });
+
+                ({ data, error } = await runNoSoftDelete());
+            }
             if (error) throw error;
             const mapped: FullmaktDocument[] = (data || []).map((d: any) => ({
                 id: d.id,
@@ -243,7 +299,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         } finally {
             setLoadingDocuments(false);
         }
-    }, [toast]);
+    }, [toast, handleUnauthorized]);
 
     // Hämta dokument när dialog öppnas
     useEffect(() => {
@@ -264,9 +320,16 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             const ext = (selectedFile.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
 
             // 1) Ask Edge Function for signed upload token + path
-            const { data, error } = await supabase.functions.invoke('fullmakt-create-upload', {
-                body: { file_ext: ext, mime_type: selectedFile.type || null },
-            });
+            const runCreate = () =>
+                supabase.functions.invoke('fullmakt-create-upload', {
+                    body: { file_ext: ext, mime_type: selectedFile.type || null },
+                });
+
+            let { data, error } = await runCreate();
+            if (error && isUnauthorizedError(error)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data, error } = await runCreate());
+            }
             if (error) throw error;
             if (!(data as any)?.ok) throw new Error((data as any)?.error || 'Kunde inte initiera uppladdning');
 
@@ -277,12 +340,31 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             const { error: upErr } = await supabase.storage
                 .from('fullmakts-filer')
                 .uploadToSignedUrl(path, token, selectedFile);
-            if (upErr) throw upErr;
+            if (upErr && isUnauthorizedError(upErr)) {
+                const ok = await handleUnauthorized();
+                if (ok) {
+                    const { error: upErr2 } = await supabase.storage
+                        .from('fullmakts-filer')
+                        .uploadToSignedUrl(path, token, selectedFile);
+                    if (upErr2) throw upErr2;
+                } else {
+                    throw upErr;
+                }
+            } else if (upErr) {
+                throw upErr;
+            }
 
             // 3) Attach document row in DB (server-side)
-            const { data: attachData, error: attachErr } = await supabase.functions.invoke('fullmakt-attach', {
-                body: { path, file_name: selectedFile.name, fullmaktstyp: 'uppladdning' },
-            });
+            const runAttach = () =>
+                supabase.functions.invoke('fullmakt-attach', {
+                    body: { path, file_name: selectedFile.name, fullmaktstyp: 'uppladdning' },
+                });
+
+            let { data: attachData, error: attachErr } = await runAttach();
+            if (attachErr && isUnauthorizedError(attachErr)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data: attachData, error: attachErr } = await runAttach());
+            }
             if (attachErr) throw attachErr;
             if ((attachData as any)?.ok !== true) throw new Error((attachData as any)?.error || 'Kunde inte spara dokument');
 
@@ -303,9 +385,16 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             return;
         }
         try {
-            const { data, error } = await supabase.storage
-                .from('fullmakts-filer')
-                .createSignedUrl(doc.storage_path, 60);
+            const run = () =>
+                supabase.storage
+                    .from('fullmakts-filer')
+                    .createSignedUrl(doc.storage_path, 60);
+
+            let { data, error } = await run();
+            if (error && isUnauthorizedError(error)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data, error } = await run());
+            }
             if (error) throw error;
             const url = (data as any)?.signedUrl ?? (data as any)?.signed_url;
             if (!url) throw new Error('Ingen giltig länk');
@@ -326,18 +415,39 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
 
         setDeletingDocumentId(doc.id);
         try {
-            const { data: authData, error: authError } = await supabase.auth.getUser();
+            const runUser = () => supabase.auth.getUser();
+            let { data: authData, error: authError } = await runUser();
+            if ((authError || !authData.user) && isUnauthorizedError(authError)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data: authData, error: authError } = await runUser());
+            }
             if (authError || !authData.user) throw authError || new Error('Ingen användare');
             const userId = authData.user.id;
 
             // Soft delete in DB (customer should NOT physically delete the file in Storage).
             const now = new Date().toISOString();
-            const { error: dbError } = await supabase
-                .from('fullmakter')
-                .update({ deleted_at: now, deleted_by: userId })
-                .eq('id', doc.id)
-                .eq('fullmaktsgivare', userId)
-                .is('deleted_at', null);
+            const runUpdate = () =>
+                supabase
+                    .from('fullmakter')
+                    .update({ deleted_at: now, deleted_by: userId })
+                    .eq('id', doc.id)
+                    .eq('fullmaktsgivare', userId)
+                    .is('deleted_at', null);
+
+            let { error: dbError } = await runUpdate();
+            if (dbError && isUnauthorizedError(dbError)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ error: dbError } = await runUpdate());
+            }
+
+            if (dbError && (isMissingColumnError(dbError, "deleted_at") || isMissingColumnError(dbError, "deleted_by"))) {
+                toast({
+                    title: 'Soft delete saknas',
+                    description: 'Kör SQL-scriptet supabase/scripts/add_fullmakter_soft_delete_columns.sql i Supabase för att aktivera borttagning.',
+                    variant: 'destructive',
+                });
+                return;
+            }
             if (dbError) throw dbError;
 
             setDocuments((prev) => prev.filter((d) => d.id !== doc.id));

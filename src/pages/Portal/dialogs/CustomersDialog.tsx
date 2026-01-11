@@ -1,6 +1,6 @@
 //src/pages/Portal/dialogs/CustomersDialog.tsx  
 import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { isMissingColumnError, isUnauthorizedError, supabase, tryRefreshSession } from "@/lib/supabase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,15 +79,53 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [togglingActive, setTogglingActive] = useState(false);
 
+  const handleUnauthorized = useCallback(async () => {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) return true;
+
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
+    toast({
+      title: "Sessionen har gått ut",
+      description: "Logga in igen för att fortsätta.",
+      variant: "destructive",
+    });
+    window.location.href = "/portal";
+    return false;
+  }, [toast]);
+
   // --- NY FUNKTION: HÄMTA FULLMAKTER ---
   const fetchDocuments = useCallback(async (customerId: string) => {
     setLoadingDocuments(true);
     try {
-      const { data, error } = await supabase
-        .from("fullmakter")
-        .select("id, fullmaktsgivare, file_name, dokument_url, created_at")
-        .eq("fullmaktsgivare", customerId)
-        .order("created_at", { ascending: false });
+      const run = () =>
+        supabase
+          .from("fullmakter")
+          .select("id, fullmaktsgivare, file_name, dokument_url, created_at")
+          .eq("fullmaktsgivare", customerId)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false });
+
+      let { data, error } = await run();
+      if (error && isUnauthorizedError(error)) {
+        const ok = await handleUnauthorized();
+        if (ok) ({ data, error } = await run());
+      }
+
+      // Backward-compat: production might not have soft-delete columns yet.
+      if (error && isMissingColumnError(error, "deleted_at")) {
+        const runNoSoftDelete = () =>
+          supabase
+            .from("fullmakter")
+            .select("id, fullmaktsgivare, file_name, dokument_url, created_at")
+            .eq("fullmaktsgivare", customerId)
+            .order("created_at", { ascending: false });
+
+        ({ data, error } = await runNoSoftDelete());
+      }
 
       if (error) throw error;
 
@@ -108,7 +146,7 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
     } finally {
       setLoadingDocuments(false);
     }
-  }, [toast]);
+  }, [toast, handleUnauthorized]);
 
   // --- NY FUNKTION: LADDA NER FULLMAKT ---
   const handleDownload = async (document: FullmaktDocument) => {
@@ -116,9 +154,12 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
       const pathInBucket = document.storage_path;
       if (!pathInBucket) throw new Error("Inget dokument_url satt för detta dokument.");
 
-      const { data, error } = await supabase.storage
-        .from("fullmakts-filer")
-        .createSignedUrl(pathInBucket, 60);
+      const run = () => supabase.storage.from("fullmakts-filer").createSignedUrl(pathInBucket, 60);
+      let { data, error } = await run();
+      if (error && isUnauthorizedError(error)) {
+        const ok = await handleUnauthorized();
+        if (ok) ({ data, error } = await run());
+      }
 
       if (error) throw error;
 
@@ -436,30 +477,47 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
 
     try {
       // Ladda upp till rätt bucket
-      const { error: uploadError } = await supabase.storage
-        .from('fullmakts-filer') // rätt bucket
-        .upload(storagePath, selectedFile, {
+      const runUpload = () =>
+        supabase.storage.from('fullmakts-filer').upload(storagePath, selectedFile, {
           cacheControl: '3600',
           upsert: false,
         });
 
+      let { error: uploadError } = await runUpload();
+      if (uploadError && isUnauthorizedError(uploadError)) {
+        const ok = await handleUnauthorized();
+        if (ok) ({ error: uploadError } = await runUpload());
+      }
+
       if (uploadError) throw uploadError;
 
       // Spara referens i databasen i kolumnen dokument_url
-      const { data: userData } = await supabase.auth.getUser();
+      const runUser = () => supabase.auth.getUser();
+      let { data: userData, error: userErr } = await runUser();
+      if (userErr && isUnauthorizedError(userErr)) {
+        const ok = await handleUnauthorized();
+        if (ok) ({ data: userData, error: userErr } = await runUser());
+      }
       const uploaderId = (userData as any)?.user?.id ?? null;
       // Fallback: om ingen uploader finns, använd kundens id som placeholder (justera vid behov)
       const fullmakthavareId = uploaderId ?? editingCustomer.id;
       const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
-      const { error: dbError } = await supabase
-        .from("fullmakter")
-        .insert([{
-          fullmaktsgivare: editingCustomer.id,
-          fullmakthavare: fullmakthavareId,
-          file_name: selectedFile.name,
-         dokument_url: storagePath,
-        }]);
+      const runInsert = () =>
+        supabase.from("fullmakter").insert([
+          {
+            fullmaktsgivare: editingCustomer.id,
+            fullmakthavare: fullmakthavareId,
+            file_name: selectedFile.name,
+            dokument_url: storagePath,
+          },
+        ]);
+
+      let { error: dbError } = await runInsert();
+      if (dbError && isUnauthorizedError(dbError)) {
+        const ok = await handleUnauthorized();
+        if (ok) ({ error: dbError } = await runInsert());
+      }
  
        if (dbError) {
          console.error("DB insert error:", dbError);

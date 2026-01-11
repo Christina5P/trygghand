@@ -52,6 +52,13 @@ function safeDisplayName(name: string): string {
   return scrubbed.length >= 3 ? scrubbed : "Dokument";
 }
 
+function isMissingDocumentsColumn(err: unknown): boolean {
+  const e = err as any;
+  const message = typeof e?.message === "string" ? e.message : "";
+  const code = typeof e?.code === "string" ? e.code : "";
+  return code === "42703" || message.toLowerCase().includes('column "documents"');
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -99,7 +106,15 @@ serve(async (req: Request): Promise<Response> => {
     .eq("id", caseId)
     .maybeSingle();
 
-  if (rowErr || !row) return json(404, { error: "Not found" });
+  if (rowErr) {
+    if (isMissingDocumentsColumn(rowErr)) {
+      return json(500, {
+        error: "Database schema missing public.cases.documents. Run supabase/scripts/add_cases_documents_jsonb.sql in Supabase SQL Editor.",
+      });
+    }
+    return json(500, { error: "Internal server error" });
+  }
+  if (!row) return json(404, { error: "Not found" });
 
   const ownerId = (row as any).customer_id as string;
   if (!admin && ownerId !== user.id) return json(403, { error: "Forbidden" });

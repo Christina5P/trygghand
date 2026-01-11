@@ -61,6 +61,38 @@ async function requireAdmin(service: any, userId: string): Promise<boolean> {
   return false;
 }
 
+async function findAuthUserIdByEmail(service: any, email: string): Promise<string | null> {
+  const target = email.trim().toLowerCase();
+  if (!target) return null;
+
+  const perPage = 1000;
+  for (let page = 1; page <= 25; page++) {
+    const { data: listData, error: listErr } = await service.auth.admin.listUsers({ page, perPage });
+    if (listErr) break;
+    const users = Array.isArray((listData as any)?.users) ? ((listData as any).users as any[]) : [];
+    const match = users.find((u) => typeof u?.email === "string" && u.email.toLowerCase() === target);
+    if (match?.id) return String(match.id);
+    if (users.length < perPage) break;
+  }
+  return null;
+}
+
+async function findAuthUserIdByPhone(service: any, phoneE164: string): Promise<string | null> {
+  const target = phoneE164.trim();
+  if (!target) return null;
+
+  const perPage = 1000;
+  for (let page = 1; page <= 25; page++) {
+    const { data: listData, error: listErr } = await service.auth.admin.listUsers({ page, perPage });
+    if (listErr) break;
+    const users = Array.isArray((listData as any)?.users) ? ((listData as any).users as any[]) : [];
+    const match = users.find((u) => typeof u?.phone === "string" && u.phone === target);
+    if (match?.id) return String(match.id);
+    if (users.length < perPage) break;
+  }
+  return null;
+}
+
 serve(async (req: Request): Promise<Response> => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -125,13 +157,32 @@ serve(async (req: Request): Promise<Response> => {
         redirectTo: appLoginUrl,
       });
 
-      if (inviteError) {
-        return json(req, 400, { error: inviteError.message });
-      }
+      let userId = inviteData.user?.id ?? null;
+      if (inviteError || !userId) {
+        // If user already exists (or invite didn't return an id), still allow creating/linking the customer row.
+        try {
+          const existingCustomer = await supabase
+            .from("customers")
+            .select("id")
+            .ilike("email", safeEmail)
+            .maybeSingle();
+          if (!existingCustomer.error && (existingCustomer.data as any)?.id) {
+            return json(req, 200, {
+              ok: true,
+              invited: false,
+              customer_id: String((existingCustomer.data as any).id),
+              message: "Kund finns redan för denna e-postadress.",
+            });
+          }
+        } catch {
+          // ignore
+        }
 
-      const userId = inviteData.user?.id;
-      if (!userId) {
-        throw new Error("No user id returned from Supabase invite");
+        const existingUserId = await findAuthUserIdByEmail(supabase, safeEmail);
+        if (!existingUserId) {
+          return json(req, 400, { error: inviteError?.message || "User invite failed" });
+        }
+        userId = existingUserId;
       }
 
       const { error: customerError } = await supabase
@@ -218,13 +269,7 @@ Från beslut till nytt kapitel
       } else {
         // Most common: phone already exists. Try to locate existing user id.
         try {
-          const { data: listData, error: listErr } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
-          if (!listErr && Array.isArray((listData as any)?.users)) {
-            const match = ((listData as any).users as any[]).find(
-              (u) => typeof u?.phone === "string" && u.phone === phoneE164,
-            );
-            if (match?.id) authUserId = String(match.id);
-          }
+          authUserId = await findAuthUserIdByPhone(supabase, phoneE164);
         } catch {
           // ignore
         }
@@ -246,7 +291,6 @@ Från beslut till nytt kapitel
               phone: phoneE164,
               is_customer: true,
               is_admin: false,
-              active: true,
               updated_at: nowIso,
             },
           ],
@@ -280,7 +324,6 @@ Från beslut till nytt kapitel
         phone: safePhone,
         is_customer: true,
         is_admin: false,
-        active: true,
         created_at: nowIso,
         updated_at: nowIso,
       })
@@ -298,7 +341,6 @@ Från beslut till nytt kapitel
           phone: safePhone,
           is_customer: true,
           is_admin: false,
-          active: true,
           created_at: nowIso,
           updated_at: nowIso,
         })

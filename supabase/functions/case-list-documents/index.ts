@@ -43,6 +43,13 @@ async function isAdmin(service: any, userId: string): Promise<boolean> {
   return false;
 }
 
+function isMissingDocumentsColumn(err: unknown): boolean {
+  const e = err as any;
+  const message = typeof e?.message === "string" ? e.message : "";
+  const code = typeof e?.code === "string" ? e.code : "";
+  return code === "42703" || message.toLowerCase().includes('column "documents"');
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -85,7 +92,14 @@ serve(async (req: Request): Promise<Response> => {
     .eq("id", caseId)
     .maybeSingle();
 
-  if (rowErr) return json(500, { error: "Internal server error" });
+  if (rowErr) {
+    if (isMissingDocumentsColumn(rowErr)) {
+      return json(500, {
+        error: "Database schema missing public.cases.documents. Run supabase/scripts/add_cases_documents_jsonb.sql in Supabase SQL Editor.",
+      });
+    }
+    return json(500, { error: "Internal server error" });
+  }
   if (!row) return json(404, { error: "Not found" });
 
   if (!admin && (row as any).customer_id !== user.id) return json(403, { error: "Forbidden" });

@@ -83,6 +83,7 @@ serve(async (req: Request): Promise<Response> => {
   const ok = await requireAdmin(service, user.id);
   if (!ok) return json(403, { error: "Forbidden" });
 
+  // 1) If the customer row exists, restore it (idempotent)
   const { data: existing, error: fetchErr } = await service
     .from("customers")
     .select("id, deleted_at")
@@ -90,30 +91,78 @@ serve(async (req: Request): Promise<Response> => {
     .maybeSingle();
 
   if (fetchErr) return json(500, { error: "Internal server error" });
-  if (!existing) return json(404, { error: "Not found" });
-  if (!(existing as any).deleted_at) return json(409, { error: "Not deleted" });
 
-  const { error: updErr } = await service
-    .from("customers")
-    .update({
-      deleted_at: null,
-      deleted_by: null,
-      active: true,
-      is_customer: true,
-    })
-    .eq("id", customerId)
-    .not("deleted_at", "is", null);
+  if (existing) {
+    // Already active -> treat as success and clean up archive record if present
+    if (!(existing as any).deleted_at) {
+      await service.from("archived_customers").delete().eq("id", customerId);
+      return json(200, { ok: true, action: "restore", already_active: true, target_table: "customers", target_id: customerId });
+    }
 
-  if (updErr) return json(500, { error: "Internal server error" });
+    const { error: updErr } = await service
+      .from("customers")
+      .update({
+        deleted_at: null,
+        deleted_by: null,
+        is_customer: true,
+      })
+      .eq("id", customerId)
+      .not("deleted_at", "is", null);
 
-  const { error: auditErr } = await service.from("admin_audit_log").insert({
-    admin_id: user.id,
-    action: "restore",
-    target_table: "customers",
-    target_id: customerId,
-  });
+    if (updErr) return json(500, { error: "Internal server error" });
 
-  if (auditErr) return json(500, { error: "Internal server error" });
+    await service.from("archived_customers").delete().eq("id", customerId);
+  } else {
+    // 2) If customer row is missing, recreate it from archived_customers snapshot
+    const { data: archived, error: archErr } = await service
+      .from("archived_customers")
+      .select("id, email, name, phone, address, original_created_at")
+      .eq("id", customerId)
+      .maybeSingle();
+
+    if (archErr) return json(500, { error: "Internal server error" });
+    if (!archived) return json(404, { error: "Not found" });
+
+    const nowIso = new Date().toISOString();
+    const createdAt = (archived as any).original_created_at || nowIso;
+
+    const { error: insErr } = await service
+      .from("customers")
+      .insert({
+        id: (archived as any).id,
+        email: (archived as any).email,
+        name: (archived as any).name,
+        phone: (archived as any).phone ?? null,
+        address: (archived as any).address ?? null,
+        is_admin: false,
+        is_customer: true,
+        deleted_at: null,
+        deleted_by: null,
+        created_at: createdAt,
+        updated_at: nowIso,
+      });
+
+    if (insErr) return json(500, { error: "Internal server error" });
+
+    await service.from("archived_customers").delete().eq("id", customerId);
+  }
+
+  // Audit best-effort
+  {
+    const { error: auditErr } = await service.from("admin_audit_log").insert({
+      admin_id: user.id,
+      action: "restore",
+      target_table: "customers",
+      target_id: customerId,
+    });
+    if (auditErr) {
+      // Don't block restore on audit errors
+      console.error("admin-restore-customer: audit insert failed", {
+        code: (auditErr as any)?.code,
+        message: (auditErr as any)?.message,
+      });
+    }
+  }
 
   return json(200, { ok: true, action: "restore", target_table: "customers", target_id: customerId });
 });

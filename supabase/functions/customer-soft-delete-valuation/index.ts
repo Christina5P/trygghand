@@ -32,6 +32,18 @@ function isSafeValuationId(v: unknown): v is string {
   return isUuid(v) || isNumericId(v);
 }
 
+function isMissingColumnError(err: any, column: string): boolean {
+  const msg = String(err?.message ?? "").toLowerCase();
+  const code = String(err?.code ?? "");
+  return code === "42703" || msg.includes(`column "${column}"`) && msg.includes("does not exist");
+}
+
+function isMissingRelationError(err: any): boolean {
+  const code = String(err?.code ?? "");
+  const msg = String(err?.message ?? "").toLowerCase();
+  return code === "42P01" || msg.includes("does not exist") && msg.includes("relation");
+}
+
 async function selectValuation(service: any, valuationId: string) {
   const primary = await service
     .from("valuations")
@@ -40,6 +52,16 @@ async function selectValuation(service: any, valuationId: string) {
     .maybeSingle();
 
   if (!primary.error) return primary;
+
+  // If soft-delete column doesn't exist yet, still allow ownership check via a narrower select.
+  if (isMissingColumnError(primary.error, "deleted_at")) {
+    const narrow = await service
+      .from("valuations")
+      .select("id, customer_id")
+      .eq("id", valuationId)
+      .maybeSingle();
+    if (!narrow.error) return narrow;
+  }
 
   return await service
     .schema("valuations")
@@ -60,6 +82,11 @@ async function softDeleteValuation(service: any, valuationId: string, userId: st
     .is("deleted_at", null);
 
   if (!primary.error) return primary;
+
+  // Common setup problem: soft-delete columns not migrated yet.
+  if (isMissingColumnError(primary.error, "deleted_at") || isMissingColumnError(primary.error, "deleted_by")) {
+    return primary;
+  }
 
   const msg = String(primary.error?.message || "").toLowerCase();
   if (msg.includes("view") || msg.includes("updatable") || msg.includes("relation")) {
@@ -118,14 +145,52 @@ serve(async (req: Request): Promise<Response> => {
 
   const { data: existing, error: fetchErr } = await selectValuation(service, valuationId);
 
-  if (fetchErr) return json(500, { error: "Internal server error" });
+  if (fetchErr) {
+    if (isMissingRelationError(fetchErr)) {
+      return json(500, {
+        error: "valuations_table_missing",
+        message: "Hittar ingen valuations-tabell/view (public.valuations eller valuations.valuations).",
+        hint: "Skapa public.valuations eller en VIEW mot valuations.valuations enligt textfiler/gdpr_admin_soft_delete.sql.",
+        code: (fetchErr as any)?.code ?? null,
+      });
+    }
+    if (isMissingColumnError(fetchErr, "deleted_at")) {
+      return json(400, {
+        error: "soft_delete_not_configured",
+        message: "Soft delete är inte aktiverat för valuations (deleted_at saknas).",
+        hint: "Kör supabase/scripts/add_valuations_soft_delete_columns.sql i Supabase.",
+        code: (fetchErr as any)?.code ?? null,
+      });
+    }
+    return json(500, {
+      error: "db_select_failed",
+      message: (fetchErr as any)?.message ?? "Internal server error",
+      code: (fetchErr as any)?.code ?? null,
+      hint: (fetchErr as any)?.hint ?? null,
+    });
+  }
   if (!existing) return json(404, { error: "Not found" });
   if ((existing as any).customer_id !== user.id) return json(403, { error: "Forbidden" });
   if ((existing as any).deleted_at) return json(409, { error: "Already deleted" });
 
   const { error: updErr } = await softDeleteValuation(service, valuationId, user.id);
 
-  if (updErr) return json(500, { error: "Internal server error" });
+  if (updErr) {
+    if (isMissingColumnError(updErr, "deleted_at") || isMissingColumnError(updErr, "deleted_by")) {
+      return json(400, {
+        error: "soft_delete_not_configured",
+        message: "Soft delete är inte aktiverat för valuations (deleted_at/deleted_by saknas).",
+        hint: "Kör supabase/scripts/add_valuations_soft_delete_columns.sql i Supabase.",
+        code: (updErr as any)?.code ?? null,
+      });
+    }
+    return json(500, {
+      error: "db_update_failed",
+      message: (updErr as any)?.message ?? "Internal server error",
+      code: (updErr as any)?.code ?? null,
+      hint: (updErr as any)?.hint ?? null,
+    });
+  }
 
   return json(200, {
     ok: true,

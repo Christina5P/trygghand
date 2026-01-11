@@ -103,7 +103,6 @@ serve(async (req: Request): Promise<Response> => {
     .update({
       deleted_at: new Date().toISOString(),
       deleted_by: user.id,
-      active: false,
       is_customer: false,
     })
     .eq("id", customerId)
