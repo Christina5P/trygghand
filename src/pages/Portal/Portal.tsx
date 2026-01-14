@@ -85,11 +85,10 @@ const Portal = () => {
     const fetchTemplates = async () => {
       if (!customer) return;
       try {
-        const { data: payload, error } = await supabase.functions.invoke("templates-list", {
-          body: { prefix: "fullmaktsmallar" },
-        });
-        if (error) throw error;
-        const files = ((payload as any)?.templates ?? []) as Array<{ name: string; storage_path: string }>;
+        const res = await fetch(`/api/templates/list?prefix=${encodeURIComponent("fullmaktsmallar")}`);
+        if (!res.ok) throw new Error(`templates-list failed (${res.status})`);
+        const payload = (await res.json()) as any;
+        const files = (payload?.templates ?? []) as Array<{ name: string; storage_path: string }>;
 
         const templates = files.map((f, index) => ({
           id: (index + 1).toString(),
@@ -128,12 +127,10 @@ const Portal = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("templates-download", {
-        body: { path: storagePath },
-      });
-      if (error) throw error;
-
-      const url = (data as any)?.signedUrl || (data as any)?.signed_url;
+      const res = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
+      if (!res.ok) throw new Error(`templates-download failed (${res.status})`);
+      const data = (await res.json()) as any;
+      const url = data?.signedUrl || data?.signed_url;
       if (!url) throw new Error("Kunde inte generera länk");
       window.open(url, "_blank");
     } catch (err) {

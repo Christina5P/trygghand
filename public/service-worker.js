@@ -47,9 +47,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Chrome sometimes dispatches requests with cache=only-if-cached + mode=no-cors.
+  // Responding to those from a SW can throw and break the page.
+  if (event.request.cache === 'only-if-cached' && event.request.mode !== 'same-origin') {
+    return;
+  }
+
   // Avoid interfering with Vite dev server / HMR traffic if a SW is present.
   // (SW registration is gated to PROD, but this protects against stale SWs.)
   const url = new URL(event.request.url);
+
+  // Some browser extensions trigger requests with non-http(s) schemes (e.g. chrome-extension://).
+  // Cache API does not support those, and trying to cache them can crash the SW.
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+
+  // Do not intercept cross-origin requests (e.g. Supabase signed URLs, analytics, extensions).
+  // Keeping SW scope to same-origin avoids a class of caching/fetch edge-cases.
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
   if (url.pathname.startsWith('/@vite') || url.pathname.startsWith('/src') || url.pathname.includes('hot-update')) {
     return;
   }
@@ -59,29 +78,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Only cache successful responses
-        if (response.status === 200) {
-          const clonedResponse = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clonedResponse);
-          });
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(event.request);
+
+      // Only cache successful responses
+      if (response && response.status === 200) {
+        const clonedResponse = response.clone();
+        try {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(event.request, clonedResponse);
+        } catch {
+          // Ignore cache errors (quota, unsupported requests, etc.)
         }
-        return response;
-      })
-      .catch(() => {
-        // Return cached version if network fails
-        return caches.match(event.request).then((cachedResponse) => {
-          return cachedResponse || new Response('Offline - denna resurs är inte tillgänglig offline', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({
-              'Content-Type': 'text/plain'
-            })
-          });
-        });
-      })
-  );
+      }
+
+      return response;
+    } catch {
+      // Return cached version if network fails
+      const cachedResponse = await caches.match(event.request);
+      return cachedResponse || new Response('Offline - denna resurs är inte tillgänglig offline', {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: new Headers({
+          'Content-Type': 'text/plain'
+        })
+      });
+    }
+  })());
 });

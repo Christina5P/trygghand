@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
-import { supabase } from "@/lib/supabase"; // Du måste ha denna fil
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -46,31 +45,20 @@ const Contact = () => {
 
     console.log("Contact form submitting:", data);
     try {
-      // Try direct Supabase insert first (more reliable in dev environments)
-      const { error } = await supabase.from("contact_requests").insert([data]).select();
-      if (!error) {
+      const apiRes = await fetch("/api/contact-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      console.log("API response status:", apiRes.status, apiRes.statusText);
+
+      if (apiRes.ok) {
         setSuccessMessage("Tack för din förfrågan!");
         form.reset();
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
-        console.error("Supabase error:", error);
-        // Fallback to server-side API if Supabase fails
-        console.log("Supabase failed, trying API fallback");
-        const apiRes = await fetch("/api/contact-request", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-
-        console.log("API response status:", apiRes.status, apiRes.statusText);
-
-        if (apiRes.ok) {
-          setSuccessMessage("Tack för din förfrågan!");
-          form.reset();
-          setTimeout(() => setSuccessMessage(null), 5000);
-        } else {
-          setErrorMessage("Något gick fel, försök igen senare eller kontakta oss direkt via telefon.");
-        }
+        setErrorMessage("Något gick fel, försök igen senare eller kontakta oss direkt via telefon.");
       }
     } catch (e: any) {
       console.error("Contact form exception:", e);

@@ -227,11 +227,10 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
     const fetchTemplates = async () => {
         setLoadingTemplates(true);
         try {
-            const { data: payload, error } = await supabase.functions.invoke("templates-list", {
-                body: { prefix: TEMPLATE_PREFIX },
-            });
-            if (error) throw error;
-            const files = ((payload as any)?.templates ?? []) as Array<{ name: string; storage_path: string }>;
+            const res = await fetch(`/api/templates/list?prefix=${encodeURIComponent(TEMPLATE_PREFIX)}`);
+            if (!res.ok) throw new Error(`templates-list failed (${res.status})`);
+            const payload = (await res.json()) as any;
+            const files = (payload?.templates ?? []) as Array<{ name: string; storage_path: string }>;
             const mapped = files
                 .filter((f) => !!f?.storage_path)
                 .map((f, index) => ({
@@ -249,19 +248,18 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
     };
 
     const openTemplate = async (storagePath: string) => {
+        let popup: Window | null = null;
         try {
             if (/^https?:\/\//i.test(storagePath)) {
                 window.open(storagePath, "_blank", "noopener,noreferrer");
                 return;
             }
 
-            const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
-            const { data, error } = await supabase.functions.invoke("templates-download", {
-                body: { path: storagePath },
-            });
-            if (error) throw error;
-
-            const url = (data as any)?.signedUrl || (data as any)?.signed_url;
+            popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+            const res = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
+            if (!res.ok) throw new Error(`templates-download failed (${res.status})`);
+            const data = (await res.json()) as any;
+            const url = data?.signedUrl || data?.signed_url;
             if (!url) throw new Error("Ingen signerad URL genererades");
 
             if (popup && !popup.closed) {
@@ -270,6 +268,11 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
                 window.open(url, "_blank", "noopener,noreferrer");
             }
         } catch (error) {
+            try {
+                if (popup && !popup.closed) popup.close();
+            } catch {
+                // ignore
+            }
             console.error("Kunde inte öppna mall:", error);
             toast({ title: "Fel", description: "Kunde inte öppna mallen.", variant: "destructive" });
         }

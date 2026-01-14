@@ -163,11 +163,10 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const { data: payload, error } = await supabase.functions.invoke("templates-list", {
-          body: { prefix: "fullmaktsmallar" },
-        });
-        if (error) throw error;
-        const files = ((payload as any)?.templates ?? []) as Array<{ name: string; storage_path: string }>;
+        const res = await fetch(`/api/templates/list?prefix=${encodeURIComponent("fullmaktsmallar")}`);
+        if (!res.ok) throw new Error(`templates-list failed (${res.status})`);
+        const payload = (await res.json()) as any;
+        const files = (payload?.templates ?? []) as Array<{ name: string; storage_path: string }>;
 
         const templates = files.map((file, index) => ({
           id: (index + 1).toString(),
@@ -198,6 +197,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     // iOS/PWA kan blockera window.open om den sker efter await.
     // Lösning: öppna en tom flik direkt (user gesture) och navigera sen.
     const openBlankTab = () => window.open("about:blank", "_blank", "noopener,noreferrer");
+    let popup: Window | null = null;
     try {
       // Öppna externa länkar direkt
       if (/^https?:\/\//i.test(storagePath)) {
@@ -205,14 +205,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         return;
       }
 
-      const popup = openBlankTab();
+      popup = openBlankTab();
 
-      const { data, error } = await supabase.functions.invoke("templates-download", {
-        body: { path: storagePath },
-      });
-      if (error) throw error;
-
-      const url = (data as any)?.signedUrl || (data as any)?.signed_url;
+      const apiRes = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
+      if (!apiRes.ok) throw new Error(`templates-download failed (${apiRes.status})`);
+      const data = (await apiRes.json()) as any;
+      const url = data?.signedUrl || data?.signed_url;
       if (!url) throw new Error("Ingen signerad URL genererades");
 
       if (popup && !popup.closed) {
@@ -221,6 +219,11 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         window.open(url, "_blank", "noopener,noreferrer");
       }
     } catch (err: any) {
+      try {
+        if (popup && !popup.closed) popup.close();
+      } catch {
+        // ignore
+      }
       console.error("Failed to open template:", err);
       // Handle specific storage errors
       if (err.message?.includes('Object not found') || err.message?.includes('not found') || err.message?.includes('Kunde inte hämta mall')) {
@@ -243,18 +246,16 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("templates-download", {
-        body: { path: storagePath },
-      });
-      if (error) throw error;
-
-      const url = (data as any)?.signedUrl || (data as any)?.signed_url;
+      const apiRes = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
+      if (!apiRes.ok) throw new Error(`templates-download failed (${apiRes.status})`);
+      const data = (await apiRes.json()) as any;
+      const url = data?.signedUrl || data?.signed_url;
       if (!url) throw new Error("Ingen signerad URL genererades");
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Kunde inte hämta filen för nedladdning");
+      const fileRes = await fetch(url);
+      if (!fileRes.ok) throw new Error("Kunde inte hämta filen för nedladdning");
 
-      const blob = await res.blob();
+      const blob = await fileRes.blob();
       const objectUrl = URL.createObjectURL(blob);
 
       const nameFromPath = storagePath.split("/").pop() || "mall.pdf";

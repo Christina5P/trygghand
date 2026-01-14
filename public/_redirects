@@ -1,0 +1,5 @@
+/api/templates/download  /.netlify/functions/templates-download  200!
+/api/templates/list      /.netlify/functions/templates-list      200!
+/api/contact-request     /.netlify/functions/contact-request     200!
+
+/*                     /index.html                              200
