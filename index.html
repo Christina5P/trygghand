@@ -36,8 +36,8 @@
     <link rel="icon" type="image/png" sizes="128x128" href="/favicon-512x512.png" />
     <link rel="icon" type="image/png" sizes="128x128" href="/apple-touch-icon.png" />
     
-    <!-- PWA manifest -->
-    <link rel="manifest" href="/manifest.json" />
+        <!-- PWA manifest is injected via react-helmet in PROD (see src/components/PwaHead.tsx).
+          This avoids Codespaces auth redirects (github.dev/pf-signin) in DEV/PWA contexts. -->
     <meta name="theme-color" content="#3B82F6" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -66,21 +66,62 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <script>
+      // Codespaces/preview recovery: a stale Service Worker can serve outdated
+      // assets and cause a white screen (e.g. /portal). This runs even if the
+      // main JS bundle fails to load.
+      (function () {
+        try {
+          var host = window.location.hostname || "";
+          var search = window.location.search || "";
+
+          var isDevLikeHost =
+            host === "localhost" ||
+            host === "127.0.0.1" ||
+            host.endsWith(".app.github.dev") ||
+            host.endsWith(".githubpreview.dev");
+
+          var forceNoSw = search.indexOf("nosw=1") !== -1;
+          if (!isDevLikeHost && !forceNoSw) return;
+
+          if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              regs.forEach(function (r) {
+                r.unregister();
+              });
+            });
+          }
+
+          if ("caches" in window) {
+            caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) {
+                return caches.delete(k);
+              }));
+            });
+          }
+        } catch (e) {
+          // Best-effort only
+        }
+      })();
+    </script>
+
+    <div id="root" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#111827;">
+      <div style="max-width:560px;width:100%;">
+        <div style="font-weight:600;margin-bottom:8px;">Laddar Trygg Hand…</div>
+        <div style="font-size:14px;line-height:1.5;color:#4b5563;">
+          Om du ser en vit sida i Codespaces kan det bero på att porten är privat och kräver GitHub-inloggning.
+          Gör port <strong>5173</strong> public i fliken Ports eller öppna sidan i samma inloggade webbläsare.
+        </div>
+      </div>
+    </div>
+    <noscript>
+      <div style="padding:16px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">JavaScript måste vara aktiverat för att använda portalen.</div>
+    </noscript>
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W52RNNJ2"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <script type="module" src="/src/main.tsx"></script>
-    
-    <!-- Service Worker registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(registration => console.log('Service Worker registered'))
-          .catch(error => console.log('Service Worker registration failed:', error));
-      }
-    </script>
 
   </body>
 </html>

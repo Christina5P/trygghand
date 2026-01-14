@@ -28,7 +28,7 @@ const ForsaljningAvBohagSundsvall: React.FC = () => {
           <li>Administration av försäljning</li>
         </ul>
         
-        <Link to="/contact" className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+        <Link to="/#contact" className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
           Kontakta oss
         </Link>
       </div>

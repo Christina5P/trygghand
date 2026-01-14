@@ -1,5 +1,5 @@
 // src/pages/Portal/CustomerPortal.tsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ import { CaseDocumentsSection, type CaseDocument } from "./components/cases/Case
 
 import {
   MessageSquare,
+    MessageCircle,
   Calendar,
   MapPin,
   DollarSign,
@@ -131,8 +132,13 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const [comments, setComments] = useState<Comment[]>([]);
     const [loadingCases, setLoadingCases] = useState(true);
     const [loadingComments, setLoadingComments] = useState(false);
+    const [caseCommentsCounts, setCaseCommentsCounts] = useState<Record<string, number>>({});
+    const [hasNewMessages, setHasNewMessages] = useState<Record<string, boolean>>({});
     const [caseDocuments, setCaseDocuments] = useState<CaseDocument[]>([]);
     const [loadingCaseDocuments, setLoadingCaseDocuments] = useState(false);
+
+    const casesByIdRef = useRef<Map<string, Case>>(new Map());
+    const selectedCaseIdRef = useRef<string | null>(null);
 
     // --- State för Värderingshantering ---
     const [valuations, setValuations] = useState<Valuation[]>([]);
@@ -155,6 +161,85 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             setLoadingValuations(false);
         }
     }, [customer.id]);
+
+    useEffect(() => {
+        const map = new Map<string, Case>();
+        for (const c of cases) {
+            if (c?.id) map.set(c.id, c);
+        }
+        casesByIdRef.current = map;
+    }, [cases]);
+
+    useEffect(() => {
+        selectedCaseIdRef.current = selectedCase?.id || null;
+        if (selectedCase?.id) {
+            setHasNewMessages((prev) => ({ ...prev, [selectedCase.id]: false }));
+        }
+    }, [selectedCase?.id]);
+
+    const fetchCaseCommentsCount = useCallback(async (caseId: string) => {
+        try {
+            const { count, error } = await supabase
+                .from("case_comments")
+                .select("*", { count: "exact", head: true })
+                .eq("case_id", caseId);
+            if (error) throw error;
+            setCaseCommentsCounts((prev) => ({ ...prev, [caseId]: count || 0 }));
+        } catch (err) {
+            console.error("Error fetching case comments count:", err);
+            setCaseCommentsCounts((prev) => ({ ...prev, [caseId]: 0 }));
+        }
+    }, []);
+
+    useEffect(() => {
+        if (cases.length > 0) {
+            cases.forEach((c) => {
+                if (c?.id) fetchCaseCommentsCount(c.id);
+            });
+        }
+    }, [cases, fetchCaseCommentsCount]);
+
+    useEffect(() => {
+        // Realtime notiser för nya kommentarer i kundens ärenden
+        if (!customer?.id) return;
+
+        const channel = supabase
+            .channel(`case_comments_customer_${customer.id}`)
+            .on(
+                "postgres_changes",
+                { event: "INSERT", schema: "public", table: "case_comments" },
+                (payload) => {
+                    const row = payload.new as any;
+                    const caseId = row?.case_id as string | undefined;
+                    if (!caseId) return;
+
+                    const caseItem = casesByIdRef.current.get(caseId);
+                    if (!caseItem) return;
+
+                    // Notifiera inte på egna kommentarer
+                    if (row?.author_id && user?.id && row.author_id === user.id) return;
+
+                    setCaseCommentsCounts((prev) => ({
+                        ...prev,
+                        [caseId]: (prev[caseId] ?? 0) + 1,
+                    }));
+
+                    if (selectedCaseIdRef.current !== caseId) {
+                        setHasNewMessages((prev) => ({ ...prev, [caseId]: true }));
+                    }
+
+                    toast({
+                        title: "Nytt meddelande",
+                        description: `Nytt meddelande i ärendet: ${caseItem.title}`,
+                    });
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [customer?.id, toast, user?.id]);
 
     // --- Hämta Ärenden ---
     const fetchCases = useCallback(async () => {
@@ -194,7 +279,9 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                 .order("created_at", { ascending: true });
 
             if (error) throw error;
-            setComments(data as Comment[] || []);
+            const list = (data as Comment[]) || [];
+            setComments(list);
+            setCaseCommentsCounts((prev) => ({ ...prev, [caseId]: list.length }));
         } catch (err) {
             console.error("Error fetching comments:", err);
             setComments([]);
@@ -597,15 +684,28 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                             {cases.map((caseItem) => (
                                 <Card
                                     key={caseItem.id}
-                                    className={`cursor-pointer hover:shadow-md transition-shadow ${selectedCase?.id === caseItem.id ? "border-2 border-trust-blue bg-blue-50" : "border-gray-200"}`}
+                                    className={`relative cursor-pointer hover:shadow-md transition-shadow ${selectedCase?.id === caseItem.id ? "border-2 border-trust-blue bg-blue-50" : "border-gray-200"}`}
                                     onClick={() => setSelectedCase(selectedCase?.id === caseItem.id ? null : caseItem)} // Stäng/öppna
                                 >
                                     <CardContent className="p-4">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-semibold text-lg">{caseItem.title}</h3>
-                                            <Badge className={`${getStatusColor(caseItem.status)} text-sm`}>
-                                                {getStatusText(caseItem.status)}
-                                            </Badge>
+                                        <div className="absolute bottom-2 right-2 flex items-center gap-1 text-sm text-gray-600" aria-label="Antal meddelanden">
+                                            <MessageCircle className="h-4 w-4" />
+                                            <span>{caseCommentsCounts[caseItem.id] || 0}</span>
+                                            {hasNewMessages[caseItem.id] && (
+                                                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                                            )}
+                                        </div>
+
+                                        <div className="flex justify-between items-start mb-2 gap-3">
+                                            <div className="min-w-0">
+                                                <h3 className="font-semibold text-lg truncate">{caseItem.title}</h3>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <Badge className={`${getStatusColor(caseItem.status)} text-sm`}>
+                                                    {getStatusText(caseItem.status)}
+                                                </Badge>
+                                            </div>
                                         </div>
                                         {selectedCase?.id === caseItem.id && (
                                             <div className="mt-4 pt-4 border-t border-gray-200">

@@ -194,13 +194,18 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     fetchTemplates();
   }, []);
 
-  const handleDownloadTemplate = async (storagePath: string) => {
+  const handlePreviewTemplate = async (storagePath: string) => {
+    // iOS/PWA kan blockera window.open om den sker efter await.
+    // Lösning: öppna en tom flik direkt (user gesture) och navigera sen.
+    const openBlankTab = () => window.open("about:blank", "_blank", "noopener,noreferrer");
     try {
       // Öppna externa länkar direkt
       if (/^https?:\/\//i.test(storagePath)) {
-        window.open(storagePath, "_blank");
+        window.open(storagePath, "_blank", "noopener,noreferrer");
         return;
       }
+
+      const popup = openBlankTab();
 
       const { data, error } = await supabase.functions.invoke("templates-download", {
         body: { path: storagePath },
@@ -210,7 +215,11 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
       const url = (data as any)?.signedUrl || (data as any)?.signed_url;
       if (!url) throw new Error("Ingen signerad URL genererades");
 
-      window.open(url, "_blank");
+      if (popup && !popup.closed) {
+        popup.location.href = url;
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
     } catch (err: any) {
       console.error("Failed to open template:", err);
       // Handle specific storage errors
@@ -223,6 +232,45 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
         return;
       }
       toast({ title: "Fel", description: err.message || "Kunde inte öppna mallen.", variant: "destructive" });
+    }
+  };
+
+  const handleDownloadTemplateFile = async (storagePath: string, filename?: string) => {
+    try {
+      // För externa länkar finns inget att "ladda ner" kontrollerat här.
+      if (/^https?:\/\//i.test(storagePath)) {
+        window.open(storagePath, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("templates-download", {
+        body: { path: storagePath },
+      });
+      if (error) throw error;
+
+      const url = (data as any)?.signedUrl || (data as any)?.signed_url;
+      if (!url) throw new Error("Ingen signerad URL genererades");
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Kunde inte hämta filen för nedladdning");
+
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      const nameFromPath = storagePath.split("/").pop() || "mall.pdf";
+      const safeName = (filename ? `${filename}` : nameFromPath).trim();
+      const downloadName = /\.pdf$/i.test(safeName) ? safeName : `${safeName}.pdf`;
+
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = downloadName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (err: any) {
+      console.error("Failed to download template:", err);
+      toast({ title: "Fel", description: err.message || "Kunde inte ladda ner mallen.", variant: "destructive" });
     }
   };
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -420,8 +468,8 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 
   return (
 
-    
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-100">
+	  
+      <div className="min-h-[100dvh] bg-gradient-to-br from-slate-100 via-white to-slate-100 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
           <Tidio />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -474,8 +522,8 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                      <div className="text-xs text-gray-500">{t.storage_path}</div>
                    </div>
                    <div className="flex gap-2">
-                     <Button size="sm" variant="ghost" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Förhandsgranska</Button>
-                     <Button size="sm" onClick={() => handleDownloadTemplate?.(t.storage_path)}>Hämta</Button>
+                     <Button size="sm" variant="ghost" onClick={() => handlePreviewTemplate?.(t.storage_path)}>Förhandsgranska</Button>
+                     <Button size="sm" onClick={() => handleDownloadTemplateFile?.(t.storage_path, t.name)}>Hämta</Button>
                    </div>
                  </div>
                ))}
@@ -493,25 +541,40 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
              </div>
 
               <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-6">
-                  <TabsList className="w-full bg-slate-200/80 shadow-sm rounded-lg p-1 flex flex-wrap gap-1 border border-slate-200">
-                      <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="cases">
-                          Ärenden ({cases.length})
-                      </TabsTrigger>
-                      {/* Abonnemang */}
-                      <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="subscriptions">
-                          Abonnemang ({cancellations.length})
-                      </TabsTrigger>
-                      {/* Värderingar */}
-                      <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="valuations">
-                          Värderingar ({valuations.length})
-                      </TabsTrigger>
-                      <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="customers">
-                          Kunder ({customers.length})
-                      </TabsTrigger>
-                      <TabsTrigger className="w-1/3 sm:flex-1 sm:basis-0 min-w-0 text-center px-2 py-2 text-sm sm:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="contact_requests">
-                          Kontakt ({activeContactCount})
-                      </TabsTrigger>
-                  </TabsList>
+                  {/* Mobil: dropdown istället för trånga tabbar */}
+                  <div className="md:hidden">
+                    <Select value={mainTab} onValueChange={(v) => setMainTab(v as any)}>
+                      <SelectTrigger className="w-full bg-slate-200/80 border-slate-200">
+                        <SelectValue placeholder="Välj vy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cases">Ärenden ({cases.length})</SelectItem>
+                        <SelectItem value="subscriptions">Abonnemang ({cancellations.length})</SelectItem>
+                        <SelectItem value="valuations">Värderingar ({valuations.length})</SelectItem>
+                        <SelectItem value="customers">Kunder ({customers.length})</SelectItem>
+                        <SelectItem value="contact_requests">Kontakt ({activeContactCount})</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Desktop/tablet: tabbar */}
+                  <TabsList className="hidden md:flex w-full bg-slate-200/80 shadow-sm rounded-lg p-1 flex-wrap gap-1 border border-slate-200">
+                    <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="cases">
+                      Ärenden ({cases.length})
+                    </TabsTrigger>
+                    <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="subscriptions">
+                      Abonnemang ({cancellations.length})
+                    </TabsTrigger>
+                    <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="valuations">
+                      Värderingar ({valuations.length})
+                    </TabsTrigger>
+                    <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="customers">
+                      Kunder ({customers.length})
+                    </TabsTrigger>
+                    <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="contact_requests">
+                      Kontakt ({activeContactCount})
+                    </TabsTrigger>
+                  </TabsList>
           {/* Ärenden */}
                   <TabsContent value="cases">
             <div className="mb-4 flex items-center justify-between gap-4">

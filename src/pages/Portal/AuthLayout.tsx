@@ -3,8 +3,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 import { Button, Input, Label, Card, Tabs, TabsContent, TabsList, TabsTrigger, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui";
+import { formatPhoneWithDash, normalizeSwedishPhoneToE164 } from "@/utils";
 
 const AuthLayout = () => {
+  const enablePhoneLogin = import.meta.env.VITE_ENABLE_PHONE_LOGIN === "true";
+
   // använd auth-objekt så vi kan nå optional reset-funktion säkert
   const auth = useAuth();
   const signIn = auth.signIn;
@@ -69,10 +72,26 @@ const AuthLayout = () => {
       return;
     }
 
+    const phoneE164 = normalizeSwedishPhoneToE164(phone);
+    if (!phoneE164.startsWith("+")) {
+      toast({ title: "Ogiltigt nummer", description: "Ange ett giltigt telefonnummer (t.ex. 070-1234567 eller +46701234567).", variant: "destructive" });
+      return;
+    }
+
     setIsLoading(true);
-    const { error } = await requestPhoneOtp(phone);
+    const { error } = await requestPhoneOtp(phoneE164);
     if (error) {
-      toast({ title: "Kunde inte skicka kod", description: error.message, variant: "destructive" });
+      const code = (error as any)?.code;
+      if (code === "phone_provider_disabled") {
+        toast({
+          title: "SMS-inloggning är inte aktiverad",
+          description: "Supabase saknar SMS-provider. Aktivera Phone provider och konfigurera SMS (t.ex. Twilio/Vonage/MessageBird) i Supabase Auth.",
+          variant: "destructive",
+          duration: 7000,
+        });
+      } else {
+        toast({ title: "Kunde inte skicka kod", description: error.message, variant: "destructive" });
+      }
     } else {
       setOtpSent(true);
       toast({ title: "Kod skickad", description: "Kontrollera SMS och ange koden." });
@@ -87,8 +106,14 @@ const AuthLayout = () => {
       return;
     }
 
+    const phoneE164 = normalizeSwedishPhoneToE164(phone);
+    if (!phoneE164.startsWith("+")) {
+      toast({ title: "Ogiltigt nummer", description: "Ange ett giltigt telefonnummer (t.ex. 070-1234567 eller +46701234567).", variant: "destructive" });
+      return;
+    }
+
     setIsLoading(true);
-    const { error } = await verifyPhoneOtp(phone, otp);
+    const { error } = await verifyPhoneOtp(phoneE164, otp);
     if (error) {
       toast({ title: "Verifiering misslyckades", description: error.message, variant: "destructive" });
     } else {
@@ -118,10 +143,10 @@ const AuthLayout = () => {
              <CardDescription className="mb-2">Logga in för att hantera dina ärenden</CardDescription>
            </CardHeader>
            <CardContent>
-             <Tabs defaultValue="email">
-               <TabsList className="grid w-full grid-cols-2">
+              <Tabs defaultValue="email">
+                <TabsList className={`grid w-full ${enablePhoneLogin ? "grid-cols-2" : "grid-cols-1"}`}>
                  <TabsTrigger value="email">E-post</TabsTrigger>
-                 <TabsTrigger value="phone">Telefon</TabsTrigger>
+                  {enablePhoneLogin && <TabsTrigger value="phone">Telefon</TabsTrigger>}
                </TabsList>
 
                <TabsContent value="email">
@@ -162,63 +187,67 @@ const AuthLayout = () => {
                  )}
                </TabsContent>
 
-               <TabsContent value="phone">
-                 {!otpSent ? (
-                   <form onSubmit={handleSendOtp} className="space-y-4">
-                     <div className="space-y-2">
-                       <Label htmlFor="phone">Telefonnummer</Label>
-                       <Input
-                         id="phone"
-                         value={phone}
-                         onChange={(e) => setPhone(e.target.value)}
-                         type="tel"
-                         placeholder="+46701234567"
-                         required
-                       />
-                       <p className="text-xs text-muted-foreground">Ange i internationellt format (t.ex. +46…)</p>
-                     </div>
-                     <Button type="submit" disabled={isLoading}>{isLoading ? "Skickar..." : "Skicka kod"}</Button>
-                   </form>
-                 ) : (
-                   <form onSubmit={handleVerifyOtp} className="space-y-4">
-                     <div className="space-y-2">
-                       <Label htmlFor="phone_verify">Telefonnummer</Label>
-                       <Input
-                         id="phone_verify"
-                         value={phone}
-                         onChange={(e) => setPhone(e.target.value)}
-                         type="tel"
-                         placeholder="+46701234567"
-                         required
-                       />
-                     </div>
-                     <div className="space-y-2">
-                       <Label htmlFor="otp">Kod</Label>
-                       <Input
-                         id="otp"
-                         value={otp}
-                         onChange={(e) => setOtp(e.target.value)}
-                         inputMode="numeric"
-                         placeholder="123456"
-                         required
-                       />
-                     </div>
-                     <div className="flex items-center gap-2">
-                       <Button type="submit" disabled={isLoading}>{isLoading ? "Verifierar..." : "Verifiera"}</Button>
-                       <button
-                         type="button"
-                         onClick={() => {
-                           setOtpSent(false);
-                           setOtp("");
-                         }}
-                         className="text-sm text-warm-gray hover:underline"
-                       >
-                         Ändra nummer
-                       </button>
-                     </div>
-                   </form>
-                 )}
-               </TabsContent>
+              {enablePhoneLogin && (
+                <TabsContent value="phone">
+                  {!otpSent ? (
+                    <form onSubmit={handleSendOtp} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Telefonnummer</Label>
+                        <Input
+                          id="phone"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          onBlur={() => setPhone((p) => formatPhoneWithDash(p))}
+                          type="tel"
+                          placeholder="070-1234567"
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">Du kan skriva 070-1234567 eller +46701234567 (vi normaliserar automatiskt).</p>
+                      </div>
+                      <Button type="submit" disabled={isLoading}>{isLoading ? "Skickar..." : "Skicka kod"}</Button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleVerifyOtp} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone_verify">Telefonnummer</Label>
+                        <Input
+                          id="phone_verify"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          onBlur={() => setPhone((p) => formatPhoneWithDash(p))}
+                          type="tel"
+                          placeholder="070-1234567"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="otp">Kod</Label>
+                        <Input
+                          id="otp"
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value)}
+                          inputMode="numeric"
+                          placeholder="123456"
+                          required
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button type="submit" disabled={isLoading}>{isLoading ? "Verifierar..." : "Verifiera"}</Button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOtpSent(false);
+                            setOtp("");
+                          }}
+                          className="text-sm text-warm-gray hover:underline"
+                        >
+                          Ändra nummer
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </TabsContent>
+              )}
              </Tabs>
            </CardContent>
          </Card>

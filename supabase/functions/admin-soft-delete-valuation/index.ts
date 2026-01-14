@@ -43,7 +43,6 @@ function isMissingRelationError(err: any): boolean {
 }
 
 async function selectValuation(service: any, valuationId: string) {
-  // Prefer public.valuations if it exists; fall back to valuations.valuations.
   const primary = await service
     .from("valuations")
     .select("id, deleted_at")
@@ -62,14 +61,7 @@ async function selectValuation(service: any, valuationId: string) {
     if (!narrow.error) return narrow;
   }
 
-  const fallback = await service
-    .schema("valuations")
-    .from("valuations")
-    .select("id, deleted_at")
-    .eq("id", valuationId)
-    .maybeSingle();
-
-  return fallback;
+  return primary;
 }
 
 async function softDeleteValuation(service: any, valuationId: string, userId: string) {
@@ -91,12 +83,7 @@ async function softDeleteValuation(service: any, valuationId: string, userId: st
   const msg = String(primary.error?.message || "").toLowerCase();
   // Common for VIEWs: "cannot update view" / "not updatable"
   if (msg.includes("view") || msg.includes("updatable") || msg.includes("not") || msg.includes("relation")) {
-    return await service
-      .schema("valuations")
-      .from("valuations")
-      .update(payload)
-      .eq("id", valuationId)
-      .is("deleted_at", null);
+    return primary;
   }
 
   return primary;
@@ -167,8 +154,8 @@ serve(async (req: Request): Promise<Response> => {
     if (isMissingRelationError(fetchErr)) {
       return json(500, {
         error: "valuations_table_missing",
-        message: "Hittar ingen valuations-tabell/view (public.valuations eller valuations.valuations).",
-        hint: "Skapa public.valuations eller en VIEW mot valuations.valuations enligt textfiler/gdpr_admin_soft_delete.sql.",
+        message: "Hittar ingen valuations-tabell (public.valuations).",
+        hint: "Kontrollera att tabellen public.valuations finns i databasen.",
         code: (fetchErr as any)?.code ?? null,
       });
     }

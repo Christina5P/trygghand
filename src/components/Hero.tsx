@@ -17,7 +17,15 @@ const Hero = () => {
                 Från beslut till nytt kapitel
               </h2>
               <p className="text-xl text-foreground leading-relaxed">
-                Vi erbjuder servicepaket för seniorförändring och <Link to="/dodsbohantering-sundsvall" className="text-primary underline">dödsbohantering i Sundsvall</Link>. 
+                Vi erbjuder servicepaket för{" "}
+                <Link to="/seniorforandring-sundsvall" className="text-primary underline">
+                  seniorförändring i Sundsvall
+                </Link>
+                {" "}och{" "}
+                <Link to="/dodsbohantering-sundsvall" className="text-primary underline">
+                  dödsbohantering i Sundsvall
+                </Link>
+                .
                 Med digital uppföljning och komplett koordinering – all hjälp du behöver, på ett tryggt och smidigt sätt.
               </p>
             </div>

@@ -5,8 +5,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Missing Supabase environment variables");
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
+// If env vars are missing (common in Codespaces previews/dev), do NOT hard-crash
+// the whole app to a white screen. Use placeholders so the UI can still render,
+// and features depending on Supabase will gracefully fail.
+const effectiveSupabaseUrl = supabaseUrl || "https://example.invalid";
+const effectiveSupabaseAnonKey = supabaseAnonKey || "missing-anon-key";
+
+if (!isSupabaseConfigured) {
+  console.warn("Supabase is not configured (missing VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY)");
 }
 
 // HMR-säker singleton för att undvika flera GoTrueClient-instanser
@@ -16,7 +24,7 @@ const globalForSupabase = globalThis as unknown as {
 
 export const supabase: SupabaseClient =
   globalForSupabase.__supabase ??
-  (globalForSupabase.__supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  (globalForSupabase.__supabase = createClient(effectiveSupabaseUrl, effectiveSupabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -47,6 +55,19 @@ export function isMissingColumnError(err: unknown, columnName?: string): boolean
   if (code !== "42703") return false;
   if (!columnName) return true;
   return message.includes(columnName.toLowerCase()) && message.includes("does not exist");
+}
+
+export function isServiceUnavailableError(err: unknown): boolean {
+  const e = err as any;
+  const status = e?.status ?? e?.context?.status;
+  const message = typeof e?.message === "string" ? e.message.toLowerCase() : "";
+  return (
+    status === 502 ||
+    status === 503 ||
+    status === 504 ||
+    (typeof status === "number" && status >= 500) ||
+    message.includes("no healthy upstream")
+  );
 }
 
 export async function tryRefreshSession(): Promise<boolean> {

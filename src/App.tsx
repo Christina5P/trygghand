@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import React, { useEffect } from "react";
 import "@/index.css";
+import PwaHead from "@/components/PwaHead";
 
 // 🧩 Komponenter & sidor
 import ResetPassword from "@/components/ResetPassword";
@@ -19,6 +20,7 @@ import Terms from "@/pages/Terms";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import DodsbohanteringSundsvall from "@/pages/DodsbohanteringSundsvall";
+import SeniorforandringSundsvall from "@/pages/SeniorforandringSundsvall";
 import TomningAvBohagSundsvall from "@/pages/TomningAvBohagSundsvall";
 import ForsaljningAvBohagSundsvall from "@/pages/ForsaljningAvBohagSundsvall";
 import ChecklistaVidDodsfallSundsvall from "@/pages/ChecklistaVidDodsfallSundsvall";
@@ -55,6 +57,7 @@ function App() {
 
   return (
     <AuthProvider>
+      <PwaHead />
       <CookieBanner />
       <GoogleAnalytics />
       <QueryClientProvider client={queryClient}>
@@ -68,7 +71,10 @@ function App() {
 
               {/* 🌍 Startsida */}
               <Route path="/" element={<Index />} />
+              <Route path="/contact" element={<Navigate to="/#contact" replace />} />
+              <Route path="/kontakt" element={<Navigate to="/#contact" replace />} />
               <Route path="/dodsbohantering-sundsvall" element={<DodsbohanteringSundsvall />} />
+              <Route path="/seniorforandring-sundsvall" element={<SeniorforandringSundsvall />} />
               <Route path="/tomning-av-bohag-sundsvall" element={<TomningAvBohagSundsvall />} />
               <Route path="/forsaljning-av-bohag-sundsvall" element={<ForsaljningAvBohagSundsvall />} />
               <Route path="/checklista-vid-dodsfall-sundsvall" element={<ChecklistaVidDodsfallSundsvall />} />

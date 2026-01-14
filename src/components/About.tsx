@@ -5,6 +5,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Review, { Review as ReviewType } from "./Reviews";
 import Seo from "./Seo";
 
+import nojdKundLogo from "@/assets/nojdkundlogo.png";
+
 
 const About = () => {
   const values = [
@@ -90,7 +92,7 @@ const About = () => {
               {/* Nöjd kund-logo under benefits, lite större */}
               <div className="flex justify-start mt-6">
                 <img
-                  src="src/assets/nojdkundlogo.png"
+                  src={nojdKundLogo}
                   alt="Nöjd kund garanti"
                   className="h-24 w-auto"
                 />

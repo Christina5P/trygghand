@@ -30,6 +30,8 @@ interface FullmaktManagementProps {
     onClose: () => void;
 }
 
+type FullmaktTemplate = { id: string; name: string; storage_path: string };
+
 export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({ 
     customerId, 
     customerName,
@@ -40,6 +42,9 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
     const [uploading, setUploading] = useState(false);
     const [loadingDocuments, setLoadingDocuments] = useState(false);
     const [documents, setDocuments] = useState<FullmaktDocument[]>([]);
+	const [loadingTemplates, setLoadingTemplates] = useState(false);
+	const [templates, setTemplates] = useState<FullmaktTemplate[]>([]);
+	const TEMPLATE_PREFIX = "fullmaktsmallar";
 
     const handleUnauthorized = async () => {
         const refreshed = await tryRefreshSession();
@@ -191,6 +196,9 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
 
     const handleDownload = async (document: FullmaktDocument) => {
         try {
+            // iOS/PWA kan blockera window.open om den sker efter await.
+            // Lösning: öppna en tom flik direkt (user gesture) och navigera sen.
+            const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
             const run = () => supabase.storage.from('fullmakts-filer').createSignedUrl(document.storage_path, 60);
             let { data, error } = await run();
             if (error && isUnauthorizedError(error)) {
@@ -201,7 +209,11 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
             if (error) throw error;
 
             if (data?.signedUrl) {
-                window.open(data.signedUrl, '_blank');
+                if (popup && !popup.closed) {
+                    popup.location.href = data.signedUrl;
+                } else {
+                    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+                }
             } else {
                 throw new Error("Kunde inte generera en giltig nedladdningslänk.");
             }
@@ -212,12 +224,60 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
         }
     };
 
-    const handleTemplateDownload = () => {
-        toast({ title: "Mall Nedladdad", description: "Generell fullmaktsmall (PDF) har laddats ner.", variant: "default" });
+    const fetchTemplates = async () => {
+        setLoadingTemplates(true);
+        try {
+            const { data: payload, error } = await supabase.functions.invoke("templates-list", {
+                body: { prefix: TEMPLATE_PREFIX },
+            });
+            if (error) throw error;
+            const files = ((payload as any)?.templates ?? []) as Array<{ name: string; storage_path: string }>;
+            const mapped = files
+                .filter((f) => !!f?.storage_path)
+                .map((f, index) => ({
+                    id: String(index + 1),
+                    name: (f.name || '').replace(/\.pdf$/i, '').replace(/_/g, ' '),
+                    storage_path: f.storage_path,
+                }));
+            setTemplates(mapped);
+        } catch (error) {
+            console.error("Kunde inte hämta mallar:", error);
+            setTemplates([]);
+        } finally {
+            setLoadingTemplates(false);
+        }
+    };
+
+    const openTemplate = async (storagePath: string) => {
+        try {
+            if (/^https?:\/\//i.test(storagePath)) {
+                window.open(storagePath, "_blank", "noopener,noreferrer");
+                return;
+            }
+
+            const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+            const { data, error } = await supabase.functions.invoke("templates-download", {
+                body: { path: storagePath },
+            });
+            if (error) throw error;
+
+            const url = (data as any)?.signedUrl || (data as any)?.signed_url;
+            if (!url) throw new Error("Ingen signerad URL genererades");
+
+            if (popup && !popup.closed) {
+                popup.location.href = url;
+            } else {
+                window.open(url, "_blank", "noopener,noreferrer");
+            }
+        } catch (error) {
+            console.error("Kunde inte öppna mall:", error);
+            toast({ title: "Fel", description: "Kunde inte öppna mallen.", variant: "destructive" });
+        }
     };
 
     useEffect(() => {
         fetchDocuments();
+        fetchTemplates();
     }, [customerId]);
 
     return (
@@ -335,14 +395,30 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
                                 <CardDescription>Ladda ner mallar för att skriva ut och signera.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                <Button variant="outline" className="w-full justify-between" onClick={handleTemplateDownload}>
-                                    <span className="flex items-center gap-2"><FileText className="h-4 w-4" /> Allmän Fullmakt (PDF)</span>
-                                    <Download className="h-4 w-4 opacity-50" />
-                                </Button>
-                                <Button variant="outline" className="w-full justify-between" onClick={handleTemplateDownload}>
-                                    <span className="flex items-center gap-2"><FileText className="h-4 w-4" /> Framtidsfullmakt (PDF)</span>
-                                    <Download className="h-4 w-4 opacity-50" />
-                                </Button>
+                                {loadingTemplates ? (
+                                    <div className="flex justify-center py-6">
+                                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                    </div>
+                                ) : templates.length === 0 ? (
+                                    <div className="text-sm text-muted-foreground">
+                                        Inga mallar hittades i biblioteket.
+                                    </div>
+                                ) : (
+                                    templates.map((t) => (
+                                        <Button
+                                            key={t.id}
+                                            variant="outline"
+                                            className="w-full justify-between"
+                                            onClick={() => openTemplate(t.storage_path)}
+                                        >
+                                            <span className="flex items-center gap-2 min-w-0">
+                                                <FileText className="h-4 w-4" />
+                                                <span className="truncate">{t.name}</span>
+                                            </span>
+                                            <Download className="h-4 w-4 opacity-50" />
+                                        </Button>
+                                    ))
+                                )}
                             </CardContent>
                         </Card>
                     </div>

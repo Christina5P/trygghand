@@ -36,10 +36,10 @@ export async function saveValuation(
 
   console.log("RPC FINAL PAYLOAD", payload);
 
-  const { error } = await supabase.rpc(
-    "customer_create_valuation",
-    payload
-  );
+  const { error } = await supabase
+    .schema("public")
+    .rpc("customer_create_valuation", payload);
+
 
   if (error) {
     console.error("ERROR saving valuation:", error);

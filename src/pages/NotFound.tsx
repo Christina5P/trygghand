@@ -78,7 +78,7 @@ export default function NotFound() {
           </Link>
 
           <Link
-            to="/kontakt"
+            to="/#contact"
             style={{
               padding: "0.75rem 1.5rem",
               borderRadius: "8px",

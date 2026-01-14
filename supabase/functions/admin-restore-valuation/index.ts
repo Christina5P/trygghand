@@ -38,12 +38,7 @@ async function selectValuation(service: any, valuationId: string) {
 
   if (!primary.error) return primary;
 
-  return await service
-    .schema("valuations")
-    .from("valuations")
-    .select("id, deleted_at")
-    .eq("id", valuationId)
-    .maybeSingle();
+  return primary;
 }
 
 async function restoreValuation(service: any, valuationId: string) {
@@ -59,12 +54,7 @@ async function restoreValuation(service: any, valuationId: string) {
 
   const msg = String(primary.error?.message || "").toLowerCase();
   if (msg.includes("view") || msg.includes("updatable") || msg.includes("relation")) {
-    return await service
-      .schema("valuations")
-      .from("valuations")
-      .update(payload)
-      .eq("id", valuationId)
-      .not("deleted_at", "is", null);
+    return primary;
   }
 
   return primary;

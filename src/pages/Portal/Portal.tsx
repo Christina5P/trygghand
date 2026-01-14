@@ -72,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({ customer, signOut, showSignOut = true }
 
 
 const Portal = () => {
-  const { user, customer, loading, signOut: authSignOut } = useAuth();
+  const { user, customer, customerFetchError, loading, signOut: authSignOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -193,16 +193,23 @@ const Portal = () => {
   if (!user) return <AuthLayout />;
 
   if (!customer) {
+    const status = (customerFetchError as any)?.status ?? (customerFetchError as any)?.context?.status;
+    const isServiceDown = typeof status === "number" && status >= 500;
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 space-y-4">
-            <div className="text-lg font-semibold">Kontot är inte aktiverat</div>
+            <div className="text-lg font-semibold">
+              {isServiceDown ? "Tillfälligt driftproblem" : "Kontot är inte aktiverat"}
+            </div>
             <p className="text-sm text-gray-600">
-              Vi hittade ingen kundprofil kopplad till ditt konto. Kontakta oss så hjälper vi dig att aktivera åtkomst.
+              {isServiceDown
+                ? "Vi kan inte hämta din kundprofil just nu (serverfel). Försök igen om en stund."
+                : "Vi hittade ingen kundprofil kopplad till ditt konto. Kontakta oss så hjälper vi dig att aktivera åtkomst."}
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => (window.location.href = "mailto:kontakt@trygghand.com")}>
+              <Button variant="outline" onClick={() => navigate("/#contact")}> 
                 Kontakta oss
               </Button>
               <Button onClick={handleSignOut}>Logga ut</Button>

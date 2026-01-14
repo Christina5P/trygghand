@@ -20,7 +20,16 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
 }
 
 // Admin client med service role key (server-side only!)
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+// Viktigt: skapa inte klienten vid import om env saknas (det kraschar dev server).
+let supabaseAdmin = null;
+function getSupabaseAdmin() {
+  if (supabaseAdmin) return supabaseAdmin;
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error("Supabase service role is not configured on backend");
+  }
+  supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+  return supabaseAdmin;
+}
 
 /**
  * Huvudfunktion: Radera användare helt (GDPR-compliant)
@@ -28,13 +37,15 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 export async function deleteUserGDPR({ userId, adminId, reason = "GDPR deletion request" }) {
   try {
     console.log("🔍 GDPR Delete Request:", { userId, adminId, reason });
+
+    const supabaseAdminClient = getSupabaseAdmin();
     
     // Admin-verifiering är redan gjord på route-nivå (adminPassword check)
     // Vi förlitar oss på att SERVICE_ROLE_KEY bara finns på backend
     
     // 1) Hämta användarens email för loggning (optional - det kan redan vara raderat från auth)
     let userEmail = "unknown";
-    const { data: authUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const { data: authUser, error: getUserError } = await supabaseAdminClient.auth.admin.getUserById(userId);
     
     if (!getUserError && authUser?.user?.email) {
       userEmail = authUser.user.email;
@@ -42,7 +53,7 @@ export async function deleteUserGDPR({ userId, adminId, reason = "GDPR deletion 
     } else {
       console.log("⚠️  User not found in auth.users (might already be deleted or never created):", userId);
       // Försök hämta email från customers istället
-      const { data: customer } = await supabaseAdmin
+      const { data: customer } = await supabaseAdminClient
         .from("customers")
         .select("email")
         .eq("id", userId)
@@ -56,7 +67,7 @@ export async function deleteUserGDPR({ userId, adminId, reason = "GDPR deletion 
 
     // 2) Anropa SQL-funktionen för att radera all app-data
     console.log("🗑️ Calling delete_user_data() for:", userId);
-    const { data: deleteDataResult, error: deleteDataError } = await supabaseAdmin.rpc(
+    const { data: deleteDataResult, error: deleteDataError } = await supabaseAdminClient.rpc(
       "delete_user_data",
       { user_uuid: userId }
     );
@@ -75,7 +86,7 @@ export async function deleteUserGDPR({ userId, adminId, reason = "GDPR deletion 
     // 3) Radera från auth.users (permanent!)
     // Men om användaren inte finns där, skippa det - det är ok
     console.log("🔐 Attempting to delete from auth.users:", userId);
-    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    const { error: deleteAuthError } = await supabaseAdminClient.auth.admin.deleteUser(userId);
 
     if (deleteAuthError) {
       // Om användaren inte existerar i auth, är det ok - vi fortsätter ändå
@@ -94,7 +105,7 @@ export async function deleteUserGDPR({ userId, adminId, reason = "GDPR deletion 
     }
 
     // 4) Logga borttagningen (optional, men bra för compliance)
-    await supabaseAdmin.from("deleted_users_log").insert({
+    await supabaseAdminClient.from("deleted_users_log").insert({
       user_id: userId,
       user_email: userEmail,
       deleted_by: adminId,

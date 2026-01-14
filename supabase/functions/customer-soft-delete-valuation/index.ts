@@ -63,12 +63,7 @@ async function selectValuation(service: any, valuationId: string) {
     if (!narrow.error) return narrow;
   }
 
-  return await service
-    .schema("valuations")
-    .from("valuations")
-    .select("id, customer_id, deleted_at")
-    .eq("id", valuationId)
-    .maybeSingle();
+  return primary;
 }
 
 async function softDeleteValuation(service: any, valuationId: string, userId: string) {
@@ -90,13 +85,7 @@ async function softDeleteValuation(service: any, valuationId: string, userId: st
 
   const msg = String(primary.error?.message || "").toLowerCase();
   if (msg.includes("view") || msg.includes("updatable") || msg.includes("relation")) {
-    return await service
-      .schema("valuations")
-      .from("valuations")
-      .update(payload)
-      .eq("id", valuationId)
-      .eq("customer_id", userId)
-      .is("deleted_at", null);
+    return primary;
   }
 
   return primary;
@@ -149,8 +138,8 @@ serve(async (req: Request): Promise<Response> => {
     if (isMissingRelationError(fetchErr)) {
       return json(500, {
         error: "valuations_table_missing",
-        message: "Hittar ingen valuations-tabell/view (public.valuations eller valuations.valuations).",
-        hint: "Skapa public.valuations eller en VIEW mot valuations.valuations enligt textfiler/gdpr_admin_soft_delete.sql.",
+        message: "Hittar ingen valuations-tabell (public.valuations).",
+        hint: "Kontrollera att tabellen public.valuations finns i databasen.",
         code: (fetchErr as any)?.code ?? null,
       });
     }

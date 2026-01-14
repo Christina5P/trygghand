@@ -1,61 +1,8 @@
 -- GDPR / Admin hardening: soft delete + audit log
 -- Apply in Supabase SQL editor.
 
--- 0) Compatibility: Edge Functions use .from("valuations") which targets public.valuations.
--- If your real table lives in another schema (e.g. valuations.valuations), create a public VIEW.
--- NOTE (GDPR / revision safety):
--- - RLS/policies MUST be enforced on the base table (valuations.valuations).
--- - This VIEW is only a compatibility layer for clients/Edge code that defaults to public schema.
-do $$
-begin
-  if to_regclass('public.valuations') is null and to_regclass('valuations.valuations') is not null then
-    execute 'create or replace view public.valuations as select * from valuations.valuations';
-    execute 'grant select on public.valuations to authenticated';
-    execute 'grant select on public.valuations to anon';
-    raise notice 'Created public.valuations VIEW pointing to valuations.valuations (plus SELECT grants).';
-  end if;
-end $$;
-
--- If public.valuations is a VIEW, make soft-delete/restore updates work via an INSTEAD OF trigger.
--- This is needed because PostgREST (and Edge Functions) operate against public schema by default.
-do $$
-begin
-  if to_regclass('valuations.valuations') is not null
-     and exists (
-        select 1
-        from pg_class c
-        join pg_namespace n on n.oid = c.relnamespace
-        where n.nspname = 'public'
-          and c.relname = 'valuations'
-          and c.relkind = 'v'
-     ) then
-    execute $ddl$
-      create or replace function public.valuations_view_soft_delete()
-      returns trigger
-      language plpgsql
-      as $fn$
-      begin
-        -- Views with INSTEAD OF triggers can't specify column lists on the trigger,
-        -- so we enforce that only deleted_at/deleted_by changes are allowed here.
-        if (NEW.deleted_at is distinct from OLD.deleted_at)
-           or (NEW.deleted_by is distinct from OLD.deleted_by) then
-          update valuations.valuations
-            set deleted_at = NEW.deleted_at,
-                deleted_by = NEW.deleted_by
-          where id = NEW.id;
-          return NEW;
-        end if;
-
-        raise exception 'Only deleted_at/deleted_by updates are supported on public.valuations';
-      end;
-      $fn$;
-    $ddl$;
-
-    execute 'drop trigger if exists valuations_view_soft_delete on public.valuations';
-    execute 'create trigger valuations_view_soft_delete instead of update on public.valuations for each row execute function public.valuations_view_soft_delete()';
-    raise notice 'Installed INSTEAD OF UPDATE trigger on public.valuations VIEW for deleted_at/deleted_by.';
-  end if;
-end $$;
+-- NOTE: This repository no longer supports a separate `valuations` schema.
+-- All operations must target the real table `public.valuations` (no compatibility VIEWs/triggers).
 
 -- 1) Soft delete columns on valuations
 do $$
@@ -74,10 +21,7 @@ begin
   end if;
 end $$;
 
--- Some projects may keep this table in a non-public schema (e.g. valuations.valuations)
-alter table if exists valuations.valuations
-  add column if not exists deleted_at timestamptz null,
-  add column if not exists deleted_by uuid null;
+-- All valuation data must live in public.valuations (no separate valuations schema).
 
 -- 1b) Soft delete columns on customers
 alter table if exists public.customers
@@ -129,14 +73,14 @@ begin
     return;
   end if;
 
-  if to_regclass('valuations.valuations') is not null then
+  if to_regclass('public.valuations') is not null then
     if not exists (
       select 1
       from pg_constraint
       where conname = 'valuations_deleted_by_fkey'
-        and conrelid = 'valuations.valuations'::regclass
+        and conrelid = 'public.valuations'::regclass
     ) then
-      alter table valuations.valuations
+      alter table public.valuations
         add constraint valuations_deleted_by_fkey
         foreign key (deleted_by)
         references auth.users(id)
@@ -145,7 +89,7 @@ begin
     return;
   end if;
 
-  raise notice 'Skipping FK valuations_deleted_by_fkey because no valuations table was found (public.valuations or valuations.valuations).';
+  raise notice 'Skipping FK valuations_deleted_by_fkey because public.valuations was not found.';
 end $$;
 
 -- 2) Admin audit log (no PII)
@@ -467,7 +411,7 @@ begin
       using (author_id = auth.uid());
   end if;
 end $$;
-alter table if exists valuations.valuations enable row level security;
+alter table if exists public.valuations enable row level security;
 alter table if exists public.admin_audit_log enable row level security;
 
 -- Deny all changes from anon by default; allow selects for owners (excluding deleted)
@@ -496,21 +440,21 @@ begin
     end if;
   end if;
 
-  if to_regclass('valuations.valuations') is not null then
+  if to_regclass('public.valuations') is not null then
     if not exists (
       select 1 from pg_policies
       where schemaname='valuations' and tablename='valuations' and policyname='valuations_select_own_not_deleted'
     ) then
       create policy valuations_select_own_not_deleted
-        on valuations.valuations
+        on public.valuations
         for select
         to authenticated
         using (auth.uid() = customer_id and deleted_at is null);
     end if;
   end if;
 
-  if to_regclass('public.valuations') is null and to_regclass('valuations.valuations') is null then
-    raise notice 'Skipping valuations_select_own_not_deleted policy because no valuations table was found (public.valuations or valuations.valuations).';
+  if to_regclass('public.valuations') is null then
+    raise notice 'Skipping valuations_select_own_not_deleted policy because public.valuations was not found.';
   end if;
 end $$;
 

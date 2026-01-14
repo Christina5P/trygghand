@@ -99,3 +99,42 @@ export async function fetchJSON(url: string, opts: RequestInit = {}) {
   }
   return body;
 }
+
+// Phone helpers
+// - UI may accept spaces/dashes (e.g. 070-1234567)
+// - Supabase phone auth expects E.164 (e.g. +46701234567)
+export const stripPhoneFormatting = (input: string) => (input || "").replace(/[^0-9+]/g, "");
+
+export const normalizeSwedishPhoneToE164 = (input: string) => {
+  const raw = stripPhoneFormatting(input).trim();
+  if (!raw) return "";
+
+  // Convert 00-prefix to +
+  const withPlus = raw.startsWith("00") ? `+${raw.slice(2)}` : raw;
+
+  // If already E.164-ish, keep plus and digits
+  if (withPlus.startsWith("+")) {
+    const normalized = `+${withPlus.slice(1).replace(/\D/g, "")}`;
+    return normalized === "+" ? "" : normalized;
+  }
+
+  // Assume Swedish national format when starting with 0 (e.g. 0701234567)
+  const digits = withPlus.replace(/\D/g, "");
+  if (digits.startsWith("0")) {
+    const national = digits.slice(1);
+    return national ? `+46${national}` : "";
+  }
+
+  // Fallback: treat as digits without country code -> return as-is (caller can validate)
+  return digits;
+};
+
+export const formatPhoneWithDash = (input: string) => {
+  const digits = stripPhoneFormatting(input).replace(/^\+/, "").replace(/\D/g, "");
+  if (!digits) return "";
+
+  // Prefer formatting national Swedish numbers like 0701234567 -> 070-1234567
+  // Minimal heuristic: 3 + rest, which matches the requested "xxx-xxxxxx" style.
+  if (digits.length <= 3) return digits;
+  return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+};

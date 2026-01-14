@@ -29,7 +29,7 @@ const ChecklistaVidDodsfallSundsvall: React.FC = () => {
           <li>Hantera bostaden och bohaget</li>
         </ol>
         
-        <Link to="/contact" className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+            <Link to="/#contact" className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
           Få personlig rådgivning
         </Link>
       </div>

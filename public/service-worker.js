@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trygg-hand-v1';
+const CACHE_NAME = 'trygg-hand-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -44,6 +44,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Avoid interfering with Vite dev server / HMR traffic if a SW is present.
+  // (SW registration is gated to PROD, but this protects against stale SWs.)
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/@vite') || url.pathname.startsWith('/src') || url.pathname.includes('hot-update')) {
     return;
   }
 

@@ -51,7 +51,7 @@ export default function CustomerRoute() {
                   <Button variant="outline" onClick={() => (window.location.href = "/")}>
                     Tillbaka
                   </Button>
-                  <Button onClick={() => (window.location.href = "mailto:kontakt@trygghand.com")}>
+                  <Button onClick={() => (window.location.href = "/#contact")}> 
                     Kontakta Oss
                   </Button>
                 </>

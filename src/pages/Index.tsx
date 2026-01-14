@@ -6,6 +6,8 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
 import { supabase } from "@/lib/supabase";
+import { useLocation } from "react-router-dom";
+import { useEffect } from "react";
 // Define Route types directly here
 type LoaderArgs = { request: Request };
 type ComponentProps = { loaderData: { todos?: { id: string | number; name: string }[] } };
@@ -18,6 +20,23 @@ export const Route = {
 
 
 const Index = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    const hash = location.hash;
+    if (!hash) return;
+    const id = hash.replace(/^#/, "");
+    if (!id) return;
+
+    // Vänta en tick så att sektionen hinner renderas innan scroll.
+    const t = window.setTimeout(() => {
+      const el = document.getElementById(id);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+
+    return () => window.clearTimeout(t);
+  }, [location.hash]);
+
   return (
     <div className="min-h-screen">
       <Seo

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { isServiceUnavailableError, supabase } from '@/lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import type { Customer } from "../types";
 
 interface AuthContextType {
   user: User | null;
   customer: Customer | null;
+  customerFetchError: any | null;
   session: Session | null;
   loading: boolean;
   isCustomer: boolean; // NYTT: convenience flag
@@ -22,12 +23,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [customerFetchError, setCustomerFetchError] = useState<any | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCustomerForUser = async (authUser: User | null) => {
     if (!authUser) {
       setCustomer(null);
+      setCustomerFetchError(null);
       return;
     }
 
@@ -36,6 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userPhone = (authUser as any)?.phone as string | undefined;
 
     try {
+      setCustomerFetchError(null);
       // Primärt: customers.id == auth.users.id
       {
         const { data, error } = await supabase
@@ -46,6 +50,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (!error && data) {
           setCustomer(data);
+          return;
+        }
+
+        if (error && isServiceUnavailableError(error)) {
+          setCustomer(null);
+          setCustomerFetchError(error);
           return;
         }
       }
@@ -62,6 +72,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setCustomer(data);
           return;
         }
+
+        if (error && isServiceUnavailableError(error)) {
+          setCustomer(null);
+          setCustomerFetchError(error);
+          return;
+        }
       }
 
       // Fallback: telefonkoppling
@@ -76,23 +92,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setCustomer(data);
           return;
         }
+
+        if (error && isServiceUnavailableError(error)) {
+          setCustomer(null);
+          setCustomerFetchError(error);
+          return;
+        }
       }
 
       setCustomer(null);
     } catch (err) {
       console.error("fetchCustomerForUser error:", err);
       setCustomer(null);
+      setCustomerFetchError(err);
     }
   };
 
   // Initiera session
   useEffect(() => {
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      await fetchCustomerForUser(session?.user ?? null);
-      setLoading(false);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
+        await fetchCustomerForUser(session?.user ?? null);
+      } catch (err) {
+        console.error("Auth init failed:", err);
+        setSession(null);
+        setUser(null);
+        setCustomer(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     initAuth();
@@ -220,6 +253,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const valueWithOtp: AuthContextType = {
     user,
     customer,
+    customerFetchError,
     session,
     loading,
     isCustomer: customer?.is_customer === true,

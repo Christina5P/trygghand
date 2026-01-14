@@ -11,6 +11,11 @@ const DodsbohanteringSundsvall: React.FC = () => {
         <link rel="canonical" href="https://trygghand.se/dodsbohantering-sundsvall" />
       </Helmet>
       <div className="container mx-auto px-4 py-8">
+        <div className="mb-4">
+          <Link to="/" className="text-primary underline">
+            ← Tillbaka till startsidan
+          </Link>
+        </div>
         <h1 className="text-4xl font-bold mb-6">Dödsbohantering i Sundsvall</h1>
         
         <section className="mb-8">
@@ -20,16 +25,23 @@ const DodsbohanteringSundsvall: React.FC = () => {
           <p className="mb-4">
             Vår tjänst omfattar samordning av dödsbo, inklusive tömning av bohag, dödsbostäd och försäljning av värdefulla föremål. Vi arbetar nära dig för att säkerställa att processen blir så enkel och respektfull som möjligt.
           </p>
+          <p className="mb-4">
+            Behöver du istället stöd vid en äldreflytt? Läs mer om vår{" "}
+            <Link to="/seniorforandring-sundsvall" className="text-primary underline">
+              seniorförändring i Sundsvall
+            </Link>
+            .
+          </p>
         </section>
 
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Vad ingår i vår dödsbohantering?</h2>
           <p className="mb-4">
-            När du väljer Trygg Hand för hjälp med dödsbo i Sundsvall får du en komplett lösning. Vi börjar med en initial konsultation där vi går igenom fastigheten och inventarierna. Därefter planerar vi en strategi som passar dina behov.
+            När du väljer Trygg Hand för hjälp med dödsbo i Sundsvall kan du få en komplett lösning. Vi börjar med en initial konsultation där vi går igenom fastigheten och inventarierna. Därefter planerar vi en strategi som passar dina behov.
           </p>
           <h3 className="text-xl font-medium mb-2">Tömning av bohag</h3>
           <p className="mb-4">
-            Vi erbjuder noggrann tömning av bohag i Sundsvall med omnejd. Vårt team hanterar allt från möbler till personliga tillhörigheter med största omsorg. Vi sorterar, packar och transporterar bort det som inte ska behållas.
+            Vi erbjuder noggrann tömning av bohag i Sundsvall med omnejd. Vi hanterar allt från möbler till personliga tillhörigheter med största omsorg. Vi sorterar, packar och transporterar bort det som inte ska behållas.
           </p>
           <h3 className="text-xl font-medium mb-2">Dödsbostäd</h3>
           <p className="mb-4">
@@ -37,18 +49,17 @@ const DodsbohanteringSundsvall: React.FC = () => {
           </p>
           <h3 className="text-xl font-medium mb-2">Samordning och administration</h3>
           <p className="mb-4">
-            Vi hjälper till med all nödvändig administration, som kontakt med myndigheter och försäljning av egendom. Vår erfarenhet gör att vi kan guida dig genom hela processen.
+            Vi hjälper till med all nödvändig administration, som kontakt med myndigheter och försäljning av egendom. Vårt mål är att göra processen så smidig som möjligt för dig.
           </p>
         </section>
 
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Varför välja Trygg Hand för dödsbohantering i Sundsvall?</h2>
           <p className="mb-4">
-            Som lokal aktör i Sundsvall förstår vi de unika utmaningarna i regionen. Vi har hjälpt många familjer med hjälp med dödsbo och vet hur viktigt det är att vara lyhörd och professionell.
+            Som lokal aktör i Sundsvall förstår vi de unika utmaningarna i regionen.
           </p>
           <ul className="list-disc list-inside mb-4">
             <li>Lokal närvaro och kunskap om Sundsvall</li>
-            <li>Erfarenhet inom anhörigstöd vid dödsfall</li>
             <li>Komplett service från start till mål</li>
             <li>Respektfull hantering av personliga tillhörigheter</li>
           </ul>
@@ -57,7 +68,7 @@ const DodsbohanteringSundsvall: React.FC = () => {
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Hur fungerar processen?</h2>
           <p className="mb-4">
-            Vi börjar alltid med ett möte där vi diskuterar dina önskemål. Sedan genomför vi en värdering av fastigheten och dess innehåll. Efter det följer tömning, städning och eventuell försäljning.
+            Vi börjar alltid med ett möte där vi diskuterar dina önskemål.Efter det följer tömning, städning och eventuell försäljning.
           </p>
           <h3 className="text-xl font-medium mb-2">Steg för steg</h3>
           <ol className="list-decimal list-inside mb-4">
@@ -72,33 +83,19 @@ const DodsbohanteringSundsvall: React.FC = () => {
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Anhörigstöd och känslomässig hjälp</h2>
           <p className="mb-4">
-            Vi erbjuder inte bara praktisk hjälp utan också anhörigstöd vid dödsfall. Vårt team är utbildat att hantera känsliga situationer med empati och respekt.
+            Vi erbjuder inte  praktisk hjälp OCH rådgivning. 
           </p>
           <p className="mb-4">
-            I Sundsvall med omnejd har vi hjälpt många familjer genom denna svåra tid. Vi förstår att varje dödsbo är unikt och anpassar vår service därefter.
+           Vi förstår att varje dödsbo är unikt och anpassar vår service därefter. Vi är lokalt förankrade i Sundsvall med omnejd.
           </p>
         </section>
 
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Priser och kostnader</h2>
           <p className="mb-4">
-            Våra priser för dödsbohantering varierar beroende på fastighetens storlek och komplexitet. Vi erbjuder alltid en gratis konsultation för att ge en exakt offert.
+            Vi har transparenta priser i olika servicepaket. Vi erbjuder även en gratis konsultation för att ge en exakt offert efter speciella behov.
           </p>
-          <p className="mb-4">
-            Kontakta oss idag för att diskutera dina behov och få en skräddarsydd lösning för ditt dödsbo i Sundsvall.
-          </p>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Vanliga frågor om dödsbohantering</h2>
-          <h3 className="text-xl font-medium mb-2">Vad kostar det?</h3>
-          <p className="mb-4">
-            Kostnaden beror på flera faktorer, men vi strävar efter att vara transparenta och konkurrenskraftiga.
-          </p>
-          <h3 className="text-xl font-medium mb-2">Hur lång tid tar det?</h3>
-          <p className="mb-4">
-            Processen kan ta från några dagar till flera veckor, beroende på omfattningen.
-          </p>
+          
         </section>
 
         <section className="text-center">
@@ -106,7 +103,7 @@ const DodsbohanteringSundsvall: React.FC = () => {
           <p className="mb-4">
             Är du i behov av hjälp med dödsbo i Sundsvall? Kontakta Trygg Hand idag för en kostnadsfri konsultation. Vi är här för att underlätta för dig och din familj.
           </p>
-          <Link to="/contact" className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+          <Link to="/#contact" className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
             Kontakta oss nu
           </Link>
         </section>

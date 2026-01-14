@@ -3,7 +3,10 @@ Export valuations prices
 This folder contains a small Node script to export valuation price fields into a CSV suitable for uploading to Supabase Table Editor.
 
 Files:
+
 - export_valuations_prices.js — Node script that queries `valuations` and writes `supabase/exports/valuations_prices_export.csv`.
+- migrate_valuations_schema_to_public.sql — SQL migration that moves `valuations.valuations` to `public.valuations` (no views/workarounds) and drops the old schema if empty.
+- rls_sanitize_admin_roles.sql — RLS sanitation: canonical `public.is_admin()` + admin via `public.user_roles`, no customers-policy recursion.
 - ../exports/valuations_prices_template.csv — CSV template you can edit and re-upload to the table editor.
 
 Run (locally):
@@ -24,6 +27,7 @@ Run (locally):
 4. The script writes `supabase/exports/valuations_prices_export.csv`. Download and open it to review before uploading.
 
 Uploading to Table Editor:
+
 - In Supabase console, go to Table Editor -> `valuations` -> Import CSV and select the generated file.
 - Match columns (`id` -> id, `price_sek` -> price_sek, ...) and choose `Update existing rows by primary key` so the `id` column updates existing rows.
 
