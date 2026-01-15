@@ -34,6 +34,7 @@ export function SubscriptionCancellationDetailDialog({
   currentUserId,
   isAdmin,
   onSaved,
+  onCommentCountChange,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -42,6 +43,7 @@ export function SubscriptionCancellationDetailDialog({
   currentUserId: string | null | undefined;
   isAdmin: boolean;
   onSaved: () => Promise<void>;
+  onCommentCountChange?: (cancellationId: string, nextCount: number) => void;
 }) {
   const { toast } = useToast();
   const [draft, setDraft] = useState<SubscriptionCancellationDraft | null>(null);
@@ -67,7 +69,12 @@ export function SubscriptionCancellationDetailDialog({
       .select("*")
       .eq("cancellation_id", item.id)
       .order("created_at", { ascending: true });
-    if (!error && data) setComments(data as any);
+    if (!error && data) {
+      const next = data as any as CancellationComment[];
+      setComments(next);
+      const visibleCount = next.filter((c) => !c.deleted_at).length;
+      onCommentCountChange?.(item.id, visibleCount);
+    }
   };
 
   useEffect(() => {

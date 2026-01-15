@@ -120,20 +120,38 @@ const Portal = () => {
   }, [customer]);
 
   const openTemplate = async (storagePath: string) => {
+    // iOS/PWA kan blockera window.open om den sker efter await.
+    // Lösning: öppna en tom flik direkt (user gesture) och navigera sen.
+    const openBlankTab = () => window.open("about:blank", "_blank", "noopener,noreferrer");
+    let popup: Window | null = null;
+
     try {
       // Om det redan är en extern URL, öppna direkt
       if (/^https?:\/\//i.test(storagePath)) {
-        window.open(storagePath, "_blank");
+        window.open(storagePath, "_blank", "noopener,noreferrer");
         return;
       }
+
+      popup = openBlankTab();
 
       const res = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
       if (!res.ok) throw new Error(`templates-download failed (${res.status})`);
       const data = (await res.json()) as any;
       const url = data?.signedUrl || data?.signed_url;
       if (!url) throw new Error("Kunde inte generera länk");
-      window.open(url, "_blank");
+
+      if (popup && !popup.closed) {
+        popup.location.href = url;
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
     } catch (err) {
+      try {
+        if (popup && !popup.closed) popup.close();
+      } catch {
+        // ignore
+      }
+
       console.error("Kunde inte hämta mall:", err);
       // Handle specific storage errors
       const message = err instanceof Error ? err.message : String(err);

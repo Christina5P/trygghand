@@ -5,7 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Edit, MessageCircle, Upload } from "lucide-react";
+import { Loader2, Plus, Edit, Upload } from "lucide-react";
+import { CommentBubble } from "@/pages/Portal/components/shared/CommentBubble";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
@@ -205,10 +206,10 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="absolute bottom-2 right-2 flex items-center gap-1 text-sm text-gray-500">
-                  <MessageCircle className="h-4 w-4" />
-                  {caseCommentsCounts[caseItem.id] || 0}
-                </div>
+                <CommentBubble
+                  className="absolute bottom-2 right-2"
+                  count={caseCommentsCounts[caseItem.id] || 0}
+                />
               </CardHeader>
             </Card>
           ))}

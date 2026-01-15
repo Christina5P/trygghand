@@ -2,11 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import type { CancellationStatus, Customer, SubscriptionCancellation } from "@/types";
 import { CancellationStatusSelect } from "./status";
 import { formatYmd } from "./utils";
+import { CommentBubble } from "@/pages/Portal/components/shared/CommentBubble";
 
 export function SubscriptionCancellationCard({
   item,
   customer,
   caseTypeLabel = "Uppsägning",
+  commentCount,
   canEditStatus,
   onOpen,
   onStatusChange,
@@ -14,14 +16,16 @@ export function SubscriptionCancellationCard({
   item: SubscriptionCancellation;
   customer: Customer | undefined;
   caseTypeLabel?: string;
+  commentCount?: number;
   canEditStatus: boolean;
   onOpen: () => void;
   onStatusChange: (next: CancellationStatus) => void;
 }) {
   const customerName = customer?.name || customer?.email || "Okänd";
+  const count = commentCount ?? item.comment_count ?? 0;
 
   return (
-    <Card className="hover:bg-muted/40 transition cursor-pointer" onClick={onOpen}>
+    <Card className="relative hover:bg-muted/40 transition cursor-pointer" onClick={onOpen}>
       <CardHeader className="pb-3 flex justify-between items-start gap-3">
         <div className="min-w-0 flex-1">
           <CardTitle className="text-base truncate">{customerName}</CardTitle>
@@ -37,6 +41,8 @@ export function SubscriptionCancellationCard({
           <CancellationStatusSelect value={item.status} onChange={onStatusChange} disabled={!canEditStatus} />
         </div>
       </CardHeader>
+
+      <CommentBubble className="absolute bottom-2 right-2" count={count} />
 
       <CardContent className="space-y-1 text-sm">
         <div className="flex items-center justify-between gap-2">

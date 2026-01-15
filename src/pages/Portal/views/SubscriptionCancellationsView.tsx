@@ -53,6 +53,7 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
   const [serviceTypes, setServiceTypes] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [providerFilter, setProviderFilter] = useState<string>("all");
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
 
   const customerMap = useMemo(() => {
     const map: Record<string, Customer> = {};
@@ -92,6 +93,15 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
 
     setProviders(uniqueProviders);
     setServiceTypes(uniqueServiceTypes);
+  }, [cancellations]);
+
+  useEffect(() => {
+    const next: Record<string, number> = {};
+    (cancellations || []).forEach((c) => {
+      next[c.id] = commentCounts[c.id] ?? c.comment_count ?? 0;
+    });
+    setCommentCounts(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cancellations]);
 
   const resetDialog = () => {
@@ -277,6 +287,7 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
                 item={c}
                 customer={customerMap[c.customer_id]}
                 caseTypeLabel="Uppsägning"
+                commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
                 canEditStatus={isAdmin}
                 onOpen={() => setSelected(c)}
                 onStatusChange={(next) => handleStatusChange(c.id, next)}
@@ -497,6 +508,9 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
         currentUserId={user?.id}
         isAdmin={isAdmin}
         onSaved={onDataUpdated}
+        onCommentCountChange={(cancellationId, nextCount) => {
+          setCommentCounts((prev) => ({ ...prev, [cancellationId]: nextCount }));
+        }}
       />
     </div>
   );
