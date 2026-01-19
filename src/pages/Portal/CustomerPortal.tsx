@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Import för Fullmakt Dialog
 import CollapsibleCard from "@/components/ui/CollapsibleCard"; // Se till att denna komponent finns
 import ValuationManager from "@/components/ValuationManager"; // Se till att denna komponent finns
+import KeyReceiptDialog from "@/components/KeyReceiptDialog";
 import { PortalStats } from '@/pages/Portal/PortalStats'; // Se till att denna komponent finns
 import Tidio from "@/components/Tidio"; // Se till att denna komponent finns    
 import { CaseCommentsThread } from "./components/cases/CaseCommentsThread";
@@ -592,6 +593,16 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                                              
 
                                             
+                    </CardContent>
+                </Card>
+
+                {/* 3. Nyckelkvittens (kundsignering) */}
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-bold text-trust-blue">Nyckelkvittens</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <KeyReceiptDialog mode="customer" />
                     </CardContent>
                 </Card>
 

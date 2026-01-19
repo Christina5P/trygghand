@@ -199,25 +199,24 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
             // iOS/PWA kan blockera window.open om den sker efter await.
             // Lösning: öppna en tom flik direkt (user gesture) och navigera sen.
             const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
-            const res = await fetch(`/api/templates/download?path=${encodeURIComponent(document.storage_path)}`);
-            if (!res.ok) throw new Error(`Kunde inte hämta filen (${res.status})`);
-
-            const blob = await res.blob();
-            const objectUrl = URL.createObjectURL(blob);
-
-            if (popup && !popup.closed) {
-                popup.location.href = objectUrl;
-            } else {
-                window.open(objectUrl, '_blank', 'noopener,noreferrer');
+            const run = () => supabase.storage.from('fullmakts-filer').createSignedUrl(document.storage_path, 60);
+            let { data, error } = await run();
+            if (error && isUnauthorizedError(error)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data, error } = await run());
             }
 
-            setTimeout(() => {
-                try {
-                    URL.revokeObjectURL(objectUrl);
-                } catch {
-                    // ignore
+            if (error) throw error;
+
+            if (data?.signedUrl) {
+                if (popup && !popup.closed) {
+                    popup.location.href = data.signedUrl;
+                } else {
+                    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
                 }
-            }, 60_000);
+            } else {
+                throw new Error("Kunde inte generera en giltig nedladdningslänk.");
+            }
 
         } catch (error) {
             console.error("Nedladdning misslyckades:", error);
@@ -259,23 +258,15 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
             popup = window.open("about:blank", "_blank", "noopener,noreferrer");
             const res = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
             if (!res.ok) throw new Error(`templates-download failed (${res.status})`);
-
-            const blob = await res.blob();
-            const objectUrl = URL.createObjectURL(blob);
+            const data = (await res.json()) as any;
+            const url = data?.signedUrl || data?.signed_url;
+            if (!url) throw new Error("Ingen signerad URL genererades");
 
             if (popup && !popup.closed) {
-                popup.location.href = objectUrl;
+                popup.location.href = url;
             } else {
-                window.open(objectUrl, "_blank", "noopener,noreferrer");
+                window.open(url, "_blank", "noopener,noreferrer");
             }
-
-            setTimeout(() => {
-                try {
-                    URL.revokeObjectURL(objectUrl);
-                } catch {
-                    // ignore
-                }
-            }, 60_000);
         } catch (error) {
             try {
                 if (popup && !popup.closed) popup.close();

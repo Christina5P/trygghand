@@ -28,6 +28,7 @@ import CustomersDialog from "./dialogs/CustomersDialog";
 import SubscriptionCancellationsView from "./views/SubscriptionCancellationsView";
 import ContactRequestDialog from "./dialogs/ContactRequestDialog";
 import ValuationManager from "@/components/ValuationManager";
+import KeyReceiptDialog from "@/components/KeyReceiptDialog";
 import ValuationsView from "./views/ValuationsView"; 
 import ValuationDetailsDialog from "./dialogs/ValuationDetailsDialog";
 import { FullmaktManagement } from "./views/FullmaktManagement";
@@ -134,7 +135,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // MODAL STATE
   const [mainTab, setMainTab] = useState<
-    "cases" | "subscriptions" | "valuations" | "customers" | "contact_requests" | "customer_management" | "new" | "saved"
+    "cases" | "subscriptions" | "valuations" | "customers" | "contact_requests" | "key_receipts" | "customer_management" | "new" | "saved"
   >("cases");
   // Statusfilter för ärenden — använder normalizeStatus + STATUS_DEFINITIONS
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -209,22 +210,15 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
       const apiRes = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
       if (!apiRes.ok) throw new Error(`templates-download failed (${apiRes.status})`);
-      const blob = await apiRes.blob();
-      const objectUrl = URL.createObjectURL(blob);
+      const data = (await apiRes.json()) as any;
+      const url = data?.signedUrl || data?.signed_url;
+      if (!url) throw new Error("Ingen signerad URL genererades");
 
       if (popup && !popup.closed) {
-        popup.location.href = objectUrl;
+        popup.location.href = url;
       } else {
-        window.open(objectUrl, "_blank", "noopener,noreferrer");
+        window.open(url, "_blank", "noopener,noreferrer");
       }
-
-      setTimeout(() => {
-        try {
-          URL.revokeObjectURL(objectUrl);
-        } catch {
-          // ignore
-        }
-      }, 60_000);
     } catch (err: any) {
       try {
         if (popup && !popup.closed) popup.close();
@@ -255,7 +249,14 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
       const apiRes = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
       if (!apiRes.ok) throw new Error(`templates-download failed (${apiRes.status})`);
-      const blob = await apiRes.blob();
+      const data = (await apiRes.json()) as any;
+      const url = data?.signedUrl || data?.signed_url;
+      if (!url) throw new Error("Ingen signerad URL genererades");
+
+      const fileRes = await fetch(url);
+      if (!fileRes.ok) throw new Error("Kunde inte hämta filen för nedladdning");
+
+      const blob = await fileRes.blob();
       const objectUrl = URL.createObjectURL(blob);
 
       const nameFromPath = storagePath.split("/").pop() || "mall.pdf";
@@ -278,6 +279,15 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [selectedContact, setSelectedContact] = useState<ContactRequest | null>(null);
   const [selectedCase, setSelectedCase] = useState<CustomerCase | null>(null);
   const [selectedValuation, setSelectedValuation] = useState<Valuation | null>(null);
+
+  // Admin: customer selection for key receipts
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("__none__");
+
+  const selectedCustomerIdForKeyReceipt = useMemo(() => {
+    if (selectedCustomerId === "__none__") return null;
+    if (selectedCustomerId === "__admin_only__") return null;
+    return selectedCustomerId;
+  }, [selectedCustomerId]);
 
   // ID för kund som används när ett nytt ärende skapas från kunddialogen
   const [newCaseCustomerId, setNewCaseCustomerId] = useState<string | undefined>(undefined);
@@ -553,6 +563,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                         <SelectItem value="subscriptions">Abonnemang ({cancellations.length})</SelectItem>
                         <SelectItem value="valuations">Värderingar ({valuations.length})</SelectItem>
                         <SelectItem value="customers">Kunder ({customers.length})</SelectItem>
+              <SelectItem value="key_receipts">Nyckelkvittens</SelectItem>
                         <SelectItem value="contact_requests">Kontakt ({activeContactCount})</SelectItem>
                       </SelectContent>
                     </Select>
@@ -572,6 +583,9 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                     <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="customers">
                       Kunder ({customers.length})
                     </TabsTrigger>
+          <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="key_receipts">
+            Nyckelkvittens
+          </TabsTrigger>
                     <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="contact_requests">
                       Kontakt ({activeContactCount})
                     </TabsTrigger>
@@ -653,6 +667,44 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
             </div>
           </TabsContent>
 
+          {/* Nyckelkvittens (Admin) */}
+          <TabsContent value="key_receipts">
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-trust-blue">Nyckelkvittens</CardTitle>
+                <CardDescription>Skapa nyckelkvittens för vald kund (eller admin-only).</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="max-w-xl">
+                  <Label>Välj kund</Label>
+                  <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Välj kund" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Välj kund…</SelectItem>
+                      <SelectItem value="__admin_only__">Admin-only (ingen kund)</SelectItem>
+                      {(customers || []).map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name || (c as any).email || c.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {selectedCustomerId === "__none__" ? (
+                  <div className="text-sm text-slate-700">Välj kund för att skapa nyckelkvittens</div>
+                ) : (
+                  <KeyReceiptDialog
+                    mode="admin"
+                    customerId={selectedCustomerIdForKeyReceipt}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Kontaktförfrågningar */}
                   <TabsContent value="contact_requests">
                     <div className="mb-4">
@@ -690,7 +742,6 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
               valuation={selectedValuation}
               customers={customers}
               open={true}
-       onDataUpdated={fetchData}
               onClose={() => setSelectedValuation(null)}
             />
           )}
