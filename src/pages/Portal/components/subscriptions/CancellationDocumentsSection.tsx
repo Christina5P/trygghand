@@ -43,11 +43,25 @@ export function CancellationDocumentsSection({
   }, [documents, showDeleted]);
 
   const openFile = async (path: string) => {
-    const { data, error } = await supabase.storage.from("abonnemang").createSignedUrl(path, 3600);
-    if (error) throw error;
-    const url = (data as any)?.signedUrl;
-    if (!url) throw new Error("Kunde inte skapa länk");
-    window.open(url, "_blank");
+    const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+    const res = await fetch(`/api/templates/download?bucket=abonnemang&path=${encodeURIComponent(path)}`);
+    if (!res.ok) throw new Error(`Kunde inte hämta filen (${res.status})`);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    if (popup && !popup.closed) {
+      popup.location.href = objectUrl;
+    } else {
+      window.open(objectUrl, "_blank", "noopener,noreferrer");
+    }
+
+    setTimeout(() => {
+      try {
+        URL.revokeObjectURL(objectUrl);
+      } catch {
+        // ignore
+      }
+    }, 60_000);
   };
 
   const uploadFiles = async (files: FileList) => {

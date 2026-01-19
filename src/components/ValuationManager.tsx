@@ -85,7 +85,7 @@ return (
           )}
 
           <div className="flex-1">
-            <div className="text-sm font-medium">Värdering #{String(v.id)}</div>
+            <div className="text-sm font-medium">{(v as any)?.title ?? `Värdering #${String(v.id)}`}</div>
             {getPriceLabel((v as any).analysis_result ?? (v as any).analysis ?? "") && (
               <div className="text-sm font-semibold text-black mt-1">
                 {getPriceLabel((v as any).analysis_result ?? (v as any).analysis ?? "")}

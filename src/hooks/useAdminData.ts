@@ -111,6 +111,31 @@ export const useAdminData = () => {
         customer_id: String(v.customer_id),
       }));
 
+      // Add a human-friendly title/number (no migration required).
+      // Numbering is per customer_id, ordered by created_at asc (fallback id asc).
+      const byCustomer = new Map<string, Valuation[]>();
+      for (const v of normalized) {
+        const key = (v as any).customer_id == null ? "__admin_only__" : String((v as any).customer_id);
+        const list = byCustomer.get(key) ?? [];
+        list.push(v);
+        byCustomer.set(key, list);
+      }
+
+      for (const [key, list] of byCustomer.entries()) {
+        list.sort((a: any, b: any) => {
+          const at = a.created_at ? new Date(a.created_at).getTime() : Number.POSITIVE_INFINITY;
+          const bt = b.created_at ? new Date(b.created_at).getTime() : Number.POSITIVE_INFINITY;
+          if (at !== bt) return at - bt;
+          return String(a.id).localeCompare(String(b.id));
+        });
+
+        list.forEach((v: any, idx: number) => {
+          const n = idx + 1;
+          v.number = n;
+          v.title = key === "__admin_only__" ? `Adminvärdering ${n}` : `Värdering ${n}`;
+        });
+      }
+
       setValuations(normalized);
     } catch (err: any) {
       console.error("fetchValuations error", err);

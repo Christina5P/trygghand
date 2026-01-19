@@ -154,20 +154,25 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
       const pathInBucket = document.storage_path;
       if (!pathInBucket) throw new Error("Inget dokument_url satt för detta dokument.");
 
-      const run = () => supabase.storage.from("fullmakts-filer").createSignedUrl(pathInBucket, 60);
-      let { data, error } = await run();
-      if (error && isUnauthorizedError(error)) {
-        const ok = await handleUnauthorized();
-        if (ok) ({ data, error } = await run());
+      const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+      const res = await fetch(`/api/templates/download?path=${encodeURIComponent(pathInBucket)}`);
+      if (!res.ok) throw new Error(`Kunde inte hämta filen (${res.status})`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      if (popup && !popup.closed) {
+        popup.location.href = objectUrl;
+      } else {
+        window.open(objectUrl, "_blank", "noopener,noreferrer");
       }
 
-      if (error) throw error;
-
-      // Supabase returns signedUrl (case-sensitive)
-      const url = (data as any)?.signedUrl ?? (data as any)?.signed_url ?? (data as any)?.signedURL;
-      if (!url) throw new Error("Kunde inte generera en giltig nedladdningslänk.");
-
-      window.open(url, "_blank");
+      setTimeout(() => {
+        try {
+          URL.revokeObjectURL(objectUrl);
+        } catch {
+          // ignore
+        }
+      }, 60_000);
     } catch (err) {
       console.error("Nedladdning misslyckades:", err);
       toast({ title: "Fel vid nedladdning", description: "Kunde inte ladda ner filen. Kontrollera behörigheter och att dokument_url är korrekt.", variant: "destructive" });

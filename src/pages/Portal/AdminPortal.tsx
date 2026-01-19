@@ -209,15 +209,22 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
       const apiRes = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
       if (!apiRes.ok) throw new Error(`templates-download failed (${apiRes.status})`);
-      const data = (await apiRes.json()) as any;
-      const url = data?.signedUrl || data?.signed_url;
-      if (!url) throw new Error("Ingen signerad URL genererades");
+      const blob = await apiRes.blob();
+      const objectUrl = URL.createObjectURL(blob);
 
       if (popup && !popup.closed) {
-        popup.location.href = url;
+        popup.location.href = objectUrl;
       } else {
-        window.open(url, "_blank", "noopener,noreferrer");
+        window.open(objectUrl, "_blank", "noopener,noreferrer");
       }
+
+      setTimeout(() => {
+        try {
+          URL.revokeObjectURL(objectUrl);
+        } catch {
+          // ignore
+        }
+      }, 60_000);
     } catch (err: any) {
       try {
         if (popup && !popup.closed) popup.close();
@@ -248,14 +255,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
       const apiRes = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
       if (!apiRes.ok) throw new Error(`templates-download failed (${apiRes.status})`);
-      const data = (await apiRes.json()) as any;
-      const url = data?.signedUrl || data?.signed_url;
-      if (!url) throw new Error("Ingen signerad URL genererades");
-
-      const fileRes = await fetch(url);
-      if (!fileRes.ok) throw new Error("Kunde inte hämta filen för nedladdning");
-
-      const blob = await fileRes.blob();
+      const blob = await apiRes.blob();
       const objectUrl = URL.createObjectURL(blob);
 
       const nameFromPath = storagePath.split("/").pop() || "mall.pdf";
@@ -690,6 +690,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
               valuation={selectedValuation}
               customers={customers}
               open={true}
+       onDataUpdated={fetchData}
               onClose={() => setSelectedValuation(null)}
             />
           )}

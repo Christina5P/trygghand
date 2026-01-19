@@ -84,21 +84,25 @@ export function CaseDocumentsSection({
   }, [documents, showDeleted]);
 
   const openFile = async (path: string) => {
-    const run = () =>
-      supabase.functions.invoke("case-create-document-download", {
-        body: { case_id: caseId, path },
-      });
+    const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+    const res = await fetch(`/api/templates/download?bucket=case-documents&path=${encodeURIComponent(path)}`);
+    if (!res.ok) throw new Error(`Kunde inte hämta filen (${res.status})`);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
 
-    let { data, error } = await run();
-    if (error && isUnauthorizedError(error)) {
-      const ok = await handleUnauthorized();
-      if (ok) ({ data, error } = await run());
+    if (popup && !popup.closed) {
+      popup.location.href = objectUrl;
+    } else {
+      window.open(objectUrl, "_blank", "noopener,noreferrer");
     }
-    if (error) throw error;
-    if ((data as any)?.ok !== true) throw new Error((data as any)?.error || "Kunde inte skapa länk");
-    const url = (data as any)?.signedUrl as string | undefined;
-    if (!url) throw new Error("Kunde inte skapa länk");
-    window.open(url, "_blank");
+
+    setTimeout(() => {
+      try {
+        URL.revokeObjectURL(objectUrl);
+      } catch {
+        // ignore
+      }
+    }, 60_000);
   };
 
   const uploadFiles = async (files: FileList) => {

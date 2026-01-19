@@ -472,20 +472,26 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             return;
         }
         try {
-            const run = () =>
-                supabase.storage
-                    .from('fullmakts-filer')
-                    .createSignedUrl(doc.storage_path, 60);
+            const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+            const res = await fetch(`/api/templates/download?path=${encodeURIComponent(doc.storage_path)}`);
+            if (!res.ok) throw new Error(`Kunde inte hämta filen (${res.status})`);
 
-            let { data, error } = await run();
-            if (error && isUnauthorizedError(error)) {
-                const ok = await handleUnauthorized();
-                if (ok) ({ data, error } = await run());
+            const blob = await res.blob();
+            const objectUrl = URL.createObjectURL(blob);
+
+            if (popup && !popup.closed) {
+                popup.location.href = objectUrl;
+            } else {
+                window.open(objectUrl, '_blank', 'noopener,noreferrer');
             }
-            if (error) throw error;
-            const url = (data as any)?.signedUrl ?? (data as any)?.signed_url;
-            if (!url) throw new Error('Ingen giltig länk');
-            window.open(url, '_blank');
+
+            setTimeout(() => {
+                try {
+                    URL.revokeObjectURL(objectUrl);
+                } catch {
+                    // ignore
+                }
+            }, 60_000);
         } catch (err) {
             console.error('Nedladdning misslyckades:', err);
             toast({ title: 'Fel', description: 'Kunde inte skapa nedladdningslänk.', variant: 'destructive' });

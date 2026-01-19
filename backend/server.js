@@ -73,10 +73,15 @@ Analysera bilderna och ge kategori, skick, uppskattat värde, rekommendation, mo
 // Template download endpoint
 app.get('/api/templates/download', async (req, res) => {
   try {
-    const { path } = req.query;
+    const { path, bucket } = req.query;
 
     if (!path) {
       return res.status(400).json({ error: 'Path parameter required' });
+    }
+
+    const bucketName = (bucket ? String(bucket) : 'fullmakts-filer').trim();
+    if (!['fullmakts-filer', 'abonnemang', 'case-documents'].includes(bucketName)) {
+      return res.status(400).json({ error: 'Invalid bucket' });
     }
 
     // Use service role client to generate signed URL
@@ -87,20 +92,24 @@ app.get('/api/templates/download', async (req, res) => {
     );
 
     const { data, error } = await serviceClient.storage
-      .from('fullmakts-filer')
-      .createSignedUrl(path, 3600); // 1 hour expiry
+      .from(bucketName)
+      .download(String(path));
 
     if (error) {
       console.error('Storage error:', error);
       return res.status(404).json({ error: 'Template not found' });
     }
 
-    const signedUrl = data?.signedUrl || data?.signed_url;
-    if (!signedUrl) {
-      return res.status(500).json({ error: 'Could not generate signed URL' });
-    }
+    const blob = data;
+    const arrayBuffer = await blob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    res.json({ signedUrl });
+    const filename = String(path).split('/').pop() || 'file';
+    const contentType = blob.type || (filename.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${filename.replace(/\r|\n|\"/g, '')}"`);
+    res.status(200).send(buffer);
   } catch (err) {
     console.error('Template download error:', err);
     res.status(500).json({ error: 'Internal server error' });

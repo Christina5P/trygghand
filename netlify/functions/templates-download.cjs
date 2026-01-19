@@ -1,15 +1,20 @@
 const { createClient } = require("@supabase/supabase-js");
 
-function json(statusCode, body) {
+function response(statusCode, headers, body, isBase64Encoded = false) {
   return {
     statusCode,
     headers: {
-      "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+      ...headers,
     },
-    body: JSON.stringify(body),
+    body,
+    isBase64Encoded,
   };
+}
+
+function json(statusCode, body) {
+  return response(statusCode, { "Content-Type": "application/json" }, JSON.stringify(body), false);
 }
 
 exports.handler = async (event) => {
@@ -18,6 +23,12 @@ exports.handler = async (event) => {
 
   const path = event.queryStringParameters?.path;
   if (!path) return json(400, { error: "Path parameter required" });
+
+  const bucketParam = (event.queryStringParameters?.bucket || "fullmakts-filer") + "";
+  const bucket = bucketParam.trim();
+  if (!["fullmakts-filer", "abonnemang", "case-documents"].includes(bucket)) {
+    return json(400, { error: "Invalid bucket" });
+  }
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -30,17 +41,30 @@ exports.handler = async (event) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { data, error } = await supabase.storage
-      .from("fullmakts-filer")
-      .createSignedUrl(path, 3600);
+      .from(bucket)
+      .download(path);
 
     if (error) {
       return json(404, { error: "Template not found" });
     }
 
-    const signedUrl = data?.signedUrl || data?.signed_url;
-    if (!signedUrl) return json(500, { error: "Could not generate signed URL" });
+    const blob = data;
+    const arrayBuffer = await blob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    return json(200, { signedUrl });
+    const filename = (path.split("/").pop() || "file").replace(/[\r\n\"]/g, "");
+    const contentType = blob.type || (filename.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/octet-stream");
+
+    return response(
+      200,
+      {
+        "Content-Type": contentType,
+        "Content-Disposition": `inline; filename="${filename}"`,
+        "Cache-Control": "no-store",
+      },
+      buffer.toString("base64"),
+      true
+    );
   } catch (err) {
     console.error("templates-download error", err);
     return json(500, { error: "Internal server error" });

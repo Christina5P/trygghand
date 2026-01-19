@@ -72,17 +72,8 @@ export async function getFullmakterForCustomer(customerId: string) {
 // ----------------- SIGNED URL (lista) -----------------
 
 export async function getFullmaktSignedUrl(path: string, seconds = 3600) {
-  // Uppdaterad till din önskade bucket
-  const { data, error } = await supabase.storage 
-    .from("fullmakts-filer")
-    .createSignedUrl(path, seconds);
-
-  if (error) {
-    console.error("SIGNED URL ERROR:", error);
-    return null;
-  }
-
-  return data?.signedUrl ?? null;
+  void seconds;
+  return `/api/templates/download?path=${encodeURIComponent(path)}`;
 }
 
 

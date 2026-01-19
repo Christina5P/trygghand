@@ -136,15 +136,22 @@ const Portal = () => {
 
       const res = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
       if (!res.ok) throw new Error(`templates-download failed (${res.status})`);
-      const data = (await res.json()) as any;
-      const url = data?.signedUrl || data?.signed_url;
-      if (!url) throw new Error("Kunde inte generera länk");
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
 
       if (popup && !popup.closed) {
-        popup.location.href = url;
+        popup.location.href = objectUrl;
       } else {
-        window.open(url, "_blank", "noopener,noreferrer");
+        window.open(objectUrl, "_blank", "noopener,noreferrer");
       }
+
+      setTimeout(() => {
+        try {
+          URL.revokeObjectURL(objectUrl);
+        } catch {
+          // ignore
+        }
+      }, 60_000);
     } catch (err) {
       try {
         if (popup && !popup.closed) popup.close();
