@@ -26,6 +26,7 @@ import {
   Loader2,
   User,
   FileText, // Lade till för Fullmakt
+    KeyRound,
   Briefcase, // Lade till för ärendeikon
 } from "lucide-react";
 import { format } from "date-fns";
@@ -596,16 +597,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                     </CardContent>
                 </Card>
 
-                {/* 3. Nyckelkvittens (kundsignering) */}
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-2xl font-bold text-trust-blue">Nyckelkvittens</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <KeyReceiptDialog mode="customer" />
-                    </CardContent>
-                </Card>
-
                                {/* 4. Mina Fullmakter (NY SEKTION för kunden) */}
               {/* Knapp före tips-texten */}
               <div className="mt-4">
@@ -781,6 +772,20 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                             ))}
                         </div>
                     )}
+                </CollapsibleCard>
+
+                {/* Nyckelkvittens (kundsignering) */}
+                <CollapsibleCard
+                    defaultOpen={false}
+                    title={
+                        <div className="flex items-center">
+                            <KeyRound className="w-5 h-5 mr-2 text-gray-600" />
+                            <span className="font-bold text-lg">Nyckelkvittens</span>
+                        </div>
+                    }
+                    className="shadow-lg"
+                >
+                    <KeyReceiptDialog mode="customer" />
                 </CollapsibleCard>
 
                  {/* 3. Kundinformation (Krav: Kund ska kunna redigera sin information) */}

@@ -64,15 +64,37 @@ export const getCleanDescription = (analysis: string): string => {
   }
 };
 
-export const getPriceLabel = (analysis: string): string | null => {
+export const getPriceRange = (analysis: string): { min: number | null; max: number | null } | null => {
   if (!analysis) return null;
   try {
     const parsed = typeof analysis === "string" ? JSON.parse(analysis) : analysis;
-    const min = parsed?.analysis_result?.varde_min_sek ?? parsed?.varde_min_sek ?? null;
-    const max = parsed?.analysis_result?.varde_max_sek ?? parsed?.varde_max_sek ?? null;
+    const minRaw = parsed?.analysis_result?.varde_min_sek ?? parsed?.varde_min_sek ?? null;
+    const maxRaw = parsed?.analysis_result?.varde_max_sek ?? parsed?.varde_max_sek ?? null;
+
+    const minNum = minRaw == null ? null : Number(minRaw);
+    const maxNum = maxRaw == null ? null : Number(maxRaw);
+
+    const min = Number.isFinite(minNum as number) ? (minNum as number) : null;
+    const max = Number.isFinite(maxNum as number) ? (maxNum as number) : null;
+
+    if (min == null && max == null) return null;
+    return { min, max };
+  } catch {
+    return null;
+  }
+};
+
+export const getPriceLabel = (analysis: string): string | null => {
+  if (!analysis) return null;
+  try {
+    const range = getPriceRange(analysis);
+    if (!range) return null;
+    const min = range.min;
+    const max = range.max;
     const fmt = (n: number) => new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(n);
-    if (min && max) return `Värde: ${fmt(Number(min))} – ${fmt(Number(max))} kr`;
-    if (min) return `Värde: ${fmt(Number(min))} kr`;
+    if (min != null && max != null) return `Värde: ${fmt(Number(min))} – ${fmt(Number(max))} kr`;
+    if (min != null) return `Värde: ${fmt(Number(min))} kr`;
+    if (max != null) return `Värde: ${fmt(Number(max))} kr`;
     return null;
   } catch {
     return null;

@@ -8,8 +8,9 @@ import ValueEstimator from "@/components/ValueEstimator";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
-import { getCleanDescription, getPriceLabel } from "@/utils";
+import { getCleanDescription, getPriceLabel, getPriceRange } from "@/utils";
 import type { Valuation } from "@/types";
+import { jsPDF } from "jspdf";
 
 
 interface ValuationManagerProps {
@@ -37,6 +38,140 @@ const visibleValuations = useMemo(() => {
   // This keeps the UI consistent even if the caller passes through deleted rows.
   return (valuations ?? []).filter((v) => !(v as any)?.deleted_at);
 }, [valuations]);
+
+const summary = useMemo(() => {
+  const fmt = (n: number) => new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(n);
+  const total = visibleValuations.length;
+
+  let pricedCount = 0;
+  let sumMin = 0;
+  let sumMax = 0;
+
+  for (const v of visibleValuations) {
+    const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+    const range = getPriceRange(analysis);
+    if (!range) continue;
+    const min = range.min;
+    const max = range.max ?? range.min;
+    if (min == null && max == null) continue;
+    pricedCount += 1;
+    if (min != null) sumMin += min;
+    if (max != null) sumMax += max;
+  }
+
+  const hasAnyPrice = pricedCount > 0;
+
+  return {
+    total,
+    pricedCount,
+    hasAnyPrice,
+    sumMin,
+    sumMax,
+    fmt,
+  };
+}, [visibleValuations]);
+
+const handleDownloadPdf = useCallback(() => {
+  if (!visibleValuations || visibleValuations.length === 0) return;
+
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 48;
+  const contentWidth = pageWidth - margin * 2;
+
+  const fmtMoney = (n: number) => new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(n);
+  const nowLabel = format(new Date(), "yyyy-MM-dd HH:mm", { locale: sv });
+
+  let y = margin;
+
+  const addWrapped = (text: string, fontSize = 11, lineGap = 4) => {
+    doc.setFontSize(fontSize);
+    const lines = doc.splitTextToSize(text, contentWidth);
+    const lineHeight = fontSize + lineGap;
+    for (const line of lines) {
+      if (y + lineHeight > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.text(String(line), margin, y);
+      y += lineHeight;
+    }
+  };
+
+  // Title
+  doc.setFontSize(18);
+  doc.text("Värderingar – sammanställning", margin, y);
+  y += 26;
+
+  doc.setFontSize(10);
+  doc.setTextColor(80);
+  doc.text(`Genererad: ${nowLabel}`, margin, y);
+  y += 16;
+
+  const customerName = (customer as any)?.name ?? (customer as any)?.full_name ?? null;
+  if (customerName) {
+    doc.text(`Kund: ${String(customerName)}`, margin, y);
+    y += 16;
+  }
+
+  doc.setTextColor(0);
+  y += 6;
+  doc.setDrawColor(220);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 18;
+
+  // Summary
+  addWrapped(`Totalt sparade värderingar: ${summary.total}`, 12);
+  if (summary.hasAnyPrice) {
+    addWrapped(
+      `Summa uppskattat värde: ${summary.fmt(summary.sumMin)} – ${summary.fmt(summary.sumMax)} kr (baserat på ${summary.pricedCount} värderingar)`,
+      12
+    );
+  }
+  y += 10;
+  doc.setDrawColor(220);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 18;
+
+  // List
+  addWrapped("Detaljer", 13);
+  y += 6;
+
+  const maxItems = 200; // safety to avoid huge PDFs
+  for (const v of visibleValuations.slice(0, maxItems)) {
+    const title = (v as any)?.title ?? `Värdering #${String(v.id)}`;
+    const created = v.created_at ? format(new Date(v.created_at), "yyyy-MM-dd", { locale: sv }) : "";
+    const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+
+    const range = getPriceRange(analysis);
+    const priceLabel = getPriceLabel(analysis);
+    const desc = getCleanDescription(analysis);
+
+    const min = range?.min;
+    const max = range?.max;
+
+    addWrapped(`${created}  ${title}`, 11);
+    if (priceLabel) {
+      addWrapped(priceLabel, 10);
+    } else if (min != null || max != null) {
+      const a = min != null ? fmtMoney(min) : "–";
+      const b = max != null ? fmtMoney(max) : "–";
+      addWrapped(`Värde: ${a} – ${b} kr`, 10);
+    }
+    if (desc) {
+      const short = desc.length > 400 ? `${desc.slice(0, 400)}…` : desc;
+      addWrapped(short, 10);
+    }
+    y += 10;
+  }
+
+  if (visibleValuations.length > maxItems) {
+    addWrapped(`(Visar endast de ${maxItems} första värderingarna i PDF:en)`, 10);
+  }
+
+  doc.save(`varderingar-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
+}, [visibleValuations, summary, customer]);
 
 const handleDelete = useCallback(
   async (valuationId: string) => {
@@ -85,12 +220,18 @@ return (
           )}
 
           <div className="flex-1">
-            <div className="text-sm font-medium">{(v as any)?.title ?? `Värdering #${String(v.id)}`}</div>
-            {getPriceLabel((v as any).analysis_result ?? (v as any).analysis ?? "") && (
-              <div className="text-sm font-semibold text-black mt-1">
-                {getPriceLabel((v as any).analysis_result ?? (v as any).analysis ?? "")}
-              </div>
-            )}
+            {(() => {
+              const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+              const price = getPriceLabel(analysis);
+              return (
+                <>
+                  <div className="text-sm font-semibold text-gray-900">{(v as any)?.title ?? `Värdering #${String(v.id)}`}</div>
+                  {price && (
+                    <div className="text-base font-bold text-trust-blue mt-1">{price}</div>
+                  )}
+                </>
+              );
+            })()}
             <div className="text-xs text-gray-500">
               {v.created_at ? format(new Date(v.created_at), "yyyy-MM-dd", { locale: sv }) : ""}
             </div>
@@ -110,9 +251,38 @@ return (
         </div>
       </div>
     ))}
+
+  <div className="p-5 border rounded bg-white">
+    <div className="flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <div className="text-lg font-bold text-gray-900">Summering</div>
+        <div className="text-sm text-gray-700 mt-1">Sparade värderingar: <span className="font-semibold">{summary.total}</span></div>
+        {summary.hasAnyPrice ? (
+          <div className="mt-3">
+            <div className="text-sm font-semibold text-gray-800">Totalt uppskattat värde</div>
+            <div className="text-2xl font-extrabold text-trust-blue mt-1">
+              {summary.fmt(summary.sumMin)} – {summary.fmt(summary.sumMax)} kr
+            </div>
+            <div className="text-xs text-gray-500 mt-1">Baserat på {summary.pricedCount} värderingar med prisdata</div>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-600 mt-3">Ingen prisdata hittades i de sparade värderingarna.</div>
+        )}
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={handleDownloadPdf}
+        disabled={visibleValuations.length === 0}
+        className="shrink-0"
+      >
+        Ladda ner PDF
+      </Button>
+    </div>
+  </div>
   </div>
 );
-}, [loadingVals, visibleValuations, handleDelete, deletingValuationId]);
+}, [loadingVals, visibleValuations, handleDelete, deletingValuationId, summary, handleDownloadPdf]);
 
 return (
 <div className="mb-6">

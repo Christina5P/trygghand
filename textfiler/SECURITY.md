@@ -161,6 +161,24 @@ All incidenthantering dokumenteras.
 
 ---
 
+## 12. Sårbarheter i beroenden (npm)
+
+Projektet använder npm för frontend-/verktygsberoenden. Sårbarheter hanteras enligt principen:
+
+- Åtgärda med `npm audit fix` när det kan göras utan brytande ändringar.
+- Undvik `npm audit fix --force` om det kräver major-version eller bryter verktyg/flöden.
+- Om sårbarheter kvarstår: dokumentera beroendet, påverkan (runtime/dev), och riskbedömning.
+
+### Kvarstående (jan 2026)
+
+- `tar` (high) via npm-paketet `supabase` (Supabase CLI)
+	- Typ: **devDependency** (verktyg/CLI), inte en runtime-dependency i klientbygget.
+	- Status: `npm audit fix` reducerade sårbarheter men kvarstår eftersom fix kräver `npm audit fix --force` och en **semver-major** förändring av `supabase`.
+	- Riskbedömning: Påverkar främst utvecklings-/CI-miljö (särskilt om CLI hanterar arkiv). Ingen direkt påverkan på körande frontend i produktion.
+	- Åtgärd: Accepteras tillfälligt och följs upp vid nästa planerade dependency-uppdateringsfönster.
+
+---
+
 **Status:** Aktiv
 
 **Senast uppdaterad:** 2025
