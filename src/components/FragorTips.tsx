@@ -22,8 +22,8 @@ const FragorTips = () => {
       imageUrl: "/images/bouppteckning.png",
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground">
-            Nej, som huvudregel ska dödsboet inte tömmas eller förändras innan bouppteckningen är gjord. 
+          <p className="text-foreground">
+            Som huvudregel ska dödsboet inte tömmas eller förändras innan bouppteckningen är gjord. 
             Detta är viktigt av flera skäl:
           </p>
           <ul className="space-y-2">
@@ -39,10 +39,11 @@ const FragorTips = () => {
               <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-1 flex-shrink-0" />
               <span>Arvingar har rätt att se vad som fanns i dödsboet</span>
             </li>
+            <p>Om samtliga dödsbodelägare är överens och samtycker kan en fördelning av saker ske innan bouppteckningen är registrerad.Däremot kan inte bankmedel eller bostad fördelas innan arvskifte är utfört</p>
           </ul>
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm font-medium">Tips:</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-foreground mt-1">
               Kontakta oss för professionell hjälp med bouppteckning och tömning i rätt ordning. Läs mer om vår <Link to="/dodsbohantering-sundsvall" className="text-primary underline">dödsbohantering i Sundsvall</Link>.
             </p>
           </div>
@@ -58,7 +59,7 @@ imagePrompt: "Illustration av en kalkylator, kvitton och en checklista bredvid f
 imageUrl: "/images/rutavdrag.png",
 content: (
   <div className="space-y-4">
-    <p className="text-muted-foreground">
+    <p className="text-foreground">
       RUT-avdrag kan tillämpas på arbetskostnaden för hushållsnära tjänster. Reglerna omfattar både vanliga flyttar (seniorförändringar) och hantering av dödsbon innan bortgång. <br></br>Då RUT-avdrag endast gäller för betalande kund i sin bostad fungerar det tyvärr att använda vid tömning/städ av dödsbo.
     </p>
     <div className="grid gap-4 md:grid-cols-2">
@@ -85,14 +86,14 @@ content: (
     
     <div className="bg-muted p-4 rounded-lg border border-gray-200">
       <p className="text-sm font-medium">Viktigt att veta om Dödsbo:</p>
-      <p className="text-sm text-muted-foreground mt-1">
+      <p className="text-sm text-foreground mt-1">
         RUT-avdrag kan beviljas för dödsbohantering om arbetet utfördes före dödsfallet.
       </p>
     </div>
     
     <div className="bg-trust-green/10 p-4 rounded-lg">
       <p className="text-sm font-medium">Maximalt Avdrag:</p>
-      <p className="text-sm text-muted-foreground mt-1">
+      <p className="text-sm text-foreground mt-1">
         Avdraget är **50% av den totala arbetskostnaden** för de berättigade tjänsterna, upp till **75 000 kr** per person och år. På skatteverket kan man se hur mycket man har förbrukat.
       </p>
     </div>
@@ -107,7 +108,7 @@ content: (
       imageUrl: "/images/dostadning.png",
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground">
+          <p className="text-foreground">
             Många kallar det 'dödstädning', men vi ser det som Omtänksam Överlämning eller Framtidsorganisering.
           </p>
           <div className="space-y-3">
@@ -137,7 +138,7 @@ content: (
           </div>
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm font-medium">Praktiskt tips:</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-foreground mt-1">
               Börja med en kategori i taget - kläder, böcker, papper. Ta pauser och få hjälp vid behov.<br></br>
               Det här kan vara en  gruvsam och känslomässig process, som du kan få hjälp med som en servicetjänst av oss.
             </p>
@@ -153,7 +154,7 @@ content: (
       imageUrl: "/images/arkiv.png",
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground">
+          <p className="text-foreground">
             Ett välorganiserat arkiv underlättar enormt för anhöriga som ska hantera dina ärenden.
           </p>
           <div className="space-y-3">
@@ -177,13 +178,13 @@ content: (
           </div>
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm font-medium">Smart lösning:</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-foreground mt-1">
               Skapa en "viktig pärm" med alla centrala dokument och berätta för närmast anhörig var den finns.
             </p>
           </div>
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm font-medium">Tips:</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-foreground mt-1">
               Om du redan har fyllt i Grav/Begravningsönskemål på en begravningsbyrå är det viktigt att ange <i>var</i> önskemålen finns. 
             </p>
           </div>
@@ -198,7 +199,7 @@ content: (
       imageUrl: "/images/skatt.png",
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground">
+          <p className="text-foreground">
             Dödsbon är skattskyldiga och måste lämna deklaration om vissa villkor uppfylls.
           </p>
           <div className="space-y-3">
@@ -220,7 +221,7 @@ content: (
           </div>
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm font-medium">Viktigt datum:</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-foreground mt-1">
               Dödsbo ska deklarera senast den 31 maj året efter dödsfallet.
             </p>
           </div>
@@ -235,13 +236,13 @@ content: (
       imageUrl: "/images/checklista.png",
       content: (
         <div className="space-y-4">
-          <p className="text-muted-foreground">
+          <p className="text-foreground">
             En strukturerad checklista hjälper dig att hantera alla praktiska ärenden efter ett dödsfall.
           </p>
           <div className="space-y-4">
             <div>
               <h4 className="font-semibold mb-2">Första veckan:</h4>
-              <ul className="space-y-1 text-sm text-muted-foreground">
+              <ul className="space-y-1 text-sm text-foreground">
                 <li>□ Anmäl dödsfall till Skatteverket</li>
                 <li>□ Kontakta arbetsgivare</li>
                 <li>□ Kontakta begravningsbyrå</li>
@@ -250,7 +251,7 @@ content: (
             </div>
             <div>
               <h4 className="font-semibold mb-2">Första månaden:</h4>
-              <ul className="space-y-1 text-sm text-muted-foreground">
+              <ul className="space-y-1 text-sm text-foreground">
                 <li>□ Bouppteckning (inom 3 månader)</li>
                 <li>□ Ansök om dödsbevis</li>
                 <li>□ Hitta testamente</li>
@@ -260,7 +261,7 @@ content: (
           </div>
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm font-medium">Behöver du hjälp?</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-foreground mt-1">
               Vi hjälper dig med hela processen - från bouppteckning till tömning av dödsboet.
             </p>
           </div>
@@ -295,7 +296,7 @@ content: (
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-foreground mb-4">Frågor och Tips</h1>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-foreground">
               Allt du behöver veta om dödsbohantering, skatter och praktiska tips
             </p>
           </div>
@@ -383,7 +384,7 @@ content: (
               <h3 className="text-2xl font-semibold text-foreground mb-4">
                 Har du fler frågor?
               </h3>
-              <p className="text-muted-foreground mb-6">
+              <p className="text-foreground mb-6">
                 Kontakta oss för personlig rådgivning och hjälp med dödsbohantering
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -406,7 +407,7 @@ content: (
       </main>
 
       <div className="text-center py-8 bg-muted/50">
-        <p className="text-muted-foreground">
+        <p className="text-foreground">
           För professionell hjälp med dödsbohantering, se våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering</a>.
         </p>
       </div>
