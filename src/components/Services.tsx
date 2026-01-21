@@ -243,11 +243,14 @@ const Services = () => {
       <div className="container mx-auto px-4">
         <div className="text-center space-y-4 mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground">Servicepaket</h2>
-          <h3 className="text-2xl font-semibold text-foreground/90">Våra servicepaket för dödsbohantering</h3>
-          <h3 className="text-2xl font-semibold text-foreground/90">Våra servicepaket vid seniorförändring</h3>
           <p className="text-xl text-foreground max-w-3xl mx-auto">
             Vi erbjuder kompletta paket eller skräddarsydda lösningar för seniorflytt och dödsbohantering.
           </p>
+          <h3 className="text-xl font-semibold text-foreground/90">Våra servicepaket vid seniorförändring</h3>
+          <h3 className="text-xl font-semibold text-foreground/90">
+           Våra servicepaket för dödsbohantering 
+          </h3>
+          <h3 className="text-l font-semibold text-foreground/90">Välj flik nedan för att se innehåll och priser.</h3>
         </div>
 
         <Tabs defaultValue="senior">

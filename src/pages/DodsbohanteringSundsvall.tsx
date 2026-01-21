@@ -83,7 +83,7 @@ const DodsbohanteringSundsvall: React.FC = () => {
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Anhörigstöd och känslomässig hjälp</h2>
           <p className="mb-4">
-            Vi erbjuder inte  praktisk hjälp OCH rådgivning. 
+            Vi erbjuder praktisk hjälp OCH rådgivning. 
           </p>
           <p className="mb-4">
            Vi förstår att varje dödsbo är unikt och anpassar vår service därefter. Vi är lokalt förankrade i Sundsvall med omnejd.

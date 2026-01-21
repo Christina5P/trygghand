@@ -17,7 +17,7 @@ const Hero = () => {
                 Från beslut till nytt kapitel
               </h2>
               <p className="text-xl text-foreground leading-relaxed">
-                Vi erbjuder servicepaket för{" "}
+                Vi erbjuder servicepaket  med fasta priser eller individuella tjänster med offert för{" "}
                 <Link to="/seniorforandring-sundsvall" className="text-primary underline">
                   seniorförändring i Sundsvall
                 </Link>

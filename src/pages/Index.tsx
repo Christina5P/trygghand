@@ -41,7 +41,7 @@ const Index = () => {
     <div className="min-h-screen">
       <Seo
         title="Helhetskoordinator för dödsbo & äldreflytt i Sundsvall"
-        description="Vi erbjuder servicepaket för seniorförändring och dödsbohantering i Sundsvall – samordning, städ, uppsägningar och digital översikt."
+        description="Vi erbjuder servicepaket med fasta priser eller individuella tjänster med offert för seniorförändring och dödsbohantering i Sundsvall – samordning, städ, uppsägningar och digital översikt."
         canonical="https://www.trygghand.com/"
       />
       <Header />
