@@ -1,0 +1,355 @@
+{
+  "generatedAt": "2026-01-22T20:10:58.887Z",
+  "items": [
+    {
+      "id": "sofa-3",
+      "name": "3-sits soffa",
+      "filename": "sofa-3.png",
+      "file": "/images/items/sofa-3.png",
+      "prompt": "Fotorealistisk produktbild av en 3-sits soffa på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "sofa-2",
+      "name": "2-sits soffa",
+      "filename": "sofa-2.png",
+      "file": "/images/items/sofa-2.png",
+      "prompt": "Fotorealistisk produktbild av en 2-sits soffa på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "armchair",
+      "name": "Fåtölj",
+      "filename": "armchair.png",
+      "file": "/images/items/armchair.png",
+      "prompt": "Fotorealistisk produktbild av en Fåtölj på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "coffee-table",
+      "name": "Soffbord",
+      "filename": "coffee-table.png",
+      "file": "/images/items/coffee-table.png",
+      "prompt": "Fotorealistisk produktbild av en Soffbord på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "tv-stand",
+      "name": "TV-bänk",
+      "filename": "tv-stand.png",
+      "file": "/images/items/tv-stand.png",
+      "prompt": "Fotorealistisk produktbild av en TV-bänk på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "tv-large",
+      "name": "Stor TV",
+      "filename": "tv-large.png",
+      "file": "/images/items/tv-large.png",
+      "prompt": "Fotorealistisk produktbild av en Stor TV på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "tv-small",
+      "name": "Liten TV",
+      "filename": "tv-small.png",
+      "file": "/images/items/tv-small.png",
+      "prompt": "Fotorealistisk produktbild av en Liten TV på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "bookshelf",
+      "name": "Bokhylla",
+      "filename": "bookshelf.png",
+      "file": "/images/items/bookshelf.png",
+      "prompt": "Fotorealistisk produktbild av en Bokhylla på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "lamp-floor",
+      "name": "Golvlampa",
+      "filename": "lamp-floor.png",
+      "file": "/images/items/lamp-floor.png",
+      "prompt": "Fotorealistisk produktbild av en Golvlampa på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "rug-large",
+      "name": "Stor matta",
+      "filename": "rug-large.png",
+      "file": "/images/items/rug-large.png",
+      "prompt": "Fotorealistisk produktbild av en Stor matta på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "rug-small",
+      "name": "Liten matta",
+      "filename": "rug-small.png",
+      "file": "/images/items/rug-small.png",
+      "prompt": "Fotorealistisk produktbild av en Liten matta på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "mirror-large",
+      "name": "Stor spegel",
+      "filename": "mirror-large.png",
+      "file": "/images/items/mirror-large.png",
+      "prompt": "Fotorealistisk produktbild av en Stor spegel på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "bed-double",
+      "name": "Dubbelsäng",
+      "filename": "bed-double.png",
+      "file": "/images/items/bed-double.png",
+      "prompt": "Fotorealistisk produktbild av en Dubbelsäng på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "bed-single",
+      "name": "Enkelsäng",
+      "filename": "bed-single.png",
+      "file": "/images/items/bed-single.png",
+      "prompt": "Fotorealistisk produktbild av en Enkelsäng på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "wardrobe-large",
+      "name": "Stor garderob",
+      "filename": "wardrobe-large.png",
+      "file": "/images/items/wardrobe-large.png",
+      "prompt": "Fotorealistisk produktbild av en Stor garderob på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "wardrobe-small",
+      "name": "Liten garderob",
+      "filename": "wardrobe-small.png",
+      "file": "/images/items/wardrobe-small.png",
+      "prompt": "Fotorealistisk produktbild av en Liten garderob på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "dresser",
+      "name": "Byrå",
+      "filename": "dresser.png",
+      "file": "/images/items/dresser.png",
+      "prompt": "Fotorealistisk produktbild av en Byrå på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "nightstand",
+      "name": "Sängbord",
+      "filename": "nightstand.png",
+      "file": "/images/items/nightstand.png",
+      "prompt": "Fotorealistisk produktbild av en Sängbord på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "lamp-table",
+      "name": "Bordslampa",
+      "filename": "lamp-table.png",
+      "file": "/images/items/lamp-table.png",
+      "prompt": "Fotorealistisk produktbild av en Bordslampa på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "box-clothes",
+      "name": "Klädkartong",
+      "filename": "box-clothes.png",
+      "file": "/images/items/box-clothes.png",
+      "prompt": "Fotorealistisk produktbild av en Klädkartong på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "dining-table",
+      "name": "Matbord",
+      "filename": "dining-table.png",
+      "file": "/images/items/dining-table.png",
+      "prompt": "Fotorealistisk produktbild av en Matbord på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "dining-chair",
+      "name": "Matstol",
+      "filename": "dining-chair.png",
+      "file": "/images/items/dining-chair.png",
+      "prompt": "Fotorealistisk produktbild av en Matstol på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "microwave",
+      "name": "Mikrovågsugn",
+      "filename": "microwave.png",
+      "file": "/images/items/microwave.png",
+      "prompt": "Fotorealistisk produktbild av en Mikrovågsugn på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "box-kitchen",
+      "name": "Kökskartong",
+      "filename": "box-kitchen.png",
+      "file": "/images/items/box-kitchen.png",
+      "prompt": "Fotorealistisk produktbild av en Kökskartong på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "bathroom-cabinet",
+      "name": "Badrumsskåp",
+      "filename": "bathroom-cabinet.png",
+      "file": "/images/items/bathroom-cabinet.png",
+      "prompt": "Fotorealistisk produktbild av en Badrumsskåp på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "box-bathroom",
+      "name": "Badrumskartong",
+      "filename": "box-bathroom.png",
+      "file": "/images/items/box-bathroom.png",
+      "prompt": "Fotorealistisk produktbild av en Badrumskartong på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "desk",
+      "name": "Skrivbord",
+      "filename": "desk.png",
+      "file": "/images/items/desk.png",
+      "prompt": "Fotorealistisk produktbild av en Skrivbord på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "office-chair",
+      "name": "Kontorsstol",
+      "filename": "office-chair.png",
+      "file": "/images/items/office-chair.png",
+      "prompt": "Fotorealistisk produktbild av en Kontorsstol på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "box-books",
+      "name": "Bokkartong",
+      "filename": "box-books.png",
+      "file": "/images/items/box-books.png",
+      "prompt": "Fotorealistisk produktbild av en Bokkartong på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "box-office",
+      "name": "Kontorskartong",
+      "filename": "box-office.png",
+      "file": "/images/items/box-office.png",
+      "prompt": "Fotorealistisk produktbild av en Kontorskartong på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "box-large",
+      "name": "Stor kartong",
+      "filename": "box-large.png",
+      "file": "/images/items/box-large.png",
+      "prompt": "Fotorealistisk produktbild av en Stor kartong på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "box-medium",
+      "name": "Mellan kartong",
+      "filename": "box-medium.png",
+      "file": "/images/items/box-medium.png",
+      "prompt": "Fotorealistisk produktbild av en Mellan kartong på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "box-small",
+      "name": "Liten kartong",
+      "filename": "box-small.png",
+      "file": "/images/items/box-small.png",
+      "prompt": "Fotorealistisk produktbild av en Liten kartong på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "suitcase",
+      "name": "Resväska",
+      "filename": "suitcase.png",
+      "file": "/images/items/suitcase.png",
+      "prompt": "Fotorealistisk produktbild av en Resväska på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "vacuum",
+      "name": "Dammsugare",
+      "filename": "vacuum.png",
+      "file": "/images/items/vacuum.png",
+      "prompt": "Fotorealistisk produktbild av en Dammsugare på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "storage-shelf",
+      "name": "Förvaringshylla",
+      "filename": "storage-shelf.png",
+      "file": "/images/items/storage-shelf.png",
+      "prompt": "Fotorealistisk produktbild av en Förvaringshylla på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "bicycle",
+      "name": "Cykel",
+      "filename": "bicycle.png",
+      "file": "/images/items/bicycle.png",
+      "prompt": "Fotorealistisk produktbild av en Cykel på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "plants-large",
+      "name": "Stor krukväxt",
+      "filename": "plants-large.png",
+      "file": "/images/items/plants-large.png",
+      "prompt": "Fotorealistisk produktbild av en Stor krukväxt på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "plants-small",
+      "name": "Liten krukväxt",
+      "filename": "plants-small.png",
+      "file": "/images/items/plants-small.png",
+      "prompt": "Fotorealistisk produktbild av en Liten krukväxt på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "bbq",
+      "name": "Grill",
+      "filename": "bbq.png",
+      "file": "/images/items/bbq.png",
+      "prompt": "Fotorealistisk produktbild av en Grill på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "garden-furniture",
+      "name": "Utemöbler (set)",
+      "filename": "garden-furniture.png",
+      "file": "/images/items/garden-furniture.png",
+      "prompt": "Fotorealistisk produktbild av en Utemöbler (set) på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "garden-tools",
+      "name": "Trädgårdsredskap",
+      "filename": "garden-tools.png",
+      "file": "/images/items/garden-tools.png",
+      "prompt": "Fotorealistisk produktbild av en Trädgårdsredskap på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "all",
+      "name": "Alla",
+      "filename": "all.png",
+      "file": "/images/items/all.png",
+      "prompt": "Fotorealistisk produktbild av en Alla på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "living-room",
+      "name": "Vardagsrum",
+      "filename": "living-room.png",
+      "file": "/images/items/living-room.png",
+      "prompt": "Fotorealistisk produktbild av en Vardagsrum på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "bedroom",
+      "name": "Sovrum",
+      "filename": "bedroom.png",
+      "file": "/images/items/bedroom.png",
+      "prompt": "Fotorealistisk produktbild av en Sovrum på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "kitchen",
+      "name": "Kök",
+      "filename": "kitchen.png",
+      "file": "/images/items/kitchen.png",
+      "prompt": "Fotorealistisk produktbild av en Kök på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "bathroom",
+      "name": "Badrum",
+      "filename": "bathroom.png",
+      "file": "/images/items/bathroom.png",
+      "prompt": "Fotorealistisk produktbild av en Badrum på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "office",
+      "name": "Kontor",
+      "filename": "office.png",
+      "file": "/images/items/office.png",
+      "prompt": "Fotorealistisk produktbild av en Kontor på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "storage",
+      "name": "Förråd",
+      "filename": "storage.png",
+      "file": "/images/items/storage.png",
+      "prompt": "Fotorealistisk produktbild av en Förråd på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    },
+    {
+      "id": "outdoor",
+      "name": "Utomhus",
+      "filename": "outdoor.png",
+      "file": "/images/items/outdoor.png",
+      "prompt": "Fotorealistisk produktbild av en Utomhus på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild."
+    }
+  ]
+}

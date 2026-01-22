@@ -506,6 +506,12 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
   >
     Öppna mall-bibliotek
   </Button>
+  <Button
+    onClick={() => window.location.assign("/portal/admin/cube-planner")}
+    className="bg-gradient-to-r from-trust-green to-trust-green-light text-white px-4 py-2 rounded-full shadow-md hover:translate-y-[-1px] transition"
+  >
+    Kubikmätaren
+  </Button>
 </div>
  
  {/* Templates dialog */}

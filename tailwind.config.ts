@@ -5,9 +5,8 @@ import animate from "tailwindcss-animate"; // ✅ Bytt från require
 const config: Config = {
   darkMode: ["class"],
   content: [
-    "./src/pages/**/*.{ts,tsx}",       // Täcker alla sidor, inklusive Portal
-    "./src/components/**/*.{ts,tsx}",  // Alla komponenter
-    "./src/app/**/*.{ts,tsx}",         // Om du har app-specifikt
+    "./index.html",
+    "./src/**/*.{js,jsx,ts,tsx}",
   ],
 
   prefix: "",

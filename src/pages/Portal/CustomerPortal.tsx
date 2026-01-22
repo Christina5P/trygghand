@@ -567,18 +567,15 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     }, [selectedCase?.id, fetchComments, fetchCaseDocuments]);
     
     return (
+
         <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
             <div className="max-w-4xl mx-auto space-y-8">
-                
                 {/* 1. Portal Stats (Krav: Status på ärenden) */}
                 <Card className="shadow-lg bg-gradient-to-br from-sky-50 to-white">
                     <CardHeader>
                         <CardTitle className="text-2xl font-bold text-trust-blue">Din Översikt</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4">
-                        {/* Notera: PortalStats är oftast för admin. Om du vill visa kundens unika stats här,
-                            behöver PortalStats anpassas för att ta emot customer.id och filtrera,
-                            eller så kan du bygga en enklare vy här. För nu antar vi att PortalStats kan visa relevanta kunddata. */}
                         <PortalStats />
                     </CardContent>
                 </Card>
@@ -590,10 +587,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                     </CardHeader>
                     <CardContent>
                         <ValuationManager valuations={valuations} onDataUpdated={fetchValuations} customerId={customer.id} />
-
-                                             
-
-                                            
                     </CardContent>
                 </Card>
 
@@ -774,6 +767,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                     )}
                 </CollapsibleCard>
 
+
                 {/* Nyckelkvittens (kundsignering) */}
                 <CollapsibleCard
                     defaultOpen={false}
@@ -787,6 +781,16 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                 >
                     <KeyReceiptDialog mode="customer" />
                 </CollapsibleCard>
+
+                {/* Kubikmätaren-knapp under Nyckelkvittens */}
+                <div className="flex justify-center my-6">
+                    <Button
+                        className="bg-gradient-to-r from-trust-green to-trust-green-light text-white px-4 py-2 rounded-full shadow-md hover:translate-y-[-1px] transition"
+                        onClick={() => window.location.assign('/portal/cube-planner')}
+                    >
+                        <span role="img" aria-label="cube">📦</span> Kubikmätaren
+                    </Button>
+                </div>
 
                  {/* 3. Kundinformation (Krav: Kund ska kunna redigera sin information) */}
                 <CollapsibleCard

@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node backend/server.js & vite --host 0.0.0.0 --port 5173 --strictPort",
+    "dev": "node scripts/dev.mjs",
+    "dev:status": "node scripts/dev-status.mjs",
+    "dev:kill": "node scripts/dev-kill.mjs",
+    "images:prompts": "node scripts/item-image-prompts.mjs",
     "build": "vite build",
     "start": "vite preview",
     "start:proxy": "node server/index.js",

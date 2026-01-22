@@ -39,11 +39,11 @@ const Terms: React.FC = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Parter och tillämpning</h2>
               <p>
-          <strong>Trygg Hand AB</strong> (organisationsnummer 559564-3445) utför flytt-, städ-, packnings-, transport- och relaterade
-          tjänster genom egna anställda och godkända underleverantörer till dig som beställer våra tjänster ("Kunden"). 
-          Vid dödsbo avses dödsbodelägarna eller den som företräder dem med fullmakt.
-          Bolaget innehar F-skatt och momsregistrering.
-          Vi tillämpar Konsumenttjänstlagen och GDPR.
+                <strong>Trygg Hand AB</strong> (organisationsnummer 559564-3445) utför flytt-, städ-, packnings-, transport- och relaterade
+                tjänster genom egna anställda och godkända underleverantörer till dig som beställer våra tjänster ("Kunden"). 
+                <br />Vid dödsbo avses dödsbodelägarna eller den som företräder dem med fullmakt.
+                {" "}Bolaget innehar F-skatt och momsregistrering.
+                Vi tillämpar Konsumenttjänstlagen och GDPR.
               </p>
             </section>
 

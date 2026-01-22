@@ -28,6 +28,7 @@ import VadIngarIDodsbohantering from "@/pages/VadIngarIDodsbohantering";
 import FragorTips from "@/components/FragorTips";
 import AdminPortal from "@/pages/Portal/AdminPortal";
 import Portal from "@/pages/Portal/Portal";
+import CubePlannerApp from "@/portal/cube-planner/CubePlannerApp";
 
 // 💼 Services
 import Services from "@/pages/services";
@@ -103,6 +104,8 @@ function App() {
               {/* 🛡️ Kundskyddade rutter */}
               <Route element={<CustomerRoute />}>
                 <Route path="/min-sida" element={<Portal />} />
+                <Route path="/portal/admin/cube-planner" element={<CubePlannerApp />} />
+                <Route path="/portal/cube-planner" element={<CubePlannerApp />} />
               </Route>
 
               {/* ❓ Frågor & Policy */}
