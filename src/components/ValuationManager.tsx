@@ -1,16 +1,19 @@
 // src/components/customer/ValuationManager.tsx
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomerData } from "@/hooks/useCustomerData";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import CollapsibleCard from "@/components/ui/CollapsibleCard";
 import ValueEstimator from "@/components/ValueEstimator";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { getCleanDescription, getPriceLabel, getPriceRange } from "@/utils";
 import type { Valuation } from "@/types";
 import { jsPDF } from "jspdf";
+import { supabase, isUnauthorizedError, tryRefreshSession } from "@/lib/supabase";
+import { Archive, BadgeDollarSign, Gift, Trash2 } from "lucide-react";
 
 
 interface ValuationManagerProps {
@@ -18,6 +21,21 @@ interface ValuationManagerProps {
   onDataUpdated: () => Promise<void>;
   customerId?: string;
 }
+
+type Disposition = "sell" | "donate" | "keep" | "discard";
+
+const DISPOSITION_STORAGE_KEY = "trygghand:valuationDisposition:v1";
+
+const DISPOSITION_OPTIONS: Array<{
+  key: Disposition;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}> = [
+  { key: "sell", label: "Sälj", Icon: BadgeDollarSign },
+  { key: "donate", label: "Skänk", Icon: Gift },
+  { key: "keep", label: "Behåll / magasinera", Icon: Archive },
+  { key: "discard", label: "Släng", Icon: Trash2 },
+];
   
 export const ValuationManager: React.FC<ValuationManagerProps> = ({ valuations, onDataUpdated }) => {
 const { customer } = useAuth();
@@ -27,6 +45,36 @@ const {
 loadingVals,
 deleteValuation,
 } = useCustomerData();
+
+const [dispositions, setDispositions] = useState<Record<string, Disposition | undefined>>({});
+const [savedFilter, setSavedFilter] = useState<Disposition | "all">("all");
+
+useEffect(() => {
+  try {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(DISPOSITION_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Record<string, Disposition>;
+    if (parsed && typeof parsed === "object") setDispositions(parsed);
+  } catch {
+    // ignore malformed localStorage
+  }
+}, []);
+
+const setDisposition = useCallback((valuationId: string, next: Disposition) => {
+  if (!valuationId) return;
+  setDispositions((prev) => {
+    const updated: Record<string, Disposition> = { ...(prev as any), [valuationId]: next };
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(DISPOSITION_STORAGE_KEY, JSON.stringify(updated));
+      }
+    } catch {
+      // ignore storage write errors
+    }
+    return updated;
+  });
+}, []);
 
 const [deletingValuationId, setDeletingValuationId] = useState<string | null>(null);
 
@@ -39,7 +87,12 @@ const visibleValuations = useMemo(() => {
   return (valuations ?? []).filter((v) => !(v as any)?.deleted_at);
 }, [valuations]);
 
-const summary = useMemo(() => {
+const filteredValuations = useMemo(() => {
+  if (savedFilter === "all") return visibleValuations;
+  return visibleValuations.filter((v) => dispositions[String(v.id)] === savedFilter);
+}, [visibleValuations, dispositions, savedFilter]);
+
+const summaryAll = useMemo(() => {
   const fmt = (n: number) => new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(n);
   const total = visibleValuations.length;
 
@@ -71,8 +124,40 @@ const summary = useMemo(() => {
   };
 }, [visibleValuations]);
 
+const summaryFiltered = useMemo(() => {
+  const fmt = (n: number) => new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(n);
+  const total = filteredValuations.length;
+
+  let pricedCount = 0;
+  let sumMin = 0;
+  let sumMax = 0;
+
+  for (const v of filteredValuations) {
+    const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+    const range = getPriceRange(analysis);
+    if (!range) continue;
+    const min = range.min;
+    const max = range.max ?? range.min;
+    if (min == null && max == null) continue;
+    pricedCount += 1;
+    if (min != null) sumMin += min;
+    if (max != null) sumMax += max;
+  }
+
+  const hasAnyPrice = pricedCount > 0;
+
+  return {
+    total,
+    pricedCount,
+    hasAnyPrice,
+    sumMin,
+    sumMax,
+    fmt,
+  };
+}, [filteredValuations]);
+
 const handleDownloadPdf = useCallback(() => {
-  if (!visibleValuations || visibleValuations.length === 0) return;
+  if (!filteredValuations || filteredValuations.length === 0) return;
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -122,10 +207,24 @@ const handleDownloadPdf = useCallback(() => {
   y += 18;
 
   // Summary
-  addWrapped(`Totalt sparade värderingar: ${summary.total}`, 12);
-  if (summary.hasAnyPrice) {
+  const activeFilterLabel =
+    savedFilter === "all"
+      ? null
+      : (DISPOSITION_OPTIONS.find((o) => o.key === savedFilter)?.label ?? "Filter");
+
+  addWrapped(
+    activeFilterLabel
+      ? `Totalt i filter (${activeFilterLabel}): ${summaryFiltered.total}`
+      : `Totalt sparade värderingar: ${summaryFiltered.total}`,
+    12
+  );
+  if (savedFilter !== "all") {
+    addWrapped(`Totalt alla sparade (oavsett filter): ${summaryAll.total}`, 10);
+  }
+
+  if (summaryFiltered.hasAnyPrice) {
     addWrapped(
-      `Summa uppskattat värde: ${summary.fmt(summary.sumMin)} – ${summary.fmt(summary.sumMax)} kr (baserat på ${summary.pricedCount} värderingar)`,
+      `Summa uppskattat värde: ${summaryFiltered.fmt(summaryFiltered.sumMin)} – ${summaryFiltered.fmt(summaryFiltered.sumMax)} kr (baserat på ${summaryFiltered.pricedCount} värderingar)`,
       12
     );
   }
@@ -139,7 +238,7 @@ const handleDownloadPdf = useCallback(() => {
   y += 6;
 
   const maxItems = 200; // safety to avoid huge PDFs
-  for (const v of visibleValuations.slice(0, maxItems)) {
+  for (const v of filteredValuations.slice(0, maxItems)) {
     const title = (v as any)?.title ?? `Värdering #${String(v.id)}`;
     const created = v.created_at ? format(new Date(v.created_at), "yyyy-MM-dd", { locale: sv }) : "";
     const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
@@ -166,32 +265,53 @@ const handleDownloadPdf = useCallback(() => {
     y += 10;
   }
 
-  if (visibleValuations.length > maxItems) {
+  if (filteredValuations.length > maxItems) {
     addWrapped(`(Visar endast de ${maxItems} första värderingarna i PDF:en)`, 10);
   }
 
-  doc.save(`varderingar-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
-}, [visibleValuations, summary, customer]);
+  const suffix =
+    savedFilter === "all"
+      ? "alla"
+      : String(savedFilter).replace(/[^a-z0-9_-]/gi, "");
+  doc.save(`varderingar-${suffix}-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
+}, [filteredValuations, summaryAll, summaryFiltered, customer, savedFilter]);
 
 const handleDelete = useCallback(
   async (valuationId: string) => {
     if (!valuationId) return;
     setDeletingValuationId(valuationId);
     try {
-      await deleteValuation(valuationId);
+      if (isAdmin) {
+        const run = () =>
+          supabase.functions.invoke("admin-soft-delete-valuation", {
+            body: { valuation_id: valuationId, confirm: true },
+          });
+
+        let { error } = await run();
+
+        const status = (error as any)?.status ?? (error as any)?.context?.status;
+        if (error && (isUnauthorizedError(error) || status === 401 || status === 403)) {
+          const refreshed = await tryRefreshSession();
+          if (refreshed) ({ error } = await run());
+        }
+
+        if (error) throw error;
+      } else {
+        await deleteValuation(valuationId);
+      }
       await onDataUpdated();
     } catch (err) {
       console.error("delete valuation failed", err);
       toast({
         title: "Fel",
-        description: "Kunde inte radera värderingen.",
+        description: typeof (err as any)?.message === "string" ? (err as any).message : "Kunde inte radera värderingen.",
         variant: "destructive",
       });
     } finally {
       setDeletingValuationId(null);
     }
   },
-  [deleteValuation, onDataUpdated, toast]
+  [deleteValuation, onDataUpdated, toast, isAdmin]
 );
 
 const savedValsContent = useMemo(() => {
@@ -203,7 +323,40 @@ return <p className="text-gray-500">Inga sparade värderingar.</p>;
 }
 return (
 <div className="grid gap-4">
-{visibleValuations.map((v: Valuation) => (
+
+  <div className="flex flex-wrap items-center justify-center gap-2">
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      size="sm"
+      value={savedFilter}
+      onValueChange={(v) => setSavedFilter((v || "all") as Disposition | "all")}
+      className="flex flex-wrap justify-center gap-1 rounded-xl border border-border/50 bg-muted/40 p-1"
+    >
+      <ToggleGroupItem
+        value="all"
+        className="rounded-lg px-3 bg-background/40 hover:bg-background/60 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+      >
+        Alla
+      </ToggleGroupItem>
+      {DISPOSITION_OPTIONS.map((opt) => (
+        <ToggleGroupItem
+          key={opt.key}
+          value={opt.key}
+          className={
+            opt.key === "discard"
+              ? "rounded-lg px-3 bg-background/40 hover:bg-background/60 text-foreground data-[state=on]:bg-destructive/10 data-[state=on]:shadow-sm"
+              : "rounded-lg px-3 bg-background/40 hover:bg-background/60 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+          }
+        >
+          <opt.Icon className={opt.key === "discard" ? "h-4 w-4 text-destructive/80" : "h-4 w-4 text-muted-foreground"} />
+          <span>{opt.label}</span>
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  </div>
+
+{filteredValuations.map((v: Valuation) => (
 <div key={String(v.id)} className="p-4 border rounded bg-white">
 <div className="flex items-start gap-4">
           {/* Bild / Placeholder */}
@@ -238,6 +391,36 @@ return (
             <div className="mt-1 text-xs text-gray-600 line-clamp-2">
               {getCleanDescription((v as any).analysis_result ?? (v as any).analysis ?? "")}
             </div>
+
+            <div className="mt-3">
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                value={dispositions[String(v.id)] ?? ""}
+                onValueChange={(val) => {
+                  if (!val) return;
+                  setDisposition(String(v.id), val as Disposition);
+                }}
+                className="flex flex-wrap gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
+              >
+                {DISPOSITION_OPTIONS.map((opt) => (
+                  <ToggleGroupItem
+                    key={opt.key}
+                    value={opt.key}
+                    className={
+                      opt.key === "discard"
+                        ? "rounded-lg px-3 bg-background/40 hover:bg-background/60 text-foreground data-[state=on]:bg-destructive/10 data-[state=on]:shadow-sm"
+                        : "rounded-lg px-3 bg-background/40 hover:bg-background/60 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+                    }
+                  >
+                    <opt.Icon className={opt.key === "discard" ? "h-4 w-4 text-destructive/80" : "h-4 w-4 text-muted-foreground"} />
+                    <span>{opt.label}</span>
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+
             <div className="mt-2">
               <button
                 onClick={() => handleDelete(String(v.id))}
@@ -256,14 +439,19 @@ return (
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0">
         <div className="text-lg font-bold text-gray-900">Summering</div>
-        <div className="text-sm text-gray-700 mt-1">Sparade värderingar: <span className="font-semibold">{summary.total}</span></div>
-        {summary.hasAnyPrice ? (
+        <div className="text-sm text-gray-700 mt-1">
+          Sparade värderingar{savedFilter === "all" ? "" : " (i filter)"}: <span className="font-semibold">{summaryFiltered.total}</span>
+        </div>
+        {savedFilter !== "all" && (
+          <div className="text-xs text-gray-500 mt-1">Totalt alla sparade: {summaryAll.total}</div>
+        )}
+        {summaryFiltered.hasAnyPrice ? (
           <div className="mt-3">
             <div className="text-sm font-semibold text-gray-800">Totalt uppskattat värde</div>
             <div className="text-2xl font-extrabold text-trust-blue mt-1">
-              {summary.fmt(summary.sumMin)} – {summary.fmt(summary.sumMax)} kr
+              {summaryFiltered.fmt(summaryFiltered.sumMin)} – {summaryFiltered.fmt(summaryFiltered.sumMax)} kr
             </div>
-            <div className="text-xs text-gray-500 mt-1">Baserat på {summary.pricedCount} värderingar med prisdata</div>
+            <div className="text-xs text-gray-500 mt-1">Baserat på {summaryFiltered.pricedCount} värderingar med prisdata</div>
           </div>
         ) : (
           <div className="text-sm text-gray-600 mt-3">Ingen prisdata hittades i de sparade värderingarna.</div>
@@ -273,7 +461,7 @@ return (
         size="sm"
         variant="outline"
         onClick={handleDownloadPdf}
-        disabled={visibleValuations.length === 0}
+        disabled={filteredValuations.length === 0}
         className="shrink-0"
       >
         Ladda ner PDF
@@ -282,7 +470,7 @@ return (
   </div>
   </div>
 );
-}, [loadingVals, visibleValuations, handleDelete, deletingValuationId, summary, handleDownloadPdf]);
+}, [loadingVals, visibleValuations, filteredValuations, savedFilter, dispositions, setDisposition, handleDelete, deletingValuationId, summaryAll, summaryFiltered, handleDownloadPdf]);
 
 return (
 <div className="mb-6">

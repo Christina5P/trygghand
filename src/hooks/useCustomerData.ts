@@ -1,6 +1,6 @@
 // src/hooks/useCustomerData.ts
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { isUnauthorizedError, supabase, tryRefreshSession } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { CustomerCase, Comment, Valuation } from "@/types";
@@ -99,11 +99,46 @@ export const useCustomerData = () => {
 
   const deleteValuation = useCallback(async (valuationId: string) => {
     // Customer view: soft delete via Edge Function (GDPR safe)
-    const { error } = await supabase.functions.invoke("customer-soft-delete-valuation", {
-      body: { valuation_id: valuationId, confirm: true },
-    });
+    const run = () =>
+      supabase.functions.invoke("customer-soft-delete-valuation", {
+        body: { valuation_id: valuationId, confirm: true },
+      });
 
-    if (error) throw error;
+    let { error } = await run();
+
+    // If the session is stale/expired, Supabase can return 401/403. Try one refresh + retry.
+    const status = (error as any)?.status ?? (error as any)?.context?.status;
+    if (error && (isUnauthorizedError(error) || status === 401 || status === 403)) {
+      const refreshed = await tryRefreshSession();
+      if (refreshed) {
+        ({ error } = await run());
+      }
+    }
+
+    if (error) {
+      const status = (error as any)?.status ?? (error as any)?.context?.status ?? null;
+      let body: any = null;
+      try {
+        body = await (error as any)?.context?.json?.();
+      } catch {
+        // ignore
+      }
+
+      const message =
+        typeof body?.message === "string"
+          ? body.message
+          : typeof body?.error === "string"
+            ? body.error
+            : typeof (error as any)?.message === "string"
+              ? (error as any).message
+              : "Kunde inte radera värderingen.";
+
+      const wrapped = new Error(status ? `${message} (status ${status})` : message);
+      (wrapped as any).status = status;
+      (wrapped as any).body = body;
+      (wrapped as any).cause = error;
+      throw wrapped;
+    }
     setValuations((p) => p.filter((v) => v.id !== valuationId));
     toast({ title: "Raderad", description: "Värdering borttagen." });
   }, [toast]);

@@ -44,6 +44,33 @@ function isMissingRelationError(err: any): boolean {
   return code === "42P01" || msg.includes("does not exist") && msg.includes("relation");
 }
 
+async function resolveCustomerIdForUser(service: any, user: any): Promise<string | null> {
+  try {
+    // Primary: customers.id == auth.users.id
+    {
+      const { data, error } = await service.from("customers").select("id").eq("id", user.id).maybeSingle();
+      if (!error && data?.id) return String((data as any).id);
+    }
+
+    // Fallback: by email
+    if (user?.email) {
+      const { data, error } = await service.from("customers").select("id").eq("email", user.email).maybeSingle();
+      if (!error && data?.id) return String((data as any).id);
+    }
+
+    // Fallback: by phone (if present)
+    const phone = (user as any)?.phone as string | undefined;
+    if (phone) {
+      const { data, error } = await service.from("customers").select("id").eq("phone", phone).maybeSingle();
+      if (!error && data?.id) return String((data as any).id);
+    }
+  } catch {
+    // ignore – this is a compatibility best-effort
+  }
+
+  return null;
+}
+
 async function selectValuation(service: any, valuationId: string) {
   const primary = await service
     .from("valuations")
@@ -66,14 +93,14 @@ async function selectValuation(service: any, valuationId: string) {
   return primary;
 }
 
-async function softDeleteValuation(service: any, valuationId: string, userId: string) {
+async function softDeleteValuation(service: any, valuationId: string, allowedCustomerIds: string[], userId: string) {
   const payload = { deleted_at: new Date().toISOString(), deleted_by: userId };
 
   const primary = await service
     .from("valuations")
     .update(payload)
     .eq("id", valuationId)
-    .eq("customer_id", userId)
+    .in("customer_id", allowedCustomerIds)
     .is("deleted_at", null);
 
   if (!primary.error) return primary;
@@ -132,6 +159,11 @@ serve(async (req: Request): Promise<Response> => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // Compatibility: in some setups, customers.id may not equal auth.users.id.
+  // Allow ownership check via the linked customers row as well (no extra PII stored).
+  const customerId = await resolveCustomerIdForUser(service, user);
+  const allowedCustomerIds = Array.from(new Set([String(user.id), customerId ? String(customerId) : null].filter(Boolean) as string[]));
+
   const { data: existing, error: fetchErr } = await selectValuation(service, valuationId);
 
   if (fetchErr) {
@@ -159,10 +191,10 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
   if (!existing) return json(404, { error: "Not found" });
-  if ((existing as any).customer_id !== user.id) return json(403, { error: "Forbidden" });
+  if (!allowedCustomerIds.includes(String((existing as any).customer_id))) return json(403, { error: "Forbidden" });
   if ((existing as any).deleted_at) return json(409, { error: "Already deleted" });
 
-  const { error: updErr } = await softDeleteValuation(service, valuationId, user.id);
+  const { error: updErr } = await softDeleteValuation(service, valuationId, allowedCustomerIds, user.id);
 
   if (updErr) {
     if (isMissingColumnError(updErr, "deleted_at") || isMissingColumnError(updErr, "deleted_by")) {
