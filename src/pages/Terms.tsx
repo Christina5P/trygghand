@@ -39,7 +39,11 @@ const Terms: React.FC = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Parter och tillämpning</h2>
               <p>
-                Dessa villkor gäller mellan <strong>Trygg Hand AB</strong> (organisationsnummer 559564-3445) och dig som beställer våra tjänster ("Kunden"). Vid dödsbo avses dödsbodelägarna eller den som företräder dem med fullmakt.
+          <strong>Trygg Hand AB</strong> (organisationsnummer 559564-3445) utför flytt-, städ-, packnings-, transport- och relaterade
+          tjänster genom egna anställda och godkända underleverantörer till dig som beställer våra tjänster ("Kunden"). 
+          Vid dödsbo avses dödsbodelägarna eller den som företräder dem med fullmakt.
+          Bolaget innehar F-skatt och momsregistrering.
+          Vi tillämpar Konsumenttjänstlagen och GDPR.
               </p>
             </section>
 
@@ -85,7 +89,7 @@ const Terms: React.FC = () => {
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Försäljning av bohag</h2>
               <p className="font-semibold mb-2">Så går det till:</p>
               <ul className="list-disc pl-6 mb-4">
-                <li>Trygg Hand tar hand om försäljningen (via auktion, andrahandsbutiker, privatköpare etc.)</li>
+                <li>Trygg Hand kan ta hand om försäljning (via auktion, andrahandsbutiker, privatköpare etc.)</li>
                 <li>Vi tar emot betalning från köpare</li>
                 <li>Vi drar av vår provision och eventuella kostnader</li>
                 <li>Resterande belopp betalas ut till dig enligt överenskommelse</li>
@@ -106,8 +110,13 @@ const Terms: React.FC = () => {
               <p className="font-semibold mb-2">Prissättning:</p>
               <p className="mb-4">Priset framgår av din uppdragsbekräftelse (fast pris, timpris eller kombination). Alla priser inkluderar moms.</p>
 
+              <p className="font-semibold mb-2">RUT-avdrag:</p>
+              <p className="mb-4">
+                Om RUT-avdrag har avtalats och Skatteverket helt eller delvis nekar avdraget, debiteras kunden det nekade beloppet.
+              </p>
+
               <p className="font-semibold mb-2">Betalningsvillkor:</p>
-              <p className="mb-4">Betalning ska ske inom <strong>20 dagar</strong> från fakturadatum. Vid försenad betalning tillkommer dröjsmålsränta enligt räntelagen.</p>
+              <p className="mb-4">Betalning ska ske inom <strong>10 dagar</strong> från fakturadatum. Vid försenad betalning tillkommer dröjsmålsränta enligt räntelagen.</p>
 
               <p className="font-semibold mb-2">Påbörjat arbete:</p>
               <p>Arbete som redan utförts faktureras alltid, även om uppdraget avbryts.</p>
@@ -119,7 +128,7 @@ const Terms: React.FC = () => {
               <p className="mb-4">Meddela alltid avbokning skriftligt (mejl räcker). Om du avbokar senare än 48 timmar innan planerad insats har vi rätt att debitera upp till 50% av den planerade kostnaden. Redan utfört arbete debiteras alltid fullt ut.</p>
 
               <p className="font-semibold mb-2">Ångerrätt (konsument):</p>
-              <p>Om du är privatperson och beställer på distans eller utanför vårt kontor har du 14 dagars ångerrätt, om inte tjänsten påbörjats efter ditt godkännande.</p>
+              <p>Som privatperson har du 14 dagars ångerrätt, om inte tjänsten påbörjats efter ditt godkännande.</p>
             </section>
 
             <section className="mb-8">
@@ -130,11 +139,28 @@ const Terms: React.FC = () => {
               <p className="font-semibold mb-2">Försäkring:</p>
               <p className="mb-4">Trygg Hand har en ansvarsförsäkring som täcker skador på egendom som vi eller våra underleverantörer orsakar under uppdraget (vid flytt, städning, hantering av bohag).</p>
 
+              <p className="font-semibold mb-2">Kundpackade lådor:</p>
+              <p className="mb-4">
+                Kundpackade lådor hanteras på kundens egen risk. Detta gäller särskilt (men inte begränsat till) innehåll som glas, porslin,
+                elektronik, tavlor och antikviteter.
+              </p>
+
+              <p className="font-semibold mb-2">Antika föremål och arv:</p>
+              <p className="mb-4">
+                Ersättning för antika föremål och arv utgår endast om kunden har lämnat värdeintyg i förväg. Affektionsvärde ersätts aldrig.
+              </p>
+
               <p className="font-semibold mb-2">Skadeanmälan:</p>
-              <p className="mb-4">Upptäcker du en skada måste du anmäla den skriftligt till oss inom 7 dagar.</p>
+              <p className="mb-4">
+                Upptäcker du en skada måste du anmäla den skriftligt till oss inom 7 dagar. Skadeanmälan ska innehålla bilder på skadan,
+                objektet och emballaget samt eventuellt värdeintyg.
+              </p>
 
               <p className="font-semibold mb-2">Ansvarsbegränsning:</p>
-              <p className="mb-4">Vårt totala ansvar är begränsat till 10 gånger uppdragspriset, dock max det belopp vår försäkring täcker. Detta gäller inte vid grov vårdslöshet eller uppsåt.</p>
+              <p className="mb-4">Vi ansvarar för skador som uppstår till följd av fel eller försummelse i samband med utförandet av uppdraget.
+                                  Vårt sammanlagda ansvar är begränsat till fem (5) gånger uppdragspriset, dock högst det belopp som täcks av vår ansvarsförsäkring.
+                                  Föremål med särskilt högt ekonomiskt eller affektionsvärde ska i förväg identifieras och hanteras separat enligt överenskommelse.
+                                  Ansvarsbegränsningen gäller inte vid uppsåt eller grov vårdslöshet.</p>
 
               <p className="font-semibold mb-2">Din hemförsäkring:</p>
               <p>Egendom i bostaden omfattas normalt av din/dödsboets hemförsäkring tills vi faktiskt tagit över hanteringen.</p>

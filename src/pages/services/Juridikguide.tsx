@@ -42,7 +42,7 @@ export default function Juridikguide() {
 
       <p>
         Som kund har du tillgång till vår smarta chatbot som snabbt ger
-        vägledning i vanliga juridiska frågor. Informationen grundar sig på
+        vägledning i vanliga juridiska och praktiska frågor. Informationen grundar sig på
         aktuell svensk lagstiftning och betrodda källor.
       </p>
 
