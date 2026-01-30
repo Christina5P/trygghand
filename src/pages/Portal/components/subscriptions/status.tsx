@@ -20,14 +20,16 @@ export function CancellationStatusSelect({
   value,
   onChange,
   disabled,
+  triggerClassName,
 }: {
   value: CancellationStatus;
   onChange: (next: CancellationStatus) => void;
   disabled?: boolean;
+  triggerClassName?: string;
 }) {
   return (
     <Select value={value} onValueChange={(v) => onChange(v as CancellationStatus)} disabled={disabled}>
-      <SelectTrigger className="w-40 h-8" aria-label="Ändra status">
+      <SelectTrigger className={triggerClassName || "w-40 h-8"} aria-label="Ändra status">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

@@ -195,20 +195,23 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
                   {caseItem.scheduled_date && ` | Schemalagt: ${format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}`}
                 </CardDescription>
                 <div className="absolute top-2 right-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                  <Select defaultValue={caseItem.status} onValueChange={(s) => handleStatusChange(caseItem.id, s)}>
-                    <SelectTrigger className="w-32 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className={`rounded transition-colors ${getStatusColor(caseItem.status)}`} style={{ minWidth: 110, minHeight: 28, display: 'flex', alignItems: 'center' }}>
+                    <Select defaultValue={caseItem.status} onValueChange={(s) => handleStatusChange(caseItem.id, s)}>
+                      <SelectTrigger className="w-28 h-7 bg-transparent border-none shadow-none focus:ring-0 focus:outline-none text-xs px-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Button
-                    variant="destructive"
-                    size="sm"
+                    variant="ghost"
+                    size="icon"
                     title="Ta bort ärende"
+                    className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200"
                     onClick={async (e) => {
                       e.stopPropagation();
                       if (!window.confirm("Är du säker på att du vill ta bort detta ärende?")) return;
@@ -225,11 +228,12 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
                       }
                     }}
                   >
-                    Ta bort
+                    <span className="sr-only">Ta bort</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                   </Button>
                 </div>
                 <CommentBubble
-                  className="absolute bottom-2 right-2"
+                  className={`absolute bottom-2 right-2 transition-all ${caseCommentsCounts[caseItem.id] > 0 ? 'ring-2 ring-blue-400 scale-110' : ''}`}
                   count={caseCommentsCounts[caseItem.id] || 0}
                 />
               </CardHeader>

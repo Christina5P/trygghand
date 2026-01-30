@@ -566,7 +566,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="cases">Ärenden ({cases.length})</SelectItem>
-                        <SelectItem value="subscriptions">Abonnemang ({cancellations.length})</SelectItem>
+                        <SelectItem value="subscriptions">Uppsägningar ({cancellations.length})</SelectItem>
                         <SelectItem value="valuations">Värderingar ({valuations.length})</SelectItem>
                         <SelectItem value="customers">Kunder ({customers.length})</SelectItem>
               <SelectItem value="key_receipts">Nyckelkvittens</SelectItem>
@@ -581,7 +581,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                       Ärenden ({cases.length})
                     </TabsTrigger>
                     <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="subscriptions">
-                      Abonnemang ({cancellations.length})
+                      Uppsägningar ({cancellations.length})
                     </TabsTrigger>
                     <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="valuations">
                       Värderingar ({valuations.length})
