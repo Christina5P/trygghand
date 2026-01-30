@@ -1,12 +1,12 @@
 // src/components/GDPRDeleteUserDialog.tsx
 /**
- * Admin-gränssnitt för GDPR-borttagning av användare
- * 
+ * Admin-gränssnitt för GDPR-borttagning av kund
+ *
  * Säkerhet:
- * - Kräver bekräftelse via email-inmatning
- * - Kräver bekräftelse via email-inmatning
- * - Utför en soft delete (återställbar)
- * - Inga fritextfält skickas i request body
+ * - Kräver manuell email-bekräftelse (endast lokalt)
+ * - Skickar ENDAST customerId till backend
+ * - GDPR-radering utförs via Netlify Function
+ * - Inga hemligheter eller fritextfält i request body
  */
 
 import { useState } from "react";
@@ -23,15 +23,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { AlertCircle, Trash2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import type { Customer } from "@/types";
 
 interface GDPRDeleteUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  customer: Customer;
+  customer: Customer | null;
   onDeleteSuccess: () => void;
 }
 
@@ -42,58 +40,46 @@ export function GDPRDeleteUserDialog({
   onDeleteSuccess,
 }: GDPRDeleteUserDialogProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
   const [confirmEmail, setConfirmEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Null-check: Stäng om customer är null
-  if (!customer) {
-    return null;
-  }
+  if (!customer) return null;
 
-  // Validering: Email måste matcha (endast lokalt, skickas ej)
   const isConfirmed = confirmEmail === customer.email;
 
   const handleDelete = async () => {
-    if (!user?.id) {
-      toast({
-        title: "Fel",
-        description: "Du måste vara inloggad som admin",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!isConfirmed || isLoading) return;
 
     setIsLoading(true);
     try {
-      // GDPR hard delete: call backend API
-      const response = await fetch("/api/admin/gdpr-delete", {
+      const response = await fetch("/.netlify/functions/gdpr-delete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: customer.id,
-          adminId: user.id,
-          reason: "GDPR deletion via UI",
+          customerId: customer.id, // ENDA datan som skickas
         }),
       });
+
       const result = await response.json();
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "GDPR delete failed");
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || "GDPR-radering misslyckades");
       }
+
       toast({
         title: "✓ Kund raderad (GDPR)",
         description: `${customer.email} har raderats permanent.`,
-        variant: "default",
       });
+
       onDeleteSuccess();
       onOpenChange(false);
       setConfirmEmail("");
     } catch (error: any) {
       toast({
         title: "Fel vid GDPR-borttagning",
-        description: error.message || "Okänt fel",
+        description: error.message || "Okänt fel uppstod",
         variant: "destructive",
       });
     } finally {
@@ -107,32 +93,32 @@ export function GDPRDeleteUserDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Trash2 className="h-5 w-5" />
-            Avaktivera kund (GDPR)
+            Radera kund (GDPR)
           </DialogTitle>
           <DialogDescription>
-            Denna åtgärd avaktiverar kunden via soft delete och kan återställas.
+            Denna åtgärd raderar kundens personuppgifter permanent enligt GDPR.
           </DialogDescription>
         </DialogHeader>
 
         <Alert variant="destructive" className="border-destructive/50 bg-destructive/5">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>VARNING:</strong> Kunden {customer.email} kommer att avaktiveras:
+            <strong>VARNING:</strong> Kunden {customer.email} kommer att raderas:
             <ul className="mt-2 ml-4 list-disc text-sm">
-              <li>Portalinlogg kan blockeras</li>
-              <li>Åtgärden loggas för compliance</li>
+              <li>All persondata tas bort</li>
+              <li>Åtgärden kan inte ångras</li>
+              <li>Raderingen loggas för compliance</li>
             </ul>
-            <p className="mt-3">Denna åtgärd loggades för compliance.</p>
           </AlertDescription>
         </Alert>
 
         <div className="space-y-4">
           <div>
-            <Label className="font-semibold">Användarens email (bekräftelse)</Label>
+            <Label className="font-semibold">Användarens email</Label>
             <Input
               value={customer.email}
               disabled
-              className="bg-gray-100 text-gray-600 cursor-not-allowed"
+              className="bg-gray-100 text-gray-600"
             />
           </div>
 
@@ -145,13 +131,12 @@ export function GDPRDeleteUserDialog({
               placeholder={customer.email}
               value={confirmEmail}
               onChange={(e) => setConfirmEmail(e.target.value)}
-              className={confirmEmail === customer.email ? "border-green-500" : ""}
+              className={isConfirmed ? "border-green-500" : ""}
             />
-            {confirmEmail === customer.email && (
+            {isConfirmed && (
               <p className="text-xs text-green-600 mt-1">✓ Email bekräftad</p>
             )}
           </div>
-
         </div>
 
         <DialogFooter>
@@ -169,7 +154,7 @@ export function GDPRDeleteUserDialog({
             className="gap-2"
           >
             <Trash2 className="h-4 w-4" />
-            {isLoading ? "Avaktiverar..." : "Avaktivera"}
+            {isLoading ? "Raderar..." : "Radera (GDPR)"}
           </Button>
         </DialogFooter>
       </DialogContent>

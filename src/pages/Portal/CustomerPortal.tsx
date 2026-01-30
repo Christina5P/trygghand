@@ -788,7 +788,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                         className="bg-gradient-to-r from-trust-green to-trust-green-light text-white px-4 py-2 rounded-full shadow-md hover:translate-y-[-1px] transition"
                         onClick={() => window.location.assign('/portal/cube-planner')}
                     >
-                        <span role="img" aria-label="cube">📦</span> Kubikmätaren
+                        <span role="img" aria-label="cube">📦</span> Kubikräknare för flyttplanering
                     </Button>
                 </div>
 

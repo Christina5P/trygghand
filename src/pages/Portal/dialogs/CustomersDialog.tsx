@@ -303,18 +303,27 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
       const currentCustomer = customer; // Ursprungliga värden
       const personalNumberChanged = currentCustomer?.personal_number !== editingCustomer.personal_number;
 
-      const { error } = await supabase.functions.invoke("admin-update-customer", {
-        body: {
+
+      const response = await fetch("/.netlify/functions/admin-update-customer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           customer_id: editingCustomer.id,
           name: editingCustomer.name,
           email: editingCustomer.email || null,
           phone: editingCustomer.phone || null,
           personal_number: editingCustomer.personal_number || null,
           personal_number_changed: personalNumberChanged,
-        },
+        }),
       });
 
-      if (error) throw error;
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        console.error(`admin-update-customer: Unexpected content-type: ${contentType}, status: ${response.status}`);
+        throw new Error(`Oväntat svar från servern (status ${response.status}). Kontakta support om felet kvarstår.`);
+      }
+      const result = await response.json();
+      if (!response.ok || result.error) throw new Error(result.error || "Unknown error");
 
       toast({ title: "Kund uppdaterad", description: "Kundinformationen har sparats med full audit trail." });
       await onCustomerUpdated();
