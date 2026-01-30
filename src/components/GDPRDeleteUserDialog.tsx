@@ -66,15 +66,25 @@ export function GDPRDeleteUserDialog({
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.functions.invoke("admin-soft-delete-customer", {
-        body: { customer_id: customer.id, confirm: true },
+      // GDPR hard delete: call backend API
+      const response = await fetch("/api/admin/gdpr-delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: customer.id,
+          adminId: user.id,
+          reason: "GDPR deletion via UI",
+        }),
       });
-
-      if (error) throw error;
-
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "GDPR delete failed");
+      }
       toast({
-        title: "✓ Kund avaktiverad",
-        description: `${customer.email} har avaktiverats (soft delete).`,
+        title: "✓ Kund raderad (GDPR)",
+        description: `${customer.email} har raderats permanent.`,
         variant: "default",
       });
       onDeleteSuccess();
@@ -82,7 +92,7 @@ export function GDPRDeleteUserDialog({
       setConfirmEmail("");
     } catch (error: any) {
       toast({
-        title: "Fel vid borttagning",
+        title: "Fel vid GDPR-borttagning",
         description: error.message || "Okänt fel",
         variant: "destructive",
       });

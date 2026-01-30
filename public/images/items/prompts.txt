@@ -1,3 +1,11 @@
+office-chair.png
+Fotorealistisk produktbild av en Kontorsstol på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
+
+microwave.png
+Fotorealistisk produktbild av en Mikrovågsugn på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
+
+dining-table.png
+Fotorealistisk produktbild av en Matbord på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
 sofa-3.png
 Fotorealistisk produktbild av en 3-sits soffa på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
 
@@ -123,27 +131,3 @@ Fotorealistisk produktbild av en Utemöbler (set) på ren vit bakgrund. Centrera
 
 garden-tools.png
 Fotorealistisk produktbild av en Trädgårdsredskap på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
-
-all.png
-Fotorealistisk produktbild av en Alla på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
-
-living-room.png
-Fotorealistisk produktbild av en Vardagsrum på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
-
-bedroom.png
-Fotorealistisk produktbild av en Sovrum på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
-
-kitchen.png
-Fotorealistisk produktbild av en Kök på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
-
-bathroom.png
-Fotorealistisk produktbild av en Badrum på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
-
-office.png
-Fotorealistisk produktbild av en Kontor på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
-
-storage.png
-Fotorealistisk produktbild av en Förråd på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.
-
-outdoor.png
-Fotorealistisk produktbild av en Utomhus på ren vit bakgrund. Centrerad, mjuk skugga, hög detalj. Inga människor, inga logotyper, inga varumärken, ingen text. Format: kvadratisk bild.

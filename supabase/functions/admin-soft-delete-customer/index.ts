@@ -61,10 +61,8 @@ serve(async (req: Request): Promise<Response> => {
   } catch {
     return json(400, { error: "Invalid JSON" });
   }
-
   const customerId = payload?.customer_id;
   const confirm = payload?.confirm === true;
-
   if (!confirm) return json(400, { error: "Missing confirm" });
   if (!isUuid(customerId)) return json(400, { error: "Invalid customer_id" });
 

@@ -39,7 +39,6 @@ export const movingItems: MovingItem[] = [
   { id: 'bookshelf', name: 'Bokhylla', category: 'living-room', volume: 0.6, weightKg: 30, icon: '📚', imageSrc: '/images/items/bookshelf.png', dimensions: { length: 80, width: 30, height: 200 } },
   { id: 'lamp-floor', name: 'Golvlampa', category: 'living-room', volume: 0.15, weightKg: 6, icon: '💡', imageSrc: '/images/items/lamp-floor.png', dimensions: { length: 40, width: 40, height: 170 } },
   { id: 'rug-large', name: 'Stor matta', category: 'living-room', volume: 0.15, weightKg: 8, icon: '🧶', imageSrc: '/images/items/rug-large.png', dimensions: { length: 300, width: 200, height: 2 } },
-  { id: 'rug-small', name: 'Liten matta', category: 'living-room', volume: 0.05, weightKg: 4, icon: '🧶', imageSrc: '/images/items/rug-small.png', dimensions: { length: 160, width: 100, height: 2 } },
   { id: 'mirror-large', name: 'Stor spegel', category: 'living-room', volume: 0.2, weightKg: 12, icon: '🪞', imageSrc: '/images/items/mirror-large.png', dimensions: { length: 150, width: 5, height: 60 } },
   
   // Sovrum
@@ -50,32 +49,26 @@ export const movingItems: MovingItem[] = [
   { id: 'dresser', name: 'Byrå', category: 'bedroom', volume: 0.5, weightKg: 50, icon: '🗄️', imageSrc: '/images/items/dresser.png', dimensions: { length: 120, width: 50, height: 80 } },
   { id: 'nightstand', name: 'Sängbord', category: 'bedroom', volume: 0.1, weightKg: 15, icon: '🛏️', imageSrc: '/images/items/nightstand.png', dimensions: { length: 50, width: 40, height: 55 } },
   { id: 'lamp-table', name: 'Bordslampa', category: 'bedroom', volume: 0.03, weightKg: 3, icon: '💡', imageSrc: '/images/items/lamp-table.png', dimensions: { length: 30, width: 30, height: 50 } },
-  { id: 'box-clothes', name: 'Klädkartong', category: 'bedroom', volume: 0.1, weightKg: 10, icon: '👕', imageSrc: '/images/items/box-clothes.png', dimensions: { length: 60, width: 40, height: 40 } },
   
   // Kök
-  { id: 'dining-table', name: 'Matbord', category: 'kitchen', volume: 0.8, weightKg: 50, icon: '🪑', dimensions: { length: 160, width: 90, height: 75 } },
+  { id: 'dining-table', name: 'Matbord', category: 'kitchen', volume: 0.8, weightKg: 50, imageSrc: '/images/items/dining-table.png', dimensions: { length: 160, width: 90, height: 75 } },
   { id: 'dining-chair', name: 'Matstol', category: 'kitchen', volume: 0.15, weightKg: 7, icon: '🪑', imageSrc: '/images/items/dining-chair.png', dimensions: { length: 45, width: 45, height: 90 } },
   { id: 'microwave', name: 'Mikrovågsugn', category: 'kitchen', volume: 0.05, weightKg: 15, icon: '📻', dimensions: { length: 50, width: 40, height: 30 } },
-  { id: 'box-kitchen', name: 'Kökskartong', category: 'kitchen', volume: 0.05, weightKg: 12, icon: '📦', dimensions: { length: 40, width: 40, height: 30 } },
   
   // Badrum
   { id: 'bathroom-cabinet', name: 'Badrumsskåp', category: 'bathroom', volume: 0.15, weightKg: 20, icon: '🚿', imageSrc: '/images/items/bathroom-cabinet.png', dimensions: { length: 60, width: 30, height: 80 } },
-  { id: 'box-bathroom', name: 'Badrumskartong', category: 'bathroom', volume: 0.03, weightKg: 10, icon: '📦', dimensions: { length: 40, width: 30, height: 25 } },
   
   // Kontor
   { id: 'desk', name: 'Skrivbord', category: 'office', volume: 0.5, weightKg: 35, icon: '🖥️', imageSrc: '/images/items/desk.png', dimensions: { length: 140, width: 70, height: 75 } },
-  { id: 'office-chair', name: 'Kontorsstol', category: 'office', volume: 0.3, weightKg: 18, icon: '💺', dimensions: { length: 65, width: 65, height: 120 } },
-  { id: 'box-books', name: 'Bokkartong', category: 'office', volume: 0.04, weightKg: 15, icon: '📚', dimensions: { length: 40, width: 30, height: 30 } },
-  { id: 'box-office', name: 'Kontorskartong', category: 'office', volume: 0.05, weightKg: 10, icon: '📦', dimensions: { length: 40, width: 40, height: 30 } },
+    { id: 'office-chair', name: 'Kontorsstol', category: 'office', volume: 0.3, weightKg: 18, imageSrc: '/images/items/office-chair.png', dimensions: { length: 65, width: 65, height: 120 } },
   
   // Förråd
   // Standardkartonger (volym beräknas även från måtten). Mellankartong ska vara 0,14 m³.
-  { id: 'box-large', name: 'Stor kartong', category: 'storage', volume: 0.19, weightKg: 18, icon: '📦', dimensions: { length: 70, width: 50, height: 55 } },
-  { id: 'box-medium', name: 'Mellan kartong', category: 'storage', volume: 0.14, weightKg: 12, icon: '📦', dimensions: { length: 60, width: 50, height: 47 } },
-  { id: 'box-small', name: 'Liten kartong', category: 'storage', volume: 0.08, weightKg: 8, icon: '📦', imageSrc: '/images/items/box-small.png', dimensions: { length: 50, width: 40, height: 40 } },
+  { id: 'box-large', name: 'Stor kartong', category: 'storage', volume: 0.19, weightKg: 18, icon: '📦', imageSrc: '/images/items/box.png', dimensions: { length: 70, width: 50, height: 55 } },
+  { id: 'box-medium', name: 'Mellan kartong', category: 'storage', volume: 0.14, weightKg: 12, icon: '📦', imageSrc: '/images/items/box.png', dimensions: { length: 60, width: 50, height: 47 } },
+  { id: 'box-small', name: 'Liten kartong', category: 'storage', volume: 0.08, weightKg: 8, icon: '📦', imageSrc: '/images/items/box.png', dimensions: { length: 50, width: 40, height: 40 } },
   { id: 'suitcase', name: 'Resväska', category: 'storage', volume: 0.08, weightKg: 15, icon: '🧳', imageSrc: '/images/items/suitcase.png', dimensions: { length: 70, width: 45, height: 25 } },
   { id: 'vacuum', name: 'Dammsugare', category: 'storage', volume: 0.1, weightKg: 8, icon: '🧹', imageSrc: '/images/items/vacuum.png', dimensions: { length: 40, width: 30, height: 80 } },
-  { id: 'storage-shelf', name: 'Förvaringshylla', category: 'storage', volume: 0.4, weightKg: 35, icon: '📦', imageSrc: '/images/items/storage-shelf.png', dimensions: { length: 100, width: 40, height: 180 } },
   
   // Utomhus
   { id: 'bicycle', name: 'Cykel', category: 'outdoor', volume: 0.4, weightKg: 15, icon: '🚲', imageSrc: '/images/items/bicycle.png', dimensions: { length: 170, width: 60, height: 100 } },

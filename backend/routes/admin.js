@@ -298,6 +298,7 @@ router.get("/customers", requireAdmin, async (req, res) => {
     const { data, error } = await supabaseAdmin
       .from('customers')
       .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {

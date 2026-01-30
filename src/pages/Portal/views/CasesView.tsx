@@ -194,7 +194,7 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
                   Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}
                   {caseItem.scheduled_date && ` | Schemalagt: ${format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}`}
                 </CardDescription>
-                <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute top-2 right-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
                   <Select defaultValue={caseItem.status} onValueChange={(s) => handleStatusChange(caseItem.id, s)}>
                     <SelectTrigger className="w-32 h-8">
                       <SelectValue />
@@ -205,6 +205,28 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
                       ))}
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    title="Ta bort ärende"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!window.confirm("Är du säker på att du vill ta bort detta ärende?")) return;
+                      try {
+                        const userId = user?.id;
+                        if (!userId) throw new Error("Ingen användare inloggad");
+                        const { error } = await supabase.functions.invoke("admin-soft-delete-case", {
+                          body: { case_id: caseItem.id, user_id: userId },
+                        });
+                        if (error) throw error;
+                        await onDataUpdated();
+                      } catch (err: any) {
+                        alert("Kunde inte ta bort ärendet: " + (err?.message || err));
+                      }
+                    }}
+                  >
+                    Ta bort
+                  </Button>
                 </div>
                 <CommentBubble
                   className="absolute bottom-2 right-2"

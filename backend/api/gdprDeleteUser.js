@@ -1,3 +1,4 @@
+import 'dotenv/config';
 // backend/api/gdprDeleteUser.js
 /**
  * GDPR User Deletion API (Backend version)
@@ -104,7 +105,20 @@ export async function deleteUserGDPR({ userId, adminId, reason = "GDPR deletion 
       console.log("✓ Auth user deleted successfully");
     }
 
-    // 4) Logga borttagningen (optional, men bra för compliance)
+    // 4) Ta bort från archived_customers (GDPR hard delete ONLY)
+    const { error: archivedDeleteError } = await supabaseAdminClient
+      .from("archived_customers")
+      .delete()
+      .eq("id", userId);
+
+    if (archivedDeleteError) {
+      console.error("❌ Error deleting from archived_customers:", archivedDeleteError);
+      // Fortsätt ändå, men logga felet
+    } else {
+      console.log(`✓ User ${userId} deleted from archived_customers`);
+    }
+
+    // 5) Logga borttagningen (optional, men bra för compliance)
     await supabaseAdminClient.from("deleted_users_log").insert({
       user_id: userId,
       user_email: userEmail,
