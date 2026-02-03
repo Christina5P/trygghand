@@ -36,15 +36,15 @@ export function CaseCommentsThread({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const normalized = useMemo(() => {
-    return comments.map((c) => {
-      const mine = !!currentUserId && c.author_id === currentUserId;
-      const deletedAt = (c as any)?.deleted_at as string | null | undefined;
-      return {
-        ...c,
-        mine,
-        deletedAt: deletedAt ?? null,
-      };
-    });
+    return comments
+      .filter((c) => !(c as any)?.deleted_at)
+      .map((c) => {
+        const mine = !!currentUserId && c.author_id === currentUserId;
+        return {
+          ...c,
+          mine,
+        };
+      });
   }, [comments, currentUserId]);
 
   const send = async () => {
@@ -68,8 +68,7 @@ export function CaseCommentsThread({
     }
   };
 
-  const canDelete = (c: { mine: boolean; deletedAt: string | null }) => {
-    if (c.deletedAt) return false;
+  const canDelete = (c: { mine: boolean }) => {
     if (isAdmin) return true;
     return c.mine;
   };
@@ -125,11 +124,7 @@ export function CaseCommentsThread({
                   )}
                 </div>
 
-                {c.deletedAt ? (
-                  <div className="whitespace-pre-wrap italic opacity-80">Kommentar borttagen</div>
-                ) : (
-                  <div className="whitespace-pre-wrap">{c.content ?? ""}</div>
-                )}
+                <div className="whitespace-pre-wrap">{c.content ?? ""}</div>
               </div>
             </div>
           ))

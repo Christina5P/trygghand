@@ -11,9 +11,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
-import { getCleanDescription, getPriceLabel } from "@/utils";
+import { getCleanDescription, getPriceLabel, getPriceRange } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { jsPDF } from "jspdf";
+import { Archive, BadgeDollarSign, Gift, Trash2 } from "lucide-react";
 
 
 
@@ -26,6 +28,38 @@ interface ValuationsViewProps {
   onDelete: (valuationId: string) => Promise<void> | void;
 }
 
+type Disposition = "sell" | "donate" | "keep" | "discard";
+
+const getValuationObjectLabel = (analysis: unknown): string | null => {
+  if (!analysis) return null;
+  const pick = (data: any) => {
+    const raw = data?.foremal_beskrivning ?? data?.analysis_result?.foremal_beskrivning;
+    return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+  };
+
+  if (typeof analysis === "string") {
+    try {
+      const parsed = JSON.parse(analysis);
+      return pick(parsed);
+    } catch {
+      return null;
+    }
+  }
+
+  return pick(analysis as any);
+};
+
+const DISPOSITION_OPTIONS: Array<{
+  key: Disposition;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}> = [
+  { key: "sell", label: "Sälj", Icon: BadgeDollarSign },
+  { key: "donate", label: "Skänk", Icon: Gift },
+  { key: "keep", label: "Behåll", Icon: Archive },
+  { key: "discard", label: "Släng", Icon: Trash2 },
+];
+
 const ValuationsView: React.FC<ValuationsViewProps> = ({
   valuations,
   customers,
@@ -34,6 +68,7 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
   onDelete,
 }) => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("all");
+  const [selectedDisposition, setSelectedDisposition] = useState<Disposition | "all">("all");
 
   useEffect(() => {
     if (valuations && valuations.length > 0) {
@@ -43,9 +78,15 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
     }
   }, [valuations]);
   const filteredValuations = useMemo(() => {
-    if (selectedCustomerId === "all") return valuations;
-    return valuations.filter(v => v.customer_id === selectedCustomerId);
-  }, [valuations, selectedCustomerId]);
+    // admin-get-all-valuations already enforces shared_with_admin = true
+    // keep rows even if the field is missing in the payload
+    const shared = valuations.filter((v) => v.shared_with_admin !== false);
+    const byCustomer = selectedCustomerId === "all"
+      ? shared
+      : shared.filter((v) => v.customer_id === selectedCustomerId);
+    if (selectedDisposition === "all") return byCustomer;
+    return byCustomer.filter((v) => v.disposition_code === selectedDisposition);
+  }, [valuations, selectedCustomerId, selectedDisposition]);
 
   const getCustomerName = (customerId: string | null): string => {
     if (!customerId) return "Gästvärdering";
@@ -62,6 +103,100 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
     return getPriceLabel((v as any).analysis_result ?? (v as any).analysis ?? "");
   };
 
+  const summary = useMemo(() => {
+    const fmt = (n: number) => new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(n);
+    const total = filteredValuations.length;
+
+    let pricedCount = 0;
+    let sumMin = 0;
+    let sumMax = 0;
+
+    for (const v of filteredValuations) {
+      const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+      const range = getPriceRange(analysis);
+      if (!range) continue;
+      const min = range.min;
+      const max = range.max ?? range.min;
+      if (min == null && max == null) continue;
+      pricedCount += 1;
+      if (min != null) sumMin += min;
+      if (max != null) sumMax += max;
+    }
+
+    return { total, pricedCount, sumMin, sumMax, fmt };
+  }, [filteredValuations]);
+
+  const handleDownloadPdf = () => {
+    if (filteredValuations.length === 0) return;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 48;
+    const contentWidth = pageWidth - margin * 2;
+
+    const nowLabel = format(new Date(), "yyyy-MM-dd HH:mm", { locale: sv });
+    let y = margin;
+
+    const addWrapped = (text: string, fontSize = 11, lineGap = 4) => {
+      doc.setFontSize(fontSize);
+      const lines = doc.splitTextToSize(text, contentWidth);
+      const lineHeight = fontSize + lineGap;
+      for (const line of lines) {
+        if (y + lineHeight > pageHeight - margin) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(String(line), margin, y);
+        y += lineHeight;
+      }
+    };
+
+    doc.setFontSize(18);
+    doc.text("Värderingar – sammanställning", margin, y);
+    y += 26;
+
+    doc.setFontSize(10);
+    doc.setTextColor(80);
+    doc.text(`Genererad: ${nowLabel}`, margin, y);
+    y += 16;
+
+    doc.setTextColor(0);
+    y += 6;
+    doc.setDrawColor(220);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 18;
+
+    addWrapped(`Totalt i filter: ${summary.total}`, 12);
+    if (summary.pricedCount > 0) {
+      addWrapped(
+        `Summa uppskattat värde: ${summary.fmt(summary.sumMin)} – ${summary.fmt(summary.sumMax)} kr (baserat på ${summary.pricedCount} värderingar)`,
+        12
+      );
+    }
+    y += 10;
+    doc.setDrawColor(220);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 18;
+
+    addWrapped("Detaljer", 13);
+    y += 6;
+
+    for (const v of filteredValuations.slice(0, 200)) {
+      const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+      const base = (v as any)?.title ?? `Värdering #${v.id}`;
+      const objectLabel = getValuationObjectLabel(analysis);
+      const title = objectLabel ? `${base} – ${objectLabel}` : base;
+      const created = v.created_at ? format(new Date(v.created_at), "yyyy-MM-dd", { locale: sv }) : "";
+      const priceLabel = getPriceLabel(analysis);
+
+      addWrapped(`${created}  ${title}`, 11);
+      if (priceLabel) addWrapped(priceLabel, 10);
+      y += 8;
+    }
+
+    doc.save(`varderingar-admin-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
+  };
+
   if (valuations.length === 0) {
     return (
       <Card className="p-6 text-center">
@@ -76,21 +211,42 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
   return (
     <div className="space-y-4">
       {/* Filter */}
-      <div className="flex items-center gap-4">
-        <label className="text-sm font-medium">Filtrera på kund:</label>
-        <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-          <SelectTrigger className="w-64">
-            <SelectValue placeholder="Välj kund" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alla kunder</SelectItem>
-            {customers.map((customer) => (
-              <SelectItem key={customer.id} value={customer.id}>
-                {customer.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Kund:</label>
+          <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Välj kund" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla kunder</SelectItem>
+              {customers.map((customer) => (
+                <SelectItem key={customer.id} value={customer.id}>
+                  {customer.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Kategori:</label>
+          <Select value={selectedDisposition} onValueChange={(v) => setSelectedDisposition(v as Disposition | "all")}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Alla" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla</SelectItem>
+              {DISPOSITION_OPTIONS.map((opt) => (
+                <SelectItem key={opt.key} value={opt.key}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button variant="secondary" onClick={handleDownloadPdf}>
+          Spara PDF
+        </Button>
       </div>
 
       {filteredValuations.map((v) => (
@@ -109,7 +265,14 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
             <div className="min-w-0">
-              <div className="text-sm font-medium truncate">{(v as any)?.title ?? `Värdering #${v.id}`}</div>
+              <div className="text-sm font-medium truncate">
+                {(() => {
+                  const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+                  const base = (v as any)?.title ?? `Värdering #${v.id}`;
+                  const label = getValuationObjectLabel(analysis);
+                  return label ? `${base} – ${label}` : base;
+                })()}
+              </div>
               {getPriceDisplay(v) && (
                 <div className="text-sm font-semibold text-black mt-1">
                   {getPriceDisplay(v)}
@@ -128,6 +291,22 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
               {getCustomerName(v.customer_id)}
             </Badge>
           </div>
+
+          {v.disposition_code && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+              {(() => {
+                const opt = DISPOSITION_OPTIONS.find((o) => o.key === v.disposition_code);
+                if (!opt) return null;
+                const Icon = opt.Icon;
+                return (
+                  <>
+                    <Icon className="h-4 w-4" />
+                    <span>{opt.label}</span>
+                  </>
+                );
+              })()}
+            </div>
+          )}
 
           <div className="mt-2 flex gap-2">
             <Button

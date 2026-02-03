@@ -58,6 +58,46 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
   const [caseComments, setCaseComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [caseCommentsCounts, setCaseCommentsCounts] = useState<Record<string, number>>({});
+  const [latestCustomerCommentAt, setLatestCustomerCommentAt] = useState<Record<string, string>>({});
+  const [unreadTick, setUnreadTick] = useState(0);
+
+  const lastReadAtKey = useCallback(
+    (caseId: string) => `adminPortal:lastReadAt:${user?.id || ""}:${caseId}`,
+    [user?.id]
+  );
+
+  const markCaseAsRead = useCallback(
+    (caseId: string) => {
+      if (!user?.id) return;
+      try {
+        const now = new Date().toISOString();
+        window.localStorage.setItem(lastReadAtKey(caseId), now);
+        setUnreadTick((t) => t + 1);
+      } catch {
+        // ignore
+      }
+    },
+    [lastReadAtKey, user?.id]
+  );
+
+  const hasUnread = useCallback(
+    (caseId: string) => {
+      void unreadTick;
+      if (!user?.id) return false;
+      try {
+        const lastReadAt = window.localStorage.getItem(lastReadAtKey(caseId));
+        const lastReadMs = lastReadAt ? Date.parse(lastReadAt) : 0;
+        const latestAt = latestCustomerCommentAt[caseId];
+        if (!latestAt) return false;
+        const latestMs = Date.parse(latestAt);
+        if (!Number.isFinite(latestMs)) return false;
+        return latestMs > lastReadMs;
+      } catch {
+        return false;
+      }
+    },
+    [latestCustomerCommentAt, lastReadAtKey, unreadTick, user?.id]
+  );
 
   // Hämtar kommentarer för ett ärende, anropas från NewCaseForm
   const fetchCaseComments = useCallback(async (caseId: string) => {
@@ -94,6 +134,27 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
     }
   }, []);
 
+  const fetchLatestCustomerComment = useCallback(async (caseId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("case_comments")
+        .select("created_at")
+        .eq("case_id", caseId)
+        .eq("author_type", "customer")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      const createdAt = (data as any)?.[0]?.created_at as string | undefined;
+      setLatestCustomerCommentAt((prev) => ({
+        ...prev,
+        [caseId]: createdAt || "",
+      }));
+    } catch (err) {
+      console.error("Error fetching latest customer comment:", err);
+      setLatestCustomerCommentAt((prev) => ({ ...prev, [caseId]: "" }));
+    }
+  }, []);
+
   const handleOpenNewCaseDialog = () => {
     setEditingCase(null); // Nollställ för nytt ärende
     setCaseComments([]); // Rensa kommentarer
@@ -106,6 +167,7 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
     // Ladda kommentarer när ett ärende öppnas för redigering
     if (caseItem.id) {
         fetchCaseComments(caseItem.id);
+        markCaseAsRead(caseItem.id);
     }
    // Notify parent (AdminPortal) so it can show full case dialog/details
    onOpenCase?.(caseItem);
@@ -136,10 +198,11 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
       cases.forEach(caseItem => {
         if (caseItem.id) {
           fetchCaseCommentsCount(caseItem.id);
+          fetchLatestCustomerComment(caseItem.id);
         }
       });
     }
-  }, [cases, fetchCaseCommentsCount]);
+  }, [cases, fetchCaseCommentsCount, fetchLatestCustomerComment]);
 
   // Om du vill visa laddningsstatus för huvudvyerna
   if (!cases || !customers) { // Enkel check, kan vara mer detaljerad
@@ -181,7 +244,11 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
         <p className="text-center text-gray-500 py-8">Inga ärenden hittades.</p>
       ) : (
         <div className="grid gap-4 mt-4">
-          {cases.map((caseItem) => (
+          {cases.map((caseItem) => {
+            const totalCount = caseCommentsCounts[caseItem.id] || 0;
+            const unread = hasUnread(caseItem.id);
+
+            return (
             <Card
               key={caseItem.id}
               className="relative hover:shadow-lg transition-shadow cursor-pointer"
@@ -233,12 +300,14 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
                   </Button>
                 </div>
                 <CommentBubble
-                  className={`absolute bottom-2 right-2 transition-all ${caseCommentsCounts[caseItem.id] > 0 ? 'ring-2 ring-blue-400 scale-110' : ''}`}
-                  count={caseCommentsCounts[caseItem.id] || 0}
+                  className={`absolute bottom-2 right-2 transition-all ${unread ? 'ring-2 ring-blue-400 scale-110' : ''}`}
+                  count={totalCount}
+                  highlight={unread}
                 />
               </CardHeader>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

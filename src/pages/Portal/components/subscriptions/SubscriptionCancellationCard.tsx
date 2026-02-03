@@ -67,7 +67,11 @@ export function SubscriptionCancellationCard({
         </div>
       </CardHeader>
 
-      <CommentBubble className={`absolute bottom-2 right-2 transition-all ${count > 0 ? 'ring-2 ring-blue-400 scale-110' : ''}`} count={count} />
+      <CommentBubble
+        className={`absolute bottom-2 right-2 transition-all ${count > 0 ? 'ring-2 ring-blue-400 scale-110' : ''}`}
+        count={count}
+        highlight={count > 0}
+      />
 
       <CardContent className="space-y-1 text-sm">
         <div className="flex items-center justify-between gap-2">

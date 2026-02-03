@@ -14,6 +14,7 @@ export type CancellationDocumentV2 = {
 export type CancellationDocuments = Array<string | CancellationDocumentV2>;
 
 export type SubscriptionCancellationDraft = {
+  customer_id?: string | null;
   provider?: string | null;
   service_type?: string | null;
   custom_service_name?: string | null;

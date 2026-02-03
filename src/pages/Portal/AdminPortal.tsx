@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Customer, ServiceType, ContactRequest, Subscription, Valuation, CustomerCase, Comment } from '@/types'; 
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { NotificationsList } from "@/components/NotificationsList";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminData } from "@/hooks/useAdminData"; 
@@ -279,6 +280,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [selectedContact, setSelectedContact] = useState<ContactRequest | null>(null);
   const [selectedCase, setSelectedCase] = useState<CustomerCase | null>(null);
   const [selectedValuation, setSelectedValuation] = useState<Valuation | null>(null);
+  const [adminValuations, setAdminValuations] = useState<Valuation[]>([]);
 
   // Admin: customer selection for key receipts
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("__none__");
@@ -348,6 +350,22 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const fetchData = async () => {
     await fetchAll();
   };
+
+  const fetchAdminValuations = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc("customer_get_my_valuations");
+      if (error) throw error;
+      setAdminValuations((data as Valuation[]) || []);
+    } catch (err) {
+      console.error("Admin fetch valuations failed:", err);
+      toast({ title: "Fel", description: "Kunde inte hämta dina värderingar.", variant: "destructive" });
+      setAdminValuations([]);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchAdminValuations();
+  }, [fetchAdminValuations]);
 
   const activeContactCount = useMemo(() => {
     // Räkna kontakter baserat på valt filter
@@ -481,6 +499,10 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 
 	  
       <div className="min-h-[100dvh] bg-gradient-to-br from-slate-100 via-white to-slate-100 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        {/* Notis-badge/list högst upp */}
+        <div className="flex justify-end mb-4">
+          <NotificationsList />
+        </div>
           <Tidio />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -552,12 +574,12 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
    </DialogContent>
  </Dialog>
  
-             {/* Visa värderings-översikt ovanför tabbarna */}
-             <div className="mb-6">
-               <ValuationManager valuations={valuations} onDataUpdated={fetchData} />
-             </div>
+             {/* Admin: värdebedömningsverktyg ska ligga ovanför tabbarna */}
+             <div className="mb-6">
+               <ValuationManager valuations={adminValuations} onDataUpdated={fetchAdminValuations} showShareToggle={false} />
+             </div>
 
-              <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-6">
+             <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-6">
                   {/* Mobil: dropdown istället för trånga tabbar */}
                   <div className="md:hidden">
                     <Select value={mainTab} onValueChange={(v) => setMainTab(v as any)}>
@@ -576,7 +598,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                   </div>
 
                   {/* Desktop/tablet: tabbar */}
-                  <TabsList className="hidden md:flex w-full bg-slate-200/80 shadow-sm rounded-lg p-1 flex-wrap gap-1 border border-slate-200">
+          <TabsList className="hidden md:flex min-w-[900px] w-auto bg-slate-200/80 shadow-sm rounded-lg p-1 flex-wrap gap-1 border border-slate-200 overflow-x-auto">
                     <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="cases">
                       Ärenden ({cases.length})
                     </TabsTrigger>
@@ -635,17 +657,16 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
             />
           </TabsContent>
 
-          {/* NY FLIK: Värderingar (visar den nya ValuationsView-komponenten) */}
-          <TabsContent value="valuations">
-            {/* SKICKAR MED DEN NYA FUNKTIONEN */}
-            <ValuationsView 
-              valuations={valuations} 
-              onDataUpdated={fetchData} 
-              customers={customers} 
-              onOpenDetails={handleOpenValuationDialog}
+         {/* NY FLIK: Värderingar */}
+         <TabsContent value="valuations">
+           <ValuationsView 
+             valuations={valuations} 
+             onDataUpdated={fetchData} 
+             customers={customers} 
+             onOpenDetails={handleOpenValuationDialog}
               onDelete={handleDeleteValuation} // NYTT PROP
-            />
-          </TabsContent>
+           />
+         </TabsContent>
           
           
           {/* Kunder */}
@@ -655,7 +676,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
               <div>
                 <div className="grid gap-8 lg:grid-cols-3">
                   <div className="lg:col-span-2">
-                    <h3 className="text-lg font-semibold mb-4">Hantera Kundstatus</h3>
+                    <h3 className="text-lg font-semibold mb-4">Kundstatus</h3>
                     <CustomerManagement customers={customers} onDataUpdated={fetchData} onOpenCustomer={handleOpenCustomerDialog} />
                   </div>
                   <div>

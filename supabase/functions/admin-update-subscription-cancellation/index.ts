@@ -71,6 +71,10 @@ serve(async (req: Request): Promise<Response> => {
   const cancellationId = payload?.cancellation_id;
   if (!isUuid(cancellationId)) return json(req, 400, { error: "Invalid cancellation_id" });
 
+  if (payload?.customer_id != null && !isUuid(payload.customer_id)) {
+    return json(req, 400, { error: "Invalid customer_id" });
+  }
+
   // Validate lengths (free text allowed with caps)
   if (!maxLen(payload?.provider, 120)) return json(req, 400, { error: "provider too long" });
   if (!maxLen(payload?.service_type, 120)) return json(req, 400, { error: "service_type too long" });
@@ -99,6 +103,7 @@ serve(async (req: Request): Promise<Response> => {
 
   const updatePayload: Record<string, any> = { updated_at: new Date().toISOString() };
   for (const key of [
+    "customer_id",
     "provider",
     "service_type",
     "custom_service_name",
@@ -119,6 +124,25 @@ serve(async (req: Request): Promise<Response> => {
     .eq("id", cancellationId);
 
   if (updErr) return json(req, 500, { error: "Internal server error" });
+
+  // Notis: statusändring i uppsägning
+  try {
+    await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "cancellation_status",
+        ref_id: cancellationId,
+        ref_type: "cancellation",
+        actor_id: user.id,
+        recipient_id: payload.customer_id ?? null,
+        payload: { status: updatePayload.status }
+      })
+    });
+  } catch (e) {
+    // logga men stoppa ej flödet
+    console.error("Notification error", e);
+  }
 
   return json(req, 200, { ok: true });
 });

@@ -53,6 +53,9 @@ export default function Privacy() {
       <p className="mb-2">
         För att: genomföra avtal, hantera bokningar och kontakter, förbättra tjänsten (statistik) samt följa lagar.
       </p>
+      <p className="mb-2">
+        Vi lagrar kategorisering av värderingar (t.ex. sälja, skänka, behålla) för att kunna utföra avtalade tjänster. Uppgifterna delas endast med handläggare när kunden aktivt väljer att dela dem.
+      </p>
 
       <h2 className="font-semibold mt-6">Rättslig grund</h2>
       <p className="mb-2">Vi använder avtals- eller berättigat intresse för nödvändiga behandlingar. För statistik används ditt samtycke (om du godkänner cookies).</p>

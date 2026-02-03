@@ -35,15 +35,16 @@ export function CancellationCommentsThread({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const normalized = useMemo(() => {
-    return comments.map((c) => {
-      const isCustomer = c.user_id === customerId;
-      return {
-        ...c,
-        role: isCustomer ? ("customer" as const) : ("admin" as const),
-        isMine: !!currentUserId && c.user_id === currentUserId,
-        isDeleted: !!c.deleted_at,
-      };
-    });
+    return comments
+      .filter((c) => !c.deleted_at)
+      .map((c) => {
+        const isCustomer = c.user_id === customerId;
+        return {
+          ...c,
+          role: isCustomer ? ("customer" as const) : ("admin" as const),
+          isMine: !!currentUserId && c.user_id === currentUserId,
+        };
+      });
   }, [comments, customerId, currentUserId]);
 
   const send = async () => {
@@ -67,8 +68,7 @@ export function CancellationCommentsThread({
     }
   };
 
-  const canDelete = (c: { isMine: boolean; role: "admin" | "customer"; isDeleted: boolean }) => {
-    if (c.isDeleted) return false;
+  const canDelete = (c: { isMine: boolean; role: "admin" | "customer" }) => {
     if (isAdmin) return true;
     return c.isMine;
   };
@@ -124,11 +124,7 @@ export function CancellationCommentsThread({
                     </Button>
                   )}
                 </div>
-                {c.isDeleted ? (
-                  <div className="whitespace-pre-wrap italic opacity-80">Kommentar borttagen</div>
-                ) : (
-                  <div className="whitespace-pre-wrap">{c.message}</div>
-                )}
+                <div className="whitespace-pre-wrap">{c.message}</div>
               </div>
             </div>
           ))

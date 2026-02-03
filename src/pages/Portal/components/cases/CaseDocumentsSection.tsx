@@ -32,11 +32,13 @@ export function CaseDocumentsSection({
   documents,
   canUpload,
   onRefresh,
+  showDeletedToggle = true,
 }: {
   caseId: string;
   documents: CaseDocument[];
   canUpload: boolean;
   onRefresh: () => Promise<void>;
+  showDeletedToggle?: boolean;
 }) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
@@ -195,9 +197,11 @@ export function CaseDocumentsSection({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="font-medium">Dokument</div>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setShowDeleted((v) => !v)}>
-          {showDeleted ? "Dölj borttagna" : "Visa borttagna"}
-        </Button>
+        {showDeletedToggle && (
+          <Button variant="outline" size="sm" onClick={() => setShowDeleted((prev) => !prev)}>
+            {showDeleted ? "Dölj borttagna" : "Visa borttagna"}
+          </Button>
+        )}
       </div>
 
       {canUpload && (

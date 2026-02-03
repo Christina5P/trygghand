@@ -7,6 +7,7 @@ import CollapsibleCard from "@/components/ui/CollapsibleCard";
 import ValueEstimator from "@/components/ValueEstimator";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { getCleanDescription, getPriceLabel, getPriceRange } from "@/utils";
@@ -20,11 +21,29 @@ interface ValuationManagerProps {
   valuations: Valuation[];
   onDataUpdated: () => Promise<void>;
   customerId?: string;
+  showShareToggle?: boolean;
 }
 
 type Disposition = "sell" | "donate" | "keep" | "discard";
 
-const DISPOSITION_STORAGE_KEY = "trygghand:valuationDisposition:v1";
+const getValuationObjectLabel = (analysis: unknown): string | null => {
+  if (!analysis) return null;
+  const pick = (data: any) => {
+    const raw = data?.foremal_beskrivning ?? data?.analysis_result?.foremal_beskrivning;
+    return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+  };
+
+  if (typeof analysis === "string") {
+    try {
+      const parsed = JSON.parse(analysis);
+      return pick(parsed);
+    } catch {
+      return null;
+    }
+  }
+
+  return pick(analysis as any);
+};
 
 const DISPOSITION_OPTIONS: Array<{
   key: Disposition;
@@ -37,7 +56,7 @@ const DISPOSITION_OPTIONS: Array<{
   { key: "discard", label: "Släng", Icon: Trash2 },
 ];
   
-export const ValuationManager: React.FC<ValuationManagerProps> = ({ valuations, onDataUpdated }) => {
+export const ValuationManager: React.FC<ValuationManagerProps> = ({ valuations, onDataUpdated, showShareToggle = true }) => {
 const { customer } = useAuth();
 const isAdmin = Boolean(customer?.is_admin);
 const { toast } = useToast();
@@ -47,34 +66,69 @@ deleteValuation,
 } = useCustomerData();
 
 const [dispositions, setDispositions] = useState<Record<string, Disposition | undefined>>({});
+const [sharedById, setSharedById] = useState<Record<string, boolean>>({});
 const [savedFilter, setSavedFilter] = useState<Disposition | "all">("all");
 
 useEffect(() => {
-  try {
-    if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(DISPOSITION_STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw) as Record<string, Disposition>;
-    if (parsed && typeof parsed === "object") setDispositions(parsed);
-  } catch {
-    // ignore malformed localStorage
-  }
-}, []);
-
-const setDisposition = useCallback((valuationId: string, next: Disposition) => {
-  if (!valuationId) return;
-  setDispositions((prev) => {
-    const updated: Record<string, Disposition> = { ...(prev as any), [valuationId]: next };
-    try {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(DISPOSITION_STORAGE_KEY, JSON.stringify(updated));
-      }
-    } catch {
-      // ignore storage write errors
+  const next: Record<string, Disposition> = {};
+  const nextShared: Record<string, boolean> = {};
+  for (const v of valuations ?? []) {
+    const code = (v as any)?.disposition_code as Disposition | undefined;
+    if (v?.id && code) next[String(v.id)] = code;
+    if (v?.id && (v as any)?.shared_with_admin !== undefined) {
+      nextShared[String(v.id)] = Boolean((v as any)?.shared_with_admin);
     }
-    return updated;
-  });
-}, []);
+  }
+  setDispositions(next);
+  setSharedById((prev) => ({ ...prev, ...nextShared }));
+}, [valuations]);
+
+const setDisposition = useCallback(async (valuationId: string, next: Disposition) => {
+  if (!valuationId) return;
+  setDispositions((prev) => ({ ...(prev as any), [valuationId]: next }));
+
+  // Personal data; stored for service delivery (contract).
+  const run = () =>
+    supabase
+      .from("valuations")
+      .update({ disposition_code: next })
+      .eq("id", valuationId);
+
+  let { error } = await run();
+  if (error && isUnauthorizedError(error)) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) ({ error } = await run());
+  }
+  if (error) {
+    toast({ title: "Kunde inte spara", description: "Valet kunde inte sparas.", variant: "destructive" });
+  }
+}, [toast]);
+
+const setSharedWithAdmin = useCallback(async (valuationId: string, next: boolean) => {
+  if (!valuationId) return;
+  const previous = sharedById[valuationId] ?? true;
+  setSharedById((prev) => ({ ...prev, [valuationId]: next }));
+
+  // Personal data; stored for service delivery (contract).
+  const run = () =>
+    supabase
+      .from("valuations")
+      .update({ shared_with_admin: next })
+      .eq("id", valuationId);
+
+  let { error } = await run();
+  if (error && isUnauthorizedError(error)) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) ({ error } = await run());
+  }
+  if (error) {
+    setSharedById((prev) => ({ ...prev, [valuationId]: previous }));
+    toast({ title: "Kunde inte spara", description: "Delning kunde inte uppdateras.", variant: "destructive" });
+    return;
+  }
+
+  await onDataUpdated();
+}, [onDataUpdated, sharedById, toast]);
 
 const [deletingValuationId, setDeletingValuationId] = useState<string | null>(null);
 
@@ -239,9 +293,11 @@ const handleDownloadPdf = useCallback(() => {
 
   const maxItems = 200; // safety to avoid huge PDFs
   for (const v of filteredValuations.slice(0, maxItems)) {
-    const title = (v as any)?.title ?? `Värdering #${String(v.id)}`;
+    const titleBase = (v as any)?.title ?? `Värdering #${String(v.id)}`;
     const created = v.created_at ? format(new Date(v.created_at), "yyyy-MM-dd", { locale: sv }) : "";
     const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+    const objectLabel = getValuationObjectLabel(analysis);
+    const title = objectLabel ? `${titleBase} – ${objectLabel}` : titleBase;
 
     const range = getPriceRange(analysis);
     const priceLabel = getPriceLabel(analysis);
@@ -378,7 +434,13 @@ return (
               const price = getPriceLabel(analysis);
               return (
                 <>
-                  <div className="text-sm font-semibold text-gray-900">{(v as any)?.title ?? `Värdering #${String(v.id)}`}</div>
+                  <div className="text-sm font-semibold text-gray-900">
+                    {(() => {
+                      const base = (v as any)?.title ?? `Värdering #${String(v.id)}`;
+                      const label = getValuationObjectLabel(analysis);
+                      return label ? `${base} – ${label}` : base;
+                    })()}
+                  </div>
                   {price && (
                     <div className="text-base font-bold text-trust-blue mt-1">{price}</div>
                   )}
@@ -420,6 +482,18 @@ return (
                 ))}
               </ToggleGroup>
             </div>
+
+            {showShareToggle && (
+              <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
+                <Switch
+                  checked={sharedById[String(v.id)] ?? true}
+                  onCheckedChange={(checked) => {
+                    void setSharedWithAdmin(String(v.id), checked);
+                  }}
+                />
+                <span>Dela med admin</span>
+              </div>
+            )}
 
             <div className="mt-2">
               <button

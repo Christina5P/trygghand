@@ -135,9 +135,11 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const [loadingCases, setLoadingCases] = useState(true);
     const [loadingComments, setLoadingComments] = useState(false);
     const [caseCommentsCounts, setCaseCommentsCounts] = useState<Record<string, number>>({});
-    const [hasNewMessages, setHasNewMessages] = useState<Record<string, boolean>>({});
     const [caseDocuments, setCaseDocuments] = useState<CaseDocument[]>([]);
     const [loadingCaseDocuments, setLoadingCaseDocuments] = useState(false);
+
+    // UI-only: olästa meddelanden ("nya sedan senaste öppning")
+    const [unreadTick, setUnreadTick] = useState(0);
 
     const casesByIdRef = useRef<Map<string, Case>>(new Map());
     const selectedCaseIdRef = useRef<string | null>(null);
@@ -174,9 +176,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
 
     useEffect(() => {
         selectedCaseIdRef.current = selectedCase?.id || null;
-        if (selectedCase?.id) {
-            setHasNewMessages((prev) => ({ ...prev, [selectedCase.id]: false }));
-        }
     }, [selectedCase?.id]);
 
     const fetchCaseCommentsCount = useCallback(async (caseId: string) => {
@@ -184,7 +183,8 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             const { count, error } = await supabase
                 .from("case_comments")
                 .select("*", { count: "exact", head: true })
-                .eq("case_id", caseId);
+                .eq("case_id", caseId)
+                .is("deleted_at", null);
             if (error) throw error;
             setCaseCommentsCounts((prev) => ({ ...prev, [caseId]: count || 0 }));
         } catch (err) {
@@ -201,6 +201,44 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         }
     }, [cases, fetchCaseCommentsCount]);
 
+    const storageUserId = customer?.id ?? user?.id ?? "";
+
+    const lastReadCountKey = useCallback(
+        (caseId: string) => `customerPortal:lastReadCount:${storageUserId}:${caseId}`,
+        [storageUserId]
+    );
+
+    const getUnreadCount = useCallback(
+        (caseId: string) => {
+            void unreadTick;
+            if (!storageUserId) return 0;
+            try {
+                const totalCount = caseCommentsCounts[caseId] || 0;
+                const raw = window.localStorage.getItem(lastReadCountKey(caseId));
+                const lastReadCount = Number.parseInt(raw || "0", 10);
+                if (!Number.isFinite(lastReadCount) || lastReadCount < 0) return totalCount;
+                return Math.max(0, totalCount - lastReadCount);
+            } catch {
+                return 0;
+            }
+        },
+        [unreadTick, lastReadCountKey, caseCommentsCounts, storageUserId]
+    );
+
+    const markCaseAsRead = useCallback(
+        (caseId: string, totalOverride?: number) => {
+            if (!storageUserId) return;
+            try {
+                const total = totalOverride ?? (caseCommentsCounts[caseId] || 0);
+                window.localStorage.setItem(lastReadCountKey(caseId), String(total));
+                setUnreadTick((t) => t + 1);
+            } catch {
+                // ignore
+            }
+        },
+        [lastReadCountKey, caseCommentsCounts, storageUserId]
+    );
+
     useEffect(() => {
         // Realtime notiser för nya kommentarer i kundens ärenden
         if (!customer?.id) return;
@@ -216,24 +254,44 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                     if (!caseId) return;
 
                     const caseItem = casesByIdRef.current.get(caseId);
-                    if (!caseItem) return;
 
-                    // Notifiera inte på egna kommentarer
-                    if (row?.author_id && user?.id && row.author_id === user.id) return;
+                    const currentId = user?.id ?? customer?.id;
 
-                    setCaseCommentsCounts((prev) => ({
-                        ...prev,
-                        [caseId]: (prev[caseId] ?? 0) + 1,
-                    }));
+                    setCaseCommentsCounts((prev) => {
+                        const nextCount = (prev[caseId] ?? 0) + 1;
 
-                    if (selectedCaseIdRef.current !== caseId) {
-                        setHasNewMessages((prev) => ({ ...prev, [caseId]: true }));
-                    }
+                        // Notifiera inte på egna kommentarer (och markera ej som oläst)
+                        if (row?.author_id && currentId && row.author_id === currentId) {
+                            markCaseAsRead(caseId, nextCount);
+                            return { ...prev, [caseId]: nextCount };
+                        }
+
+                        // Om kunden redan har ärendet öppet räknas detta som läst direkt.
+                        if (selectedCaseIdRef.current === caseId) {
+                            markCaseAsRead(caseId, nextCount);
+                        }
+
+                        return { ...prev, [caseId]: nextCount };
+                    });
 
                     toast({
                         title: "Nytt meddelande",
-                        description: `Nytt meddelande i ärendet: ${caseItem.title}`,
+                        description: caseItem
+                            ? `Nytt meddelande i ärendet: ${caseItem.title}`
+                            : "Nytt meddelande i ett ärende",
                     });
+                }
+            )
+            .on(
+                "postgres_changes",
+                { event: "UPDATE", schema: "public", table: "case_comments" },
+                (payload) => {
+                    const row = payload.new as any;
+                    const caseId = row?.case_id as string | undefined;
+                    if (!caseId) return;
+                    if (row?.deleted_at) {
+                        fetchCaseCommentsCount(caseId);
+                    }
                 }
             )
             .subscribe();
@@ -241,34 +299,44 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [customer?.id, toast, user?.id]);
+    }, [customer?.id, toast, user?.id, markCaseAsRead, fetchCaseCommentsCount]);
 
     // --- Hämta Ärenden ---
     const fetchCases = useCallback(async () => {
         if (!customer?.id) return;
         setLoadingCases(true);
-        try {
-            const run = () =>
-                supabase
-                    .from("cases")
-                    .select(`*, service_type:service_type_id(name, description)`)
-                    .eq("customer_id", customer.id)
-                    .order("created_at", { ascending: false });
+        const run = () =>
+            supabase
+                .from("cases")
+                .select("*, service_type:service_type_id(name, description)")
+                .eq("customer_id", customer.id)
+                .is("deleted_at", null)
+                .order("created_at", { ascending: false });
 
+        try {
             let { data, error } = await run();
             if (error && isUnauthorizedError(error)) {
                 const ok = await handleUnauthorized();
                 if (ok) ({ data, error } = await run());
             }
             if (error) throw error;
-            setCases(data as Case[] || []);
+            setCases((data as Case[]) || []);
         } catch (err) {
             console.error("Error fetching cases:", err);
-            toast({ title: "Fel", description: "Kunde inte hämta ärenden", variant: "destructive" });
+            toast({
+                title: "Fel",
+                description: "Kunde inte hämta ärenden",
+                variant: "destructive",
+            });
         } finally {
             setLoadingCases(false);
         }
     }, [customer?.id, toast, handleUnauthorized]);
+
+    useEffect(() => {
+        if (!customer?.id) return;
+        fetchCases();
+    }, [customer?.id, fetchCases]);
 
     // --- Hämta Kommentarer ---
     const fetchComments = useCallback(async (caseId: string) => {
@@ -278,6 +346,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                 .from("case_comments")
                 .select(`*, author:customers(name)`) // Joina med kunder för att få namn
                 .eq("case_id", caseId)
+                .is("deleted_at", null)
                 .order("created_at", { ascending: true });
 
             if (error) throw error;
@@ -682,87 +751,100 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                         <p className="text-center text-gray-500 py-8">Inga ärenden hittades.</p>
                     ) : (
                         <div className="grid gap-4 mt-4">
-                            {cases.map((caseItem) => (
-                                <Card
-                                    key={caseItem.id}
-                                    className={`relative cursor-pointer hover:shadow-md transition-shadow ${selectedCase?.id === caseItem.id ? "border-2 border-trust-blue bg-blue-50" : "border-gray-200"}`}
-                                    onClick={() => setSelectedCase(selectedCase?.id === caseItem.id ? null : caseItem)} // Stäng/öppna
-                                >
-                                    <CardContent className="p-4">
-                                        <div className="absolute bottom-2 right-2 flex items-center gap-1 text-sm text-gray-600" aria-label="Antal meddelanden">
-                                            <MessageCircle className="h-4 w-4" />
-                                            <span>{caseCommentsCounts[caseItem.id] || 0}</span>
-                                            {hasNewMessages[caseItem.id] && (
-                                                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
-                                            )}
-                                        </div>
+                            {cases.map((caseItem) => {
+                                const unread = getUnreadCount(caseItem.id);
+                                const totalCount = caseCommentsCounts[caseItem.id] || 0;
 
-                                        <div className="flex justify-between items-start mb-2 gap-3">
-                                            <div className="min-w-0">
-                                                <h3 className="font-semibold text-lg truncate">{caseItem.title}</h3>
-                                            </div>
-
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <Badge className={`${getStatusColor(caseItem.status)} text-sm`}>
-                                                    {getStatusText(caseItem.status)}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                        {selectedCase?.id === caseItem.id && (
-                                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                                {/* Ärendeinformation */}
-                                                <div className="grid grid-cols-2 gap-y-2 text-sm text-gray-700 mb-4">
-                                                    <p className="flex items-center"><Briefcase className="w-4 h-4 mr-2" /> <strong>Tjänst:</strong> {caseItem.service_type?.name || "Okänd"}</p>
-                                                    {caseItem.scheduled_date && (
-                                                        <p className="flex items-center"><Calendar className="w-4 h-4 mr-2" /> <strong>Schemalagt:</strong> {format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}</p>
-                                                    )}
-                                                    {caseItem.address && (
-                                                        <p className="flex items-center"><MapPin className="w-4 h-4 mr-2" /> <strong>Adress:</strong> {caseItem.address}</p>
-                                                    )}
-                                                    
-                                                    <p className="col-span-2 text-gray-600 mt-2 whitespace-pre-wrap">{caseItem.description}</p>
+                                return (
+                                    <Card
+                                        key={caseItem.id}
+                                        className={`relative cursor-pointer hover:shadow-md transition-shadow ${selectedCase?.id === caseItem.id ? "border-2 border-trust-blue bg-blue-50" : "border-gray-200"}`}
+                                        onClick={() => {
+                                            const next = selectedCase?.id === caseItem.id ? null : caseItem;
+                                            setSelectedCase(next); // Stäng/öppna
+                                            if (next) {
+                                                markCaseAsRead(caseItem.id);
+                                            }
+                                        }}
+                                    >
+                                        <CardContent className="p-4">
+                                            <div className="flex justify-between items-start mb-2 gap-3">
+                                                <div className="min-w-0">
+                                                    <h3 className="font-semibold text-lg truncate">{caseItem.title}</h3>
                                                 </div>
 
-                                                {/* Kommentarer */}
-                                                <h4 className="font-semibold text-md mb-3 flex items-center">
-                                                    <MessageSquare className="w-4 h-4 mr-2 text-gray-600" /> Kommunikationshistorik
-                                                </h4>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <div
+                                                        className={`flex items-center gap-1 text-sm ${
+                                                            unread > 0
+                                                                ? "bg-orange-200 text-orange-900 px-2 py-0.5 rounded-full font-bold animate-pulse"
+                                                                : "text-gray-600"
+                                                        }`}
+                                                        aria-label="Antal meddelanden"
+                                                    >
+                                                        <MessageCircle className="h-4 w-4" />
+                                                        <span>{totalCount}</span>
+                                                    </div>
+                                                    <Badge className={`${getStatusColor(caseItem.status)} text-sm`}>
+                                                        {getStatusText(caseItem.status)}
+                                                    </Badge>
+                                                </div>
+                                            </div>
 
-                                                <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
-                                                    {loadingComments && (
-                                                        <div className="text-sm text-muted-foreground">Laddar kommentarer…</div>
-                                                    )}
-                                                    <CaseCommentsThread
-                                                        caseId={caseItem.id}
-                                                        currentUserId={user?.id}
-                                                        isAdmin={false}
-                                                        comments={comments}
-                                                        onRefresh={async () => {
-                                                            await fetchComments(caseItem.id);
-                                                        }}
-                                                        canComment={true}
-                                                    />
+                                            {selectedCase?.id === caseItem.id && (
+                                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                                    {/* Ärendeinformation */}
+                                                    <div className="grid grid-cols-2 gap-y-2 text-sm text-gray-700 mb-4">
+                                                        {caseItem.scheduled_date && (
+                                                            <p className="flex items-center"><Calendar className="w-4 h-4 mr-2" /> <strong>Schemalagt:</strong> {format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}</p>
+                                                        )}
+                                                        {caseItem.address && (
+                                                            <p className="flex items-center"><MapPin className="w-4 h-4 mr-2" /> <strong>Adress:</strong> {caseItem.address}</p>
+                                                        )}
 
-                                                    {loadingCaseDocuments ? (
-                                                        <div className="text-sm text-muted-foreground">Laddar dokument…</div>
-                                                    ) : (
-                                                        <CaseDocumentsSection
+                                                        <p className="col-span-2 text-gray-600 mt-2 whitespace-pre-wrap">{caseItem.description}</p>
+                                                    </div>
+
+                                                    {/* Kommentarer */}
+                                                    <h4 className="font-semibold text-md mb-3 flex items-center">
+                                                        <MessageSquare className="w-4 h-4 mr-2 text-gray-600" /> Kommunikationshistorik
+                                                    </h4>
+
+                                                    <div className="space-y-6" onClick={(e) => e.stopPropagation()}>
+                                                        {loadingComments && (
+                                                            <div className="text-sm text-muted-foreground">Laddar kommentarer…</div>
+                                                        )}
+                                                        <CaseCommentsThread
                                                             caseId={caseItem.id}
-                                                            documents={caseDocuments}
-                                                            canUpload={true}
+                                                            currentUserId={user?.id}
+                                                            isAdmin={false}
+                                                            comments={comments}
                                                             onRefresh={async () => {
-                                                                await fetchCaseDocuments(caseItem.id);
+                                                                await fetchComments(caseItem.id);
                                                             }}
+                                                            canComment={true}
                                                         />
-                                                    )}
-                                                </div>
-                                            </div>
 
-                                            
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                                        {loadingCaseDocuments ? (
+                                                            <div className="text-sm text-muted-foreground">Laddar dokument…</div>
+                                                        ) : (
+                                                            <CaseDocumentsSection
+                                                                caseId={caseItem.id}
+                                                                documents={caseDocuments}
+                                                                canUpload={true}
+                                                                showDeletedToggle={false}
+                                                                onRefresh={async () => {
+                                                                    await fetchCaseDocuments(caseItem.id);
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
                         </div>
                     )}
                 </CollapsibleCard>

@@ -117,6 +117,8 @@ export interface AdminCase extends Case {
 export interface Valuation {
   id: string;
   customer_id: string;
+  disposition_code?: "sell" | "donate" | "keep" | "discard" | null;
+  shared_with_admin?: boolean | null;
   analysis?: string | null;
   analysis_result?: any;
   image_urls?: string[] | null;

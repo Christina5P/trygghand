@@ -54,6 +54,7 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [providerFilter, setProviderFilter] = useState<string>("all");
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [customerOverrideByCancellationId, setCustomerOverrideByCancellationId] = useState<Record<string, string | null>>({});
 
   const customerMap = useMemo(() => {
     const map: Record<string, Customer> = {};
@@ -281,18 +282,22 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((c) => (
-              <SubscriptionCancellationCard
-                key={c.id}
-                item={c}
-                customer={customerMap[c.customer_id]}
-                caseTypeLabel="Uppsägning"
-                commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
-                canEditStatus={isAdmin}
-                onOpen={() => setSelected(c)}
-                onStatusChange={(next) => handleStatusChange(c.id, next)}
-              />
-            ))}
+            {filtered.map((c) => {
+              const effectiveCustomerId = customerOverrideByCancellationId[c.id] ?? c.customer_id;
+
+              return (
+                <SubscriptionCancellationCard
+                  key={c.id}
+                  item={c}
+                  customer={customerMap[effectiveCustomerId]}
+                  caseTypeLabel="Uppsägning"
+                  commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
+                  canEditStatus={isAdmin}
+                  onOpen={() => setSelected(c)}
+                  onStatusChange={(next) => handleStatusChange(c.id, next)}
+                />
+              );
+            })}
           </div>
         )}
       </div>
@@ -505,9 +510,19 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
         onOpenChange={(v) => (!v ? setSelected(null) : null)}
         item={selected}
         customer={selected ? customerMap[selected.customer_id] : undefined}
+        customers={customers}
         currentUserId={user?.id}
         isAdmin={isAdmin}
         onSaved={onDataUpdated}
+        onCustomerChanged={(cancellationId, nextCustomerId) => {
+          setCustomerOverrideByCancellationId((prev) => ({
+            ...prev,
+            [cancellationId]: nextCustomerId,
+          }));
+          if (selected?.id === cancellationId) {
+            setSelected({ ...selected, customer_id: nextCustomerId || selected.customer_id });
+          }
+        }}
         onCommentCountChange={(cancellationId, nextCount) => {
           setCommentCounts((prev) => ({ ...prev, [cancellationId]: nextCount }));
         }}

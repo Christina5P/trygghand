@@ -117,6 +117,25 @@ serve(async (req: Request): Promise<Response> => {
     const { error: updErr } = await service.from("cases").update(updatePayload).eq("id", caseId);
     if (updErr) return json(500, { error: "Internal server error" });
 
+    // Notis: statusändring i ärende
+    try {
+      await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "case_status",
+          ref_id: caseId,
+          ref_type: "case",
+          actor_id: user.id,
+          recipient_id: customerId,
+          payload: { status: updatePayload.status }
+        })
+      });
+    } catch (e) {
+      // logga men stoppa ej flödet
+      console.error("Notification error", e);
+    }
+
     return json(200, { ok: true, case_id: caseId });
   }
 
@@ -131,6 +150,25 @@ serve(async (req: Request): Promise<Response> => {
 
   const { data: created, error: insErr } = await service.from("cases").insert(insertPayload).select("id").single();
   if (insErr) return json(500, { error: "Internal server error" });
+
+  // Notis: nytt ärende
+  try {
+    await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "case_status",
+        ref_id: (created as any)?.id,
+        ref_type: "case",
+        actor_id: user.id,
+        recipient_id: customerId,
+        payload: { status: insertPayload.status }
+      })
+    });
+  } catch (e) {
+    // logga men stoppa ej flödet
+    console.error("Notification error", e);
+  }
 
   return json(200, { ok: true, case_id: (created as any)?.id });
 });

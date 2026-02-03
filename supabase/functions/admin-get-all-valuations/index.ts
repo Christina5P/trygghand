@@ -43,12 +43,13 @@ async function selectValuations(service: any) {
   // - updated_at may not exist
   // - deleted_at may not exist yet (migration not applied)
   const selectAttempts = [
-    "id, customer_id, analysis, analysis_result, image_urls, created_at, updated_at",
-    "id, customer_id, analysis, analysis_result, image_urls, created_at",
-    "id, customer_id, analysis, image_urls, created_at",
-    "id, customer_id, analysis, created_at",
-    "id, customer_id, created_at",
-    "id, created_at",
+    "id, customer_id, analysis, analysis_result, image_urls, created_at, updated_at, disposition_code, shared_with_admin",
+    "id, customer_id, analysis, analysis_result, image_urls, created_at, disposition_code, shared_with_admin",
+    "id, customer_id, analysis, image_urls, created_at, disposition_code, shared_with_admin",
+    "id, customer_id, analysis, created_at, disposition_code, shared_with_admin",
+    "id, customer_id, created_at, disposition_code, shared_with_admin",
+    "id, created_at, disposition_code, shared_with_admin",
+    "id, disposition_code, shared_with_admin",
     "id",
     "*",
   ];
@@ -59,32 +60,36 @@ async function selectValuations(service: any) {
   for (const schema of schemas) {
     for (const cols of selectAttempts) {
       // 1) Prefer excluding soft-deleted rows
-      const withDeleted = schema
+        const withDeleted = schema
         ? await service
             .schema(schema)
             .from("valuations")
             .select(cols === "*" ? "*" : `${cols}, deleted_at`)
             .is("deleted_at", null)
+          .eq("shared_with_admin", true)
             .order("created_at", { ascending: false })
         : await service
             .from("valuations")
             .select(cols === "*" ? "*" : `${cols}, deleted_at`)
             .is("deleted_at", null)
+          .eq("shared_with_admin", true)
             .order("created_at", { ascending: false });
 
       if (!withDeleted.error) return withDeleted;
       lastError = withDeleted.error;
 
       // 2) If deleted_at isn't present yet, fall back to a plain select so the UI doesn't hard-fail.
-      const withoutDeleted = schema
+        const withoutDeleted = schema
         ? await service
             .schema(schema)
             .from("valuations")
             .select(cols)
+          .eq("shared_with_admin", true)
             .order("created_at", { ascending: false })
         : await service
             .from("valuations")
             .select(cols)
+          .eq("shared_with_admin", true)
             .order("created_at", { ascending: false });
 
       if (!withoutDeleted.error) return withoutDeleted;
@@ -92,8 +97,8 @@ async function selectValuations(service: any) {
 
       // 3) Last fallback: try without ordering (created_at might not exist)
       const withoutOrder = schema
-        ? await service.schema(schema).from("valuations").select(cols)
-        : await service.from("valuations").select(cols);
+        ? await service.schema(schema).from("valuations").select(cols).eq("shared_with_admin", true)
+        : await service.from("valuations").select(cols).eq("shared_with_admin", true);
 
       if (!withoutOrder.error) return withoutOrder;
       lastError = withoutOrder.error;

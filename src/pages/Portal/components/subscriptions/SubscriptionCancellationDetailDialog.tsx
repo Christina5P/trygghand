@@ -15,6 +15,7 @@ import type { CancellationDocuments, SubscriptionCancellationDraft } from "./typ
 
 function toDraft(item: SubscriptionCancellation): SubscriptionCancellationDraft {
   return {
+    customer_id: item.customer_id ?? null,
     provider: item.provider ?? null,
     service_type: item.service_type ?? null,
     custom_service_name: item.custom_service_name ?? null,
@@ -31,18 +32,22 @@ export function SubscriptionCancellationDetailDialog({
   onOpenChange,
   item,
   customer,
+  customers,
   currentUserId,
   isAdmin,
   onSaved,
+  onCustomerChanged,
   onCommentCountChange,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   item: SubscriptionCancellation | null;
   customer: Customer | undefined;
+  customers: Customer[];
   currentUserId: string | null | undefined;
   isAdmin: boolean;
   onSaved: () => Promise<void>;
+  onCustomerChanged?: (cancellationId: string, nextCustomerId: string | null) => void;
   onCommentCountChange?: (cancellationId: string, nextCount: number) => void;
 }) {
   const { toast } = useToast();
@@ -52,7 +57,12 @@ export function SubscriptionCancellationDetailDialog({
   const [comments, setComments] = useState<CancellationComment[]>([]);
   const [documents, setDocuments] = useState<CancellationDocuments>([]);
 
-  const customerName = customer?.name || customer?.email || "Kund";
+  const selectedCustomer = useMemo(() => {
+    if (!draft?.customer_id) return customer;
+    return customers.find((c) => c.id === draft.customer_id) || customer;
+  }, [customers, customer, draft?.customer_id]);
+
+  const customerName = selectedCustomer?.name || selectedCustomer?.email || "Kund";
 
   const canComment = useMemo(() => {
     if (!item) return false;
@@ -90,6 +100,7 @@ export function SubscriptionCancellationDetailDialog({
     const base = toDraft(item);
     const provider = formatProviderValue(providerValue);
     return (
+      (base.customer_id ?? "") !== (draft.customer_id ?? "") ||
       base.status !== draft.status ||
       (base.provider ?? "") !== provider ||
       (base.service_type ?? "") !== (draft.service_type ?? "") ||
@@ -121,6 +132,7 @@ export function SubscriptionCancellationDetailDialog({
     try {
       const payload = {
         cancellation_id: item.id,
+        customer_id: draft.customer_id ?? null,
         provider,
         service_type: draft.service_type ?? null,
         custom_service_name: draft.custom_service_name ?? null,
@@ -136,6 +148,7 @@ export function SubscriptionCancellationDetailDialog({
       if ((data as any)?.ok !== true) throw new Error((data as any)?.error || "Kunde inte spara");
 
       toast({ title: "Sparat", description: "Ändringarna är sparade." });
+      onCustomerChanged?.(item.id, draft.customer_id ?? null);
       await onSaved();
       onOpenChange(false);
     } catch (err: any) {
@@ -174,7 +187,22 @@ export function SubscriptionCancellationDetailDialog({
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-muted-foreground">Kund</span>
-                  <span className="truncate">{customerName}</span>
+                  {isAdmin ? (
+                    <select
+                      className="border rounded px-2 py-1 text-sm bg-white max-w-[220px]"
+                      value={draft.customer_id ?? ""}
+                      onChange={(e) => setDraft({ ...draft, customer_id: e.target.value || null })}
+                    >
+                      <option value="">Ingen kund</option>
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name || c.email || c.id}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="truncate">{customerName}</span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-muted-foreground">Status</span>

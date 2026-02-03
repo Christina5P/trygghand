@@ -42,6 +42,25 @@ router.post('/', async (req, res) => {
       payload.metadata ? JSON.stringify(payload.metadata) : null
     ];
     const result = await exec(q, params);
+
+    // Notis: nytt ärende (Node backend)
+    try {
+      await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "case_status",
+          ref_id: result.rows[0].id,
+          ref_type: "case",
+          actor_id: ownerId,
+          recipient_id: payload.customer_id || null,
+          payload: { status: payload.status || 'new' }
+        })
+      });
+    } catch (e) {
+      console.error("Notification error", e);
+    }
+
     return res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error inserting case', err);
