@@ -39,9 +39,16 @@ interface Props {
   subscriptions: Subscription[];
   cancellations: SubscriptionCancellation[];
   onDataUpdated: () => Promise<void>;
+  showProviderFilter?: boolean;
 }
 
-export function SubscriptionCancellationsView({ customers, subscriptions, cancellations, onDataUpdated }: Props) {
+export function SubscriptionCancellationsView({
+  customers,
+  subscriptions,
+  cancellations,
+  onDataUpdated,
+  showProviderFilter = true,
+}: Props) {
   const { toast } = useToast();
   const { user, customer } = useAuth();
   const isAdmin = customer?.is_admin === true;
@@ -219,13 +226,28 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [cancellations]);
 
+  const effectiveCancellations = useMemo(() => {
+    return cancellations.map((c) => {
+      const override = customerOverrideByCancellationId[c.id];
+      return override ? { ...c, customer_id: override } : c;
+    });
+  }, [cancellations, customerOverrideByCancellationId]);
+
+  useEffect(() => {
+    if (!selected) return;
+    const next = effectiveCancellations.find((c) => c.id === selected.id);
+    if (next) setSelected(next);
+  }, [effectiveCancellations, selected]);
+
   const filtered = useMemo(() => {
-    return cancellations.filter((c) => {
-      const providerOk = providerFilter === "all" ? true : (c.provider || "") === providerFilter;
+    return effectiveCancellations.filter((c) => {
+      const providerOk = showProviderFilter
+        ? (providerFilter === "all" ? true : (c.provider || "") === providerFilter)
+        : true;
       const statusOk = statusFilter === "all" ? true : c.status === statusFilter;
       return providerOk && statusOk;
     });
-  }, [cancellations, providerFilter, statusFilter]);
+  }, [effectiveCancellations, providerFilter, statusFilter, showProviderFilter]);
 
   return (
     <div className="space-y-4">
@@ -256,19 +278,21 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
           </SelectContent>
         </Select>
 
-        <Select value={providerFilter} onValueChange={setProviderFilter}>
-          <SelectTrigger className="w-56">
-            <SelectValue placeholder="Leverantör" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alla leverantörer</SelectItem>
-            {availableProviders.map((p) => (
-              <SelectItem key={p} value={p}>
-                {p}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showProviderFilter && (
+          <Select value={providerFilter} onValueChange={setProviderFilter}>
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder="Leverantör" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla leverantörer</SelectItem>
+              {availableProviders.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div>
@@ -283,13 +307,11 @@ export function SubscriptionCancellationsView({ customers, subscriptions, cancel
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((c) => {
-              const effectiveCustomerId = customerOverrideByCancellationId[c.id] ?? c.customer_id;
-
               return (
                 <SubscriptionCancellationCard
                   key={c.id}
                   item={c}
-                  customer={customerMap[effectiveCustomerId]}
+                  customer={customerMap[c.customer_id]}
                   caseTypeLabel="Uppsägning"
                   commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
                   canEditStatus={isAdmin}

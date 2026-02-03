@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminData } from "@/hooks/useAdminData"; 
 import { useCustomerData } from "@/hooks/useCustomerData"
+import { useNotifications } from "@/hooks/useNotifications";
 import Tidio from "@/components/Tidio";
 import CasesView from "./views/CasesView";
 import CustomersDialog from "./dialogs/CustomersDialog";
@@ -111,7 +112,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   isNewCaseModalOpen = false,
   setIsNewCaseModalOpen = () => {},
 }) => {
-   const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
    const { toast } = useToast();
 
   // Lokal fallback om parent inte skickar ned kontroll för templates-dialogen
@@ -130,6 +131,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     fetchAll,
     fetchValuations,   
   } = useAdminData();
+  const { unreadCount } = useNotifications();
 
   console.log("Customers in AdminPortal:", customers); // TEMP LOG
 
@@ -499,10 +501,15 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 
 	  
       <div className="min-h-[100dvh] bg-gradient-to-br from-slate-100 via-white to-slate-100 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-        {/* Notis-badge/list högst upp */}
-        <div className="flex justify-end mb-4">
-          <NotificationsList />
-        </div>
+        {unreadCount > 0 && (
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+              Du har <span className="font-semibold">{unreadCount}</span> nya notiser.
+            </div>
+          </div>
+        )}
+
+        {/* Notis-badge/list borttagen */}
           <Tidio />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -576,7 +583,14 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
  
              {/* Admin: värdebedömningsverktyg ska ligga ovanför tabbarna */}
              <div className="mb-6">
-               <ValuationManager valuations={adminValuations} onDataUpdated={fetchAdminValuations} showShareToggle={false} />
+               <ValuationManager
+                 valuations={adminValuations}
+                 onDataUpdated={fetchAdminValuations}
+                 showShareToggle={false}
+                 estimatorMode="admin"
+                 customers={customers}
+                 titleText="Värdebedömning"
+               />
              </div>
 
              <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as any)} className="space-y-6">

@@ -42,15 +42,24 @@ export const usePortalStats = (): PortalStats => {
             ? Math.round((completedCases / totalCases) * 100)
             : 0;
 
-        // 2. SUBSCRIPTIONS – endast kundens abonnemang
-        const { data: subsData, error: subsError } = await supabase
-          .from("subscriptions")
-          .select("id")
+        // 2. CANCELLATIONS – endast kundens uppsägningar
+        const { data: cancData, error: cancError } = await supabase
+          .from("subscription_cancellations")
+          .select("status")
           .eq("customer_id", user.id);
 
-        if (subsError) throw subsError;
+        if (cancError) throw cancError;
 
-        const subsPct = (subsData?.length ?? 0) > 0 ? 100 : 0;
+        const totalCanc = cancData?.length ?? 0;
+        const completedCanc = (cancData ?? []).filter((c: any) => {
+          const s = (c.status ?? "").toString().toLowerCase();
+          return ["completed", "cancelled"].includes(s);
+        }).length;
+
+        const subsPct =
+          totalCanc > 0
+            ? Math.round((completedCanc / totalCanc) * 100)
+            : 0;
 
         if (!mounted) return;
 

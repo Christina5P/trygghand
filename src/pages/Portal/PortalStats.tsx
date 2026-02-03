@@ -48,7 +48,7 @@ export const PortalStats: React.FC = () => {
                     <span className="mt-2 text-sm text-gray-500">Ärenden klara</span>
                 </div>
                 
-                {/* Abonnemang klara */}
+                {/* Uppsägningar klara */}
                 <div className="flex flex-col items-center">
                     <div style={{ width: 80 }}>
                         <CircularProgressbar
@@ -61,7 +61,7 @@ export const PortalStats: React.FC = () => {
                             }}
                         />
                     </div>
-                    <span className="mt-2 text-sm text-gray-500">Abonnemang Åtgärdade</span>
+                    <span className="mt-2 text-sm text-gray-500">Uppsägningar klara</span>
                 </div>
             </div>
         </div>

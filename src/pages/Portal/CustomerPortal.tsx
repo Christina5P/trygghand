@@ -16,6 +16,7 @@ import { PortalStats } from '@/pages/Portal/PortalStats'; // Se till att denna k
 import Tidio from "@/components/Tidio"; // Se till att denna komponent finns    
 import { CaseCommentsThread } from "./components/cases/CaseCommentsThread";
 import { CaseDocumentsSection, type CaseDocument } from "./components/cases/CaseDocumentsSection";
+import { SubscriptionCancellationsView } from "./views/SubscriptionCancellationsView";
 
 import {
   MessageSquare,
@@ -31,9 +32,10 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
-import type { Customer, Case, Comment, Valuation, FullmaktDocument } from '@/types'; // Importera dina typer
+import type { Customer, Case, Comment, Valuation, FullmaktDocument, SubscriptionCancellation, Subscription } from '@/types'; // Importera dina typer
 import { ChangePasswordSection } from "./components/ChangePasswordSection";
 import { isMissingColumnError, isUnauthorizedError, tryRefreshSession } from "@/lib/supabase";
+import { useNotifications } from "@/hooks/useNotifications";
 
 import type { Dispatch, SetStateAction } from "react";
  
@@ -65,6 +67,7 @@ type CustomerPortalProps = {
 
 const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTemplates = [], handleDownloadTemplate }) => {
   const [templatesOpen, setTemplatesOpen] = useState(false);
+    const { unreadCount } = useNotifications();
 
     const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
 
@@ -147,6 +150,10 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     // --- State för Värderingshantering ---
     const [valuations, setValuations] = useState<Valuation[]>([]);
     const [loadingValuations, setLoadingValuations] = useState(true);
+
+    // --- State för Uppsägningar ---
+    const [cancellations, setCancellations] = useState<SubscriptionCancellation[]>([]);
+    const [loadingCancellations, setLoadingCancellations] = useState(true);
     
     // --- State för Fullmakt ---
     const [isFullmaktDialogOpen, setIsFullmaktDialogOpen] = useState(false);
@@ -160,9 +167,11 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         if (customer.id) {
             fetchCases();
             fetchValuations();
+            fetchCancellations();
         } else {
             setLoadingCases(false);
             setLoadingValuations(false);
+            setLoadingCancellations(false);
         }
     }, [customer.id]);
 
@@ -403,6 +412,53 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         }
     }, [customer?.id, toast]);
 
+    // --- Hämta Uppsägningar ---
+    const fetchCancellations = useCallback(async () => {
+        if (!customer?.id) return;
+        setLoadingCancellations(true);
+        try {
+            const run = () =>
+                supabase
+                    .from("subscription_cancellations")
+                    .select("*")
+                    .eq("customer_id", customer.id)
+                    .is("deleted_at", null)
+                    .order("created_at", { ascending: false });
+
+            let { data, error } = await run();
+            if (error && isUnauthorizedError(error)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data, error } = await run());
+            }
+
+            if (error && isMissingColumnError(error, "deleted_at")) {
+                const runNoSoftDelete = () =>
+                    supabase
+                        .from("subscription_cancellations")
+                        .select("*")
+                        .eq("customer_id", customer.id)
+                        .order("created_at", { ascending: false });
+
+                ({ data, error } = await runNoSoftDelete());
+            }
+
+            if (error) throw error;
+            const mapped = (data || []).map((c: any) => ({
+                ...c,
+                id: String(c.id),
+                customer_id: c.customer_id != null ? String(c.customer_id) : c.customer_id,
+                subscription_id: c.subscription_id != null ? String(c.subscription_id) : null,
+            }));
+            setCancellations(mapped as SubscriptionCancellation[]);
+        } catch (err) {
+            console.error("Error fetching cancellations:", err);
+            toast({ title: "Fel", description: "Kunde inte hämta uppsägningar", variant: "destructive" });
+            setCancellations([]);
+        } finally {
+            setLoadingCancellations(false);
+        }
+    }, [customer?.id, handleUnauthorized, toast]);
+
     // --- Hämta fullmakter för kund ---
     const fetchDocuments = useCallback(async () => {
         setLoadingDocuments(true);
@@ -639,6 +695,11 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
 
         <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
             <div className="max-w-4xl mx-auto space-y-8">
+                {unreadCount > 0 && (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                        Du har <span className="font-semibold">{unreadCount}</span> nya notiser.
+                    </div>
+                )}
                 {/* 1. Portal Stats (Krav: Status på ärenden) */}
                 <Card className="shadow-lg bg-gradient-to-br from-sky-50 to-white">
                     <CardHeader>
@@ -846,6 +907,35 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                                 );
                             })}
                         </div>
+                    )}
+                </CollapsibleCard>
+
+                {/* Uppsägningar */}
+                <CollapsibleCard
+                    defaultOpen={false}
+                    title={
+                        <div className="flex items-center">
+                            <Briefcase className="w-5 h-5 mr-2 text-gray-600" />
+                            <span className="font-bold text-lg">Mina Uppsägningar</span>
+                        </div>
+                    }
+                    className="shadow-lg"
+                >
+                    {loadingCancellations ? (
+                        <div className="flex justify-center items-center py-6">
+                            <Loader2 className="h-6 w-6 animate-spin text-trust-blue" />
+                            <p className="text-sm text-gray-600 ml-2">Laddar uppsägningar...</p>
+                        </div>
+                    ) : cancellations.length === 0 ? (
+                        <p className="text-center text-gray-500 py-6">Inga uppsägningar hittades.</p>
+                    ) : (
+                        <SubscriptionCancellationsView
+                            subscriptions={[] as Subscription[]}
+                            customers={[customer]}
+                            cancellations={cancellations}
+                            onDataUpdated={fetchCancellations}
+                            showProviderFilter={false}
+                        />
                     )}
                 </CollapsibleCard>
 

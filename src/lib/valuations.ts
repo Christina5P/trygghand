@@ -47,6 +47,37 @@ export async function saveValuation(
   }
 }
 
+export async function adminCreateValuation(
+  analysis: unknown,
+  imageUrls: unknown,
+  customerId: string
+) {
+  const safeAnalysis =
+    typeof analysis === "string"
+      ? analysis
+      : JSON.stringify(analysis);
+
+  const safeImages =
+    Array.isArray(imageUrls)
+      ? imageUrls.map(String)
+      : [];
+
+  const payload = {
+    p_customer_id: customerId,
+    p_analysis: safeAnalysis,
+    p_image_urls: safeImages,
+  };
+
+  const { error } = await supabase
+    .schema("public")
+    .rpc("admin_create_valuation", payload);
+
+  if (error) {
+    console.error("ERROR admin_create_valuation:", error);
+    throw error;
+  }
+}
+
 /**
  * Ladda upp filer till storage-bucket 'images' och returnera URL:er.
  * Om bucket är privat, växla till createSignedUrl för att få åtkomliga länkar.

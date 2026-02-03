@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { getCleanDescription, getPriceLabel, getPriceRange } from "@/utils";
-import type { Valuation } from "@/types";
+import type { Customer, Valuation } from "@/types";
 import { jsPDF } from "jspdf";
 import { supabase, isUnauthorizedError, tryRefreshSession } from "@/lib/supabase";
 import { Archive, BadgeDollarSign, Gift, Trash2 } from "lucide-react";
@@ -22,6 +22,9 @@ interface ValuationManagerProps {
   onDataUpdated: () => Promise<void>;
   customerId?: string;
   showShareToggle?: boolean;
+  estimatorMode?: "customer" | "admin";
+  customers?: Customer[];
+  titleText?: string;
 }
 
 type Disposition = "sell" | "donate" | "keep" | "discard";
@@ -56,7 +59,14 @@ const DISPOSITION_OPTIONS: Array<{
   { key: "discard", label: "Släng", Icon: Trash2 },
 ];
   
-export const ValuationManager: React.FC<ValuationManagerProps> = ({ valuations, onDataUpdated, showShareToggle = true }) => {
+export const ValuationManager: React.FC<ValuationManagerProps> = ({
+  valuations,
+  onDataUpdated,
+  showShareToggle = true,
+  estimatorMode = "customer",
+  customers = [],
+  titleText,
+}) => {
 const { customer } = useAuth();
 const isAdmin = Boolean(customer?.is_admin);
 const { toast } = useToast();
@@ -552,7 +562,7 @@ return (
 defaultOpen={!isAdmin}
 title={
 <div className="flex flex-col">
-<span className="font-bold text-lg">Värdebedömningsverktyg</span>
+<span className="font-bold text-lg">{titleText ?? "Värdebedömningsverktyg"}</span>
 <span className="text-sm text-gray-600">
 Hjälpmedel för att uppskatta värdet på dina bilder och föremål.
 </span>
@@ -587,6 +597,8 @@ Sparade värderingar
       <ValueEstimator
         key={newEstimatorKey}
         customerId={customer?.id}
+        mode={estimatorMode}
+        customers={customers}
         onSaved={() => {
           setMainTab("saved");
           onDataUpdated();

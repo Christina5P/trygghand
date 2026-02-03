@@ -203,11 +203,14 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
   const [adminRecipientName, setAdminRecipientName] = useState<string>("");
   const [adminKeyMarkingsText, setAdminKeyMarkingsText] = useState<string>("");
   const [adminSignatureDataUrl, setAdminSignatureDataUrl] = useState<string | null>(null);
+  const [adminReceipts, setAdminReceipts] = useState<KeyReceipt[]>([]);
+  const [adminReceiptsLoading, setAdminReceiptsLoading] = useState(false);
 
   // -----------------
   // Customer state
   // -----------------
   const [customerReceipts, setCustomerReceipts] = useState<KeyReceipt[]>([]);
+  const [customerSignedReceipts, setCustomerSignedReceipts] = useState<KeyReceipt[]>([]);
   const [customerLoading, setCustomerLoading] = useState(false);
   const [customerError, setCustomerError] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<string | null>(null);
@@ -218,7 +221,6 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
   const [subjectCustomerLoading, setSubjectCustomerLoading] = useState(false);
 
   const latestUnsigned = useMemo(() => {
-    // This is set after we probe Storage below.
     return customerReceipts[0] ?? null;
   }, [customerReceipts]);
 
@@ -250,51 +252,58 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
   // -----------------
   // Customer: fetch + pick latest unsigned
   // -----------------
+  const fetchCustomerReceipts = async () => {
+    setCustomerLoading(true);
+    setCustomerError(null);
+    setCustomerInfo(null);
+
+    try {
+      const { data, error } = await supabase.rpc("customer_get_my_key_receipts");
+      if (error) throw error;
+
+      const list: KeyReceipt[] = Array.isArray(data)
+        ? (data as any[]).map((r) => ({
+            id: String((r as any).id),
+            key_count: Number((r as any).key_count),
+            description: (r as any).description ?? null,
+            signed_at: String((r as any).signed_at ?? ""),
+            created_at: String((r as any).created_at ?? ""),
+          }))
+        : [];
+
+      const unsigned: KeyReceipt[] = [];
+      const signed: KeyReceipt[] = [];
+
+      for (const receipt of list) {
+        const path = `key-receipts/${receipt.id}/signature.png`;
+        const { error: dlErr } = await supabase.storage.from("key-receipts").download(path);
+        if (dlErr) {
+          unsigned.push(receipt);
+        } else {
+          signed.push(receipt);
+        }
+      }
+
+      setCustomerReceipts(unsigned.slice(0, 1));
+      setCustomerSignedReceipts(signed);
+      if (unsigned.length === 0 && signed.length === 0) {
+        setCustomerInfo("Ingen nyckelkvittens hittades.");
+      }
+    } catch (e) {
+      console.error("customer_get_my_key_receipts failed", e);
+      setCustomerError("Kunde inte hämta nyckelkvittenser.");
+    } finally {
+      setCustomerLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (mode !== "customer") return;
-
     let cancelled = false;
 
     const run = async () => {
-      setCustomerLoading(true);
-      setCustomerError(null);
-      setCustomerInfo(null);
-
-      try {
-        const { data, error } = await supabase.rpc("customer_get_my_key_receipts");
-        if (error) throw error;
-
-        const list: KeyReceipt[] = Array.isArray(data)
-          ? (data as any[]).map((r) => ({
-              id: String((r as any).id),
-              key_count: Number((r as any).key_count),
-              description: (r as any).description ?? null,
-              signed_at: String((r as any).signed_at ?? ""),
-              created_at: String((r as any).created_at ?? ""),
-            }))
-          : [];
-
-        // Find latest receipt without a stored signature.
-        const unsigned: KeyReceipt[] = [];
-        for (const receipt of list) {
-          const path = `key-receipts/${receipt.id}/signature.png`;
-          const { error: dlErr } = await supabase.storage.from("key-receipts").download(path);
-          if (dlErr) {
-            unsigned.push(receipt);
-            break;
-          }
-        }
-
-        if (!cancelled) {
-          setCustomerReceipts(unsigned);
-          if (unsigned.length === 0) setCustomerInfo("Ingen osignerad nyckelkvittens hittades.");
-        }
-      } catch (e) {
-        console.error("customer_get_my_key_receipts failed", e);
-        if (!cancelled) setCustomerError("Kunde inte hämta nyckelkvittenser.");
-      } finally {
-        if (!cancelled) setCustomerLoading(false);
-      }
+      if (cancelled) return;
+      await fetchCustomerReceipts();
     };
 
     run();
@@ -388,6 +397,41 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
   // -----------------
   // Admin: create receipt
   // -----------------
+  const fetchAdminReceipts = async () => {
+    if (mode !== "admin") return;
+    setAdminReceiptsLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("admin_get_key_receipts");
+      if (error) throw error;
+
+      const list: KeyReceipt[] = Array.isArray(data)
+        ? (data as any[]).map((r) => ({
+            id: String((r as any).id),
+            key_count: Number((r as any).key_count),
+            description: (r as any).description ?? null,
+            signed_at: String((r as any).signed_at ?? ""),
+            created_at: String((r as any).created_at ?? ""),
+          }))
+        : [];
+
+      const filtered = subjectCustomerId
+        ? list.filter((r: any) => String((r as any).customer_id ?? "") === subjectCustomerId)
+        : list;
+
+      setAdminReceipts(filtered);
+    } catch (e) {
+      console.error("admin_get_key_receipts failed", e);
+      setAdminReceipts([]);
+    } finally {
+      setAdminReceiptsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (mode !== "admin") return;
+    void fetchAdminReceipts();
+  }, [mode, subjectCustomerId]);
+
   const handleAdminCreate = async () => {
     setAdminStatus(null);
     setAdminReceiptId(null);
@@ -426,6 +470,29 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
       const id = (data as any)?.id ? String((data as any).id) : null;
       setAdminReceiptId(id);
       setAdminStatus("Nyckelkvittens signerad av Trygg Hand");
+      await fetchAdminReceipts();
+
+      if (customerId) {
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          const actorId = userData?.user?.id;
+          if (actorId) {
+            await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                type: "key_receipt",
+                ref_id: id ?? "",
+                ref_type: "key_receipt",
+                actor_id: actorId,
+                recipient_id: customerId,
+              }),
+            });
+          }
+        } catch (e) {
+          console.error("create-notification failed", e);
+        }
+      }
     } catch (e) {
       console.error("admin_create_key_receipt failed", e);
       setAdminError("Kunde inte skapa nyckelkvittens.");
@@ -460,7 +527,7 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
       if (error) throw error;
 
       setCustomerInfo("Nycklar mottagna och kvitterade av kund");
-      setCustomerReceipts([]);
+      await fetchCustomerReceipts();
     } catch (e) {
       console.error("upload signature failed", e);
       setCustomerError("Kunde inte spara signaturen.");
@@ -714,6 +781,21 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
         </div>
 
         {receiptForDisplay ? renderReceipt(receiptForDisplay, { showSignaturePad: false }) : null}
+
+        <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+          <div className="text-sm font-semibold text-slate-900">Klara nyckelkvittenser</div>
+          {adminReceiptsLoading ? (
+            <div className="text-sm text-slate-600">Laddar…</div>
+          ) : adminReceipts.length === 0 ? (
+            <div className="text-sm text-slate-600">Inga nyckelkvittenser hittades.</div>
+          ) : (
+            <div className="space-y-4">
+              {adminReceipts.map((receipt) => (
+                <div key={receipt.id}>{renderReceipt(receipt, { showSignaturePad: false })}</div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -726,6 +808,15 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
       {customerInfo ? <div className="text-sm text-slate-700">{customerInfo}</div> : null}
 
       {!customerLoading && latestUnsigned ? renderReceipt(latestUnsigned, { showSignaturePad: true }) : null}
+
+      {!customerLoading && customerSignedReceipts.length > 0 ? (
+        <div className="space-y-4">
+          <div className="text-sm font-semibold text-slate-900">Klara nyckelkvittenser</div>
+          {customerSignedReceipts.map((receipt) => (
+            <div key={receipt.id}>{renderReceipt(receipt, { showSignaturePad: false })}</div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -17,20 +17,56 @@ export interface Notification {
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const fetchNotifications = useCallback(async () => {
+    if (!userId) {
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (!error) setNotifications(data || []);
     setLoading(false);
+  }, [userId]);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
+      setUserId(data.user?.id ?? null);
+    });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`notifications_${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, fetchNotifications]);
 
   const unread = notifications.filter(n => !n.read_at);
 

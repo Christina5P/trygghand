@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { uploadImages } from "../integrations/supabaseUpload";
-import { saveValuation, deleteValuation } from "@/lib/valuations";
+import { adminCreateValuation, saveValuation, deleteValuation } from "@/lib/valuations";
 import { PlusCircle, Save, Camera, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import type { Customer } from "@/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // =====================
 // Typer
@@ -21,6 +23,8 @@ interface Props {
   valuationId?: string | null; // krävs för radering
   onSaved?: () => void;
   onDeleted?: () => void;
+  mode?: "customer" | "admin";
+  customers?: Customer[];
 }
 
 // =====================
@@ -31,6 +35,8 @@ const ValueEstimator: React.FC<Props> = ({
   valuationId = null,
   onSaved,
   onDeleted,
+  mode = "customer",
+  customers = [],
 }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -39,6 +45,7 @@ const ValueEstimator: React.FC<Props> = ({
   const [loadingText, setLoadingText] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [extraPrompt, setExtraPrompt] = useState("");
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -54,6 +61,13 @@ const ValueEstimator: React.FC<Props> = ({
     setPreviewUrls(urls);
     return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [files]);
+
+  useEffect(() => {
+    if (mode !== "admin") return;
+    if (customers.length > 0) {
+      setSelectedCustomerId(customers[0].id);
+    }
+  }, [mode, customers]);
 
   // =====================
   // Filhantering
@@ -207,7 +221,17 @@ const ValueEstimator: React.FC<Props> = ({
   // Spara
   // =====================
   const handleSaveValuation = async () => {
-    if (!customerId || !analysisResult) {
+    if (!analysisResult) {
+      setError("Ingen värdering att spara.");
+      return;
+    }
+
+    if (mode === "admin" && !selectedCustomerId) {
+      setError("Välj kund för att spara värderingen.");
+      return;
+    }
+
+    if (mode !== "admin" && !customerId) {
       setError("Ingen värdering att spara.");
       return;
     }
@@ -216,10 +240,18 @@ const ValueEstimator: React.FC<Props> = ({
     try {
       const imageUrls = await uploadImages(files, "valuations");
 
-      await saveValuation(
-        { analysis_result: analysisResult, source: "value_estimator" },
-        imageUrls
-      );
+      if (mode === "admin") {
+        await adminCreateValuation(
+          { analysis_result: analysisResult, source: "value_estimator" },
+          imageUrls,
+          selectedCustomerId
+        );
+      } else {
+        await saveValuation(
+          { analysis_result: analysisResult, source: "value_estimator" },
+          imageUrls
+        );
+      }
 
       toast({
         title: "Sparat",
@@ -276,6 +308,24 @@ const ValueEstimator: React.FC<Props> = ({
         className="mt-6 bg-white border rounded-lg shadow p-4 md:p-6"
       >
         {/* Upload controls */}
+        {mode === "admin" && (
+          <div className="mb-4">
+            <div className="text-sm font-medium mb-1">Kund för värdering</div>
+            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Välj kund" />
+              </SelectTrigger>
+              <SelectContent>
+                {customers.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name || c.email || c.id}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="flex gap-2 mb-4">
           <Button onClick={() => inputRef.current?.click()} className="bg-trust-blue text-white">
             <PlusCircle className="w-4 h-4 mr-2" /> Välj ({files.length})

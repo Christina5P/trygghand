@@ -69,6 +69,7 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
 }) => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("all");
   const [selectedDisposition, setSelectedDisposition] = useState<Disposition | "all">("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (valuations && valuations.length > 0) {
@@ -330,8 +331,19 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
   ))}
 
       <div className="text-center pt-4">
-        <Button onClick={onDataUpdated} variant="secondary">
-          Uppdatera Värderingsdata
+        <Button
+          onClick={async () => {
+            setIsRefreshing(true);
+            try {
+              await onDataUpdated();
+            } finally {
+              setIsRefreshing(false);
+            }
+          }}
+          variant="secondary"
+          disabled={isRefreshing}
+        >
+          {isRefreshing ? "Uppdaterar…" : "Uppdatera Värderingsdata"}
         </Button>
       </div>
     </div>
