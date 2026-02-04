@@ -64,16 +64,32 @@ const Flytt = () => {
               <CardTitle className="text-xl">Flytthjälp</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-              Att flytta innebär en nystart – men själva flytten kan kännas både tidskrävande och stressig.
-              Vår flyttjänst är ett tryggt och smidigt alternativ där vi hjälper dig hela vägen – från planering till att dina saker står på plats i ditt nya hem.
-              <br />  I denna tjänst väljer du själv hur mycket hjälp du vill ha- från enbart transport till även packning och förberedelse av nytt hem.</p>
-            <br />Kostnaden varierar beroende på bohagets storlek, tillgänglighet och tillval. <br />Prisindikation flytt per m² : ca 100 kr/m2 efter RUT, inom Sundsvall </CardContent>
+              <p className="text-foreground leading-relaxed mb-6">
+                Att flytta innebär en nystart – men själva flytten kan kännas både tidskrävande och stressig.
+                Vi hjälper dig med hela eller delar av din flytt.
+              </p>
+              <ul className="space-y-2 mb-6">
+                {[
+                  "Flexibelt: Välj mellan enbart transport eller full service med packning och uppställning.",
+                  "Lokalt: Vi utgår från Sundsvall och känner närområdet väl.",
+                  "Enkelt: Vi sköter koordineringen så att du slipper stressen.",
+                ].map((item, index) => (
+                  <li key={index} className="flex items-start">
+                    <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                    <span className="text-foreground text-sm">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-foreground leading-relaxed">
+                Kostnaden varierar beroende på bohagets storlek, tillgänglighet och tillval.
+                <br />Prisindikation flytt per m² : ca 100 kr/m2 efter RUT, inom Sundsvall
+              </p>
+            </CardContent>
           </Card>
 
           <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
-              <CardTitle className="text-xl">Omtanke för både dig och miljönn</CardTitle>
+              <CardTitle className="text-xl">Omtanke för både dig och miljön</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">

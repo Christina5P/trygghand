@@ -159,20 +159,46 @@ content: (
           </p>
           <div className="space-y-3">
             <h4 className="font-semibold">Viktiga dokument att samla:</h4>
-            <div className="grid gap-2 md:grid-cols-2">
-              <ul className="space-y-1 text-sm">
-                <li>• Testamente</li>
-                <li>• Gåvobrev: Om det finns gåvor som har getts under livstiden som kan påverka arvet.</li>
-                <li>• Försäkringshandling</li>
-                <li>• Bankuppgifter</li>
-                <li>• Pensionsbesked</li>
+            <div className="grid gap-4 md:grid-cols-2">
+              <ul className="space-y-3 text-sm text-foreground">
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Testamente</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Gåvobrev: Om det finns gåvor som har getts under livstiden som kan påverka arvet.</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Försäkringshandling</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Bankuppgifter</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Pensionsbesked</span>
+                </li>
               </ul>
-              <ul className="space-y-1 text-sm">
-                <li>• Aktieportfölj</li>
-                
-                <li>• Fastighetshandlingar</li>
-                <li>• Kontaktuppgifter till ev.bankman, jurist, försäkringsagent, läkare, nära vänner</li>
-                <li>• Digitala lösenord</li>
+              <ul className="space-y-3 text-sm text-foreground">
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Aktieportfölj</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Fastighetshandlingar</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Kontaktuppgifter till ev.bankman, jurist, försäkringsagent, läkare, nära vänner</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Digitala lösenord</span>
+                </li>
               </ul>
             </div>
           </div>
@@ -242,27 +268,59 @@ content: (
           <div className="space-y-4">
             <div>
               <h4 className="font-semibold mb-2">Första veckan:</h4>
-              <ul className="space-y-1 text-sm text-foreground">
-                <li>□ Anmäl dödsfall till Skatteverket</li>
-                <li>□ Kontakta arbetsgivare</li>
-                <li>□ Kontakta begravningsbyrå</li>
-                <li>□ Informera bank och försäkringsbolag</li>
+              <ul className="space-y-3 text-sm text-foreground">
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>
+                    <span className="font-medium">Dödsfallsintyg:</span>
+                    <br />
+                    Läkare anmäler dödsfallet till Skatteverket, men du kan beställa dödsfallsintyg med släktutredning via deras hemsida så snart det registrerats.
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Kontakta arbetsgivare, närmaste anhöriga och ev. vårdinstanser</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Kontakta begravningsbyrå</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Informera bank och försäkringsbolag</span>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-2">Första månaden:</h4>
-              <ul className="space-y-1 text-sm text-foreground">
-                <li>□ Bouppteckning (inom 3 månader)</li>
-                <li>□ Ansök om dödsbevis</li>
-                <li>□ Hitta testamente</li>
-                <li>□ Säg upp abonnemang</li>
+              <ul className="space-y-3 text-sm text-foreground">
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Hitta testamente</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Bouppteckning (inom 3 månader)</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Bostaden: Säg upp hyresavtal eller förbered försäljning av bostadsrätt/hus.</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Tömning och flytt: Planera för tömning av bohaget. Inventera vad som ska sparas, säljas, skänkas eller återvinnas.</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
+                  <span>Säg upp abonnemang</span>
+                </li>
               </ul>
             </div>
           </div>
           <div className="bg-muted p-4 rounded-lg">
             <p className="text-sm font-medium">Behöver du hjälp?</p>
             <p className="text-sm text-foreground mt-1">
-              Vi hjälper dig med hela processen - från bouppteckning till tömning av dödsboet.
+              Trygg Hand kan koordinera hela flyttkedjan – från sortering till slutstädning.
             </p>
           </div>
         </div>

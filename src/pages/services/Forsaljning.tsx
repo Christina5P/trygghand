@@ -56,7 +56,7 @@ function Forsaljning() {
              
               <h1 className="text-3xl font-bold text-foreground"> Försäljningsförmedling</h1> 
              
-              <p className="text-xl text-muted-foreground">Maximera värdet ur dödsboet eller äldreflytten. För komplett hantering av dödsbo, se vår <Link to="/dodsbohantering-sundsvall" className="text-primary underline">dödsbohantering i Sundsvall</Link>.</p> 
+              <p className="text-xl text-muted-foreground">Maximera värdet ur dödsboet eller bohaget inför äldreflytten. <br></br>För komplett hantering av dödsbo, se vår <Link to="/dodsbohantering-sundsvall" className="text-primary underline">dödsbohantering i Sundsvall</Link>.</p> 
             </div>
           </div>
         </div>
@@ -67,12 +67,12 @@ function Forsaljning() {
               <div className="space-y-6">
                 {/* Ny sektion: Vad vi säljer åt dig */}
                 <h3 className="font-semibold text-foreground">Föremål för Förmedling:</h3> 
-                <p className="text-muted-foreground text-sm">Vi fokuserar på föremål med goda försäljningsmöjligheter som tillsammans optimerar slutvärdet. Exempel på föremål vi framgångsrikt förmedlar:</p>
+                <p className="text-muted-foreground text-sm">Vi fokuserar på föremål med goda försäljningsmöjligheter som tillsammans optimerar slutvärdet. Exempel på föremål vi förmedlar:</p>
                 <ul className="space-y-3">
                   {[
                     "Unika eller värdefulla delar av dödsbon",
                     "Kvalitetsmöbler och inredning från äldreflyttar",
-                    "Antikviteter, vintage och retroföremål",
+                    //"Antikviteter, vintage och retroföremål",
                     "Designobjekt och konst",
                     "Specialintressen som samlingar eller verktyg"
                   ].map((item, index) => (

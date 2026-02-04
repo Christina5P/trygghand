@@ -33,7 +33,7 @@ const About = () => {
     "Flexibel service anpassad efter dina behov",
     "Kostnadsfri första konsultation",
     "Digital uppföljning i realtid – du kan följa arbetet steg för steg",
-    "Nätverk av pålitliga partners för städning, flytt och värdering",
+    //"Nätverk av pålitliga partners för städning, flytt och värdering",
     "Sekretessavtal för din trygghet"
   ];
 

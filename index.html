@@ -1,127 +1,115 @@
 <!doctype html>
-<html lang="en">
+<html lang="sv">
   <head>
     <meta charset="UTF-8" />
-    <!-- Favicon i flera storlekar -->
-  <link rel="icon" type="image/png" sizes="256x256" href="/favicon-256x256.png" />
-  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
-  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64x64.png" />
-  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png" />
-  <link rel="icon" href="favicon.ico" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  
- 
-  <title>Trygg Hand</title>
-  
-
-     
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trygg Hand </title>
-    <meta name="description" content="Helhetslösning för livsförändringar, äldreflytt och hantering av dödsbo. Digital uppföljning och komplett koordinering - all hjälp du behöver på ett tryggt sätt." />
-    <meta name="author" content="Trygg Hand" />
-    <meta name="keywords" content="äldreflytt, dödsbo, livsförändringar, flytthjälp, tömning, städning, värdering, Stockholm" />
-
-    <meta property="og:title" content="Trygg Hand - Från beslut till nytt kapitel" />
-    <meta property="og:description" content="Helhetslösning för livsförändringar, äldreflytt och hantering av dödsbo. Digital uppföljning och komplett koordinering." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://trygghand.se" />
-
-    <link rel="icon" type="image/png" sizes="128x128" href="/favicon-16x16.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="128x128" href="/favicon-192x192.png" />
-    <link rel="icon" type="image/png" sizes="128x128" href="/favicon-512x512.png" />
-    <link rel="icon" type="image/png" sizes="128x128" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     
-        <!-- PWA manifest is injected via react-helmet in PROD (see src/components/PwaHead.tsx).
-          This avoids Codespaces auth redirects (github.dev/pf-signin) in DEV/PWA contexts. -->
-    <meta name="theme-color" content="#3B82F6" />
+    <title>Trygg Hand | Dödsbo & Äldreflytt i Sundsvall</title>
+    <meta name="description" content="Vi hjälper dig med äldreflytt och dödsbo i hela Sundsvall.. Vi koordinerar allt från sortering och tömning till flytt och städning med digital uppföljning." />
+    
+    <link rel="manifest" href="/manifest.webmanifest" /> <meta name="theme-color" content="#3B82F6" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Trygg Hand" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- Google Tag Manager Consent Mode -->
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Trygg Hand",
+        "image": "https://trygghand.com/logo.png",
+        "@id": "https://trygghand.com",
+        "url": "https://trygghand.com",
+        "telephone": "+46761169554", 
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Krokviken 133",
+          "addressLocality": "Alnö",
+          "postalCode": "865 92",
+          "addressRegion": "Västernorrland",
+          "addressCountry": "SE"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 62.3908,
+          "longitude": 17.3069
+        },
+        "areaServed": [
+    {
+      "@type": "City",
+      "name": "Sundsvall"
+    },
+    {
+      "@type": "City",
+      "name": "Alnö"
+    },
+    {
+      "@type": "City",
+      "name": "Timrå"
+    }
+  ],
+        "description": "Specialist på dödsbohantering och äldreflytt i Sundsvall med omnejd.",
+        "openingHoursSpecification": {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday"
+          ],
+          "opens": "08:00",
+          "closes": "17:00"
+        }
+      }
+    </script>
+
     <script>
       window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'gtm.start': new Date().getTime(),
-        event: 'gtm.js',
-        'consent': 'default',
-        'analytics_storage': 'denied',
-        'ad_storage': 'denied'
-      });
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', { 'analytics_storage': 'denied', 'ad_storage': 'denied' });
     </script>
-    <!-- Google Tag Manager -->
+    
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-W52RNNJ2');</script>
-    <!-- End Google Tag Manager -->
-
   </head>
 
   <body>
-    <script>
-      // Codespaces/preview recovery: a stale Service Worker can serve outdated
-      // assets and cause a white screen (e.g. /portal). This runs even if the
-      // main JS bundle fails to load.
-      (function () {
-        try {
-          var host = window.location.hostname || "";
-          var search = window.location.search || "";
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W52RNNJ2"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
-          var isDevLikeHost =
-            host === "localhost" ||
-            host === "127.0.0.1" ||
-            host.endsWith(".app.github.dev") ||
-            host.endsWith(".githubpreview.dev");
-
-          var forceNoSw = search.indexOf("nosw=1") !== -1;
-          if (!isDevLikeHost && !forceNoSw) return;
-
-          if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (regs) {
-              regs.forEach(function (r) {
-                r.unregister();
-              });
-            });
-          }
-
-          if ("caches" in window) {
-            caches.keys().then(function (keys) {
-              return Promise.all(keys.map(function (k) {
-                return caches.delete(k);
-              }));
-            });
-          }
-        } catch (e) {
-          // Best-effort only
-        }
-      })();
-    </script>
-
-    <div id="root" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#111827;">
-      <div style="max-width:560px;width:100%;">
-        <div style="font-weight:600;margin-bottom:8px;">Laddar Trygg Hand…</div>
-        <div style="font-size:14px;line-height:1.5;color:#4b5563;">
-          Om du ser en vit sida i Codespaces kan det bero på att porten är privat och kräver GitHub-inloggning.
-          Gör port <strong>5173</strong> public i fliken Ports eller öppna sidan i samma inloggade webbläsare.
+    <div id="root">
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:sans-serif;text-align:center;">
+        <div>
+          <h1 style="font-size:1.5rem;margin-bottom:10px;">Trygg Hand</h1>
+          <p style="color:#666;">Koordinerar din flytt och hantering av dödsbo...</p>
         </div>
       </div>
     </div>
-    <noscript>
-      <div style="padding:16px;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">JavaScript måste vara aktiverat för att använda portalen.</div>
-    </noscript>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W52RNNJ2"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
+
     <script type="module" src="/src/main.tsx"></script>
 
+    <script>
+      (function () {
+        const host = window.location.hostname;
+        if (host.includes("localhost") || host.includes("github.dev") || host.includes("githubpreview.dev")) {
+          if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+          }
+          if ("caches" in window) {
+            caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+          }
+        }
+      })();
+    </script>
   </body>
 </html>

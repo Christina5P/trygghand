@@ -59,7 +59,7 @@ const Stadning = () => {
         <div className="grid lg:grid-cols-2 gap-8">
           <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
-              <CardTitle className="text-xl">Detta ingår i vårt flyttstäd:</CardTitle>
+              <CardTitle className="text-xl">Detta ingår i flyttstäd:</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
@@ -68,7 +68,7 @@ const Stadning = () => {
                   Fönsterputsning, bakom element och utsida samt målade ytor, rengöring av fönsterbänkar, fönsterkarmars insida, rengöring av golvlister, 
                   elkontakter, belysningsknappar, dörrar och dörrkarmar, . 
                   Rengöring av golv och trösklar, rengöring av garderober, in- och utvändigt samt ovanpå. 
-                  Väggar och tak dammas. )
+                  Väggar och tak dammas. 
                 </p>
               </div>
 
@@ -76,7 +76,7 @@ const Stadning = () => {
                 <h3 className="font-semibold text-foreground mb-3">Badrum & toalett</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   Rengöring av tvättställ, toalett inkl. rör,
-                  Badkar-ovansidan och baksidan, eller dusch inkl blandare och rör.
+                  Badkar eller dusch inkl blandare och rör.
                   Rengöring av kakelväggar/klinkers och fogar. 
                   Rengöring av alla synliga rör, samt putsning av speglar.
                   Rengöring av badrumsskåp samt övriga förvaringsutrymmen.
@@ -88,9 +88,9 @@ const Stadning = () => {
                 <h3 className="font-semibold text-foreground mb-3">Kök</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   Rengöring av fast belysning och av kyl och frys in- och utvändigt samt under och bakom. 
-                  Rengöring av spis, ugn in- och utvändigt, tillhörande plåtar och galler samt under och bakom. 
+                  Rengöring av spis, ugn in- och utvändigt, tillhörande plåtar och galler. 
                   Rengöring av diskmaskin, in- och utvändigt.
-                  Av- och uttorkning av skåp även under överskåp,lådor och arbetsbänkar. 
+                  Av- och uttorkning av skåp, även under överskåp,lådor och arbetsbänkar. 
                   Avtorkning av köksfläkt, rengöring av filter och ventiler.
                 </p>
               </div>
