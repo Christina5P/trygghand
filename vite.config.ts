@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import Sitemap from "vite-plugin-sitemap";
 import path from "path";
 import fs from "fs";
 
@@ -31,7 +32,33 @@ export default defineConfig(({ command }) => {
   }
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      Sitemap({
+        hostname: "https://trygghand.com",
+        dynamicRoutes: [
+          "/about",
+          "/services",
+          "/services/forsaljning",
+          "/services/stadning",
+          "/services/flytt",
+          "/services/tomning-bohag",
+          "/services/vardering",
+          "/services/magasinering",
+          "/services/radgivning-planering",
+          "/services/Juridikguide",
+          "/dodsbohantering-sundsvall",
+          "/seniorforandring-sundsvall",
+          "/tomning-av-bohag-sundsvall",
+          "/forsaljning-av-bohag-sundsvall",
+          "/checklista-vid-dodsfall-sundsvall",
+          "/vad-ingar-i-dodsbohantering",
+          "/fragor-tips",
+          "/privacy",
+          "/terms",
+        ],
+      }),
+    ],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "src"),
