@@ -212,11 +212,11 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
   return (
     <div className="space-y-4">
       {/* Filter */}
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Kund:</label>
           <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-            <SelectTrigger className="w-64">
+            <SelectTrigger className="w-44 sm:w-64 h-8 sm:h-9 text-xs sm:text-sm">
               <SelectValue placeholder="Välj kund" />
             </SelectTrigger>
             <SelectContent>
@@ -232,7 +232,7 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Kategori:</label>
           <Select value={selectedDisposition} onValueChange={(v) => setSelectedDisposition(v as Disposition | "all")}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-36 sm:w-48 h-8 sm:h-9 text-xs sm:text-sm">
               <SelectValue placeholder="Alla" />
             </SelectTrigger>
             <SelectContent>
@@ -245,28 +245,28 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
             </SelectContent>
           </Select>
         </div>
-        <Button variant="secondary" onClick={handleDownloadPdf}>
+        <Button variant="secondary" onClick={handleDownloadPdf} className="h-8 sm:h-9 text-xs sm:text-sm px-3 sm:px-4">
           Spara PDF
         </Button>
       </div>
 
       {filteredValuations.map((v) => (
-    <Card key={v.id} className="hover:shadow-md transition">
-      <CardContent className="flex gap-3 items-start p-3">
+      <Card key={v.id} className="hover:shadow-md transition">
+      <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-start p-3 sm:p-4">
         {/* Bild – liten och avlång */}
         {v.image_urls && v.image_urls.length > 0 && (
           <img
             src={v.image_urls[0]}
             alt={`val-${v.id}-img`}
-            className="w-24 h-24 object-cover rounded-md border flex-shrink-0"
+            className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-md border flex-shrink-0"
           />
         )}
 
         {/* Textdel */}
         <div className="flex-1 min-w-0">
-          <div className="flex justify-between items-start gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
             <div className="min-w-0">
-              <div className="text-sm font-medium truncate">
+              <div className="text-sm font-medium break-words">
                 {(() => {
                   const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
                   const base = (v as any)?.title ?? `Värdering #${v.id}`;
@@ -288,7 +288,7 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
                   : "Okänt datum"}
               </div>
             </div>
-            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+            <Badge className="hidden sm:inline-flex bg-blue-100 text-blue-800 hover:bg-blue-200">
               {getCustomerName(v.customer_id)}
             </Badge>
           </div>
@@ -309,11 +309,11 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
             </div>
           )}
 
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="flex-1 h-8 text-xs sm:text-sm"
               onClick={() => onOpenDetails(v)}
             >
               Visa detaljer
@@ -342,6 +342,7 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
           }}
           variant="secondary"
           disabled={isRefreshing}
+          className="h-8 sm:h-9 text-xs sm:text-sm px-3 sm:px-4"
         >
           {isRefreshing ? "Uppdaterar…" : "Uppdatera Värderingsdata"}
         </Button>

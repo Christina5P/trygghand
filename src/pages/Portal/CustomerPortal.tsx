@@ -1,5 +1,5 @@
 // src/pages/Portal/CustomerPortal.tsx
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +36,7 @@ import type { Customer, Case, Comment, Valuation, FullmaktDocument, Subscription
 import { ChangePasswordSection } from "./components/ChangePasswordSection";
 import { isMissingColumnError, isUnauthorizedError, tryRefreshSession } from "@/lib/supabase";
 import { useNotifications } from "@/hooks/useNotifications";
+import { getNotificationDescription } from "@/lib/notifications";
 
 import type { Dispatch, SetStateAction } from "react";
  
@@ -67,7 +68,7 @@ type CustomerPortalProps = {
 
 const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTemplates = [], handleDownloadTemplate }) => {
   const [templatesOpen, setTemplatesOpen] = useState(false);
-    const { unreadCount } = useNotifications();
+        const { unread, unreadCount } = useNotifications();
 
     const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
 
@@ -247,6 +248,31 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         },
         [lastReadCountKey, caseCommentsCounts, storageUserId]
     );
+
+        const unreadCaseMessagesCount = useMemo(() => {
+                if (!cases?.length) return 0;
+                return cases.reduce((acc, caseItem) => acc + getUnreadCount(caseItem.id), 0);
+        }, [cases, getUnreadCount]);
+        const notificationDescriptions = useMemo(
+            () => unread.map((notification) => getNotificationDescription(notification)),
+            [unread]
+        );
+        const messageDescription = useMemo(() => {
+            if (unreadCaseMessagesCount <= 0) return null;
+            if (unreadCaseMessagesCount === 1) return "Nytt meddelande i ett ärende.";
+            return `Nya meddelanden i ${unreadCaseMessagesCount} ärenden.`;
+        }, [unreadCaseMessagesCount]);
+        const bannerDescriptions = useMemo(() => {
+            const items: string[] = [];
+            if (messageDescription) items.push(messageDescription);
+            for (const text of notificationDescriptions) {
+                if (items.length >= 3) break;
+                items.push(text);
+            }
+            return items;
+        }, [messageDescription, notificationDescriptions]);
+        const totalUnread = unreadCount + unreadCaseMessagesCount;
+        const extraUnreadCount = Math.max(0, totalUnread - bannerDescriptions.length);
 
     useEffect(() => {
         // Realtime notiser för nya kommentarer i kundens ärenden
@@ -695,11 +721,25 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
 
         <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
             <div className="max-w-4xl mx-auto space-y-8">
-                {unreadCount > 0 && (
-                    <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-                        Du har <span className="font-semibold">{unreadCount}</span> nya notiser.
-                    </div>
-                )}
+                                {totalUnread > 0 && (
+                                        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                                                <div>
+                                                    Du har <span className="font-semibold">{totalUnread}</span> nya notiser.
+                                                </div>
+                                                {bannerDescriptions.length > 0 && (
+                                                    <ul className="mt-1 list-disc space-y-0.5 pl-5 text-blue-900">
+                                                        {bannerDescriptions.map((text, idx) => (
+                                                            <li key={`${idx}-${text}`} className="leading-snug">
+                                                                {text}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                                {extraUnreadCount > 0 && (
+                                                    <div className="mt-1 text-xs text-blue-700">+ {extraUnreadCount} till</div>
+                                                )}
+                                        </div>
+                                )}
                 {/* 1. Portal Stats (Krav: Status på ärenden) */}
                 <Card className="shadow-lg bg-gradient-to-br from-sky-50 to-white">
                     <CardHeader>

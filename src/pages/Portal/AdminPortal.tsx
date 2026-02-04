@@ -18,12 +18,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Customer, ServiceType, ContactRequest, Subscription, Valuation, CustomerCase, Comment } from '@/types'; 
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
-import { NotificationsList } from "@/components/NotificationsList";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminData } from "@/hooks/useAdminData"; 
 import { useCustomerData } from "@/hooks/useCustomerData"
-import { useNotifications } from "@/hooks/useNotifications";
 import Tidio from "@/components/Tidio";
 import CasesView from "./views/CasesView";
 import CustomersDialog from "./dialogs/CustomersDialog";
@@ -131,7 +129,13 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     fetchAll,
     fetchValuations,   
   } = useAdminData();
-  const { unreadCount } = useNotifications();
+  const [unreadCaseCount, setUnreadCaseCount] = useState(0);
+  const hasUnreadMessages = unreadCaseCount > 0;
+  const adminBannerText = useMemo(() => {
+    if (!hasUnreadMessages) return "";
+    if (unreadCaseCount === 1) return "Nytt kundmeddelande i ett ärende.";
+    return `Nya kundmeddelanden i ${unreadCaseCount} ärenden.`;
+  }, [hasUnreadMessages, unreadCaseCount]);
 
   console.log("Customers in AdminPortal:", customers); // TEMP LOG
 
@@ -501,10 +505,15 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 
 	  
       <div className="min-h-[100dvh] bg-gradient-to-br from-slate-100 via-white to-slate-100 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-        {unreadCount > 0 && (
+        {hasUnreadMessages && (
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
             <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-              Du har <span className="font-semibold">{unreadCount}</span> nya notiser.
+              <div>
+                Du har <span className="font-semibold">{unreadCaseCount}</span> nya meddelanden.
+              </div>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-blue-900">
+                <li className="leading-snug">{adminBannerText}</li>
+              </ul>
             </div>
           </div>
         )}
@@ -658,6 +667,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
               customers={customers}
               onDataUpdated={fetchData}
              onOpenCase={(c) => setSelectedCase(c)}
+              onUnreadCasesChange={setUnreadCaseCount}
             />
           </TabsContent>
 

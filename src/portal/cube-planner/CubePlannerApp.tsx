@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Truck } from "lucide-react";
 
@@ -11,6 +11,7 @@ import { Summary } from "./components/Summary";
 export default function CubePlannerApp() {
   const { user, customer, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   interface SelectedItemData {
     quantity: number;
@@ -39,8 +40,9 @@ export default function CubePlannerApp() {
   if (loading) return null;
 
   // Determine back link for customer/admin
-  const isAdmin = !!customer?.is_admin;
-  const backLink = isAdmin ? "/portal/admin" : "/portal";
+  const isAdminPath = location.pathname.startsWith("/portal/admin");
+  const isAdmin = !!customer?.is_admin || isAdminPath;
+  const backLink = isAdmin ? "/adminportal" : "/portal";
 
   return (
     <div className="cube-planner">

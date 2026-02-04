@@ -21,6 +21,7 @@ interface CasesViewProps {
   customers: Customer[]; // För att skicka till NewCaseForm
   onDataUpdated: () => Promise<void> | void;
   onOpenCase?: (c: Case) => void;
+  onUnreadCasesChange?: (count: number) => void;
 }
 
 // --- Hjälpfunktioner för status (kopierade från CustomerPortal) ---
@@ -51,7 +52,13 @@ const statusOptions = [
   { value: "cancelled", label: "Avbruten" },
 ];
 
-const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, onOpenCase }) => {
+const CasesView: React.FC<CasesViewProps> = ({
+  cases,
+  customers,
+  onDataUpdated,
+  onOpenCase,
+  onUnreadCasesChange,
+}) => {
   const { user } = useAuth(); // Används för att skicka till NewCaseForm som default adminId
   const [isNewCaseDialogOpen, setIsNewCaseDialogOpen] = useState(false);
   const [editingCase, setEditingCase] = useState<Case | null>(null);
@@ -98,6 +105,15 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
     },
     [latestCustomerCommentAt, lastReadAtKey, unreadTick, user?.id]
   );
+
+  const unreadCasesCount = React.useMemo(() => {
+    if (!cases?.length) return 0;
+    return cases.reduce((acc, caseItem) => (hasUnread(caseItem.id) ? acc + 1 : acc), 0);
+  }, [cases, hasUnread]);
+
+  useEffect(() => {
+    onUnreadCasesChange?.(unreadCasesCount);
+  }, [onUnreadCasesChange, unreadCasesCount]);
 
   // Hämtar kommentarer för ett ärende, anropas från NewCaseForm
   const fetchCaseComments = useCallback(async (caseId: string) => {
@@ -216,9 +232,12 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
         <h2 className="text-2xl font-bold">Ärendehantering</h2>
-        <Button onClick={handleOpenNewCaseDialog} className="bg-trust-blue hover:bg-trust-blue/90">
+        <Button
+          onClick={handleOpenNewCaseDialog}
+          className="bg-trust-blue hover:bg-trust-blue/90 w-full sm:w-auto h-9 text-sm px-3"
+        >
           <Plus className="mr-2 h-4 w-4" /> Nytt Ärende
         </Button>
       </div>
@@ -261,10 +280,16 @@ const CasesView: React.FC<CasesViewProps> = ({ cases, customers, onDataUpdated, 
                   Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}
                   {caseItem.scheduled_date && ` | Schemalagt: ${format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}`}
                 </CardDescription>
-                <div className="absolute top-2 right-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                  <div className={`rounded transition-colors ${getStatusColor(caseItem.status)}`} style={{ minWidth: 110, minHeight: 28, display: 'flex', alignItems: 'center' }}>
+                <div
+                  className="mt-2 flex flex-wrap gap-2 sm:absolute sm:top-2 sm:right-2 sm:mt-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div
+                    className={`rounded transition-colors ${getStatusColor(caseItem.status)}`}
+                    style={{ minWidth: 96, minHeight: 28, display: 'flex', alignItems: 'center' }}
+                  >
                     <Select defaultValue={caseItem.status} onValueChange={(s) => handleStatusChange(caseItem.id, s)}>
-                      <SelectTrigger className="w-28 h-7 bg-transparent border-none shadow-none focus:ring-0 focus:outline-none text-xs px-1">
+                    <SelectTrigger className="min-w-[88px] w-24 sm:w-28 h-7 bg-transparent border-none shadow-none focus:ring-0 focus:outline-none text-[11px] sm:text-xs px-1 leading-none">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

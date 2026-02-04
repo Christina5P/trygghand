@@ -117,20 +117,27 @@ serve(async (req: Request): Promise<Response> => {
 
   if (updErr) return json(req, 500, { error: "Internal server error" });
 
-  // Notis: statusändring i uppsägning
+  // Notis: statusändring i uppsägning (skriv direkt via service role)
   try {
-    await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "cancellation_status",
-        ref_id: cancellationId,
-        ref_type: "cancellation",
-        actor_id: user.id,
-        recipient_id: payload.customer_id ?? null,
-        payload: { status: updatePayload.status }
-      })
-    });
+    const recipientId = payload.customer_id ?? null;
+    if (recipientId && recipientId !== user.id) {
+      const { error: notifErr } = await service
+        .from("notifications")
+        .insert([
+          {
+            user_id: recipientId,
+            type: "cancellation_status",
+            ref_id: cancellationId,
+            ref_type: "cancellation",
+            actor_id: user.id,
+            payload: { status: updatePayload.status },
+          },
+        ]);
+
+      if (notifErr) {
+        console.error("Notification insert error", notifErr);
+      }
+    }
   } catch (e) {
     // logga men stoppa ej flödet
     console.error("Notification error", e);

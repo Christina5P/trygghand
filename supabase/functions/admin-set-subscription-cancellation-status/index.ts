@@ -22,21 +22,13 @@ function isUuid(v: unknown): v is string {
 }
 
 async function requireAdmin(service: any, userId: string): Promise<boolean> {
-  const { data: roles, error: rolesErr } = await service
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .eq("role", "admin");
-
-  if (!rolesErr && Array.isArray(roles) && roles.length > 0) return true;
-
   const { data: profile, error: profileErr } = await service
     .from("profiles")
-    .select("role")
+    .select("is_admin")
     .eq("id", userId)
     .maybeSingle();
 
-  if (!profileErr && (profile as any)?.role === "admin") return true;
+  if (!profileErr && (profile as any)?.is_admin === true) return true;
 
   return false;
 }
@@ -91,6 +83,37 @@ serve(async (req: Request): Promise<Response> => {
     .eq("id", cancellationId);
 
   if (updErr) return json(500, { error: "Internal server error" });
+
+  // Notis: statusandring i uppsagning (skriv direkt via service role)
+  try {
+    const { data: cancellation, error: fetchErr } = await service
+      .from("subscription_cancellations")
+      .select("customer_id")
+      .eq("id", cancellationId)
+      .maybeSingle();
+
+    if (!fetchErr && cancellation?.customer_id && cancellation.customer_id !== user.id) {
+      const { error: notifErr } = await service
+        .from("notifications")
+        .insert([
+          {
+            user_id: cancellation.customer_id,
+            type: "cancellation_status",
+            ref_id: cancellationId,
+            ref_type: "cancellation",
+            actor_id: user.id,
+            payload: { status: String(status) },
+          },
+        ]);
+
+      if (notifErr) {
+        console.error("Notification insert error", notifErr);
+      }
+    }
+  } catch (e) {
+    // logga men stoppa ej flodet
+    console.error("Notification error", e);
+  }
 
   return json(200, { ok: true });
 });
