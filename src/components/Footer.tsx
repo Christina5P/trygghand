@@ -37,7 +37,7 @@ const Footer = () => {
             <h4 className="font-semibold text-background/80">Tjänster</h4>
             <ul className="space-y-2 text-sm text-background/80">
               <li><Link to="/services/radgivning-planering" className="hover:underline">Rådgivning & planering</Link></li>
-              <li><Link to="/services/Stadning" className="hover:underline">Städning</Link></li>
+              <li><Link to="/services/flyttstad" className="hover:underline">Städning</Link></li>
               <li><Link to="/services/tomning-bohag" className="hover:underline">Tömning av bohag</Link></li>
               <li><Link to="/services/Flytt" className="hover:underline">Flytt</Link></li>
               <li><Link to="/services/vardering" className="hover:underline">Värdering</Link></li>

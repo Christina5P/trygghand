@@ -40,7 +40,7 @@ export default defineConfig(({ command }) => {
           "/about",
           "/services",
           "/services/forsaljning",
-          "/services/stadning",
+          "/services/flyttstad",
           "/services/flytt",
           "/services/tomning-bohag",
           "/services/vardering",

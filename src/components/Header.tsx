@@ -143,7 +143,7 @@ const Header: React.FC = () => {
                   <Link to="/#paketlosningar" className="block px-4 py-2 text-primary font-semibold hover:bg-primary/5" onClick={() => setDesktopServicesOpen(false)}>Dödsbohantering</Link>
                   <Link to="/#las-mer-tjanster" className="block px-4 py-2 text-primary font-semibold hover:bg-primary/5" onClick={() => setDesktopServicesOpen(false)}>Läs mer om våra tjänster</Link>
                   <Link to="/services/radgivning-planering" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Rådgivning & planering</Link>
-                  <Link to="/services/stadning" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Städning</Link>
+                  <Link to="/services/flyttstad" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Flyttstäd</Link>
                   <Link to="/services/tomning-bohag" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Tömning av bohag</Link>
                   <Link to="/services/flytt" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Flytt</Link>
                   <Link to="/services/vardering" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={() => setDesktopServicesOpen(false)}>Värdering</Link>
@@ -200,7 +200,7 @@ const Header: React.FC = () => {
                     <Link to="/#paketlosningar" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Dödsbohantering</Link>
                     <Link to="/#las-mer-tjanster" className="block py-2 text-primary font-semibold" onClick={closeMobileMenu}>Läs mer om våra tjänster</Link>
                     <Link to="/services/radgivning-planering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Rådgivning & planering</Link>
-                    <Link to="/services/stadning" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Städning</Link>
+                    <Link to="/services/flyttstad" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Städning</Link>
                     <Link to="/services/tomning-bohag" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Tömning av bohag</Link>
                     <Link to="/services/flytt" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Flytt</Link>
                     <Link to="/services/vardering" className="block py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Värdering</Link>

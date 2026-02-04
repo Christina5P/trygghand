@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import Seo from "@/components/Seo";
 
-const Stadning = () => {
+const Flyttstad = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,9 +31,9 @@ const Stadning = () => {
   return (
     <div className="min-h-screen bg-background">
       <Seo
-        title="Städning av dödsbo i Sundsvall – samordnat & tryggt"
+        title="Flyttstäd av dödsbo i Sundsvall – samordnat & tryggt"
         description="Professionell städning av dödsbo i Sundsvall."
-        canonical="https://www.trygghand.com/services/stadning"
+        canonical="https://www.trygghand.com/services/flyttstad"
       />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -50,7 +50,7 @@ const Stadning = () => {
               <Shield className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Städning</h1>
+              <h1 className="text-3xl font-bold text-foreground">Flyttstäd</h1>
               <p className="text-xl text-muted-foreground">Flyttstädning</p>
             </div>
           </div>
@@ -65,10 +65,10 @@ const Stadning = () => {
               <div>
                 <h3 className="font-semibold text-foreground mb-3">Samtliga rum</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Fönsterputsning, bakom element och utsida samt målade ytor, rengöring av fönsterbänkar, fönsterkarmars insida, rengöring av golvlister, 
-                  elkontakter, belysningsknappar, dörrar och dörrkarmar, . 
-                  Rengöring av golv och trösklar, rengöring av garderober, in- och utvändigt samt ovanpå. 
-                  Väggar och tak dammas. 
+                  Fönsterputsning, bakom element och utsida samt målade ytor, rengöring av fönsterbänkar och fönsterkarmars insida, golvlister,
+                  elkontakter, belysningsknappar, dörrar och dörrkarmar.
+                  Rengöring av golv och trösklar samt garderober, in- och utvändigt samt ovanpå.
+                  Väggar och tak dammas.
                 </p>
               </div>
 
@@ -76,11 +76,11 @@ const Stadning = () => {
                 <h3 className="font-semibold text-foreground mb-3">Badrum & toalett</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   Rengöring av tvättställ, toalett inkl. rör,
-                  Badkar eller dusch inkl blandare och rör.
-                  Rengöring av kakelväggar/klinkers och fogar. 
-                  Rengöring av alla synliga rör, samt putsning av speglar.
+                  Badkar eller dusch inkl. blandare och rör.
+                  Rengöring av kakelväggar/klinkers och fogar.
+                  Rengöring av alla synliga rör samt putsning av speglar.
                   Rengöring av badrumsskåp samt övriga förvaringsutrymmen.
-                  Rengöring av golvbrunnar och ventiler. 
+                  Rengöring av golvbrunnar och ventiler.
                 </p>
               </div>
 
@@ -90,7 +90,7 @@ const Stadning = () => {
                   Rengöring av fast belysning och av kyl och frys in- och utvändigt samt under och bakom. 
                   Rengöring av spis, ugn in- och utvändigt, tillhörande plåtar och galler. 
                   Rengöring av diskmaskin, in- och utvändigt.
-                  Av- och uttorkning av skåp, även under överskåp,lådor och arbetsbänkar. 
+                  Av- och avtorkning av skåp, även under överskåp, lådor och arbetsbänkar.
                   Avtorkning av köksfläkt, rengöring av filter och ventiler.
                 </p>
               </div>
@@ -98,7 +98,7 @@ const Stadning = () => {
               <div>
                 <h3 className="font-semibold text-foreground mb-3">Tvättstuga</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Om det finns en tvättstuga gäller enligt samtliga rum. Inklusive rengöring av tvättmaskin, 
+                  Om det finns en tvättstuga gäller samma som för samtliga rum. Inklusive rengöring av tvättmaskin,
                   torktumlare och torkskåp in- och utvändigt.
                 </p>
               </div>
@@ -112,12 +112,12 @@ const Stadning = () => {
             <CardContent>
               <ul className="space-y-3">
                 {[
-                  "Se till att frysen är avstängd och avfrostad och glöm ej att tömma kylen inför rengöring.",
-                  "Dra ut alla vitvaror som går så som kyl, frys, spis samt tvättmaskin och torktumlare för att vi ska kunna rengöra bakom.",
-                  "Rensning av vattenlås under handfat och diskho ingår inte i flyttstädningen. (Vi ser helst att ni gör det själva).",
-                  "Vi behöver också veta vid bokningen om ni har persienner och vill att vi rengör dem annars behöver det vara gjort innan vi kommer ut och städar.",
+                  "Se till att frysen är avstängd och avfrostad och glöm inte att tömma kylen inför rengöring.",
+                  "Dra ut alla vitvaror som går, som kyl, frys, spis samt tvättmaskin och torktumlare, så att vi kan rengöra bakom.",
+                  "Rensning av vattenlås under handfat och diskho ingår inte i flyttstädningen (vi ser helst att ni gör det själva).",
+                  "Vi behöver också veta vid bokningen om ni har persienner och vill att vi rengör dem, annars behöver det vara gjort innan vi kommer ut och städar.",
                   "Se till att bostaden är tömd på möbler och lösa föremål.",
-                  "Tänk också på att biytor som t.ex. förråd, garage och balkonger inte ingår i flyttstädningen. Självklart hjälper vi gärna till med det också men då behöver vi veta det i samband med bokningen."
+                  "Tänk också på att biytor som t.ex. förråd, garage och balkonger inte ingår i flyttstädningen. Självklart hjälper vi gärna till med det också, men då behöver vi veta det i samband med bokningen."
                 ].map((item, index) => (
                   <li key={index} className="flex items-start">
                     <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
@@ -146,4 +146,4 @@ const Stadning = () => {
   );
 };
 
-export default Stadning;
+export default Flyttstad;

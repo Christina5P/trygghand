@@ -333,11 +333,11 @@ function ServicesGrid() {
           </div>
           <p className="text-lg font-semibold text-foreground">Rådgivning & planering</p>
         </Link>
-        <Link to="/services/stadning" className="text-center space-y-3 block hover:scale-105 transition-transform">
+        <Link to="/services/flyttstad" className="text-center space-y-3 block hover:scale-105 transition-transform">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
             <Heart className="h-10 w-10 text-primary" />
           </div>
-          <p className="text-lg font-semibold text-foreground">Städning</p>
+          <p className="text-lg font-semibold text-foreground">Flyttstäd</p>
         </Link>
         <Link to="/services/tomning-bohag" className="text-center space-y-3 block hover:scale-105 transition-transform">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">

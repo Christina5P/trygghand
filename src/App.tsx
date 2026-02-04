@@ -33,7 +33,7 @@ import CubePlannerApp from "@/portal/cube-planner/CubePlannerApp";
 // 💼 Services
 import Services from "@/pages/services";
 import Forsaljning from "@/pages/services/Forsaljning";
-import Stadning from "@/pages/services/Stadning";
+import Flyttstad from "@/pages/services/Flyttstad";
 import Flytt from "@/pages/services/Flytt";
 import TomningBohag from "@/pages/services/TomningBohag";
 import Vardering from "@/pages/services/Vardering-ai";
@@ -87,7 +87,7 @@ function App() {
               {/* Services översikt */}
               <Route path="/services" element={<Services />} />
               <Route path="/services/forsaljning" element={<Forsaljning />} />
-              <Route path="/services/stadning" element={<Stadning />} />
+              <Route path="/services/flyttstad" element={<Flyttstad />} />
               <Route path="/services/flytt" element={<Flytt />} />
               <Route path="/services/tomning-bohag" element={<TomningBohag />} />
               <Route path="/services/vardering" element={<Vardering />} />

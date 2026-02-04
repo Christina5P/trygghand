@@ -27,3 +27,9 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+  [[redirects]]
+  from = "/stadning"
+  to = "/flyttstad"
+  status = 301
+  force = true
