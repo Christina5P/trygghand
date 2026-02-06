@@ -103,8 +103,8 @@ const Vardering = () => {
               </ul>
 
               <p className="text-sm italic">
-                Tillgång ges som del av uppdrag eller via särskild
-                värderingstjänst. Avgift kan tillkomma.
+                Tillgång ges som del av uppdrag eller som särskild
+                värderingstjänst. Avgift tillkommer för enbart värdering.
               </p>
             </CardContent>
           </Card>

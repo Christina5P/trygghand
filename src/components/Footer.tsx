@@ -17,7 +17,7 @@ const Footer = () => {
   return (
     <footer id="footer" className="bg-foreground text-background py-8 text-center text-sm text-muted-foreground">
       <div className="container mx-auto px-4">
-        <div className="grid md:grid-cols-4 gap-8 text-left">
+        <div className="grid md:grid-cols-5 gap-8 text-left">
           <div className="space-y-4">
             <h3 className="text-2xl font-bold text-background/80">Trygg Hand AB</h3>
             <p className="text-background/80 text-sm leading-relaxed">
@@ -64,7 +64,7 @@ const Footer = () => {
           <div className="space-y-4">
             <h4 className="font-semibold text-background/80">Kontakt</h4>
             <div className="space-y-3 text-sm text-background/80">
-              <div className="flex items-center space-x-2">
+              <div className="">
                 <Phone className="h-4 w-4" />
                 <span>076- 116 95 54</span>
               </div>
@@ -82,6 +82,44 @@ const Footer = () => {
                 <span className="font-medium">Org. nr:</span>
                 <span>559564-3445</span>
               </div>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: "url('/images/medelpad-karta.png')",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                backgroundSize: "contain",
+                opacity: 0.4,
+              }}
+              aria-hidden="true"
+            />
+            <div className="relative z-10">
+              <h4 className="font-semibold mb-4 border-b border-background/20 pb-2 text-background/80">Här finns vi:</h4>
+              <ul className="text-background/80 text-sm space-y-1">
+             
+                 <li className="flex items-center">
+                <span className="mr-2">📍</span> Sundsvall (kontor Alnö)
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2">📍</span> Timrå - Söråker
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2">📍</span> Kvissleby - Njurunda
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2">📍</span> Matfors - Stöde
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2">📍</span> Kovland - Indal
+              </li>
+            </ul>
+              <p className="mt-4 text-xs text-background/60 italic">
+                Med god lokalkännedom hjälper vi familjer i hela Medelpad
+              </p>
             </div>
           </div>
         </div>

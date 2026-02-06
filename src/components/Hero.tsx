@@ -11,7 +11,7 @@ const Hero = () => {
           <div className="space-y-8">
             <div className="space-y-4">
               <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                Helhetskoordinator för dödsbo och seniorförändring
+                Helhetskoordinator för seniorförändringar och dödsbohantering
               </h1>
               <h2 className="text-2xl lg:text-4xl font-semibold text-foreground/80 leading-tight">
                 Från beslut till nytt kapitel
@@ -26,7 +26,8 @@ const Hero = () => {
                   dödsbohantering i Sundsvall
                 </Link>
                 .
-                Med digital uppföljning och komplett koordinering – all hjälp du behöver, på ett tryggt och smidigt sätt.
+                <br />
+                Vi kombinerar moderna digitala verktyg för uppföljning med en trygg, gammaldags lokalkännedom.  <br /> Du får uppdateringar i mobilen, men vi ses alltid öga mot öga här i Sundsvall.
               </p>
             </div>
             
