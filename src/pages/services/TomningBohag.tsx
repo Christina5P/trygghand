@@ -32,7 +32,7 @@ const TomningBohag = () => {
    return (
      <div className="min-h-screen bg-background">
        <Seo
-         title="Tömning av bohag | Trygg Hand"
+         title="Tömning av bohag i Sundsvall| Trygg Hand"
         description="Professionell tömning av bohag som del av våra servicepaket för dödsbohantering – sortering och borttransport."
          canonical="https://www.trygghand.com/services/tomning-bohag"
        />

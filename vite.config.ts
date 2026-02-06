@@ -35,7 +35,7 @@ export default defineConfig(({ command }) => {
     plugins: [
       react(),
       Sitemap({
-        hostname: "https://trygghand.com",
+        hostname: "https://www.trygghand.com",
         dynamicRoutes: [
           "/about",
           "/services",

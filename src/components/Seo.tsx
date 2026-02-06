@@ -8,7 +8,7 @@ interface SeoProps {
 }
 
 const SITE_NAME = "Trygg Hand";
-const BASE_URL = "https://trygghand.com";
+const BASE_URL = "https://www.trygghand.com";
 
 export default function Seo({ title, description, canonical, robots }: SeoProps) {
   const fullTitle = `${title} | ${SITE_NAME}`;

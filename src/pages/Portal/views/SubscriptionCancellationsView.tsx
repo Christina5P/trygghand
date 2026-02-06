@@ -62,6 +62,7 @@ export function SubscriptionCancellationsView({
   const [providerFilter, setProviderFilter] = useState<string>("all");
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [customerOverrideByCancellationId, setCustomerOverrideByCancellationId] = useState<Record<string, string | null>>({});
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const customerMap = useMemo(() => {
     const map: Record<string, Customer> = {};
@@ -218,6 +219,26 @@ export function SubscriptionCancellationsView({
     }
   };
 
+  const handleDeleteCancellation = async (cancellationId: string) => {
+    if (!isAdmin) return;
+    setDeletingId(cancellationId);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-soft-delete-subscription-cancellation", {
+        body: { cancellation_id: cancellationId, confirm: true },
+      });
+      if (error) throw error;
+      if ((data as any)?.ok !== true) throw new Error((data as any)?.error || "Kunde inte ta bort");
+
+      toast({ title: "Borttaget", description: "Uppsägningen är borttagen." });
+      if (selected?.id === cancellationId) setSelected(null);
+      await onDataUpdated();
+    } catch (err: any) {
+      toast({ title: "Kunde inte ta bort", description: err?.message || "Något gick fel", variant: "destructive" });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const availableProviders = useMemo(() => {
     const set = new Set<string>();
     cancellations.forEach((c) => {
@@ -315,8 +336,11 @@ export function SubscriptionCancellationsView({
                   caseTypeLabel="Uppsägning"
                   commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
                   canEditStatus={isAdmin}
+                  canDelete={isAdmin}
+                  isDeleting={deletingId === c.id}
                   onOpen={() => setSelected(c)}
                   onStatusChange={(next) => handleStatusChange(c.id, next)}
+                  onDelete={() => handleDeleteCancellation(c.id)}
                 />
               );
             })}

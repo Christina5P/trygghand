@@ -31,8 +31,8 @@ const Flyttstad = () => {
   return (
     <div className="min-h-screen bg-background">
       <Seo
-        title="Flyttstäd av dödsbo i Sundsvall – samordnat & tryggt"
-        description="Professionell städning av dödsbo i Sundsvall."
+        title="Flyttstäd i Sundsvall – samordnat & tryggt"
+        description="Professionell städning i Sundsvall."
         canonical="https://www.trygghand.com/services/flyttstad"
       />
       <div className="container mx-auto px-4 py-8">
@@ -50,7 +50,7 @@ const Flyttstad = () => {
               <Shield className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Flyttstäd</h1>
+              <h1 className="text-3xl font-bold text-foreground">Flyttstäd i Sundsvall</h1>
               <p className="text-xl text-muted-foreground">Flyttstädning</p>
             </div>
           </div>
