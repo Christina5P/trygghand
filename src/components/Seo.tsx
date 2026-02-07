@@ -11,7 +11,7 @@ const SITE_NAME = "Trygg Hand";
 const BASE_URL = "https://www.trygghand.com";
 
 export default function Seo({ title, description, canonical, robots }: SeoProps) {
-  const fullTitle = `${title} | ${SITE_NAME}`;
+  const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
   const canonicalUrl = canonical ? canonical : BASE_URL;
 
   return (
