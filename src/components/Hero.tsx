@@ -2,34 +2,55 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, Heart, Users } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { Link } from "react-router-dom";
-
 const Hero = () => {
   return (
-    <section className="relative bg-gradient-to-br from-background via-soft-gray to-trust-green-light py-20 lg:py-32 overflow-hidden">
+    <section className="relative bg-gradient-to-br from-background via-soft-gray to-trust-green-light py-20 lg:py-32 overflow-hidden font-nunito">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
-            <div className="space-y-4">
-              <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                Helhetskoordinator för seniorförändringar och dödsbohantering
-              </h1>
-              <h2 className="text-2xl lg:text-4xl font-semibold text-foreground/80 leading-tight">
-                Från beslut till nytt kapitel
-              </h2>
-              <p className="text-xl text-foreground leading-relaxed">
-                Vi erbjuder servicepaket  med fasta priser eller individuella tjänster med offert för{" "}
-                <Link to="/seniorforandring-sundsvall" className="text-primary underline">
-                  seniorförändring i Sundsvall
-                </Link>
-                {" "}och{" "}
-                <Link to="/dodsbohantering-sundsvall" className="text-primary underline">
-                  dödsbohantering i Sundsvall
-                </Link>
-                .
-                <br />
-                Vi kombinerar moderna digitala verktyg för uppföljning med en trygg, gammaldags lokalkännedom.  <br /> Du får uppdateringar i mobilen, men vi ses alltid öga mot öga här i Sundsvall.
+            <div className="space-y-6">
+              {/* Överskrift/Kategori - Bra för lokal SEO */}
+              <p className="text-sm lg:text-base font-bold uppercase tracking-widest text-trust-blue-dark">
+                Personlig bohagshantering i Sundsvall
               </p>
-            </div>
+
+              {/* Huvudrubrik - Här sätter vi din yrkesroll i fokus */}
+              <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
+                Din helhetskoordinator vid <span className="text-trust-blue-dark">livets förändringar</span>
+              </h1>
+
+              {/* Underrubrik - Här mjukar vi upp dödsbo/seniorflytt */}
+                  <h2 className="text-xl lg:text-2xl font-medium text-foreground leading-relaxed max-w-xl">
+                Vi skapar trygghet när du behöver hjälp med äldreflytt, 
+                avveckling eller hantering av dödsbon.
+              </h2>
+
+              {/* Brödtext - Här väver vi in sökorden naturligt i länkar */}
+                  <p className="text-lg lg:text-xl text-foreground leading-relaxed">
+                Vi erbjuder färdiga servicepaket med fasta priser eller skräddarsydda lösningar för{" "}
+                <Link
+                  to="/seniorforandring-sundsvall"
+                  className="text-foreground underline decoration-foreground/60 decoration-2 underline-offset-4 hover:decoration-foreground"
+                >
+                  seniorförändring
+                </Link>{" "}
+                och{" "}
+                <Link
+                  to="/dodsbohantering-sundsvall"
+                  className="text-foreground underline decoration-foreground/60 decoration-2 underline-offset-4 hover:decoration-foreground"
+                >
+                  dödsbohantering i Sundsvall
+                </Link>.
+              </p>
+             <p className="text-lg lg:text-xl text-foreground/70 leading-relaxed">Vi kombinerar moderna digitala verktyg för uppföljning med en trygg lokalkännedom.</p>
+              <div className="pt-4 border-l-4 border-primary/20 pl-6">
+                <p className="text-base italic text-foreground">
+                Digitala uppdateringar i mobilen, men alltid personlig service öga mot öga här i Sundsvall.
+                </p>
+              </div>
+                </div>
+             
+           
             
             <div className="flex flex-col sm:flex-row gap-4">
              <a href="#contact">

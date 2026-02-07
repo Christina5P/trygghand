@@ -121,5 +121,28 @@ All colors MUST be HSL.
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: "Nunito", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-muted-foreground,
+  .text-foreground\/50,
+  .text-foreground\/60,
+  .text-foreground\/70,
+  .text-foreground\/80,
+  .text-foreground\/90,
+  .text-gray-300,
+  .text-gray-400,
+  .text-gray-500,
+  .text-gray-600,
+  .text-gray-700,
+  .text-gray-800,
+  .text-gray-900 {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  .placeholder\:text-muted-foreground::placeholder {
+    color: hsl(var(--foreground)) !important;
   }
 }

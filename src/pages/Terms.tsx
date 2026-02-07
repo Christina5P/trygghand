@@ -10,7 +10,7 @@ const Terms: React.FC = () => {
     window.scrollTo(0, 0);
   }, []);
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-soft-gray py-12 px-4 sm:px-6 lg:px-8">
       <Seo
         title="Allmänna Villkor | Trygg Hand"
         description="Läs våra allmänna villkor för tjänster inom dödsbohantering och äldreflytt."
@@ -28,16 +28,16 @@ const Terms: React.FC = () => {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl font-bold text-center text-gray-900">
+            <CardTitle className="text-3xl font-bold text-center text-foreground">
               Allmänna Villkor – Trygg Hand AB
             </CardTitle>
-            <p className="text-center text-gray-600 mt-2">
+            <p className="text-center text-foreground/70 mt-2">
               Gäller från och med 2026-01-01
             </p>
           </CardHeader>
           <CardContent className="prose prose-lg max-w-none">
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Parter och tillämpning</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">1. Parter och tillämpning</h2>
               <p>
                 <strong>Trygg Hand AB</strong> (organisationsnummer 559564-3445) utför flytt-, städ-, packnings-, transport- och relaterade
                 tjänster genom egna anställda och godkända underleverantörer till dig som beställer våra tjänster ("Kunden"). 
@@ -48,7 +48,7 @@ const Terms: React.FC = () => {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Våra tjänster</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">2. Våra tjänster</h2>
               <p>Trygg Hand erbjuder helhetskoordinering vid äldreflytt och dödsbohantering. Det kan innefatta:</p>
               <ul className="list-disc pl-6 mb-4">
                 <li>Planering och samordning av flytt, tömning och städning</li>
@@ -67,7 +67,7 @@ const Terms: React.FC = () => {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. Innan vi börjar</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">3. Innan vi börjar</h2>
               <p className="font-semibold mb-2">Fullmakter:</p>
               <p className="mb-4">För att vi ska kunna utföra vissa arbeten åt dig, såsom hantering av dödsbo eller andras bostäder, behöver du ge oss skriftliga fullmakter som visar att du har rätt att agera. För andra typer av uppdrag kan detta inte vara nödvändigt.</p>
 
@@ -79,14 +79,14 @@ const Terms: React.FC = () => {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Underleverantörer</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">4. Underleverantörer</h2>
               <p>
                 Vi använder underleverantörer (flyttfirmor, städföretag m.fl.) för vissa delar av uppdraget. Du betalar oss för hela tjänsten och vi ansvarar för att samordna och betala underleverantörerna. Vi ansvarar för deras arbete gentemot dig.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Försäljning av bohag</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">5. Försäljning av bohag</h2>
               <p className="font-semibold mb-2">Så går det till:</p>
               <ul className="list-disc pl-6 mb-4">
                 <li>Trygg Hand kan ta hand om försäljning (via auktion, andrahandsbutiker, privatköpare etc.)</li>
@@ -106,7 +106,7 @@ const Terms: React.FC = () => {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Pris och betalning</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">6. Pris och betalning</h2>
               <p className="font-semibold mb-2">Prissättning:</p>
               <p className="mb-4">Priset framgår av din uppdragsbekräftelse (fast pris, timpris eller kombination). Alla priser inkluderar moms.</p>
 
@@ -123,7 +123,7 @@ const Terms: React.FC = () => {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Avbokning och ändringar</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">7. Avbokning och ändringar</h2>
               <p className="font-semibold mb-2">Avbokning:</p>
               <p className="mb-4">Meddela alltid avbokning skriftligt (mejl räcker). Om du avbokar senare än 48 timmar innan planerad insats har vi rätt att debitera upp till 50% av den planerade kostnaden. Redan utfört arbete debiteras alltid fullt ut.</p>
 
@@ -132,7 +132,7 @@ const Terms: React.FC = () => {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Ansvar och försäkring</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">8. Ansvar och försäkring</h2>
               <p className="font-semibold mb-2">Vårt ansvar:</p>
               <p className="mb-4">Vi arbetar professionellt och omsorgfullt. Om vi gör fel som orsakar dig skada ansvarar vi för det.</p>
 
@@ -167,21 +167,21 @@ const Terms: React.FC = () => {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">9. Personuppgifter (GDPR)</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">9. Personuppgifter (GDPR)</h2>
               <p>
                 Vi behandlar dina personuppgifter enligt dataskyddsförordningen (GDPR), endast för att kunna utföra uppdraget. Vi delar inte dina uppgifter med andra utan laglig grund eller ditt samtycke. Mer information finns i vår integritetspolicy på vår hemsida.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">10. Uppsägning</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">10. Uppsägning</h2>
               <p>
                 Båda parter kan avsluta uppdraget i förtid vid allvarligt avtalsbrott (t.ex. utebliven betalning eller om du inte kan ge oss nödvändiga fullmakter). Redan utfört arbete debiteras.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">11. Om vi inte kommer överens</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">11. Om vi inte kommer överens</h2>
               <p className="font-semibold mb-2">Lag:</p>
               <p className="mb-4">Svensk lag gäller.</p>
 
@@ -195,7 +195,7 @@ För företagskunder avgörs eventuella tvister av Sundsvalls tingsrätt.</p>
       </section>
 
             <div className="border-t pt-8 mt-8">
-              <p className="text-center text-gray-600 italic">
+              <p className="text-center text-foreground/70 italic">
                 *Har du frågor om villkoren? Kontakta oss på kontakt@trygghand.com eller 076-116 95 54*
               </p>
             </div>

@@ -42,8 +42,8 @@ const FragorTips = () => {
             <p>Om samtliga dödsbodelägare är överens och samtycker kan en fördelning av saker ske innan bouppteckningen är registrerad.Däremot kan inte bankmedel eller bostad fördelas innan arvskifte är utfört</p>
           </ul>
           <div className="bg-muted p-4 rounded-lg">
-            <p className="text-sm font-medium">Tips:</p>
-            <p className="text-sm text-foreground mt-1">
+            <p className="text-base font-medium">Tips:</p>
+            <p className="text-base text-foreground mt-1">
               Kontakta oss för professionell hjälp med bouppteckning och tömning i rätt ordning. Läs mer om vår <Link to="/dodsbohantering-sundsvall" className="text-primary underline">dödsbohantering i Sundsvall</Link>.
             </p>
           </div>
@@ -65,7 +65,7 @@ content: (
     <div className="grid gap-4 md:grid-cols-2">
       <div>
         <h4 className="font-semibold text-trust-green mb-2">Berättigat för RUT-avdrag (Arbetskostnad):</h4>
-        <ul className="space-y-1 text-sm">
+        <ul className="space-y-1 text-base">
           <li>• Flytt av bohag mellan bostäder eller till/från magasinering.</li>
           <li>• Sortering, packning och utpackning i bostaden.</li>
           <li>• Städning av bostaden inför flytt eller efter tömning.</li>
@@ -75,7 +75,7 @@ content: (
       </div>
       <div>
         <h4 className="font-semibold text-red-600 mb-2">Ej berättigat (Administration, Konsultation & Avgifter):</h4>
-        <ul className="space-y-1 text-sm">
+        <ul className="space-y-1 text-base">
           <li>• Rådgivning, planering och kontakter med myndigheter/abonnemang.</li>
           <li>• Experttjänster som värdering, auktion eller försäljning av lösöre.</li>
           <li>• Kostnad för hyra/förvaring.</li>
@@ -84,16 +84,16 @@ content: (
       </div>
     </div>
     
-    <div className="bg-muted p-4 rounded-lg border border-gray-200">
-      <p className="text-sm font-medium">Viktigt att veta om Dödsbo:</p>
-      <p className="text-sm text-foreground mt-1">
+    <div className="bg-muted p-4 rounded-lg border border-border">
+      <p className="text-base font-medium">Viktigt att veta om Dödsbo:</p>
+      <p className="text-base text-foreground mt-1">
         RUT-avdrag kan beviljas för dödsbohantering om arbetet utfördes före dödsfallet.
       </p>
     </div>
     
     <div className="bg-trust-green/10 p-4 rounded-lg">
-      <p className="text-sm font-medium">Maximalt Avdrag:</p>
-      <p className="text-sm text-foreground mt-1">
+      <p className="text-base font-medium">Maximalt Avdrag:</p>
+      <p className="text-base text-foreground mt-1">
         Avdraget är **50% av den totala arbetskostnaden** för de berättigade tjänsterna, upp till **75 000 kr** per person och år. På skatteverket kan man se hur mycket man har förbrukat.
       </p>
     </div>
@@ -137,8 +137,8 @@ content: (
             </ul>
           </div>
           <div className="bg-muted p-4 rounded-lg">
-            <p className="text-sm font-medium">Praktiskt tips:</p>
-            <p className="text-sm text-foreground mt-1">
+            <p className="text-base font-medium">Praktiskt tips:</p>
+            <p className="text-base text-foreground mt-1">
               Börja med en kategori i taget - kläder, böcker, papper. Ta pauser och få hjälp vid behov.<br></br>
               Det här kan vara en  gruvsam och känslomässig process, som du kan få hjälp med som en servicetjänst av oss.
             </p>
@@ -160,7 +160,7 @@ content: (
           <div className="space-y-3">
             <h4 className="font-semibold">Viktiga dokument att samla:</h4>
             <div className="grid gap-4 md:grid-cols-2">
-              <ul className="space-y-3 text-sm text-foreground">
+              <ul className="space-y-3 text-base text-foreground">
                 <li className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
                   <span>Testamente</span>
@@ -182,7 +182,7 @@ content: (
                   <span>Pensionsbesked</span>
                 </li>
               </ul>
-              <ul className="space-y-3 text-sm text-foreground">
+              <ul className="space-y-3 text-base text-foreground">
                 <li className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
                   <span>Aktieportfölj</span>
@@ -203,14 +203,14 @@ content: (
             </div>
           </div>
           <div className="bg-muted p-4 rounded-lg">
-            <p className="text-sm font-medium">Smart lösning:</p>
-            <p className="text-sm text-foreground mt-1">
+            <p className="text-base font-medium">Smart lösning:</p>
+            <p className="text-base text-foreground mt-1">
               Skapa en "viktig pärm" med alla centrala dokument och berätta för närmast anhörig var den finns.
             </p>
           </div>
           <div className="bg-muted p-4 rounded-lg">
-            <p className="text-sm font-medium">Tips:</p>
-            <p className="text-sm text-foreground mt-1">
+            <p className="text-base font-medium">Tips:</p>
+            <p className="text-base text-foreground mt-1">
               Om du redan har fyllt i Grav/Begravningsönskemål på en begravningsbyrå är det viktigt att ange <i>var</i> önskemålen finns. 
             </p>
           </div>
@@ -246,8 +246,8 @@ content: (
             </ul>
           </div>
           <div className="bg-muted p-4 rounded-lg">
-            <p className="text-sm font-medium">Viktigt datum:</p>
-            <p className="text-sm text-foreground mt-1">
+            <p className="text-base font-medium">Viktigt datum:</p>
+            <p className="text-base text-foreground mt-1">
               Dödsbo ska deklarera senast den 31 maj året efter dödsfallet.
             </p>
           </div>
@@ -268,7 +268,7 @@ content: (
           <div className="space-y-4">
             <div>
               <h4 className="font-semibold mb-2">Första veckan:</h4>
-              <ul className="space-y-3 text-sm text-foreground">
+              <ul className="space-y-3 text-base text-foreground">
                 <li className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
                   <span>
@@ -293,7 +293,7 @@ content: (
             </div>
             <div>
               <h4 className="font-semibold mb-2">Första månaden:</h4>
-              <ul className="space-y-3 text-sm text-foreground">
+              <ul className="space-y-3 text-base text-foreground">
                 <li className="flex items-start">
                   <CheckCircle className="h-4 w-4 text-trust-green mr-2 mt-0.5 flex-shrink-0" />
                   <span>Hitta testamente</span>
@@ -318,8 +318,8 @@ content: (
             </div>
           </div>
           <div className="bg-muted p-4 rounded-lg">
-            <p className="text-sm font-medium">Behöver du hjälp?</p>
-            <p className="text-sm text-foreground mt-1">
+            <p className="text-base font-medium">Behöver du hjälp?</p>
+            <p className="text-base text-foreground mt-1">
               Trygg Hand kan koordinera hela flyttkedjan – från sortering till slutstädning.
             </p>
           </div>

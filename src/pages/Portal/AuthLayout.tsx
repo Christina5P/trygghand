@@ -123,7 +123,7 @@ const AuthLayout = () => {
   };
  
    return (
-     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-gray-50 flex flex-col items-center">
+    <div className="min-h-screen bg-gradient-to-b from-soft-gray via-background to-soft-gray flex flex-col items-center">
        {/* Topbar / tillbaka-knapp */}
        <header className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
          <a
@@ -160,7 +160,7 @@ const AuthLayout = () => {
                        <button
                          type="button"
                          onClick={() => setShowPassword(!showPassword)}
-                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                         className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/50 hover:text-foreground/80"
                          aria-label={showPassword ? "Dölj lösenord" : "Visa lösenord"}
                        >
                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}

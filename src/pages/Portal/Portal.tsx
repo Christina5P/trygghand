@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ customer, signOut, showSignOut = true }
         <div className="flex items-center gap-3">
           <User className="h-6 w-6 text-trust-blue" />
           <div>
-            <div className="text-sm text-gray-500">Inloggad som</div>
+            <div className="text-sm text-foreground/60">Inloggad som</div>
             <div className="font-semibold text-base">{customer?.name ?? "Användare"}</div>
           </div>
         </div>
@@ -56,7 +56,7 @@ const Header: React.FC<HeaderProps> = ({ customer, signOut, showSignOut = true }
           {showSignOut && (
             <button
               onClick={effectiveSignOut}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded bg-gray-100 hover:bg-gray-200"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded bg-secondary hover:bg-muted"
               aria-label="Logga ut"
             >
               <LogOut className="h-4 w-4" />
@@ -178,10 +178,10 @@ const Portal = () => {
 
   if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-soft-gray flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-500">Laddar...</p>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-foreground/60">Laddar...</p>
                 </div>
             </div>
         );
@@ -194,13 +194,13 @@ const Portal = () => {
     const isServiceDown = typeof status === "number" && status >= 500;
 
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-soft-gray flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 space-y-4">
             <div className="text-lg font-semibold">
               {isServiceDown ? "Tillfälligt driftproblem" : "Kontot är inte aktiverat"}
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-foreground/70">
               {isServiceDown
                 ? "Vi kan inte hämta din kundprofil just nu (serverfel). Försök igen om en stund."
                 : "Vi hittade ingen kundprofil kopplad till ditt konto. Kontakta oss så hjälper vi dig att aktivera åtkomst."}
@@ -219,7 +219,7 @@ const Portal = () => {
 
   // Render header centrally only for portals
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-soft-gray">
       <Header customer={customer} signOut={handleSignOut} showSignOut={true} />
 
       {customer.is_admin ? (

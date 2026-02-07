@@ -96,15 +96,15 @@ const EditSubscriptionDialog: React.FC<EditSubscriptionFormProps> = ({ subscript
           <textarea value={currentSubscription.notes ?? ''} onChange={e => updateField('notes', e.target.value)} className="w-full border rounded px-2 py-1" />
         </div>
         <div className="flex justify-end space-x-2 mt-6">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 border rounded">Avbryt</button>
-          <button type="button" onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-foreground border border-border rounded">Avbryt</button>
+          <button type="button" onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-primary text-primary-foreground rounded">
             {isSaving ? 'Sparar...' : 'Spara'}
           </button>
           {/* Gör knappen aktiv för test; återställ disabled={isSaving} senare om allt fungerar */}
           <button
             type="button"
             onClick={() => { console.debug('Avsluta & Skapa klick'); handleEndAndCreateCase(); }}
-            className="px-4 py-2 bg-red-600 text-white rounded"
+            className="px-4 py-2 bg-destructive text-destructive-foreground rounded"
           >
             {isSaving ? 'Bearbetar...' : 'Avsluta & Skapa ärende'}
           </button>
