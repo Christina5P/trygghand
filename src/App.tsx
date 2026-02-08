@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import React, { useEffect } from "react";
 import "@/index.css";
 import PwaHead from "@/components/PwaHead";
+import ScrollToTop from "@/components/ScrollToTop";
 
 // 🧩 Komponenter & sidor
 import ResetPassword from "@/components/ResetPassword";
@@ -62,6 +63,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <BrowserRouter>
+            <ScrollToTop />
             <Toaster />
             <Sonner />
             <Routes>
@@ -74,7 +76,7 @@ function App() {
               <Route path="/kontakt" element={<Navigate to="/#contact" replace />} />
               <Route path="/dodsbohantering-sundsvall" element={<DodsbohanteringSundsvall />} />
               <Route path="/seniorforandring-sundsvall" element={<SeniorforandringSundsvall />} />
-                          <Route path="/forsaljning" element={<Forsaljning />} />
+              <Route path="/forsaljning" element={<Forsaljning />} />
               <Route path="/checklista-vid-dodsfall-sundsvall" element={<ChecklistaVidDodsfallSundsvall />} />
               <Route path="/vad-ingar-i-dodsbohantering" element={<VadIngarIDodsbohantering />} />
 
@@ -123,4 +125,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;    
