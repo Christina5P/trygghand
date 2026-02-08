@@ -1,132 +1,233 @@
-import React from "react";
-import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { 
+  ArrowLeft, 
+  CheckCircle, 
+  Heart, 
+  MapPin, 
+  ClipboardList, 
+  Truck, 
+  Sparkles, 
+  Users 
+} from "lucide-react"; 
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import Seo from "@/components/Seo";
 
-const SeniorforandringSundsvall: React.FC = () => {
+function Seniorforandring() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleConsultationClick = () => {
+    navigate("/", { replace: false });
+    setTimeout(() => scrollToSection("kontakt"), 100);
+  };
+
   return (
-    <>
-      <Helmet>
-        <title>Seniorförändring i Sundsvall – äldreflytt med helhetsstöd | Trygg Hand</title>
-        <meta
-          name="description"
-          content="Trygg seniorförändring i Sundsvall med Trygg Hand. Helhetskoordinator vid äldreflytt: planering, sortering, flyttsamordning, städ och anhörigstöd – steg för steg." 
-        />
-        <link rel="canonical" href="https://trygghand.se/seniorforandring-sundsvall" />
-      </Helmet>
-
+    <div className="min-h-screen bg-background">
+      <Seo
+        title="Seniorförändring i Sundsvall – äldreflytt med helhetsstöd | Trygg Hand"
+        description="Trygg seniorförändring i Sundsvall. Helhetskoordinator vid äldreflytt: planering, sortering, flyttsamordning och anhörigstöd – steg för steg." 
+        canonical="https://www.trygghand.com/services/seniorforandring"
+      />
+      
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-4">
-          <Link to="/" className="text-primary underline">
-            ← Tillbaka till startsidan
+        <div className="max-w-4xl mx-auto mb-12">
+          <Link 
+            to="/" 
+            className="inline-flex items-center text-primary hover:text-primary/80 mb-6 transition-colors font-medium"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Tillbaka till startsidan
           </Link>
+
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left mb-8">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <Heart className="h-10 w-10 text-primary" /> 
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">Seniorförändring i Sundsvall</h1>
+              <p className="text-xl text-muted-foreground leading-relaxed">
+                En äldreflytt kan väcka många känslor. Som Trygg Hands helhetskoordinator i Sundsvall hjälper vi dig som senior och er som anhöriga med 
+                en trygg, respektfull och stegvis äldreflytt.<br />Vi samordnar helheten, så flytten till mindre boende,
+                trygghetsboende eller särskilt boende blir så lugn och tydlig som möjligt.
+              </p>
+            </div>
+          </div>
         </div>
-        <h1 className="text-4xl font-bold mb-6">Seniorförändring i Sundsvall</h1>
 
-        <section className="mb-8">
-          <p className="text-lg mb-4">
-            En seniorförändring kan väcka många känslor – både lättnad och oro. I Sundsvall hjälper Trygg Hand dig som senior och er som anhöriga med en trygg, respektfull och stegvis äldreflytt.
-            Som helhetskoordinator samordnar jag helheten, så att flytten till ett mindre boende, trygghetsboende eller särskilt boende blir så lugn och tydlig som möjligt.
-          </p>
-          <p className="mb-4">
-            Det kan handla om att sortera ett helt hem, göra val kring bohag, planera logistik och få ett hem redo att lämnas över. Du får praktisk hjälp, tydlig kommunikation och anhörigstöd – utan att det blir rörigt eller stressande.
-          </p>
-          <p className="mb-4">
-            Behöver du istället hjälp med dödsbohantering i Sundsvall? Läs mer om vår 
-            {" "}
-            <Link to="/dodsbohantering-sundsvall" className="text-primary underline">
-              dödsbohantering i Sundsvall
-            </Link>
-            .
-          </p>
-        </section>
+        <div className="max-w-4xl mx-auto space-y-12">
+          
+          {/* Tjänstens innehåll - Grid av kort */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                title: "Planering & Rådgivning",
+                text: "Vi går igenom tidplan och beslut i din takt, så att allt känns hanterbart.",
+                icon: <ClipboardList className="h-6 w-6 text-primary" />
+              },
+              {
+                title: "Sortering med omsorg",
+                text: "Hjälp att välja ut vad som ska följa med till det nya hemmet på ett respektfullt sätt.",
+                icon: <Heart className="h-6 w-6 text-primary" />
+              },
+              {
+                title: "Flyttsamordning",
+                text: "Vi samordnar flytten med rätt insatser vid rätt tidpunkt. Det kan inkludera koordinering av transport, nycklar, tillträde och andra praktiska detaljer i både den gamla och nya bostaden",
+                icon: <Truck className="h-6 w-6 text-primary" />
+              },
+              {
+                title: "Städ & Överlämning",
+                text: "När flytten är klar ordnar vi städ och förbereder bostaden för nästa steg.",
+                icon: <Sparkles className="h-6 w-6 text-primary" />
+              }
+            ].map((item, index) => (
+              <Card key={index} className="border-none shadow-md bg-muted/20">
+                <CardContent className="p-6 flex gap-4">
+                  <div className="mt-1">{item.icon}</div>
+                  <div>
+                    <h3 className="font-bold text-foreground mb-1">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground">{item.text}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-        <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Vad ingår i vår seniorförändring?</h2>
-          <p className="mb-4">
-            När du väljer Trygg Hand för seniorförändring i Sundsvall får du helhetsstöd – från första samtalet till att bostaden är överlämnad. Vi börjar med en lugn genomgång av behov, tidplan och förutsättningar.
-            Därefter tar vi fram en plan som passar dig.
-          </p>
+          {/* Anhörigstöd - Lyfts fram extra */}
+          <Card className="bg-primary/5 border-primary/10 overflow-hidden">
+            <CardContent className="p-8">
+              <div className="flex flex-col md:flex-row gap-8 items-center">
+                <div className="flex-1 space-y-4">
+                  <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground">
+                    <Users className="h-6 w-6 text-primary" />
+                    Anhörigstöd & Kommunikation
+                  </h2>
+                  <p className="text-muted-foreground">
+                    En äldreflytt berör hela familjen. Jag fungerar som en samlande kraft och trygg kontaktpunkt 
+                    för anhöriga, så att ni kan fokusera på att finnas där för varandra istället för att rodda i logistik.
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-primary/10 w-full md:w-auto">
+                  <ul className="space-y-2">
+                    <li className="flex items-center gap-2 text-sm text-foreground/80">
+                      <CheckCircle className="h-4 w-4 text-trust-green" /> Tydliga uppdateringar
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground/80">
+                      <CheckCircle className="h-4 w-4 text-trust-green" /> Minskad stress för familjen
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground/80">
+                      <CheckCircle className="h-4 w-4 text-trust-green" /> Lokal samordning i Sundsvall
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <h3 className="text-xl font-medium mb-2">Planering och rådgivning</h3>
-          <p className="mb-4">
-            Vi går igenom vad som ska göras, i vilken ordning och vilka beslut som behöver tas. Du får stöd i prioriteringar, tidsplan och praktiska detaljer, så att flytten blir hanterbar steg för steg.
-          </p>
-
-          <h3 className="text-xl font-medium mb-2">Sortering och urval av bohag</h3>
-          <p className="mb-4">
-            Att välja vad som ska följa med till ett mindre boende kan vara svårt. Jag hjälper till att sortera, packa och göra urval på ett respektfullt sätt – med fokus på trygghet, tydlighet och att viktiga saker tas om hand.
-          </p>
-
-          <h3 className="text-xl font-medium mb-2">Flyttsamordning</h3>
-          <p className="mb-4">
-            Jag samordnar flytten med rätt insatser vid rätt tidpunkt. Det kan inkludera koordinering av transport, nycklar, tillträde och praktiska moment i både den gamla och nya bostaden.
-          </p>
-
-          <h3 className="text-xl font-medium mb-2">Städ och överlämning</h3>
-          <p className="mb-4">
-            När bohaget är sorterat och flytten är genomförd hjälper jag till med städ och förberedelser inför överlämning. Målet är att bostaden lämnas i ett fint och tryggt skick – utan att du behöver hålla ihop alla trådar själv.
-          </p>
-
-          <h3 className="text-xl font-medium mb-2">Administration och kontakt med anhöriga</h3>
-          <p className="mb-4">
-            Vid en äldreflytt uppstår ofta administration och många frågor. Jag hjälper till att hålla struktur i kommunikationen och kan vara en trygg kontaktpunkt för anhöriga, så att alla vet vad som händer och när.
-          </p>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Varför välja Trygg Hand i Sundsvall?</h2>
-          <p className="mb-4">
-            Som lokal helhetskoordinator i Sundsvall är målet att skapa lugn, tydlighet och trygghet i en förändring som annars lätt blir övermäktig.
-          </p>
-          <ul className="list-disc list-inside mb-4">
-            <li>Lokal närvaro och förståelse för Sundsvall</li>
-            <li>Helhetskoordinator som samordnar hela flytten</li>
-            <li>Anhörigstöd och trygg kommunikation genom hela processen</li>
-          </ul>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Hur fungerar processen?</h2>
-          <p className="mb-4">
-            Vi börjar med ett första samtal där vi går igenom situation, boendeform och önskemål. Därefter följer sortering, planering, flytt och överlämning i en ordning som känns trygg.
-          </p>
-          <h3 className="text-xl font-medium mb-2">Steg för steg</h3>
-          <ol className="list-decimal list-inside mb-4">
-            <li>Kontakt och konsultation</li>
-            <li>Planering och tidplan</li>
-            <li>Sortering och urval av bohag</li>
-            <li>Flyttsamordning</li>
-            <li>Städ och överlämning</li>
-          </ol>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Anhörigstöd och trygg kommunikation</h2>
-          <p className="mb-4">
-            En äldreflytt berör ofta hela familjen. Du får tydlig kommunikation och ett lugnt upplägg där anhöriga kan känna sig trygga med att processen går framåt, utan missförstånd eller onödig stress.
-          </p>
-          <p className="mb-4">
-            Jag anpassar insatsen efter behov.</p>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Priser och kostnader</h2>
-          <p className="mb-4">
-           Vi har transparenta priser i olika servicepaket. Vi erbjuder även en gratis konsultation för att ge en exakt offert efter speciella behov. </p>
-        </section>
-
-        <section className="text-center">
-          <h2 className="text-2xl font-semibold mb-4">Kontakta oss för seniorförändring i Sundsvall</h2>
-          <p className="mb-4">
-            Behöver du stöd vid äldreflytt i Sundsvall? Kontakta Trygg Hand för en kostnadsfri konsultation. Du får en trygg plan, helhetsstöd och tydliga nästa steg.
-          </p>
-          <Link to="/#contact" className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
-            Kontakta oss nu
-          </Link>
-        </section>
+          {/* Sektion: Priser och kostnader */}
+<section className="py-12 border-t border-b bg-muted/10 my-12">
+  <div className="max-w-3xl mx-auto px-4 text-center">
+    <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center justify-center gap-2">
+      <Sparkles className="h-6 w-6 text-primary" />
+      Priser och servicepaket
+    </h2>
+    <p className="text-muted-foreground mb-8">
+      Vi tror på full transparens. Därför erbjuder vi fasta servicepaket, 
+      så att du vet exakt vad som ingår och vad det kostar.
+      Du kan även välja en skräddarsydd tjänst där vi anpassar insatserna efter just dina behov och önskemål.
+    </p>
+    
+    <div className="grid md:grid-cols-2 gap-6 text-left">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-primary/10">
+        <h3 className="font-bold text-lg mb-2">Servicepaket</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Färdiga paketlösningar för olika behov och budgetar. 
+        </p>
+        <ul className="space-y-2 text-sm italic">
+          <li>• Räkna ut pris direkt</li>
+          <li>• Tydlig specifikation på moment</li>
+          <li>• Inga dolda avgifter</li>
+        </ul>
       </div>
-    </>
-  );
-};
 
-export default SeniorforandringSundsvall;
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-primary/10">
+        <h3 className="font-bold text-lg mb-2">Skräddarsydd offert</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Varje hem eller behov är unikt. Vi erbjuder alltid en gratis konsultation för att ge en exakt prisbild.
+        </p>
+      
+      </div>
+    </div>
+
+    <div className="mt-8 p-4 bg-primary/5 rounded-lg">
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        * Observera att RUT-avdrag ofta är tillämpligt vid seniorflytt (t.ex. packning och flyttstäd), 
+        vilket kan reducera arbetskostnaden med upp till 50%. 
+      </p>
+    </div>
+  </div>
+</section>
+
+          {/* Process-steg */}
+          <div className="space-y-8">
+            <h2 className="text-2xl font-bold text-center">Så fungerar en seniorförändring</h2>
+            <div className="relative">
+              <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-primary/20 hidden md:block" />
+              {[
+                { step: "Kontakt", desc: "Vi börjar med ett samtal om er situation." },
+                { step: "Planering", desc: "Vi tar fram en tydlig tidplan och budget." },
+                { step: "Genomförande", desc: "Sortering, packning och flyttsamordning." },
+                { step: "Klart", desc: "Bostaden överlämnad och det nya hemmet redo." }
+              ].map((item, index) => (
+                <div key={index} className="relative flex items-center mb-8 md:justify-between">
+                  <div className="flex flex-col md:w-[45%] items-start md:items-end text-left md:text-right px-4">
+                    <span className="font-bold text-primary">Steg {index + 1}</span>
+                    <h4 className="font-bold text-foreground">{item.step}</h4>
+                    <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <div className="absolute left-0 md:left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full z-10" />
+                  <div className="hidden md:block w-[45%]" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="mt-20 text-center space-y-6">
+          <div className="inline-flex items-center gap-2 text-primary font-medium mb-2">
+            <MapPin className="h-5 w-5" />
+            Din personliga koordinator i Sundsvall
+          </div>
+          <h2 className="text-3xl font-bold">Låt oss göra förändringen tryggare</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            Boka en kostnadsfri konsultation så går vi igenom hur jag kan avlasta just er vid nästa äldreflytt.
+          </p>
+          <Button
+            size="lg"
+            className="bg-gradient-to-r from-primary to-trust-blue-dark shadow-xl hover:scale-105 transition-transform px-10 py-7 text-lg"
+            onClick={handleConsultationClick}
+          >
+           Kontakta oss nu
+          </Button>
+          <div className="pt-4">
+            <Link to="/dodsbohantering-sundsvall" className="text-sm text-muted-foreground underline hover:text-primary">
+              Behöver du istället hjälp med dödsbo? Klicka här.
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Seniorforandring;

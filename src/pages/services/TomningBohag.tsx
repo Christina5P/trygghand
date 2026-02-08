@@ -51,13 +51,13 @@ const TomningBohag = () => {
               <Shield className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Tömning av Bohag</h1>
-              <h2 className="text-xl font-semibold text-foreground/80">Del av våra servicepaket för dödsbohantering</h2>
-              <p className="text-xl text-muted-foreground">Sortering och borttransport</p>
+              <h1 className="text-3xl font-bold text-foreground">Bohagstömning</h1>
+              <h2 className="text-xl font-semibold text-foreground/80">Vi sköter allt från sortering till bortforsling</h2>
+              <p className="text-xl text-muted-foreground">En smidig helhetslösning för dig som behöver tömma ett hem i Sundsvall med omnejd.</p>
             </div>
           </div>
         </div>
-
+,
         <div className="grid lg:grid-cols-2 gap-8">
           <Card className="transition-shadow duration-200 hover:shadow-2xl hover:shadow-gray-300">
             <CardHeader>
@@ -120,7 +120,7 @@ const TomningBohag = () => {
               size="lg"
               className="bg-gradient-to-r from-primary to-trust-blue-dark"
             >
-              Boka kostnadsfri konsultation
+              Boka tömning i Sundsvall
             </Button>
           </Link>
 

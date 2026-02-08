@@ -45,8 +45,8 @@ const RadgivningPlanering = () => {
   return (
     <div className="min-h-screen bg-background">
       <Seo
-        title="Rådgivning & planering | Trygg Hand"
-        description="Professionell rådgivning och planering för dödsbohantering, äldreflytt och framtidsplanering. Struktur och trygghet i svåra situationer."
+        title="Rådgivning & Planering vid Dödsbo & Flytt i Sundsvall"
+        description="Få hjälp med planering av dödsbohantering, äldreflytt och digitalt arv i Sundsvall. Vi skapar struktur och trygghet när du behöver det som mest."
         canonical="https://www.trygghand.com/services/radgivning-planering"
       />
       <div className="container mx-auto px-4 py-8">
@@ -67,11 +67,11 @@ const RadgivningPlanering = () => {
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Rådgivning & planering – när du behöver struktur och trygghet
+                Rådgivning & Planering i Sundsvall
               </h1>
               <p className="text-lg text-muted-foreground">
-                Vi hjälper dig att förstå vad som behöver göras, i vilken
-                ordning – och ser till att inget viktigt faller mellan stolarna.
+                Vi hjälper dig att överblicka vad som behöver göras, i vilken
+                ordning – och ser till att inget viktigt faller mellan stolarna vid en äldreflytt eller dödsbohantering.
               </p>
             </div>
           </div>
@@ -80,7 +80,7 @@ const RadgivningPlanering = () => {
         {/* ================= INNEHÅLL ================= */}
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Vad vi hjälper till med */}
-          <Card>
+          <Card className="border-l-4 border-l-primary shadow-md">
             <CardHeader>
               <CardTitle>Vad rådgivningen omfattar</CardTitle>
             </CardHeader>
@@ -105,18 +105,17 @@ const RadgivningPlanering = () => {
           </Card>
 
           {/* Digitalt arv */}
-          <Card className="bg-muted/30">
+          <Card className="bg-primary/5 border-none">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5 text-primary" />
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <KeyRound className="h-6 w-6" />
                 Digitalt arv – något många inte tänker på
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-muted-foreground text-sm">
               <p>
-                Digitalt arv handlar om allt det som finns digitalt i dag –
-                konton, bilder, mejl och abonnemang – och vad som händer med dem
-                när någon inte längre kan hantera dem själv.
+                I dagens digitala värld lämnar vi efter oss konton, bilder och abonnemang. 
+                Vi hjälper dig i Sundsvall att hantera det <strong>digitala arvet</strong> på ett tryggt och respektfullt sätt.
               </p>
 
               <ul className="space-y-2">
@@ -148,7 +147,7 @@ const RadgivningPlanering = () => {
             <CardContent className="space-y-4">
               {[
                 {
-                  step: "Första samtal",
+                  step: "Samtal",
                   text: "Vi går igenom din situation och skapar en tydlig överblick.",
                 },
                 {
@@ -156,11 +155,11 @@ const RadgivningPlanering = () => {
                   text: "Vi tar fram en strukturerad plan anpassad efter dina behov.",
                 },
                 {
-                  step: "Samordning",
+                  step: "Stöd",
                   text: "Vi stöttar och följer upp under processens gång.",
                 },
                 {
-                  step: "Avslut & uppföljning",
+                  step: "Klart",
                   text: "Vi säkerställer att inget viktigt missas.",
                 },
               ].map((item, index) => (
@@ -189,7 +188,7 @@ const RadgivningPlanering = () => {
             className="bg-gradient-to-r from-primary to-trust-blue-dark"
             onClick={handleConsultationClick}
           >
-            Boka kostnadsfri konsultation
+            Boka kostnadsfri rådgivning
           </Button>
           <p className="text-muted-foreground mt-4">
             Denna tjänst ingår ofta i våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering och seniorförändring</a>.

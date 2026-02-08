@@ -31,7 +31,7 @@ const Flyttstad = () => {
   return (
     <div className="min-h-screen bg-background">
       <Seo
-        title="Flyttstäd i Sundsvall – samordnat & tryggt"
+        title="Flyttstädning i Sundsvall – Vi fixar städningen åt dig"
         description="Professionell städning i Sundsvall."
         canonical="https://www.trygghand.com/services/flyttstad"
       />
@@ -135,7 +135,7 @@ const Flyttstad = () => {
             className="bg-gradient-to-r from-primary to-trust-blue-dark"
             onClick={handleConsultationClick}
           >
-            Boka kostnadsfri konsultation
+            Boka städning i Sundsvall
           </Button>
           <p className="text-muted-foreground mt-4">
             Denna tjänst ingår ofta i våra <a href="/#paketlosningar" className="text-primary hover:underline">servicepaket för dödsbohantering och seniorförändring</a>.

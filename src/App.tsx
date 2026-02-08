@@ -21,8 +21,6 @@ import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import DodsbohanteringSundsvall from "@/pages/DodsbohanteringSundsvall";
 import SeniorforandringSundsvall from "@/pages/SeniorforandringSundsvall";
-import TomningAvBohagSundsvall from "@/pages/TomningAvBohagSundsvall";
-import ForsaljningAvBohagSundsvall from "@/pages/ForsaljningAvBohagSundsvall";
 import ChecklistaVidDodsfallSundsvall from "@/pages/ChecklistaVidDodsfallSundsvall";
 import VadIngarIDodsbohantering from "@/pages/VadIngarIDodsbohantering";
 import FragorTips from "@/components/FragorTips";
@@ -34,8 +32,8 @@ import CubePlannerApp from "@/portal/cube-planner/CubePlannerApp";
 import Services from "@/pages/services";
 import Forsaljning from "@/pages/services/Forsaljning";
 import Flyttstad from "@/pages/services/Flyttstad";
-import Flytt from "@/pages/services/Flytt";
 import TomningBohag from "@/pages/services/TomningBohag";
+import Flytt from "@/pages/services/Flytt";
 import Vardering from "@/pages/services/Vardering-ai";
 import Magasinering from "@/pages/services/Magasinering";
 import RadgivningPlanering from "@/pages/services/RadgivningPlanering";
@@ -76,8 +74,7 @@ function App() {
               <Route path="/kontakt" element={<Navigate to="/#contact" replace />} />
               <Route path="/dodsbohantering-sundsvall" element={<DodsbohanteringSundsvall />} />
               <Route path="/seniorforandring-sundsvall" element={<SeniorforandringSundsvall />} />
-              <Route path="/tomning-av-bohag-sundsvall" element={<TomningAvBohagSundsvall />} />
-              <Route path="/forsaljning-av-bohag-sundsvall" element={<ForsaljningAvBohagSundsvall />} />
+                          <Route path="/forsaljning" element={<Forsaljning />} />
               <Route path="/checklista-vid-dodsfall-sundsvall" element={<ChecklistaVidDodsfallSundsvall />} />
               <Route path="/vad-ingar-i-dodsbohantering" element={<VadIngarIDodsbohantering />} />
 

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle2, Loader2, Archive, Edit } from "lucide-react";
-import { GDPRDeleteUserDialog } from "@/components/GDPRDeleteUserDialog";
+import { GDPRDeleteUserDialog } from "@/pages/Portal/dialogs/GDPRDeleteUserDialog";
 import type { Customer } from "@/types";
 
 interface CustomerManagementProps {

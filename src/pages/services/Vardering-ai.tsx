@@ -57,12 +57,12 @@ const Vardering = () => {
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Värdering som ger trygghet – och rätt beslut
+                Värdering & Digitalt Beslutsunderlag
               </h1>
               <p className="text-lg text-muted-foreground mb-4">
-                Vi hjälper dig att förstå vad som faktiskt har värde,
-                vad som kan säljas – och vad som tryggt kan släppas vidare.
-              </p>
+                Vi hjälper dig att förstå vad som faktiskt har ett marknadsvärde, vad som kan säljas – och vad som tryggt kan släppas vidare.
+                Genom vårt unika digitala verktyg skapar vi transparens och trygghet för alla inblandade.
+              </p> 
               <p className="text-sm text-muted-foreground">
                 💡 Värdering är ofta första steget till att frigöra
                 ekonomiskt värde vid dödsbo eller äldreflytt.
@@ -78,22 +78,21 @@ const Vardering = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lock className="h-5 w-5 text-primary" />
-                Digitalt värderingsverktyg – endast för kunder
+                Trygg Hands Digitala Värderingsverktyg
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-muted-foreground">
               <p>
-                Som kund hos Trygg Hand får du tillgång till vårt digitala
-                värderingsverktyg – ett tryggt och strukturerat stöd i en
-                ofta komplex process.
+                När du anlitar oss får du tillgång till vår egenutvecklade plattform. Detta är särskilt värdefullt vid dödsbon där flera delägare befinner sig på olika orter men vill ha full insyn.
               </p>
 
               <ul className="space-y-2 text-sm">
                 {[
                   "Ladda upp bilder på föremål",
-                  "Få strukturerade bedömningar och noteringar",
+                  "Vägledande marknadsbedömningar",
                   "Spara beslutsunderlag för arvskifte eller försäljning",
                   "Full transparens – allt samlat på ett ställe",
+                  "Enkelt underlag till bouppteckning"
                 ].map((item, index) => (
                   <li key={index} className="flex items-start">
                     <span className="mr-2">✔</span>
@@ -103,8 +102,8 @@ const Vardering = () => {
               </ul>
 
               <p className="text-sm italic">
-                Tillgång ges som del av uppdrag eller som särskild
-                värderingstjänst. Avgift tillkommer för enbart värdering.
+               **Notera:** Vårt verktyg ger en vägledande marknadsbedömning som stöd för planering och försäljning.
+                <br /> Avgift tillkommer för enbart värdering.
               </p>
             </CardContent>
           </Card>
@@ -155,7 +154,7 @@ const Vardering = () => {
                 className="px-0"
                 onClick={() => navigate("/services/Forsaljning")}
               >
-                Läs mer om vår försäljningstjänst →
+                Se hur vi säljer åt dig →
               </Button>
             </CardContent>
           </Card>

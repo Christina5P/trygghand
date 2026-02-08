@@ -28,7 +28,7 @@ import CustomersDialog from "./dialogs/CustomersDialog";
 import SubscriptionCancellationsView from "./views/SubscriptionCancellationsView";
 import ContactRequestDialog from "./dialogs/ContactRequestDialog";
 import ValuationManager from "@/components/ValuationManager";
-import KeyReceiptDialog from "@/components/KeyReceiptDialog";
+import KeyReceiptDialog from "@/pages/Portal/dialogs/KeyReceiptDialog";
 import ValuationsView from "./views/ValuationsView"; 
 import ValuationDetailsDialog from "./dialogs/ValuationDetailsDialog";
 import { FullmaktManagement } from "./views/FullmaktManagement";

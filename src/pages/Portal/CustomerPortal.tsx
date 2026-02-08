@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Import för Fullmakt Dialog
 import CollapsibleCard from "@/components/ui/CollapsibleCard"; // Se till att denna komponent finns
 import ValuationManager from "@/components/ValuationManager"; // Se till att denna komponent finns
-import KeyReceiptDialog from "@/components/KeyReceiptDialog";
+import KeyReceiptDialog from "@/pages/Portal/dialogs/KeyReceiptDialog";
 import { PortalStats } from '@/pages/Portal/PortalStats'; // Se till att denna komponent finns
 import Tidio from "@/components/Tidio"; // Se till att denna komponent finns    
 import { CaseCommentsThread } from "./components/cases/CaseCommentsThread";

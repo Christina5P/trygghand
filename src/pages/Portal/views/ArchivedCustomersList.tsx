@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, RotateCcw, Trash2, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
-import { GDPRDeleteUserDialog } from "@/components/GDPRDeleteUserDialog";
+import { GDPRDeleteUserDialog } from "@/pages/Portal/dialogs/GDPRDeleteUserDialog";
 import type { Customer } from "@/types";
 
 interface ArchivedCustomer {
