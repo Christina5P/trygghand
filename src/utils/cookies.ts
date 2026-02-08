@@ -36,5 +36,4 @@ export function clearCookieConsent() {
       ad_storage: 'denied'
     });
   }
-  window.location.reload();
 }

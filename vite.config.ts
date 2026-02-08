@@ -36,9 +36,20 @@ export default defineConfig(({ command }) => {
       react(),
       Sitemap({
         hostname: "https://www.trygghand.com",
+        lastmod: new Date("2026-02-08"),
+        priority: {
+          "*": 0.6,
+          "/": 1.0,
+          "/services/dodsbohantering-sundsvall": 0.8,
+          "/services/seniorforandring-sundsvall": 0.8,
+          "/services/forsaljning": 0.7,
+          "/services/vardering": 0.7,
+        },
         dynamicRoutes: [
           "/about",
           "/services",
+          "/services/dodsbohantering-sundsvall",
+          "/services/seniorforandring-sundsvall",
           "/services/forsaljning",
           "/services/flyttstad",
           "/services/flytt",

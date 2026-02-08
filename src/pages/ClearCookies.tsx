@@ -13,6 +13,23 @@ export default function ClearCookies() {
     setDone(true);
   }, []);
 
+  const handleReturn = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/", { replace: true });
+    }
+  };
+
+  useEffect(() => {
+    if (!done) return;
+    const timeoutId = window.setTimeout(() => {
+      handleReturn();
+    }, 1500);
+
+    return () => clearTimeout(timeoutId);
+  }, [done]);
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-xl text-center">
       <Seo
@@ -33,27 +50,19 @@ export default function ClearCookies() {
           <div className="flex justify-center gap-3">
             <button
               onClick={() => {
-                navigate("/");
-                setTimeout(() => {
-                  const footer = document.getElementById("footer");
-                  if (footer) footer.scrollIntoView({ behavior: "smooth" });
-                }, 100);
+                window.location.assign("/");
               }}
               className="px-4 py-2 bg-[#2f6f99] text-white rounded-md"
             >
-              Ladda om sidan
+              Ladda om startsidan
             </button>
             <button
               onClick={() => {
-                navigate("/");
-                setTimeout(() => {
-                  const footer = document.getElementById("footer");
-                  if (footer) footer.scrollIntoView({ behavior: "smooth" });
-                }, 100);
+                handleReturn();
               }}
               className="px-4 py-2 border rounded-md"
             >
-              Till startsidan
+              Tillbaka
             </button>
           </div>
         </>

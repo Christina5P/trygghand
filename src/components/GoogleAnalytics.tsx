@@ -36,6 +36,16 @@ export default function GoogleAnalytics() {
     // 2. Användaren är UTLOGGAD (user === null)
     // 3. Användaren har GODKÄNT analytics
     if (GA_MEASUREMENT_ID && !user && hasAnalyticsConsent) {
+      // Initiera dataLayer och gtag innan scriptet laddas
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = (...args: any[]) => window.dataLayer?.push(args);
+
+      window.gtag("js", new Date());
+      window.gtag("config", GA_MEASUREMENT_ID, {
+        cookie_flags: "SameSite=Lax;Secure",
+        cookie_expires: 365 * 24 * 60 * 60, // 12 månader i sekunder
+      });
+
       // Kontrollera om skriptet redan är laddat
       if (document.getElementById("ga-script")) return;
 
@@ -46,47 +56,19 @@ export default function GoogleAnalytics() {
       script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
       document.head.appendChild(script);
 
-      // Initiera gtag när skriptet laddats
-      script.onload = () => {
-        window.dataLayer = window.dataLayer || [];
-        function gtag(...args: any[]) {
-          window.dataLayer?.push(args);
-        }
-        gtag("js", new Date());
-        
-        // Konfigurera GA med 12 månaders cookie-livslängd
-        gtag("config", GA_MEASUREMENT_ID, {
-          cookie_flags: "SameSite=Lax;Secure",
-          cookie_expires: 365 * 24 * 60 * 60, // 12 månader i sekunder
-        });
-
-        // Exponera gtag globalt för eventuell användning
-        window.gtag = gtag;
-      };
-
       return () => {
-        // Cleanup vid unmount
         const gaScript = document.getElementById("ga-script");
         if (gaScript) gaScript.remove();
-        
-        // Ta bort dataLayer och gtag
-        if (window.dataLayer) {
-          (window as any).dataLayer = undefined;
-        }
-        if (window.gtag) {
-          (window as any).gtag = undefined;
-        }
       };
-    } else if (!hasAnalyticsConsent) {
-      // Om consent tas bort, ta bort GA
+    }
+
+    if (!hasAnalyticsConsent) {
       const gaScript = document.getElementById("ga-script");
       if (gaScript) gaScript.remove();
-      if (window.dataLayer) {
-        (window as any).dataLayer = undefined;
-      }
-      if (window.gtag) {
-        (window as any).gtag = undefined;
-      }
+
+      // Lämna dataLayer som array för att undvika push-fel i gtag.js
+      window.dataLayer = window.dataLayer || [];
+      (window as any).gtag = undefined;
     }
   }, [user, hasAnalyticsConsent]);
 

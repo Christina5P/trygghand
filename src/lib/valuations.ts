@@ -1,6 +1,17 @@
 // src/lib/valuations.ts
 
 import { supabase } from "@/lib/supabase";
+
+const toJsonValue = (value: unknown) => {
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value ?? null;
+};
 /**
  * Sparar AI-analysen och bild-URL:er i 'valuations' tabellen.
  * @param customerId Kund-ID (kan vara null).
@@ -11,10 +22,7 @@ export async function saveValuation(
   analysis: unknown,
   imageUrls?: unknown
 ) {
-  const safeAnalysis =
-    typeof analysis === "string"
-      ? analysis
-      : JSON.stringify(analysis);
+  const safeAnalysis = toJsonValue(analysis);
 
   const safeImages =
     Array.isArray(imageUrls)
@@ -52,10 +60,7 @@ export async function adminCreateValuation(
   imageUrls: unknown,
   customerId: string
 ) {
-  const safeAnalysis =
-    typeof analysis === "string"
-      ? analysis
-      : JSON.stringify(analysis);
+  const safeAnalysis = toJsonValue(analysis);
 
   const safeImages =
     Array.isArray(imageUrls)
