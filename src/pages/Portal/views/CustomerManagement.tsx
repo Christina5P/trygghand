@@ -54,35 +54,18 @@ export default function CustomerManagement({ customers, onDataUpdated, onOpenCus
     setLoadingId(customer.id);
 
     try {
-      // Deaktivera kunden (alltid false eftersom vi endast visar aktiva här)
+      // Deaktivera kunden via Edge Function (service role + audit + archive snapshot)
       if (currentStatus) {
-        // 1. Arkivera kunden (använd upsert för att undvika duplicate key error)
-        const { error: archiveError } = await supabase
-          .from("archived_customers")
-          .upsert({
-            id: customer.id,
-            email: customer.email || "",
-            name: customer.name,
-            phone: customer.phone,
-            is_admin: customer.is_admin || false,
-            archived_by: user?.id,
-            archived_reason: "Deaktiverad av admin",
-            original_created_at: customer.created_at,
-            original_data: customer, // Lagra komplett original-data
-          }, {
-            onConflict: 'id' // Om id redan finns, uppdatera istället
-          });
+        const { error } = await supabase.functions.invoke("admin-soft-delete-customer", {
+          body: {
+            customer_id: customer.id,
+            confirm: true,
+            reason: "Deaktiverad av admin",
+          },
+        });
 
-        if (archiveError) throw archiveError;
+        if (error) throw error;
       }
-
-      // 2. Ta bort kunden från customers-tabellen (så den bara finns i arkiv)
-      const { error: deleteError } = await supabase
-        .from("customers")
-        .delete()
-        .eq("id", customer.id);
-
-      if (deleteError) throw deleteError;
 
       toast({
         title: "Kund deaktiverad och arkiverad",

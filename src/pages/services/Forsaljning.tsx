@@ -94,25 +94,22 @@ function Forsaljning() {
                 </h3>
                 <div className="grid gap-4">
                   {[
-                    {
-                      title: "Ingen initial kostnad",
-                      text: "Du betalar endast arvode vid lyckad försäljning.",
-                    },
+                   
                     {
                       title: "Prestationsbaserat arvode",
-                      text: "Vi tar 25 % av försäljningspriset – du behåller 75 %.",
+                      text: "Vi tar 25 % av nettointäkten (efter externa försäljningsavgifter) – du behåller 75 %.",
                     },
                     {
                       title: "Tidsbestämd säljperiod",
-                      text: "Intensivt fokus under en överenskommen tid för snabb avveckling.",
+                      text: "Försäljningen sker under en överenskommen period med tydligt fokus.",
                     },
                     {
                       title: "Marknadsanpassade kanaler",
                       text: "Vi säljer via utvalda kanaler som anpassas efter föremålets värde",
                     },
                     {
-                      title: "Komplett hantering",
-                      text: "Värdering, foto, annons, kundkontakt och redovisning – vi sköter allt.",
+                      title: "Försäljningsprocess i sin helhet",
+                      text: "Värdering, fotografering, annonsering, kunddialog och redovisning – enligt överenskommen omfattning."
                     },
                   ].map((item, index) => (
                     <div key={index} className="flex items-start gap-3 bg-muted/30 p-4 rounded-xl">

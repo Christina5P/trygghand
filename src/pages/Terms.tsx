@@ -63,6 +63,7 @@ const Terms: React.FC = () => {
                 <li>Myndighetsutövning eller beslut</li>
               </ul>
               <p>Den exakta omfattningen av ditt uppdrag framgår av din <strong>uppdragsbekräftelse</strong>, som alltid har företräde framför dessa allmänna villkor.</p>
+              <p>Vi förbehåller oss rätten att uppdatera och ändra dessa villkor. Ändringarna träder i kraft omedelbart efter att de har publicerats på webbplatsen.</p>
               <p>Vi förbehåller oss rätten att avsäga oss en städning ifall vi anser att lägenheten är onormalt nedsmutsad. I sådana fall erbjuder vi möjligheten till timdebitering eller ett nytt fast pris baserat på lägenhetens befintliga skick.</p>
             </section>
 
