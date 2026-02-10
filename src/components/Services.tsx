@@ -75,7 +75,7 @@ const seniorPackages = [
       "Magasinering & Extratransport (1 månad)",
       "Inredningsassistans",
       "Digital Installation",
-      "Första-natten service (Sängen bäddas, badrum görs i ordning med nödvändigheter)",
+      "Första-natten service (Ex. sängen bäddas, badrum görs i ordning med nödvändigheter)",
     ],
     allIncluded: true,
   }

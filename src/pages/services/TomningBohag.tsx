@@ -67,7 +67,6 @@ const TomningBohag = () => {
               <p className="text-muted-foreground leading-relaxed mb-6">
                 När det är dags att flytta från ett hem man bott länge i, eller när en anhörig gått bort, kan det kännas både tungt och överväldigande att ta hand om ett helt bohag.
                <br /> Tömning av bohag innebär att vi tar hand om att tömma alla tillhörigheter från en bostad efter en person flyttat eller avlidit. 
-               Då ansvaret ligger hos oss minskar risken för konflikter och missförstånd mellan anhöriga.
                <br /> För en komplett lösning vid dödsfall, se vår <Link to="/dodsbohantering-sundsvall" className="text-primary underline">dödsbohantering i Sundsvall</Link>.
                 <br /><br />
 

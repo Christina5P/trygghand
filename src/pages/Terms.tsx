@@ -92,24 +92,27 @@ const Terms: React.FC = () => {
               <ul className="list-disc pl-6 mb-4">
                 <li>Trygg Hand kan ta hand om försäljning (via auktion, andrahandsbutiker, privatköpare etc.)</li>
                 <li>Vi tar emot betalning från köpare</li>
-                <li>Vi drar av vår provision och eventuella kostnader</li>
+                <li>Vi drar av vårt arvode och eventuella kostnader</li>
                 <li>Resterande belopp betalas ut till dig enligt överenskommelse</li>
               </ul>
 
-              <p className="font-semibold mb-2">Vår provision:</p>
-              <p className="mb-4">Vi tar 25% provision på försäljningspriset för att täcka vårt arbete med värdering, fotografering, annonsering, visning och försäljning.</p>
+              <p className="font-semibold mb-2">Vårt arvode:</p>
+              <p className="mb-4">Vi tar 25% arvode på försäljningspriset för att täcka vårt arbete med värdering, fotografering, annonsering, visning och försäljning.</p>
 
               <p className="font-semibold mb-2">Värdering är ingen garanti:</p>
               <p className="mb-4">Våra bedömningar av värde är uppskattningar baserade på erfarenhet. Vi garanterar inte vad saker faktiskt säljs för – marknaden avgör priset.</p>
 
               <p className="font-semibold mb-2">Transparens:</p>
-              <p>Du får löpande information och kvitton som visar vad som sålts och för vilket pris.</p>
+              <p>Du får information och kvitton som visar vad som sålts och för vilket pris.</p>
             </section>
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-foreground mb-4">6. Pris och betalning</h2>
               <p className="font-semibold mb-2">Prissättning:</p>
-              <p className="mb-4">Priset framgår av din uppdragsbekräftelse (fast pris, timpris eller kombination). Alla priser inkluderar moms.</p>
+              <p className="mb-4">Priset framgår av din uppdragsbekräftelse (fast pris, timpris eller kombination). Alla priser inkluderar moms.<br /><br /> I uppdraget ingår resor upp till 2 mil enkel väg från Trygg Hands verksamhetsort samt upp till tre (3) arbetsbesök per uppdrag, om inget annat avtalats.
+              <br />
+              Vid behov av ytterligare arbetsbesök utöver detta debiteras en kostnad om 395 kr inklusive moms per extra resa.
+              Antalet resor planeras i dialog med kunden i syfte att genomföra uppdraget på ett effektivt och omsorgsfullt sätt.</p>
 
               <p className="font-semibold mb-2">RUT-avdrag:</p>
               <p className="mb-4">

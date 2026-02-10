@@ -44,7 +44,7 @@ export default function Privacy() {
 
       <h2 className="font-semibold mt-6">Vad samlar vi in?</h2>
       <ul className="list-disc pl-5 mt-2">
-        <li>Kontaktuppgifter du själv lämnar (namn, e‑post, telefon).</li>
+        <li>Kontaktuppgifter du själv lämnar (som namn, e‑post, telefon).</li>
         <li>Information som behövs för att utföra våra tjänster (t.ex. adress vid flytt/uppdrag).</li>
         <li>Tekniska data: cookies (se cookie‑policy) och loggar för att hålla tjänsten igång.</li>
       </ul>
@@ -54,8 +54,7 @@ export default function Privacy() {
         För att: genomföra avtal, hantera bokningar och kontakter, förbättra tjänsten (statistik) samt följa lagar.
       </p>
       <p className="mb-2">
-        Vi lagrar kategorisering av värderingar (t.ex. sälja, skänka, behålla) för att kunna utföra avtalade tjänster. Uppgifterna delas endast med handläggare när kunden aktivt väljer att dela dem.
-      </p>
+        Vi lagrar kategorisering av värderingar (t.ex. sälja, skänka, behålla) för att kunna utföra avtalade tjänster.  </p>
 
       <h2 className="font-semibold mt-6">Rättslig grund</h2>
       <p className="mb-2">Vi använder avtals- eller berättigat intresse för nödvändiga behandlingar. För statistik används ditt samtycke (om du godkänner cookies).</p>
