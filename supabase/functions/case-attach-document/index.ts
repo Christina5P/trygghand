@@ -80,9 +80,9 @@ serve(async (req: Request): Promise<Response> => {
   const path = typeof payload?.path === "string" ? payload.path : "";
   const rawName = typeof payload?.display_name === "string" ? payload.display_name : "Dokument";
   const mimeType = typeof payload?.mime_type === "string" ? payload.mime_type.slice(0, 120) : null;
+  const fileSize = typeof payload?.file_size === "number" ? payload.file_size : null;
 
   if (!isUuid(caseId)) return json(400, { error: "Invalid case_id" });
-  if (!path || !path.startsWith(`cases/${caseId}/`)) return json(400, { error: "Invalid path" });
 
   const authHeader = req.headers.get("authorization") || "";
   const userClient = createClient(supabaseUrl, anonKey, {
@@ -119,6 +119,10 @@ serve(async (req: Request): Promise<Response> => {
   const ownerId = (row as any).customer_id as string;
   if (!admin && ownerId !== user.id) return json(403, { error: "Forbidden" });
 
+  if (!path || !path.startsWith(`customers/${ownerId}/cases/${caseId}/`)) {
+    return json(400, { error: "Invalid path" });
+  }
+
   const ext = (path.split(".").pop() || "").toLowerCase();
   const displayName = `${safeDisplayName(rawName)}${ext ? "." + ext : ""}`;
 
@@ -145,6 +149,15 @@ serve(async (req: Request): Promise<Response> => {
     .eq("id", caseId);
 
   if (updErr) return json(500, { error: "Internal server error" });
+
+  const { error: indexErr } = await service.from("customer_files").insert({
+    customer_id: ownerId,
+    bucket: "case-documents",
+    path,
+    file_type: mimeType,
+    size: fileSize,
+  });
+  if (indexErr) return json(500, { error: "Internal server error" });
 
   return json(200, { ok: true });
 });

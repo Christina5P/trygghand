@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { buildCustomerPath, insertCustomerFile } from "@/lib/customerFiles";
 
 export async function createKeyReceipt(
   keyCount: number,
@@ -15,8 +16,8 @@ export async function createKeyReceipt(
   return data;
 }
 
-export async function uploadKeyReceiptSignature(receiptId: string, blob: Blob) {
-  const path = `key-receipts/${receiptId}/signature.png`;
+export async function uploadKeyReceiptSignature(receiptId: string, customerId: string, blob: Blob) {
+  const path = buildCustomerPath(customerId, ["key-receipts", receiptId], "signature.png");
 
   const { error } = await supabase.storage.from("key-receipts").upload(path, blob, {
     upsert: true,
@@ -24,12 +25,20 @@ export async function uploadKeyReceiptSignature(receiptId: string, blob: Blob) {
   });
 
   if (error) throw error;
+
+  await insertCustomerFile({
+    customerId,
+    bucket: "key-receipts",
+    path,
+    fileType: "image/png",
+    size: blob.size,
+  });
 }
 
-export async function getKeyReceiptSignatureUrl(receiptId: string) {
+export async function getKeyReceiptSignatureUrl(receiptId: string, customerId: string) {
   const { data, error } = await supabase.storage
     .from("key-receipts")
-    .download(`key-receipts/${receiptId}/signature.png`);
+    .download(buildCustomerPath(customerId, ["key-receipts", receiptId], "signature.png"));
 
   if (error) throw error;
 

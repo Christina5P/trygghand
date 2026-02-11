@@ -8,6 +8,7 @@ import ValueEstimator from "@/components/ValueEstimator";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
+import SignedStorageImage from "@/components/SignedStorageImage";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { getCleanDescription, getPriceLabel, getPriceRange } from "@/utils";
@@ -427,8 +428,9 @@ return (
 <div className="flex items-start gap-4">
           {/* Bild / Placeholder */}
           {v.image_urls && v.image_urls.length > 0 ? (
-            <img
-              src={v.image_urls[0]}
+            <SignedStorageImage
+              bucket="images"
+              path={v.image_urls[0]}
               alt={`val-${v.id}-img`}
               className="w-16 h-16 object-cover rounded-md border flex-shrink-0"
             />

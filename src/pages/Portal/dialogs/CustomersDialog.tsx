@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import NewCaseForm from "../views/NewCaseForm";
 import type { Customer, Case, ServiceType, Comment, FullmaktDocument } from "@/types"; // Använder alias för typer
 import { FullmaktManagement } from "../views/FullmaktManagement";
+import { buildCustomerPath, insertCustomerFile } from "@/lib/customerFiles";
 
 // --- Hjälpfunktioner för status ---
 const getStatusColor = (status: string) => {
@@ -481,13 +482,9 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
     }
 
     setUploading(true);
-    const fileExtension = selectedFile.name.split('.').pop();
-    
-    // Sökväg inne i bucket (ingen 'documents/' prefix)
-    const pathPrefix = `fullmakter/kund/${editingCustomer.id}/`;
-    const safeFileName = selectedFile.name.replace(/[^a-z0-9.]/gi, '_');
-    const fileName = `${safeFileName}_${Date.now()}.${fileExtension}`;
-    const storagePath = `${pathPrefix}${fileName}`; // path in bucket
+    const fileId = crypto.randomUUID();
+    const safeFileName = selectedFile.name.replace(/[^a-z0-9._-]/gi, "_");
+    const storagePath = buildCustomerPath(editingCustomer.id, ["fullmakter"], `${fileId}-${safeFileName}`);
 
     try {
       // Ladda upp till rätt bucket
@@ -505,6 +502,14 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
 
       if (uploadError) throw uploadError;
 
+      await insertCustomerFile({
+        customerId: editingCustomer.id,
+        bucket: "fullmakts-filer",
+        path: storagePath,
+        fileType: selectedFile.type || null,
+        size: selectedFile.size,
+      });
+
       // Spara referens i databasen i kolumnen dokument_url
       const runUser = () => supabase.auth.getUser();
       let { data: userData, error: userErr } = await runUser();
@@ -515,8 +520,6 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
       const uploaderId = (userData as any)?.user?.id ?? null;
       // Fallback: om ingen uploader finns, använd kundens id som placeholder (justera vid behov)
       const fullmakthavareId = uploaderId ?? editingCustomer.id;
-      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-
       const runInsert = () =>
         supabase.from("fullmakter").insert([
           {

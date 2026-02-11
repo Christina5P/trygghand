@@ -98,6 +98,7 @@ export function CancellationDocumentsSection({
             path,
             display_name: displayName,
             mime_type: file.type || null,
+            file_size: file.size,
           },
         });
         if (attachErr) throw attachErr;
@@ -174,7 +175,7 @@ export function CancellationDocumentsSection({
               e.currentTarget.value = "";
             }}
           />
-          <div className="text-xs text-muted-foreground">Filer sparas utan kundnamn i sökvägen.</div>
+          <div className="text-xs text-muted-foreground">Filer sparas med kund-ID som prefix.</div>
         </div>
       )}
 

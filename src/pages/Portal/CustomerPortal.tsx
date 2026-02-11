@@ -39,6 +39,13 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { getNotificationDescription } from "@/lib/notifications";
 
 import type { Dispatch, SetStateAction } from "react";
+
+type GdprRequestLite = {
+    id: string;
+    status: "ready" | "delivered";
+    expires_at: string | null;
+    created_at: string | null;
+};
  
  // --- Hjälpfunktioner för status ---
 const getStatusColor = (status: string) => {
@@ -162,6 +169,8 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const [loadingDocuments, setLoadingDocuments] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [gdprRequest, setGdprRequest] = useState<GdprRequestLite | null>(null);
+    const [gdprDownloadBusy, setGdprDownloadBusy] = useState(false);
     
     useEffect(() => {
         setEditingCustomer(customer);
@@ -175,6 +184,28 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             setLoadingCancellations(false);
         }
     }, [customer.id]);
+
+    const fetchLatestGdprRequest = useCallback(async () => {
+        if (!customer?.id) return;
+        try {
+            const nowIso = new Date().toISOString();
+            const { data, error } = await supabase
+                .from("gdpr_requests")
+                .select("id, status, expires_at, created_at")
+                .eq("customer_id", customer.id)
+                .in("status", ["ready", "delivered"])
+                .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+                .order("created_at", { ascending: false })
+                .limit(1);
+
+            if (error) throw error;
+            const row = Array.isArray(data) ? (data[0] as GdprRequestLite | undefined) : undefined;
+            setGdprRequest(row ?? null);
+        } catch (err) {
+            console.error("fetch gdpr request failed", err);
+            setGdprRequest(null);
+        }
+    }, [customer?.id]);
 
     useEffect(() => {
         const map = new Map<string, Case>();
@@ -372,6 +403,42 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         if (!customer?.id) return;
         fetchCases();
     }, [customer?.id, fetchCases]);
+
+    useEffect(() => {
+        void fetchLatestGdprRequest();
+    }, [fetchLatestGdprRequest]);
+
+    useEffect(() => {
+        const interval = window.setInterval(() => {
+            void fetchLatestGdprRequest();
+        }, 20000);
+        const onFocus = () => void fetchLatestGdprRequest();
+        window.addEventListener("focus", onFocus);
+        return () => {
+            window.clearInterval(interval);
+            window.removeEventListener("focus", onFocus);
+        };
+    }, [fetchLatestGdprRequest]);
+
+    const handleDownloadGdprReport = async () => {
+        if (!gdprRequest?.id) return;
+        setGdprDownloadBusy(true);
+        try {
+            const { data, error } = await supabase.functions.invoke("gdpr-export", {
+                body: { action: "download", request_id: gdprRequest.id },
+            });
+            if (error) throw error;
+            const signedUrl = (data as any)?.signed_url || (data as any)?.signedUrl;
+            if (!signedUrl) throw new Error("Saknar signed URL");
+            window.open(signedUrl, "_blank", "noopener,noreferrer");
+            await fetchLatestGdprRequest();
+        } catch (err) {
+            console.error("gdpr download failed", err);
+            toast({ title: "Fel", description: "Kunde inte ladda ner utdraget.", variant: "destructive" });
+        } finally {
+            setGdprDownloadBusy(false);
+        }
+    };
 
     // --- Hämta Kommentarer ---
     const fetchComments = useCallback(async (caseId: string) => {
@@ -597,7 +664,13 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             // 3) Attach document row in DB (server-side)
             const runAttach = () =>
                 supabase.functions.invoke('fullmakt-attach', {
-                    body: { path, file_name: selectedFile.name, fullmaktstyp: 'uppladdning' },
+                    body: {
+                        path,
+                        file_name: selectedFile.name,
+                        fullmaktstyp: 'uppladdning',
+                        file_type: selectedFile.type || null,
+                        file_size: selectedFile.size,
+                    },
                 });
 
             let { data: attachData, error: attachErr } = await runAttach();
@@ -830,8 +903,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                      </div>
                  </CollapsibleCard>
 
-
-
                 {/* 5. Ärendehantering (Krav: Fällbara kort, ingen Nytt ärende-knapp) */}
                 <CollapsibleCard
                     defaultOpen
@@ -1045,6 +1116,30 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                           <h4 className="font-semibold mb-3">Ändra lösenord</h4>
                           <ChangePasswordSection />
                         </div>
+
+                                                <div className="border-t pt-4 mt-4">
+                                                    <h4 className="font-semibold mb-2">Registerutdrag (GDPR)</h4>
+                                                    <p className="text-sm text-gray-600">
+                                                        När du begär ett registerutdrag tar vi fram en sammanställning av dina personuppgifter.
+                                                        När utdraget är klart kan du ladda ner det här. Av säkerhetsskäl är länken tidsbegränsad.
+                                                    </p>
+                                                    {gdprRequest && (
+                                                        <div className="mt-3">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="secondary"
+                                                                disabled={gdprDownloadBusy}
+                                                                onClick={handleDownloadGdprReport}
+                                                            >
+                                                                {gdprDownloadBusy
+                                                                    ? "Hämtar..."
+                                                                    : gdprRequest.status === "delivered"
+                                                                    ? "Ladda ner registerutdrag igen"
+                                                                    : "Ladda ner registerutdrag"}
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
                     </div>
                 </CollapsibleCard>
 

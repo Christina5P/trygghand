@@ -1,6 +1,7 @@
 // src/lib/valuations.ts
 
 import { supabase } from "@/lib/supabase";
+import { buildCustomerPath, insertCustomerFile } from "@/lib/customerFiles";
 
 const toJsonValue = (value: unknown) => {
   if (typeof value === "string") {
@@ -16,7 +17,7 @@ const toJsonValue = (value: unknown) => {
  * Sparar AI-analysen och bild-URL:er i 'valuations' tabellen.
  * @param customerId Kund-ID (kan vara null).
  * @param analysis Den rena JSON-strängen från AI-analysen.
- * @param imageUrls Array med publika URL:er till de uppladdade bilderna.
+ * @param imageUrls Array med storage-paths till de uppladdade bilderna.
  */
 export async function saveValuation(
   analysis: unknown,
@@ -87,12 +88,18 @@ export async function adminCreateValuation(
  * Ladda upp filer till storage-bucket 'images' och returnera URL:er.
  * Om bucket är privat, växla till createSignedUrl för att få åtkomliga länkar.
  */
-export async function uploadImages(files: File[], folder = "valuations"): Promise<string[]> {
+export async function uploadImages(
+  files: File[],
+  customerId: string,
+  folder = "valuations"
+): Promise<string[]> {
   const urls: string[] = [];
 
   for (const file of files) {
-    const filename = `${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
-    const filePath = folder ? `${folder}/${filename}` : filename;
+    const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+    const fileId = crypto.randomUUID();
+    const filename = `${fileId}.${ext}`;
+    const filePath = buildCustomerPath(customerId, [folder], filename);
 
     const { data: uploadData, error: uploadError } = await supabase
        .storage
@@ -104,18 +111,15 @@ export async function uploadImages(files: File[], folder = "valuations"): Promis
        throw uploadError;
      }
 
-    const { data: publicData } = supabase
-       .storage
-       .from("images")
-       .getPublicUrl(filePath);
+    await insertCustomerFile({
+      customerId,
+      bucket: "images",
+      path: filePath,
+      fileType: file.type || null,
+      size: file.size,
+    });
 
-    // push publicUrl om den finns, annars fallback till uploadData.path eller filePath
-    if (publicData?.publicUrl) {
-      urls.push(publicData.publicUrl);
-    } else {
-      console.warn("Could not get public url for", filePath, "falling back to path:", uploadData?.path ?? filePath);
-      urls.push(uploadData?.path ?? filePath);
-    }
+    urls.push(uploadData?.path ?? filePath);
   }
 
   return urls;
@@ -124,8 +128,8 @@ export async function uploadImages(files: File[], folder = "valuations"): Promis
 /**
  * Wrapper: ladda upp filer först, spara sedan valuation med de resulterande URL:erna.
  */
-export async function uploadAndSaveValuation(analysis: unknown, files: File[]) {
-  const imageUrls = files && files.length ? await uploadImages(files, `valuations/anon`) : [];
+export async function uploadAndSaveValuation(analysis: unknown, files: File[], customerId: string) {
+  const imageUrls = files && files.length ? await uploadImages(files, customerId, "valuations") : [];
   await saveValuation(analysis, imageUrls);
 }
 

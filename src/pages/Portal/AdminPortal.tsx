@@ -13,6 +13,18 @@ import {
   DialogFooter, // <- add this
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { FileText } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -148,6 +160,219 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   // Statusfilter för kontaktförfrågningar
   const [contactStatusFilter, setContactStatusFilter] = useState<string>("all");
+  const [gdprCreateBusy, setGdprCreateBusy] = useState(false);
+  const [gdprGenerateBusyId, setGdprGenerateBusyId] = useState<string | null>(null);
+  const [gdprRetryBusyId, setGdprRetryBusyId] = useState<string | null>(null);
+  const [gdprRequests, setGdprRequests] = useState<any[]>([]);
+  const [gdprLoading, setGdprLoading] = useState(false);
+  const [gdprError, setGdprError] = useState<string | null>(null);
+  const [gdprCustomerId, setGdprCustomerId] = useState<string>("__none__");
+  const [gdprCleanupBusyId, setGdprCleanupBusyId] = useState<string | null>(null);
+  const [gdprDeleteBusyId, setGdprDeleteBusyId] = useState<string | null>(null);
+  const [gdprDownloadBusyId, setGdprDownloadBusyId] = useState<string | null>(null);
+
+  const checkIsAdmin = useCallback(async () => {
+    if (!user?.id) return false;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (error) return false;
+    return (data as any)?.is_admin === true;
+  }, [user?.id]);
+
+  const fetchGdprRequests = useCallback(async () => {
+    setGdprLoading(true);
+    setGdprError(null);
+    try {
+      const { data, error } = await supabase
+        .from("gdpr_requests")
+        .select("id, status, created_at, customer_id, customers(name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setGdprRequests(data ?? []);
+    } catch (err: any) {
+      console.error("fetch gdpr requests failed", err);
+      setGdprError("Kunde inte hämta GDPR-begäranden.");
+      setGdprRequests([]);
+    } finally {
+      setGdprLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchGdprRequests();
+    const interval = window.setInterval(() => {
+      void fetchGdprRequests();
+    }, 20000);
+    return () => window.clearInterval(interval);
+  }, [fetchGdprRequests]);
+
+  const handleGenerateGdprExport = useCallback(async (requestId: string) => {
+    if (!requestId) {
+      toast({ title: "Saknar request", description: "Ingen request-id angiven.", variant: "destructive" });
+      return;
+    }
+
+    setGdprGenerateBusyId(requestId);
+    try {
+      const isAdmin = await checkIsAdmin();
+      if (!isAdmin) {
+        toast({ title: "Inte admin", description: "Du saknar adminrattigheter.", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke("gdpr-export", {
+        body: { request_id: requestId, action: "generate" },
+      });
+      if (error) throw error;
+
+      toast({ title: "Export startad", description: "GDPR-exporten genereras." });
+      await fetchGdprRequests();
+    } catch (err: any) {
+      console.error("gdpr export generate failed", err);
+      toast({ title: "Fel", description: err?.message || "Kunde inte starta export.", variant: "destructive" });
+    } finally {
+      setGdprGenerateBusyId(null);
+    }
+  }, [checkIsAdmin, toast, fetchGdprRequests]);
+
+  const handleCreateGdprRequest = useCallback(async () => {
+    if (!gdprCustomerId || gdprCustomerId === "__none__") {
+      toast({ title: "Saknar kund", description: "Välj kund först.", variant: "destructive" });
+      return;
+    }
+    if (!user?.id) {
+      toast({ title: "Saknar användare", description: "Kunde inte skapa begäran.", variant: "destructive" });
+      return;
+    }
+
+    setGdprCreateBusy(true);
+    try {
+      const isAdmin = await checkIsAdmin();
+      if (!isAdmin) {
+        toast({ title: "Inte admin", description: "Du saknar adminrattigheter.", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await supabase.from("gdpr_requests").insert({
+        customer_id: gdprCustomerId,
+        requested_by: user.id,
+        status: "requested",
+      });
+      if (error) throw error;
+
+      toast({ title: "Begäran skapad", description: "GDPR-begäran skapad." });
+      await fetchGdprRequests();
+    } catch (err: any) {
+      console.error("gdpr request create failed", err);
+      toast({ title: "Fel", description: err?.message || "Kunde inte skapa begäran.", variant: "destructive" });
+    } finally {
+      setGdprCreateBusy(false);
+    }
+  }, [gdprCustomerId, checkIsAdmin, user?.id, toast, fetchGdprRequests]);
+
+  const handleRetryGdprExport = useCallback(async (requestId: string) => {
+    if (!requestId) return;
+    setGdprRetryBusyId(requestId);
+    try {
+      const isAdmin = await checkIsAdmin();
+      if (!isAdmin) {
+        toast({ title: "Inte admin", description: "Du saknar adminrattigheter.", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke("gdpr-export", {
+        body: { request_id: requestId, action: "retry" },
+      });
+      if (error) throw error;
+
+      toast({ title: "Retry startad", description: "Exporten försöker igen." });
+      await fetchGdprRequests();
+    } catch (err: any) {
+      console.error("gdpr export retry failed", err);
+      toast({ title: "Fel", description: err?.message || "Kunde inte starta retry.", variant: "destructive" });
+    } finally {
+      setGdprRetryBusyId(null);
+    }
+  }, [checkIsAdmin, toast, fetchGdprRequests]);
+
+  const handleCleanupGdprExport = useCallback(async (requestId: string) => {
+    if (!requestId) return;
+    setGdprCleanupBusyId(requestId);
+    try {
+      const isAdmin = await checkIsAdmin();
+      if (!isAdmin) {
+        toast({ title: "Inte admin", description: "Du saknar adminrattigheter.", variant: "destructive" });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("gdpr-maintenance", {
+        body: { action: "cleanup", request_id: requestId },
+      });
+      if (error) throw error;
+
+      const cleaned = (data as any)?.cleaned ?? 0;
+      const failed = (data as any)?.failed ?? 0;
+      if (failed > 0) {
+        toast({ title: "Rensning delvis klar", description: `Rensade: ${cleaned}, Misslyckade: ${failed}`, variant: "destructive" });
+      } else {
+        toast({ title: "Rensning klar", description: `Rensade: ${cleaned}` });
+      }
+      await fetchGdprRequests();
+    } catch (err: any) {
+      console.error("gdpr cleanup failed", err);
+      toast({ title: "Fel", description: err?.message || "Kunde inte rensa utdrag.", variant: "destructive" });
+    } finally {
+      setGdprCleanupBusyId(null);
+    }
+  }, [checkIsAdmin, toast, fetchGdprRequests]);
+
+  const handleDownloadGdprExport = useCallback(async (requestId: string) => {
+    if (!requestId) return;
+    setGdprDownloadBusyId(requestId);
+    try {
+      const { data, error } = await supabase.functions.invoke("gdpr-export", {
+        body: { request_id: requestId, action: "download" },
+      });
+      if (error) throw error;
+
+      const signedUrl = (data as any)?.signed_url || (data as any)?.signedUrl;
+      if (!signedUrl) throw new Error("Ingen signerad URL returnerades");
+
+      window.open(signedUrl, "_blank", "noopener,noreferrer");
+      await fetchGdprRequests();
+    } catch (err: any) {
+      console.error("gdpr export download failed", err);
+      toast({ title: "Fel", description: err?.message || "Kunde inte ladda ner export.", variant: "destructive" });
+    } finally {
+      setGdprDownloadBusyId(null);
+    }
+  }, [toast, fetchGdprRequests]);
+
+  const handleDeleteGdprRequest = useCallback(async (requestId: string) => {
+    if (!requestId) return;
+    setGdprDeleteBusyId(requestId);
+    try {
+      const isAdmin = await checkIsAdmin();
+      if (!isAdmin) {
+        toast({ title: "Inte admin", description: "Du saknar adminrattigheter.", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await supabase.from("gdpr_requests").delete().eq("id", requestId);
+      if (error) throw error;
+
+      toast({ title: "Begäran raderad", description: "Begäran är borttagen." });
+      await fetchGdprRequests();
+    } catch (err: any) {
+      console.error("gdpr request delete failed", err);
+      toast({ title: "Fel", description: err?.message || "Kunde inte radera begäran.", variant: "destructive" });
+    } finally {
+      setGdprDeleteBusyId(null);
+    }
+  }, [checkIsAdmin, toast, fetchGdprRequests]);
 
   const statusOptions = useMemo(() => {
     const opts = Array.from(new Set((cases || []).map((c) => normalizeStatus(c.status))));
@@ -589,6 +814,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
      </DialogFooter>
    </DialogContent>
  </Dialog>
+
  
              {/* Admin: värdebedömningsverktyg ska ligga ovanför tabbarna */}
              <div className="mb-6">
@@ -696,6 +922,142 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
           {/* Kunder */}
           <TabsContent value="customers">
             <div className="space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-trust-blue">GDPR-export (admin)</CardTitle>
+                  <CardDescription>Hantera inkomna GDPR-begäranden.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="text-sm text-muted-foreground">
+                    "Skapa utdrag" bygger filen. "Ladda ner" hämtar den färdiga filen när status är klar.
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select value={gdprCustomerId} onValueChange={setGdprCustomerId}>
+                      <SelectTrigger className="w-60">
+                        <SelectValue placeholder="Välj kund" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Välj kund...</SelectItem>
+                        {(customers || []).map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name || (c as any).email || c.id}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button onClick={handleCreateGdprRequest} disabled={gdprCreateBusy || gdprCustomerId === "__none__"}>
+                      {gdprCreateBusy ? "Skapar..." : "Skapa begäran"}
+                    </Button>
+                  </div>
+
+                  {gdprLoading && <div className="text-sm text-muted-foreground">Laddar...</div>}
+                  {gdprError && <div className="text-sm text-destructive">{gdprError}</div>}
+
+                  {gdprRequests.length === 0 && !gdprLoading && (
+                    <div className="text-sm text-muted-foreground">Inga GDPR-begäranden hittades.</div>
+                  )}
+
+                  <div className="space-y-2">
+                    {gdprRequests.map((row: any) => {
+                      const createdAt = row.created_at ? new Date(row.created_at).toLocaleDateString("sv-SE") : "-";
+                      const customerName = row.customers?.name ?? null;
+                      return (
+                        <div key={row.id} className="rounded border px-3 py-2 text-sm">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="font-medium">{row.status}</div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                disabled={gdprGenerateBusyId === row.id || !["requested", "ready"].includes(row.status)}
+                                onClick={() => handleGenerateGdprExport(row.id)}
+                              >
+                                {gdprGenerateBusyId === row.id ? "Startar..." : "Skapa utdrag"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={gdprDownloadBusyId === row.id || !["ready", "delivered"].includes(row.status)}
+                                onClick={() => handleDownloadGdprExport(row.id)}
+                              >
+                                {gdprDownloadBusyId === row.id
+                                  ? "Hämtar..."
+                                  : row.status === "delivered"
+                                  ? "Ladda ner igen"
+                                  : "Ladda ner"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={gdprRetryBusyId === row.id || !["processing", "rejected"].includes(row.status)}
+                                onClick={() => handleRetryGdprExport(row.id)}
+                              >
+                                {gdprRetryBusyId === row.id ? "Startar..." : "Försök igen"}
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={gdprCleanupBusyId === row.id || !row.export_path}
+                                  >
+                                    {gdprCleanupBusyId === row.id ? "Rensar..." : "Rensa"}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Bekräfta rensning</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Detta tar bort exportfilen permanent. Fortsätt?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleCleanupGdprExport(row.id)}>
+                                      Fortsätt
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={gdprDeleteBusyId === row.id}
+                                  >
+                                    {gdprDeleteBusyId === row.id ? "Tar bort..." : "Ta bort"}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Bekräfta borttagning</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Detta tar bort begäran permanent. Fortsätt?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteGdprRequest(row.id)}>
+                                      Fortsätt
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Skapad: {createdAt}
+                            {customerName ? ` · Kund: ${customerName}` : ` · Kund-ID: ${row.customer_id}`}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </CardContent>
+              </Card>
+
               {/* Aktiva kunder */}
               <div>
                 <div className="grid gap-8 lg:grid-cols-3">

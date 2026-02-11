@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
+import { buildCustomerPath, insertCustomerFile } from "@/lib/customerFiles";
 
 /**
  * Kontrollerar att Supabase-klienten är korrekt konfigurerad.
@@ -18,37 +19,51 @@ function checkSupabaseIsConfigured(): void {
  * @param files Arrayen av File-objekt att ladda upp.
  * @returns Ett Promise som löser till en array av publika bild-URL:er.
  */
-export async function uploadImages(files: File[], folder = "valuations"): Promise<string[]> {
+export async function uploadImages(
+  files: File[],
+  folder = "valuations",
+  options?: { customerId?: string; returnType?: "path" | "signedUrl" }
+): Promise<string[]> {
   checkSupabaseIsConfigured();
   
-  const uploadBucket = 'images'; // Använder bucket-namnet från din aktiva kod
+  const uploadBucket = "images"; // Använder bucket-namnet från din aktiva kod
+  const customerId = options?.customerId;
+  const returnType = options?.returnType ?? "path";
 
-  const uploadPromises = files.map(file => {
-    // Skapa ett unikt filnamn och sökväg (t.ex. public/1678888888-image.jpg)
-    const safeName = file.name.replace(/\s/g, '_');
-    const fileName = folder ? `${folder}/${Date.now()}-${safeName}` : `${Date.now()}-${safeName}`;
-    
-    // Skicka uppladdningsbegäran
-    return supabase!.storage.from(uploadBucket).upload(fileName, file);
-  });
+  if (!customerId) throw new Error("Missing customer_id for upload");
 
-  // Utför alla uppladdningar samtidigt
-  const uploadResults = await Promise.all(uploadPromises);
+  const uploadTasks = files.map(async (file) => {
+    const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+    const fileId = crypto.randomUUID();
+    const filename = `${fileId}.${ext}`;
+    const path = buildCustomerPath(customerId, [folder], filename);
 
-  const urls: string[] = [];
-  for (const result of uploadResults) {
+    const result = await supabase.storage.from(uploadBucket).upload(path, file, { upsert: false });
     if (result.error) {
-      console.error('Error uploading image:', result.error.message);
-      // Kastar det första felet som hittas
+      console.error("Error uploading image:", result.error.message);
       throw new Error(`Kunde inte ladda upp en bild: ${result.error.message}`);
     }
-    
-    // Hämta den publika URL:en för den uppladdade filen
-    const { data } = supabase.storage.from(uploadBucket).getPublicUrl(result.data.path);
-    urls.push(data.publicUrl);
-  }
 
-  return urls;
+    await insertCustomerFile({
+      customerId,
+      bucket: uploadBucket,
+      path,
+      fileType: file.type || null,
+      size: file.size,
+    });
+
+    if (returnType === "signedUrl") {
+      const { data, error } = await supabase.storage.from(uploadBucket).createSignedUrl(path, 600);
+      if (error || !data?.signedUrl) {
+        throw new Error("Kunde inte skapa signerad URL");
+      }
+      return data.signedUrl;
+    }
+
+    return path;
+  });
+
+  return Promise.all(uploadTasks);
 }
 
 /**

@@ -147,7 +147,13 @@ export function CaseDocumentsSection({
 
         const runAttach = () =>
           supabase.functions.invoke("case-attach-document", {
-            body: { case_id: caseId, path, display_name: displayName, mime_type: file.type || null },
+            body: {
+              case_id: caseId,
+              path,
+              display_name: displayName,
+              mime_type: file.type || null,
+              file_size: file.size,
+            },
           });
 
         let { data: attachData, error: attachErr } = await runAttach();

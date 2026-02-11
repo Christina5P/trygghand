@@ -21,6 +21,13 @@ function json(req: Request, status: number, body: unknown): Response {
   });
 }
 
+function getCustomerIdFromPath(path: string): string | null {
+  const parts = path.split("/");
+  if (parts.length < 3) return null;
+  if (parts[0] !== "customers") return null;
+  return parts[1] || null;
+}
+
 async function isAdmin(service: any, userId: string): Promise<boolean> {
   const { data: roles, error: rolesErr } = await service
     .from("user_roles")
@@ -106,6 +113,8 @@ serve(async (req: Request): Promise<Response> => {
   const path = typeof payload?.path === "string" ? payload.path : "";
   const fileName = typeof payload?.file_name === "string" ? payload.file_name.slice(0, 255) : "";
   const fullmaktstyp = typeof payload?.fullmaktstyp === "string" ? payload.fullmaktstyp.slice(0, 80) : null;
+  const fileType = typeof payload?.file_type === "string" ? payload.file_type.slice(0, 120) : null;
+  const fileSize = typeof payload?.file_size === "number" ? payload.file_size : null;
 
   if (!path || !fileName) return json(req, 400, { error: "Missing fields" });
 
@@ -119,9 +128,10 @@ serve(async (req: Request): Promise<Response> => {
   const user = userData?.user;
   if (userErr || !user) return json(req, 401, { error: "Unauthorized" });
 
-  // Ensure the path is scoped to the caller
-  const expectedPrefix = `fullmakter/${user.id}/`;
-  if (!path.startsWith(expectedPrefix)) return json(req, 403, { error: "Forbidden" });
+  const customerIdFromPath = getCustomerIdFromPath(path);
+  if (!customerIdFromPath || !path.startsWith(`customers/${customerIdFromPath}/fullmakter/`)) {
+    return json(req, 403, { error: "Forbidden" });
+  }
 
   const service = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -133,14 +143,16 @@ serve(async (req: Request): Promise<Response> => {
     if (!cust) return json(req, 403, { error: "Forbidden" });
     if ((cust as any)?.deleted_at) return json(req, 403, { error: "Forbidden" });
     if ((cust as any)?.is_customer !== true) return json(req, 403, { error: "Forbidden" });
+    const custId = (cust as any)?.id ?? null;
+    if (!custId || custId !== customerIdFromPath) return json(req, 403, { error: "Forbidden" });
   }
 
   const today = new Date().toISOString().slice(0, 10);
 
   // Best-effort schema drift tolerance across columns
   const baseRow: Record<string, any> = {
-    fullmaktsgivare: user.id,
-    fullmakthavare: user.id,
+    fullmaktsgivare: customerIdFromPath,
+    fullmakthavare: customerIdFromPath,
     file_name: fileName,
     dokument_url: path,
     storage_path: path,
@@ -154,8 +166,8 @@ serve(async (req: Request): Promise<Response> => {
 
   if (ins.error) {
     const minimalRow: Record<string, any> = {
-      fullmaktsgivare: user.id,
-      fullmakthavare: user.id,
+      fullmaktsgivare: customerIdFromPath,
+      fullmakthavare: customerIdFromPath,
       file_name: fileName,
       dokument_url: path,
     };
@@ -170,6 +182,15 @@ serve(async (req: Request): Promise<Response> => {
     });
     return json(req, 500, { error: "Internal server error" });
   }
+
+  const { error: indexErr } = await service.from("customer_files").insert({
+    customer_id: customerIdFromPath,
+    bucket: "fullmakts-filer",
+    path,
+    file_type: fileType,
+    size: fileSize,
+  });
+  if (indexErr) return json(req, 500, { error: "Internal server error" });
 
   return json(req, 200, { ok: true, id: (ins.data as any)?.id ?? null, path });
 });

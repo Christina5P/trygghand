@@ -9,6 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { getCleanDescription } from "@/utils";
+import SignedStorageImage from "@/components/SignedStorageImage";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
@@ -120,8 +121,9 @@ const ValuationDetailsDialog: React.FC<ValuationDetailsDialogProps> = ({
 
         {/* Bild */}
         {valuation.image_urls && valuation.image_urls.length > 0 && (
-          <img
-            src={valuation.image_urls[0]}
+          <SignedStorageImage
+            bucket="images"
+            path={valuation.image_urls[0]}
             alt={`val-${valuation.id}-img`}
             className="w-full max-h-64 object-contain rounded-md border mb-4"
           />

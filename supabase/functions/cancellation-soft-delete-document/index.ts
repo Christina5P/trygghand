@@ -64,7 +64,6 @@ serve(async (req: Request): Promise<Response> => {
   const path = typeof payload?.path === "string" ? payload.path : "";
 
   if (!isUuid(cancellationId)) return json(400, { error: "Invalid cancellation_id" });
-  if (!path || !path.startsWith(`subscription_cancellations/${cancellationId}/`)) return json(400, { error: "Invalid path" });
 
   const authHeader = req.headers.get("authorization") || "";
   const userClient = createClient(supabaseUrl, anonKey, {
@@ -89,6 +88,11 @@ serve(async (req: Request): Promise<Response> => {
     .maybeSingle();
 
   if (rowErr || !row) return json(404, { error: "Not found" });
+
+  const ownerId = (row as any).customer_id as string;
+  if (!path || !path.startsWith(`customers/${ownerId}/subscription_cancellations/${cancellationId}/`)) {
+    return json(req, 400, { error: "Invalid path" });
+  }
 
   const docs = Array.isArray((row as any).documents) ? ((row as any).documents as any[]) : [];
 

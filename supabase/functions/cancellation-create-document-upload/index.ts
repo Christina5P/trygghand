@@ -84,19 +84,18 @@ serve(async (req: Request): Promise<Response> => {
   });
 
   const admin = await isAdmin(service, user.id);
-  if (!admin) {
-    // Customer must own the cancellation.
-    const { data: row, error: rowErr } = await service
-      .from("subscription_cancellations")
-      .select("id, customer_id")
-      .eq("id", cancellationId)
-      .maybeSingle();
 
-    if (rowErr || !row) return json(req, 404, { error: "Not found" });
-    if ((row as any).customer_id !== user.id) return json(req, 403, { error: "Forbidden" });
-  }
+  const { data: row, error: rowErr } = await service
+    .from("subscription_cancellations")
+    .select("id, customer_id")
+    .eq("id", cancellationId)
+    .maybeSingle();
 
-  const path = `subscription_cancellations/${cancellationId}/${crypto.randomUUID()}.${fileExt}`;
+  if (rowErr || !row) return json(req, 404, { error: "Not found" });
+  if (!admin && (row as any).customer_id !== user.id) return json(req, 403, { error: "Forbidden" });
+
+  const ownerId = (row as any).customer_id as string;
+  const path = `customers/${ownerId}/subscription_cancellations/${cancellationId}/${crypto.randomUUID()}.${fileExt}`;
 
   // Use service role to generate a signed upload token.
   const { data, error } = await service.storage.from("abonnemang").createSignedUploadUrl(path);

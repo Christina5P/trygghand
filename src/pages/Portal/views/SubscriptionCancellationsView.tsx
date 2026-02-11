@@ -184,6 +184,7 @@ export function SubscriptionCancellationsView({
               path,
               display_name: file.name,
               mime_type: file.type || null,
+              file_size: file.size,
             },
           });
           if (attachErr) throw attachErr;

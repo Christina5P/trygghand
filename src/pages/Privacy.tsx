@@ -45,7 +45,7 @@ export default function Privacy() {
       <h2 className="font-semibold mt-6">Vad samlar vi in?</h2>
       <ul className="list-disc pl-5 mt-2">
         <li>Kontaktuppgifter du själv lämnar (som namn, e‑post, telefon).</li>
-        <li>Information som behövs för att utföra våra tjänster (t.ex. adress vid flytt/uppdrag).</li>
+        <li>Information som behövs för att utföra våra tjänster (t.ex. adress vid flytt/uppdrag, personnummer).</li>
         <li>Tekniska data: cookies (se cookie‑policy) och loggar för att hålla tjänsten igång.</li>
       </ul>
 

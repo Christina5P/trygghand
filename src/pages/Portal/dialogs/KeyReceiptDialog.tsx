@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { buildCustomerPath, insertCustomerFile } from "@/lib/customerFiles";
 
 export type KeyReceiptDialogProps = {
   mode: "admin" | "customer";
@@ -249,6 +250,30 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
     return toReceiptNumber(receiptForDisplay.id, receiptForDisplay.created_at || receiptForDisplay.signed_at);
   }, [receiptForDisplay]);
 
+  const resolveStorageCustomerId = async (): Promise<string | null> => {
+    if (mode === "admin") return subjectCustomerId ?? null;
+
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id ?? null;
+    if (!userId) return null;
+
+    const { data: byUserId, error: userIdErr } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!userIdErr && byUserId?.id) return String(byUserId.id);
+
+    const { data: byId, error: byIdErr } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!byIdErr && byId?.id) return String(byId.id);
+
+    return null;
+  };
+
   // -----------------
   // Customer: fetch + pick latest unsigned
   // -----------------
@@ -273,9 +298,11 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
 
       const unsigned: KeyReceipt[] = [];
       const signed: KeyReceipt[] = [];
+      const storageCustomerId = await resolveStorageCustomerId();
+      if (!storageCustomerId) throw new Error("Saknar kund-ID för nyckelkvittens");
 
       for (const receipt of list) {
-        const path = `key-receipts/${receipt.id}/signature.png`;
+        const path = buildCustomerPath(storageCustomerId, ["key-receipts", receipt.id], "signature.png");
         const { error: dlErr } = await supabase.storage.from("key-receipts").download(path);
         if (dlErr) {
           unsigned.push(receipt);
@@ -518,13 +545,23 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
     setCustomerInfo(null);
 
     try {
-      const path = `key-receipts/${latestUnsigned.id}/signature.png`;
+      const storageCustomerId = await resolveStorageCustomerId();
+      if (!storageCustomerId) throw new Error("Saknar kund-ID för nyckelkvittens");
+      const path = buildCustomerPath(storageCustomerId, ["key-receipts", latestUnsigned.id], "signature.png");
       const { error } = await supabase.storage.from("key-receipts").upload(path, blob, {
         contentType: "image/png",
         upsert: false,
       });
 
       if (error) throw error;
+
+      await insertCustomerFile({
+        customerId: storageCustomerId,
+        bucket: "key-receipts",
+        path,
+        fileType: "image/png",
+        size: blob.size,
+      });
 
       setCustomerInfo("Nycklar mottagna och kvitterade av kund");
       await fetchCustomerReceipts();

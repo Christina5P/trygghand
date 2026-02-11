@@ -68,7 +68,6 @@ serve(async (req: Request): Promise<Response> => {
   const path = typeof payload?.path === "string" ? payload.path : "";
 
   if (!isUuid(caseId)) return json(400, { error: "Invalid case_id" });
-  if (!path || !path.startsWith(`cases/${caseId}/`)) return json(400, { error: "Invalid path" });
 
   const authHeader = req.headers.get("authorization") || "";
   const userClient = createClient(supabaseUrl, anonKey, {
@@ -102,12 +101,15 @@ serve(async (req: Request): Promise<Response> => {
   }
   if (!row) return json(404, { error: "Not found" });
 
+  const ownerId = (row as any).customer_id as string;
+  if (!path || !path.startsWith(`customers/${ownerId}/cases/${caseId}/`)) return json(400, { error: "Invalid path" });
+
   const docs = Array.isArray((row as any).documents) ? ((row as any).documents as any[]) : [];
 
   let allowed = admin;
   if (!allowed) {
     // Customer: must own case and can delete only their own uploaded docs (if metadata exists)
-    if ((row as any).customer_id !== user.id) return json(403, { error: "Forbidden" });
+    if (ownerId !== user.id) return json(403, { error: "Forbidden" });
 
     for (const d of docs) {
       if (d && typeof d === "object" && d.path === path && d.uploaded_by === user.id) {

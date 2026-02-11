@@ -64,7 +64,6 @@ serve(async (req: Request): Promise<Response> => {
   const path = typeof payload?.path === "string" ? payload.path : "";
 
   if (!isUuid(caseId)) return json(req, 400, { error: "Invalid case_id" });
-  if (!path || !path.startsWith(`cases/${caseId}/`)) return json(req, 400, { error: "Invalid path" });
 
   const authHeader = req.headers.get("authorization") || "";
   const userClient = createClient(supabaseUrl, anonKey, {
@@ -93,6 +92,10 @@ serve(async (req: Request): Promise<Response> => {
 
   const ownerId = (row as any).customer_id as string;
   if (!admin && ownerId !== user.id) return json(req, 403, { error: "Forbidden" });
+
+  if (!path || !path.startsWith(`customers/${ownerId}/cases/${caseId}/`)) {
+    return json(req, 400, { error: "Invalid path" });
+  }
 
   const { data, error } = await service.storage.from("case-documents").createSignedUrl(path, 3600);
   if (error) return json(req, 500, { error: "Internal server error" });

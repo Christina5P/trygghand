@@ -114,6 +114,11 @@ const Terms: React.FC = () => {
               Vid behov av ytterligare arbetsbesök utöver detta debiteras en kostnad om 395 kr inklusive moms per extra resa.
               Antalet resor planeras i dialog med kunden i syfte att genomföra uppdraget på ett effektivt och omsorgsfullt sätt.</p>
 
+              <p className="font-semibold mb-2">Delbetalning:</p>
+              <p className="mb-4">
+              40 % av det avtalade priset faktureras vid uppdragets påbörjande. 
+              Resterande 60 % faktureras efter slutfört uppdrag, om inget annat avtalats skriftligt.
+              </p>
               <p className="font-semibold mb-2">RUT-avdrag:</p>
               <p className="mb-4">
                 Om RUT-avdrag har avtalats och Skatteverket helt eller delvis nekar avdraget, debiteras kunden det nekade beloppet.

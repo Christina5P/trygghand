@@ -1,6 +1,7 @@
 //src/lib/fullmakter.ts
 
 import { supabase } from "./supabase"; // Antag att Supabase-klienten är korrekt konfigurerad
+import { buildCustomerPath, insertCustomerFile } from "@/lib/customerFiles";
 // import { v4 as uuidv4 } from "uuid"; // Denna import tas bort
 
 export interface FullmaktRow {
@@ -30,16 +31,23 @@ export async function uploadFullmakt(file: File, userId: string) {
   const ext = file.name.split(".").pop()?.toLowerCase() || "dat";
   
   // ANVÄND crypto.randomUUID() istället för uuidv4()
-  const filename = `${Date.now()}_${crypto.randomUUID()}.${ext}`;
+  const filename = `${crypto.randomUUID()}.${ext}`;
+  const key = buildCustomerPath(userId, ["fullmakter"], filename);
 
-  const key = `fullmakts-filer/${userId}/${filename}`;
-
-  const { error } = await supabase.storage.from(bucket).upload(key, file);
+  const { error } = await supabase.storage.from(bucket).upload(key, file, { upsert: false });
 
   if (error) {
     console.error("UPLOAD ERROR:", error);
     return { success: false, error: error.message };
   }
+
+  await insertCustomerFile({
+    customerId: userId,
+    bucket,
+    path: key,
+    fileType: file.type || null,
+    size: file.size,
+  });
 
   return { success: true, dokument_url: key };
 }

@@ -9,6 +9,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import SignedStorageImage from "@/components/SignedStorageImage";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { getCleanDescription, getPriceLabel, getPriceRange } from "@/utils";
@@ -255,8 +256,9 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
       <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-start p-3 sm:p-4">
         {/* Bild – liten och avlång */}
         {v.image_urls && v.image_urls.length > 0 && (
-          <img
-            src={v.image_urls[0]}
+          <SignedStorageImage
+            bucket="images"
+            path={v.image_urls[0]}
             alt={`val-${v.id}-img`}
             className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-md border flex-shrink-0"
           />

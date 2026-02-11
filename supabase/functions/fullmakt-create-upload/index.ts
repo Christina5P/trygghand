@@ -110,6 +110,7 @@ serve(async (req: Request): Promise<Response> => {
       ? payload.file_ext.toLowerCase().replace(/[^a-z0-9]/g, "")
       : "";
   const mimeType = typeof payload?.mime_type === "string" ? payload.mime_type.slice(0, 120) : null;
+  const requestedCustomerId = typeof payload?.customer_id === "string" ? payload.customer_id : null;
 
   if (!fileExt || !ALLOWED_EXT.has(fileExt)) {
     return json(req, 400, { error: "Unsupported file type" });
@@ -130,15 +131,28 @@ serve(async (req: Request): Promise<Response> => {
   });
 
   const admin = await isAdmin(service, user.id);
-  if (!admin) {
-    // Customer must exist + be active (support both customers.id==auth.uid and customers.user_id==auth.uid)
+  let customerId: string | null = requestedCustomerId;
+
+  if (admin && customerId) {
+    const { data: custRow } = await service
+      .from("customers")
+      .select("id, deleted_at")
+      .eq("id", customerId)
+      .maybeSingle();
+    if (!custRow || (custRow as any)?.deleted_at) return json(req, 404, { error: "Not found" });
+  }
+
+  if (!customerId) {
     const cust = await getCustomerForAuthUser(service, user);
     if (!cust) return json(req, 403, { error: "Forbidden" });
     if ((cust as any)?.deleted_at) return json(req, 403, { error: "Forbidden" });
     if ((cust as any)?.is_customer !== true) return json(req, 403, { error: "Forbidden" });
+    customerId = (cust as any)?.id ?? null;
   }
 
-  const path = `fullmakter/${user.id}/${crypto.randomUUID()}.${fileExt}`;
+  if (!customerId) return json(req, 403, { error: "Forbidden" });
+
+  const path = `customers/${customerId}/fullmakter/${crypto.randomUUID()}.${fileExt}`;
 
   const { data, error } = await service.storage.from("fullmakts-filer").createSignedUploadUrl(path);
   if (error) return json(req, 500, { error: "Internal server error" });

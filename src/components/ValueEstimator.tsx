@@ -171,13 +171,22 @@ const ValueEstimator: React.FC<Props> = ({
     }
 
     try {
+      const targetCustomerId = mode === "admin" ? selectedCustomerId : customerId;
+      if (!targetCustomerId) {
+        setError("Kund saknas för uppladdning.");
+        setLoading(false);
+        return;
+      }
       const functionBase = import.meta.env.VITE_SUPABASE_FUNCTION_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       setLoadingText("Analyserar bilder…");
       const resizedFiles = await Promise.all(files.map((f) => resizeImage(f, 1280)));
 
-      const imageUrls = await uploadImages(resizedFiles, "analysis-temp");
+      const imageUrls = await uploadImages(resizedFiles, "analysis-temp", {
+        customerId: targetCustomerId,
+        returnType: "signedUrl",
+      });
 
       setLoadingText("Bedömer skick…");
 
@@ -238,7 +247,15 @@ const ValueEstimator: React.FC<Props> = ({
 
     setLoading(true);
     try {
-      const imageUrls = await uploadImages(files, "valuations");
+      const targetCustomerId = mode === "admin" ? selectedCustomerId : customerId;
+      if (!targetCustomerId) {
+        throw new Error("Kund saknas för uppladdning.");
+      }
+
+      const imageUrls = await uploadImages(files, "valuations", {
+        customerId: targetCustomerId,
+        returnType: "path",
+      });
 
       if (mode === "admin") {
         await adminCreateValuation(

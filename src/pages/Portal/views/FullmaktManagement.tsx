@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { isMissingColumnError, isUnauthorizedError, supabase, tryRefreshSession } from "@/lib/supabase";
+import { buildCustomerPath, insertCustomerFile } from "@/lib/customerFiles";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
@@ -125,8 +126,7 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
         }
 
         setUploading(true);
-        const fileExtension = selectedFile.name.split('.').pop();
-        
+        const fileId = crypto.randomUUID();
                 const runUser = () => supabase.auth.getUser();
                 let { data, error } = await runUser();
                 if ((error || !data.user) && isUnauthorizedError(error)) {
@@ -142,11 +142,9 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
                 const uploaderId = currentUser.id; // kopplad till auth.users (FK)
         
                 // Använd auth-user-id som ägare i storage-sökvägen
-                const pathPrefix = `fullmakter/${uploaderId}`;
-        
-        const safeFileName = selectedFile.name.replace(/[^a-z0-9.]/gi, '_');
-        const uniqueFileName = `${safeFileName}_${Date.now()}.${fileExtension}`;
-        const storagePath = `${pathPrefix}/${uniqueFileName}`; 
+                const safeFileName = selectedFile.name.replace(/[^a-z0-9._-]/gi, "_");
+                const resolvedCustomerId = customerId || uploaderId;
+                const storagePath = buildCustomerPath(resolvedCustomerId, ["fullmakter"], `${fileId}-${safeFileName}`);
 
         try {
             const runUpload = () =>
@@ -163,6 +161,13 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
 
             if (uploadError) throw uploadError;
 
+            await insertCustomerFile({
+                customerId: resolvedCustomerId,
+                bucket: "fullmakts-filer",
+                path: storagePath,
+                fileType: selectedFile.type || null,
+                size: selectedFile.size,
+            });
             const runInsert = () =>
                 supabase.from('fullmakter').insert({
                     fullmaktsgivare: uploaderId, // FK mot auth.users
