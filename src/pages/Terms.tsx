@@ -44,6 +44,12 @@ const Terms: React.FC = () => {
                 <br />Vid dödsbo avses dödsbodelägarna eller den som företräder dem med fullmakt.
                 {" "}Bolaget innehar F-skatt och momsregistrering.
                 Vi tillämpar Konsumenttjänstlagen och GDPR.
+                Dessa villkor gäller för alla uppdrag som Trygg Hand utför, såvida inte annat avtalats skriftligt.
+              </p>
+              <p>      
+                  <br /><p>Den exakta omfattningen av ditt uppdrag framgår av din <strong>uppdragsbekräftelse</strong>, som alltid har företräde framför dessa allmänna villkor.</p>
+              <p>Vi förbehåller oss rätten att uppdatera och ändra dessa villkor. Ändringarna träder i kraft omedelbart efter att de har publicerats på webbplatsen.</p>
+              <p>Vi förbehåller oss rätten att avsäga oss en städning ifall vi anser att lägenheten är onormalt nedsmutsad. I sådana fall erbjuder vi möjligheten till timdebitering eller ett nytt fast pris baserat på lägenhetens befintliga skick.</p>
               </p>
             </section>
 
@@ -62,9 +68,7 @@ const Terms: React.FC = () => {
                 <li>Juridisk, ekonomisk eller medicinsk rådgivning</li>
                 <li>Myndighetsutövning eller beslut</li>
               </ul>
-              <p>Den exakta omfattningen av ditt uppdrag framgår av din <strong>uppdragsbekräftelse</strong>, som alltid har företräde framför dessa allmänna villkor.</p>
-              <p>Vi förbehåller oss rätten att uppdatera och ändra dessa villkor. Ändringarna träder i kraft omedelbart efter att de har publicerats på webbplatsen.</p>
-              <p>Vi förbehåller oss rätten att avsäga oss en städning ifall vi anser att lägenheten är onormalt nedsmutsad. I sådana fall erbjuder vi möjligheten till timdebitering eller ett nytt fast pris baserat på lägenhetens befintliga skick.</p>
+             
             </section>
 
             <section className="mb-8">
