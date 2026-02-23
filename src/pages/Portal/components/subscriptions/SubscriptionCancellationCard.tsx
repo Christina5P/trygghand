@@ -8,6 +8,7 @@ import { CommentBubble } from "@/pages/Portal/components/shared/CommentBubble";
 export function SubscriptionCancellationCard({
   item,
   customer,
+  customerNameOverride,
   caseTypeLabel = "Uppsägning",
   commentCount,
   canEditStatus,
@@ -19,6 +20,7 @@ export function SubscriptionCancellationCard({
 }: {
   item: SubscriptionCancellation;
   customer: Customer | undefined;
+  customerNameOverride?: string;
   caseTypeLabel?: string;
   commentCount?: number;
   canEditStatus: boolean;
@@ -28,7 +30,7 @@ export function SubscriptionCancellationCard({
   onStatusChange: (next: CancellationStatus) => void;
   onDelete?: () => void;
 }) {
-  const customerName = customer?.name || customer?.email || "Okänd";
+  const customerName = customerNameOverride || customer?.name || customer?.email || "Okänd";
   const count = commentCount ?? item.comment_count ?? 0;
 
   // Helper to get color class for status

@@ -49,6 +49,7 @@ export const useAdminData = () => {
       const { data, error } = await supabase
         .from("customers")
         .select("*")
+        .eq("is_customer", true)
         .is("deleted_at", null)
         .order("name", { ascending: true });
       if (error) throw error;

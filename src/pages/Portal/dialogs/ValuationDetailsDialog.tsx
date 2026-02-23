@@ -71,7 +71,7 @@ const ValuationDetailsDialog: React.FC<ValuationDetailsDialogProps> = ({
     try {
       const payload = {
         p_valuation_id: valuation.id,
-        p_customer_id: selectedCustomerId === "__admin_only__" ? null : selectedCustomerId,
+        p_customer_id: selectedCustomerId,
       };
 
       const { error } = await supabase.rpc("admin_set_valuation_customer", payload);
@@ -102,11 +102,10 @@ const ValuationDetailsDialog: React.FC<ValuationDetailsDialogProps> = ({
         <div className="flex items-center gap-2">
           <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
             <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Välj kund (eller admin-only)" />
+              <SelectValue placeholder="Välj kund" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__keep__">Behåll nuvarande</SelectItem>
-              <SelectItem value="__admin_only__">Admin-only (ingen kund)</SelectItem>
               {customers.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}

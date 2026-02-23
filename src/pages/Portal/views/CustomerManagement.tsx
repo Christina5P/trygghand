@@ -54,8 +54,9 @@ export default function CustomerManagement({ customers, onDataUpdated, onOpenCus
     setLoadingId(customer.id);
 
     try {
-      // Deaktivera kunden via Edge Function (service role + audit + archive snapshot)
+      // Deaktivera kunden (alltid false eftersom vi endast visar aktiva har)
       if (currentStatus) {
+        // 1) Soft-delete via Edge Function (bevarar kundrad for GDPR-export)
         const { error } = await supabase.functions.invoke("admin-soft-delete-customer", {
           body: {
             customer_id: customer.id,
@@ -65,6 +66,28 @@ export default function CustomerManagement({ customers, onDataUpdated, onOpenCus
         });
 
         if (error) throw error;
+
+        // 2) Spara arkiv-snapshot for arkivlistan
+        const { error: archiveError } = await supabase
+          .from("archived_customers")
+          .upsert(
+            {
+              id: customer.id,
+              email: customer.email || "",
+              name: customer.name,
+              phone: customer.phone,
+              is_admin: customer.is_admin || false,
+              archived_by: user?.id,
+              archived_reason: "Deaktiverad av admin",
+              original_created_at: customer.created_at,
+              original_data: customer, // Lagra komplett original-data
+            },
+            {
+              onConflict: "id", // Om id redan finns, uppdatera istallet
+            }
+          );
+
+        if (archiveError) throw archiveError;
       }
 
       toast({

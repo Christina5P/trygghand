@@ -33,6 +33,7 @@ export function SubscriptionCancellationDetailDialog({
   item,
   customer,
   customers,
+  customerNameOverride,
   currentUserId,
   isAdmin,
   onSaved,
@@ -44,6 +45,7 @@ export function SubscriptionCancellationDetailDialog({
   item: SubscriptionCancellation | null;
   customer: Customer | undefined;
   customers: Customer[];
+  customerNameOverride?: string;
   currentUserId: string | null | undefined;
   isAdmin: boolean;
   onSaved: () => Promise<void>;
@@ -62,7 +64,7 @@ export function SubscriptionCancellationDetailDialog({
     return customers.find((c) => c.id === draft.customer_id) || customer;
   }, [customers, customer, draft?.customer_id]);
 
-  const customerName = selectedCustomer?.name || selectedCustomer?.email || "Kund";
+  const customerName = customerNameOverride || selectedCustomer?.name || selectedCustomer?.email || "Kund";
 
   const canComment = useMemo(() => {
     if (!item) return false;

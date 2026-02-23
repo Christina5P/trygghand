@@ -63,6 +63,8 @@ export function SubscriptionCancellationsView({
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [customerOverrideByCancellationId, setCustomerOverrideByCancellationId] = useState<Record<string, string | null>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [archivedCustomerMap, setArchivedCustomerMap] = useState<Record<string, string>>({});
+  const [showArchivedCancellations, setShowArchivedCancellations] = useState(false);
 
   const customerMap = useMemo(() => {
     const map: Record<string, Customer> = {};
@@ -271,6 +273,53 @@ export function SubscriptionCancellationsView({
     });
   }, [effectiveCancellations, providerFilter, statusFilter, showProviderFilter]);
 
+  useEffect(() => {
+    const missingIds = Array.from(
+      new Set(
+        filtered
+          .map((c) => c.customer_id)
+          .filter((id): id is string => Boolean(id) && !customerMap[id])
+          .filter((id) => !archivedCustomerMap[id])
+      )
+    );
+
+    if (missingIds.length === 0) return;
+
+    const fetchArchivedNames = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("archived_customers")
+          .select("id, name")
+          .in("id", missingIds);
+
+        if (error) throw error;
+
+        const nextMap = { ...archivedCustomerMap };
+        (data ?? []).forEach((row: any) => {
+          if (row?.id && row?.name) nextMap[row.id] = row.name;
+        });
+        setArchivedCustomerMap(nextMap);
+      } catch (err) {
+        console.error("Error fetching archived customers:", err);
+      }
+    };
+
+    void fetchArchivedNames();
+  }, [filtered, customerMap, archivedCustomerMap]);
+
+  const isArchivedCustomer = (customerId: string | null) => {
+    if (!customerId) return false;
+    return Boolean(archivedCustomerMap[customerId]);
+  };
+
+  const getCustomerName = (customerId: string | null) => {
+    if (!customerId) return "Okänd";
+    return customerMap[customerId]?.name || archivedCustomerMap[customerId] || "Okänd";
+  };
+
+  const activeFiltered = filtered.filter((c) => !isArchivedCustomer(c.customer_id ?? null));
+  const archivedFiltered = filtered.filter((c) => isArchivedCustomer(c.customer_id ?? null));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -317,35 +366,76 @@ export function SubscriptionCancellationsView({
         )}
       </div>
 
-      <div>
+      <div className="space-y-6">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Hämtar...</div>
-        ) : filtered.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground">Inga matchande uppsägningar.</p>
-            </CardContent>
-          </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((c) => {
-              return (
-                <SubscriptionCancellationCard
-                  key={c.id}
-                  item={c}
-                  customer={customerMap[c.customer_id]}
-                  caseTypeLabel="Uppsägning"
-                  commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
-                  canEditStatus={isAdmin}
-                  canDelete={isAdmin}
-                  isDeleting={deletingId === c.id}
-                  onOpen={() => setSelected(c)}
-                  onStatusChange={(next) => handleStatusChange(c.id, next)}
-                  onDelete={() => handleDeleteCancellation(c.id)}
-                />
-              );
-            })}
-          </div>
+          <>
+            {activeFiltered.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-sm text-muted-foreground">Inga aktiva matchande uppsägningar.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {activeFiltered.map((c) => (
+                  <SubscriptionCancellationCard
+                    key={c.id}
+                    item={c}
+                    customer={customerMap[c.customer_id]}
+                    customerNameOverride={getCustomerName(c.customer_id ?? null)}
+                    caseTypeLabel="Uppsägning"
+                    commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
+                    canEditStatus={isAdmin}
+                    canDelete={isAdmin}
+                    isDeleting={deletingId === c.id}
+                    onOpen={() => setSelected(c)}
+                    onStatusChange={(next) => handleStatusChange(c.id, next)}
+                    onDelete={() => handleDeleteCancellation(c.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <Button
+                variant="ghost"
+                className="text-sm text-gray-600"
+                onClick={() => setShowArchivedCancellations((v) => !v)}
+              >
+                {showArchivedCancellations ? "Fäll ihop" : "Visa"} arkiverade uppsägningar ({archivedFiltered.length})
+              </Button>
+              {showArchivedCancellations && (
+                archivedFiltered.length === 0 ? (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-muted-foreground">Inga arkiverade uppsägningar.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {archivedFiltered.map((c) => (
+                      <SubscriptionCancellationCard
+                        key={c.id}
+                        item={c}
+                        customer={customerMap[c.customer_id]}
+                        customerNameOverride={getCustomerName(c.customer_id ?? null)}
+                        caseTypeLabel="Uppsägning"
+                        commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
+                        canEditStatus={isAdmin}
+                        canDelete={isAdmin}
+                        isDeleting={deletingId === c.id}
+                        onOpen={() => setSelected(c)}
+                        onStatusChange={(next) => handleStatusChange(c.id, next)}
+                        onDelete={() => handleDeleteCancellation(c.id)}
+                      />
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
+          </>
         )}
       </div>
 
@@ -557,6 +647,7 @@ export function SubscriptionCancellationsView({
         onOpenChange={(v) => (!v ? setSelected(null) : null)}
         item={selected}
         customer={selected ? customerMap[selected.customer_id] : undefined}
+        customerNameOverride={selected ? getCustomerName(selected.customer_id ?? null) : undefined}
         customers={customers}
         currentUserId={user?.id}
         isAdmin={isAdmin}

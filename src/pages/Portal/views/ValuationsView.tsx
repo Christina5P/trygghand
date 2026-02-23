@@ -1,6 +1,7 @@
 // src/components/admin/ValuationsView.tsx
 import React, { useMemo, useEffect, useState } from "react";
 import type { Valuation, Customer } from "@/types";
+import { supabase } from "@/lib/supabase";
 import {
   Card,
   CardContent,
@@ -71,6 +72,8 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("all");
   const [selectedDisposition, setSelectedDisposition] = useState<Disposition | "all">("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [archivedCustomerMap, setArchivedCustomerMap] = useState<Record<string, string>>({});
+  const [showArchivedValuations, setShowArchivedValuations] = useState(false);
 
   useEffect(() => {
     if (valuations && valuations.length > 0) {
@@ -79,6 +82,40 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
       console.debug("ValuationsView: no valuations available");
     }
   }, [valuations]);
+
+  useEffect(() => {
+    const missingIds = Array.from(
+      new Set(
+        valuations
+          .map((v) => v.customer_id)
+          .filter((id): id is string => Boolean(id) && !customers.find((c) => c.id === id))
+          .filter((id) => !archivedCustomerMap[id])
+      )
+    );
+
+    if (missingIds.length === 0) return;
+
+    const fetchArchivedNames = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("archived_customers")
+          .select("id, name")
+          .in("id", missingIds);
+
+        if (error) throw error;
+
+        const nextMap = { ...archivedCustomerMap };
+        (data ?? []).forEach((row: any) => {
+          if (row?.id && row?.name) nextMap[row.id] = row.name;
+        });
+        setArchivedCustomerMap(nextMap);
+      } catch (err) {
+        console.error("Error fetching archived customers:", err);
+      }
+    };
+
+    void fetchArchivedNames();
+  }, [valuations, customers, archivedCustomerMap]);
   const filteredValuations = useMemo(() => {
     // admin-get-all-valuations already enforces shared_with_admin = true
     // keep rows even if the field is missing in the payload
@@ -93,10 +130,18 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
   const getCustomerName = (customerId: string | null): string => {
     if (!customerId) return "Gästvärdering";
     const customer = customers.find((c) => c.id === customerId);
-    return customer
-      ? customer.name
-      : `Okänd Kund (${customerId.substring(0, 4)}...)`;
+    if (customer) return customer.name;
+    if (archivedCustomerMap[customerId]) return archivedCustomerMap[customerId];
+    return `Okänd Kund (${customerId.substring(0, 4)}...)`;
   };
+
+  const isArchivedCustomer = (customerId: string | null) => {
+    if (!customerId) return false;
+    return Boolean(archivedCustomerMap[customerId]);
+  };
+
+  const activeFilteredValuations = filteredValuations.filter((v) => !isArchivedCustomer(v.customer_id ?? null));
+  const archivedFilteredValuations = filteredValuations.filter((v) => isArchivedCustomer(v.customer_id ?? null));
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(price) + " kr";
@@ -251,86 +296,192 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
         </Button>
       </div>
 
-      {filteredValuations.map((v) => (
-      <Card key={v.id} className="hover:shadow-md transition">
-      <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-start p-3 sm:p-4">
-        {/* Bild – liten och avlång */}
-        {v.image_urls && v.image_urls.length > 0 && (
-          <SignedStorageImage
-            bucket="images"
-            path={v.image_urls[0]}
-            alt={`val-${v.id}-img`}
-            className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-md border flex-shrink-0"
-          />
-        )}
-
-        {/* Textdel */}
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-            <div className="min-w-0">
-              <div className="text-sm font-medium break-words">
-                {(() => {
-                  const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
-                  const base = (v as any)?.title ?? `Värdering #${v.id}`;
-                  const label = getValuationObjectLabel(analysis);
-                  return label ? `${base} – ${label}` : base;
-                })()}
-              </div>
-              {getPriceDisplay(v) && (
-                <div className="text-sm font-semibold text-black mt-1">
-                  {getPriceDisplay(v)}
-                </div>
+      {activeFilteredValuations.length === 0 ? (
+        <Card className="p-6 text-center">
+          <CardTitle className="text-base">Inga aktiva värderingar hittades</CardTitle>
+          <CardDescription className="mt-2">
+            Prova att ändra filtren eller visa arkiverade värderingar.
+          </CardDescription>
+        </Card>
+      ) : (
+        activeFilteredValuations.map((v) => (
+          <Card key={v.id} className="hover:shadow-md transition">
+            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-start p-3 sm:p-4">
+              {/* Bild – liten och avlång */}
+              {v.image_urls && v.image_urls.length > 0 && (
+                <SignedStorageImage
+                  bucket="images"
+                  path={v.image_urls[0]}
+                  alt={`val-${v.id}-img`}
+                  className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-md border flex-shrink-0"
+                />
               )}
-              <div className="text-xs text-gray-500">
-                Kund: {getCustomerName(v.customer_id)}
-              </div>
-              <div className="text-xs text-gray-500">
-                Skapad: {v.created_at
-                  ? format(new Date(v.created_at), "yyyy-MM-dd HH:mm", { locale: sv })
-                  : "Okänt datum"}
-              </div>
-            </div>
-            <Badge className="hidden sm:inline-flex bg-blue-100 text-blue-800 hover:bg-blue-200">
-              {getCustomerName(v.customer_id)}
-            </Badge>
-          </div>
 
-          {v.disposition_code && (
-            <div className="mt-2 flex items-center gap-2 text-xs text-gray-600">
-              {(() => {
-                const opt = DISPOSITION_OPTIONS.find((o) => o.key === v.disposition_code);
-                if (!opt) return null;
-                const Icon = opt.Icon;
-                return (
-                  <>
-                    <Icon className="h-4 w-4" />
-                    <span>{opt.label}</span>
-                  </>
-                );
-              })()}
-            </div>
-          )}
+              {/* Textdel */}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium break-words">
+                      {(() => {
+                        const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+                        const base = (v as any)?.title ?? `Värdering #${v.id}`;
+                        const label = getValuationObjectLabel(analysis);
+                        return label ? `${base} – ${label}` : base;
+                      })()}
+                    </div>
+                    {getPriceDisplay(v) && (
+                      <div className="text-sm font-semibold text-black mt-1">
+                        {getPriceDisplay(v)}
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-500">
+                      Kund: {getCustomerName(v.customer_id)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Skapad: {v.created_at
+                        ? format(new Date(v.created_at), "yyyy-MM-dd HH:mm", { locale: sv })
+                        : "Okänt datum"}
+                    </div>
+                  </div>
+                  <Badge className="hidden sm:inline-flex bg-blue-100 text-blue-800 hover:bg-blue-200">
+                    {getCustomerName(v.customer_id)}
+                  </Badge>
+                </div>
 
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 h-8 text-xs sm:text-sm"
-              onClick={() => onOpenDetails(v)}
-            >
-              Visa detaljer
-            </Button>
-            <button
-              onClick={() => onDelete(v.id)}
-              className="text-xs text-red-600 hover:underline"
-            >
-              Ta bort
-            </button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  ))}
+                {v.disposition_code && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+                    {(() => {
+                      const opt = DISPOSITION_OPTIONS.find((o) => o.key === v.disposition_code);
+                      if (!opt) return null;
+                      const Icon = opt.Icon;
+                      return (
+                        <>
+                          <Icon className="h-4 w-4" />
+                          <span>{opt.label}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-8 text-xs sm:text-sm"
+                    onClick={() => onOpenDetails(v)}
+                  >
+                    Visa detaljer
+                  </Button>
+                  <button
+                    onClick={() => onDelete(v.id)}
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    Ta bort
+                  </button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
+
+      <div className="space-y-3">
+        <Button
+          variant="ghost"
+          className="text-sm text-gray-600"
+          onClick={() => setShowArchivedValuations((v) => !v)}
+        >
+          {showArchivedValuations ? "Fäll ihop" : "Visa"} arkiverade värderingar ({archivedFilteredValuations.length})
+        </Button>
+        {showArchivedValuations && (
+          archivedFilteredValuations.length === 0 ? (
+            <Card className="p-6 text-center">
+              <CardTitle className="text-base">Inga arkiverade värderingar</CardTitle>
+              <CardDescription className="mt-2">Det finns inga arkiverade värderingar för de valda filtren.</CardDescription>
+            </Card>
+          ) : (
+            archivedFilteredValuations.map((v) => (
+              <Card key={v.id} className="hover:shadow-md transition">
+                <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-start p-3 sm:p-4">
+                  {v.image_urls && v.image_urls.length > 0 && (
+                    <SignedStorageImage
+                      bucket="images"
+                      path={v.image_urls[0]}
+                      alt={`val-${v.id}-img`}
+                      className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-md border flex-shrink-0"
+                    />
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium break-words">
+                          {(() => {
+                            const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+                            const base = (v as any)?.title ?? `Värdering #${v.id}`;
+                            const label = getValuationObjectLabel(analysis);
+                            return label ? `${base} – ${label}` : base;
+                          })()}
+                        </div>
+                        {getPriceDisplay(v) && (
+                          <div className="text-sm font-semibold text-black mt-1">
+                            {getPriceDisplay(v)}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500">
+                          Kund: {getCustomerName(v.customer_id)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Skapad: {v.created_at
+                            ? format(new Date(v.created_at), "yyyy-MM-dd HH:mm", { locale: sv })
+                            : "Okänt datum"}
+                        </div>
+                      </div>
+                      <Badge className="hidden sm:inline-flex bg-blue-100 text-blue-800 hover:bg-blue-200">
+                        {getCustomerName(v.customer_id)}
+                      </Badge>
+                    </div>
+
+                    {v.disposition_code && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+                        {(() => {
+                          const opt = DISPOSITION_OPTIONS.find((o) => o.key === v.disposition_code);
+                          if (!opt) return null;
+                          const Icon = opt.Icon;
+                          return (
+                            <>
+                              <Icon className="h-4 w-4" />
+                              <span>{opt.label}</span>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-8 text-xs sm:text-sm"
+                        onClick={() => onOpenDetails(v)}
+                      >
+                        Visa detaljer
+                      </Button>
+                      <button
+                        onClick={() => onDelete(v.id)}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Ta bort
+                      </button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )
+        )}
+      </div>
 
       <div className="text-center pt-4">
         <Button

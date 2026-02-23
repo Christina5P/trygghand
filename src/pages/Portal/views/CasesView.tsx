@@ -67,6 +67,8 @@ const CasesView: React.FC<CasesViewProps> = ({
   const [caseCommentsCounts, setCaseCommentsCounts] = useState<Record<string, number>>({});
   const [latestCustomerCommentAt, setLatestCustomerCommentAt] = useState<Record<string, string>>({});
   const [unreadTick, setUnreadTick] = useState(0);
+  const [archivedCustomerMap, setArchivedCustomerMap] = useState<Record<string, string>>({});
+  const [showArchivedCases, setShowArchivedCases] = useState(false);
 
   const lastReadAtKey = useCallback(
     (caseId: string) => `adminPortal:lastReadAt:${user?.id || ""}:${caseId}`,
@@ -220,6 +222,125 @@ const CasesView: React.FC<CasesViewProps> = ({
     }
   }, [cases, fetchCaseCommentsCount, fetchLatestCustomerComment]);
 
+  useEffect(() => {
+    const missingIds = Array.from(
+      new Set(
+        cases
+          .map((caseItem) => caseItem.customer_id)
+          .filter((id): id is string => Boolean(id) && !customers.find((c) => c.id === id))
+          .filter((id) => !archivedCustomerMap[id])
+      )
+    );
+
+    if (missingIds.length === 0) return;
+
+    const fetchArchivedNames = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("archived_customers")
+          .select("id, name")
+          .in("id", missingIds);
+
+        if (error) throw error;
+
+        const nextMap = { ...archivedCustomerMap };
+        (data ?? []).forEach((row: any) => {
+          if (row?.id && row?.name) nextMap[row.id] = row.name;
+        });
+        setArchivedCustomerMap(nextMap);
+      } catch (err) {
+        console.error("Error fetching archived customers:", err);
+      }
+    };
+
+    void fetchArchivedNames();
+  }, [cases, customers, archivedCustomerMap]);
+
+  const getCustomerName = (customerId: string | null) => {
+    if (!customerId) return "Okänd";
+    const activeName = customers.find((c) => c.id === customerId)?.name;
+    return activeName || archivedCustomerMap[customerId] || "Okänd";
+  };
+
+  const isArchivedCustomer = (customerId: string | null) => {
+    if (!customerId) return false;
+    return Boolean(archivedCustomerMap[customerId]);
+  };
+
+  const activeCases = cases.filter((caseItem) => !isArchivedCustomer(caseItem.customer_id ?? null));
+  const archivedCases = cases.filter((caseItem) => isArchivedCustomer(caseItem.customer_id ?? null));
+
+  const renderCaseCard = (caseItem: Case) => {
+    const totalCount = caseCommentsCounts[caseItem.id] || 0;
+    const unread = hasUnread(caseItem.id);
+
+    return (
+      <Card
+        key={caseItem.id}
+        className="relative hover:shadow-lg transition-shadow cursor-pointer"
+        onClick={() => handleEditCase(caseItem)}
+      >
+        <CardHeader className="relative">
+          <CardTitle>{caseItem.title}</CardTitle>
+          <CardDescription>
+            Kund: {getCustomerName(caseItem.customer_id ?? null)} | 
+            Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}
+            {caseItem.scheduled_date && ` | Schemalagt: ${format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}`}
+          </CardDescription>
+          <div
+            className="mt-2 flex flex-wrap gap-2 sm:absolute sm:top-2 sm:right-2 sm:mt-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className={`rounded transition-colors ${getStatusColor(caseItem.status)}`}
+              style={{ minWidth: 96, minHeight: 28, display: "flex", alignItems: "center" }}
+            >
+              <Select defaultValue={caseItem.status} onValueChange={(s) => handleStatusChange(caseItem.id, s)}>
+                <SelectTrigger className="min-w-[88px] w-24 sm:w-28 h-7 bg-transparent border-none shadow-none focus:ring-0 focus:outline-none text-[11px] sm:text-xs px-1 leading-none">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Ta bort ärende"
+              className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200"
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (!window.confirm("Är du säker på att du vill ta bort detta ärende?")) return;
+                try {
+                  const userId = user?.id;
+                  if (!userId) throw new Error("Ingen användare inloggad");
+                  const { error } = await supabase.functions.invoke("admin-soft-delete-case", {
+                    body: { case_id: caseItem.id, user_id: userId },
+                  });
+                  if (error) throw error;
+                  await onDataUpdated();
+                } catch (err: any) {
+                  alert("Kunde inte ta bort ärendet: " + (err?.message || err));
+                }
+              }}
+            >
+              <span className="sr-only">Ta bort</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </Button>
+          </div>
+          <CommentBubble
+            className={`absolute bottom-2 right-2 transition-all ${unread ? "ring-2 ring-blue-400 scale-110" : ""}`}
+            count={totalCount}
+            highlight={unread}
+          />
+        </CardHeader>
+      </Card>
+    );
+  };
+
   // Om du vill visa laddningsstatus för huvudvyerna
   if (!cases || !customers) { // Enkel check, kan vara mer detaljerad
     return (
@@ -262,77 +383,35 @@ const CasesView: React.FC<CasesViewProps> = ({
       {cases.length === 0 ? (
         <p className="text-center text-gray-500 py-8">Inga ärenden hittades.</p>
       ) : (
-        <div className="grid gap-4 mt-4">
-          {cases.map((caseItem) => {
-            const totalCount = caseCommentsCounts[caseItem.id] || 0;
-            const unread = hasUnread(caseItem.id);
+        <div className="space-y-6 mt-4">
+          <div>
+            {activeCases.length === 0 ? (
+              <p className="text-center text-gray-500 py-6">Inga aktiva ärenden.</p>
+            ) : (
+              <div className="grid gap-4">
+                {activeCases.map((caseItem) => renderCaseCard(caseItem))}
+              </div>
+            )}
+          </div>
 
-            return (
-            <Card
-              key={caseItem.id}
-              className="relative hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => handleEditCase(caseItem)}
+          <div className="space-y-3">
+            <Button
+              variant="ghost"
+              className="text-sm text-gray-600"
+              onClick={() => setShowArchivedCases((v) => !v)}
             >
-              <CardHeader className="relative">
-                <CardTitle>{caseItem.title}</CardTitle>
-                <CardDescription>
-                  Kund: {customers.find(c => c.id === caseItem.customer_id)?.name || "Okänd"} | 
-                  Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}
-                  {caseItem.scheduled_date && ` | Schemalagt: ${format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}`}
-                </CardDescription>
-                <div
-                  className="mt-2 flex flex-wrap gap-2 sm:absolute sm:top-2 sm:right-2 sm:mt-0"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div
-                    className={`rounded transition-colors ${getStatusColor(caseItem.status)}`}
-                    style={{ minWidth: 96, minHeight: 28, display: 'flex', alignItems: 'center' }}
-                  >
-                    <Select defaultValue={caseItem.status} onValueChange={(s) => handleStatusChange(caseItem.id, s)}>
-                    <SelectTrigger className="min-w-[88px] w-24 sm:w-28 h-7 bg-transparent border-none shadow-none focus:ring-0 focus:outline-none text-[11px] sm:text-xs px-1 leading-none">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Ta bort ärende"
-                    className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200"
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      if (!window.confirm("Är du säker på att du vill ta bort detta ärende?")) return;
-                      try {
-                        const userId = user?.id;
-                        if (!userId) throw new Error("Ingen användare inloggad");
-                        const { error } = await supabase.functions.invoke("admin-soft-delete-case", {
-                          body: { case_id: caseItem.id, user_id: userId },
-                        });
-                        if (error) throw error;
-                        await onDataUpdated();
-                      } catch (err: any) {
-                        alert("Kunde inte ta bort ärendet: " + (err?.message || err));
-                      }
-                    }}
-                  >
-                    <span className="sr-only">Ta bort</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                  </Button>
+              {showArchivedCases ? "Fäll ihop" : "Visa"} arkiverade ärenden ({archivedCases.length})
+            </Button>
+            {showArchivedCases && (
+              archivedCases.length === 0 ? (
+                <p className="text-center text-gray-500 py-4">Inga arkiverade ärenden.</p>
+              ) : (
+                <div className="grid gap-4">
+                  {archivedCases.map((caseItem) => renderCaseCard(caseItem))}
                 </div>
-                <CommentBubble
-                  className={`absolute bottom-2 right-2 transition-all ${unread ? 'ring-2 ring-blue-400 scale-110' : ''}`}
-                  count={totalCount}
-                  highlight={unread}
-                />
-              </CardHeader>
-            </Card>
-            );
-          })}
+              )
+            )}
+          </div>
         </div>
       )}
     </div>
