@@ -13,6 +13,7 @@ export function TruckMeter({ totalVolume, selectedTruckIndex, onTruckChange }: T
   const displayFillPercentage = fillPercentage === 0 ? 0 : Math.max(fillPercentage, 1);
   const isOverCapacity = totalVolume > truck.volume;
   const isNearCapacity = fillPercentage >= 80 && !isOverCapacity;
+  const displayPercentage = Math.round((totalVolume / truck.volume) * 100);
 
   const getVehicleIcon = (vehicle: TruckCapacity) => {
     // Use safe, known-to-exist lucide icons.
@@ -41,6 +42,36 @@ export function TruckMeter({ totalVolume, selectedTruckIndex, onTruckChange }: T
         <div className="flex items-center gap-2">
           <Truck className="w-5 h-5 text-primary" />
           <span className="font-medium">Fordonstyp</span>
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-secondary/40 p-4 space-y-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-medium">Fyllnadsgrad</span>
+          <span className="text-muted-foreground">
+            {totalVolume.toFixed(1)} / {truck.volume} m³
+          </span>
+        </div>
+        <div
+          className="h-3 w-full rounded-full bg-secondary overflow-hidden"
+          role="progressbar"
+          aria-valuenow={Math.min(displayPercentage, 999)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Fyllnadsgrad"
+        >
+          <div
+            className={`h-full transition-all duration-300 ${getFillColor()}`}
+            style={{ width: `${Math.min(displayFillPercentage, 100)}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className={isOverCapacity ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+            {isOverCapacity ? 'Över kapacitet' : 'Kapacitet'}
+          </span>
+          <span className={isOverCapacity ? 'text-destructive font-semibold' : 'text-foreground'}>
+            {displayPercentage}%
+          </span>
         </div>
       </div>
 
@@ -89,13 +120,6 @@ export function TruckMeter({ totalVolume, selectedTruckIndex, onTruckChange }: T
           );
         })}
       </div>
-
-      <button
-        className="mt-4 px-4 py-2 rounded bg-primary text-primary-foreground font-semibold"
-        type="button"
-      >
-        kubikmätare- planering inför flytt
-      </button>
 
       {isOverCapacity && (
         <p className="text-xs text-destructive font-medium mt-2">

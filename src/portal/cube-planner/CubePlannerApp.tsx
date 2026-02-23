@@ -46,7 +46,7 @@ export default function CubePlannerApp() {
 
   return (
     <div className="cube-planner">
-      <div className="min-h-screen bg-background">
+      <div className="min-h-[100svh] bg-background">
         <header className="bg-card border-b sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between gap-3">
@@ -73,7 +73,7 @@ export default function CubePlannerApp() {
           </div>
         </header>
 
-        <main className="container mx-auto px-4 py-6">
+        <main className="container mx-auto px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))]">
           <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-8">
             <div className="space-y-6">
               <CategoryTabs activeCategory={activeCategory} onCategoryChange={setActiveCategory} />

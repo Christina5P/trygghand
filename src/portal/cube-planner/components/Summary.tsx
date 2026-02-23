@@ -65,7 +65,7 @@ export function Summary({
     .filter(Boolean);
 
   return (
-    <div className="summary-card space-y-6 sticky top-4">
+    <div className="summary-card space-y-6 lg:sticky lg:top-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Package className="w-5 h-5 text-primary" />
