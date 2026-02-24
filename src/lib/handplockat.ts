@@ -61,6 +61,20 @@ export async function updateHandplockatListing(input: Partial<ListingInput> & { 
   return data as HandplockatListing;
 }
 
+export async function deleteHandplockatListing(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("handplockat_listings")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    if (isUnauthorizedError(error)) {
+      throw new Error("Du saknar behörighet att ta bort annonser.");
+    }
+    throw error;
+  }
+}
+
 export async function placeHandplockatBid(payload: {
   listingId: string;
   bidAmountSek: number;

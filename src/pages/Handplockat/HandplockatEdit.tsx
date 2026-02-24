@@ -5,17 +5,17 @@ import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import {
+  deleteHandplockatListing,
   normalizeUrlList,
   parseJsonInput,
   updateHandplockatListing,
 } from "@/lib/handplockat";
 import { stripExif } from "@/integrations/supabaseUpload";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import type { HandplockatCtaType, HandplockatSource, HandplockatStatus, HandplockatListing } from "@/types";
+import type { HandplockatSource, HandplockatStatus, HandplockatListing } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 
-const DEFAULT_SMS = "+46700000000";
-const COMPANY_SMS = "+46761169554";
+const COMPANY_EMAIL = "kontakt@trygghand.com";
 
 const getErrorMessage = (err: unknown, fallback: string) => {
   if (err && typeof err === "object" && "message" in err) {
@@ -24,6 +24,69 @@ const getErrorMessage = (err: unknown, fallback: string) => {
   }
   return fallback;
 };
+
+type BucketName = "handplockat-private" | "images";
+
+const isHttpUrl = (v: string) => /^https?:\/\//i.test(v);
+
+async function tryCreateSignedUrl(path: string, expiresIn = 600): Promise<string | null> {
+  const buckets: BucketName[] = ["handplockat-private", "images"];
+  for (const bucket of buckets) {
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
+    if (!error && data?.signedUrl) return data.signedUrl;
+  }
+  return null;
+}
+
+async function tryDownloadBlob(path: string): Promise<{ bucket: BucketName; blob: Blob } | null> {
+  const buckets: BucketName[] = ["handplockat-private", "images"];
+  for (const bucket of buckets) {
+    const { data, error } = await supabase.storage.from(bucket).download(path);
+    if (!error && data) return { bucket, blob: data };
+  }
+  return null;
+}
+
+async function rotateBlob(blob: Blob, angle: number): Promise<Blob | null> {
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    const loaded: HTMLImageElement = await new Promise((resolve, reject) => {
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    if (angle % 180 !== 0) {
+      canvas.width = loaded.height;
+      canvas.height = loaded.width;
+    } else {
+      canvas.width = loaded.width;
+      canvas.height = loaded.height;
+    }
+
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((angle * Math.PI) / 180);
+    ctx.drawImage(loaded, -loaded.width / 2, -loaded.height / 2);
+    ctx.restore();
+
+    const out: Blob | null = await new Promise((resolve) => {
+      canvas.toBlob((b) => resolve(b), "image/png");
+    });
+    return out;
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
 export default function HandplockatEdit() {
   const navigate = useNavigate();
@@ -37,33 +100,46 @@ export default function HandplockatEdit() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priceSek, setPriceSek] = useState<string>("");
-  const [ctaTyp, setCtaTyp] = useState<HandplockatCtaType>("direktkop");
-  const [bidStartSek, setBidStartSek] = useState<string>("");
   const [status, setStatus] = useState<HandplockatStatus>("available");
+
   const [category, setCategory] = useState("");
+  const [itemType, setItemType] = useState<"general" | "clothing">("general");
+  const [sizeValue, setSizeValue] = useState("");
+
   const [dimensionLength, setDimensionLength] = useState("");
   const [dimensionWidth, setDimensionWidth] = useState("");
   const [dimensionHeight, setDimensionHeight] = useState("");
+
   const [skick, setSkick] = useState("");
   const [pickupArea, setPickupArea] = useState("Sundsvall");
   const [pickupWindow, setPickupWindow] = useState("");
   const [pickupDeadlineAt, setPickupDeadlineAt] = useState("");
-  const [auctionEndAt, setAuctionEndAt] = useState("");
-  const [smsPhone, setSmsPhone] = useState(COMPANY_SMS);
+
   const [valuationJsonRaw, setValuationJsonRaw] = useState("");
   const [extraInfo, setExtraInfo] = useState("");
+
   const [imagesOriginalRaw, setImagesOriginalRaw] = useState("");
   const [imageCutout, setImageCutout] = useState("");
+
   const [uploadingOriginal, setUploadingOriginal] = useState(false);
-  const [uploadingCutout, setUploadingCutout] = useState(false);
+  const [uploadingAnnonsbild, setUploadingAnnonsbild] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
   const originalInputRef = useRef<HTMLInputElement | null>(null);
-  const cutoutInputRef = useRef<HTMLInputElement | null>(null);
 
   const parsedValuation = useMemo(() => parseJsonInput(valuationJsonRaw), [valuationJsonRaw]);
 
+  const originals = useMemo(() => normalizeUrlList(imagesOriginalRaw).filter(Boolean), [imagesOriginalRaw]);
+  const firstOriginal = originals[0] || "";
+
+  const [firstOriginalPreviewUrl, setFirstOriginalPreviewUrl] = useState<string>("");
+  const [firstOriginalPreviewLoading, setFirstOriginalPreviewLoading] = useState(false);
+  const [firstOriginalPreviewError, setFirstOriginalPreviewError] = useState<string | null>(null);
+
+  // ----- Load listing -----
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setLoadError("Tjänsten är inte konfigurerad i denna miljö.");
@@ -78,6 +154,7 @@ export default function HandplockatEdit() {
     }
 
     let isMounted = true;
+
     const loadListing = async () => {
       try {
         const { data, error } = await supabase
@@ -91,26 +168,38 @@ export default function HandplockatEdit() {
         if (!isMounted) return;
 
         const listing = data as HandplockatListing;
+
         setSource(listing.source ?? "manual");
         setTitle(listing.title ?? "");
         setDescription(listing.description ?? "");
         setPriceSek(listing.price_sek != null ? String(listing.price_sek) : "");
-        setCtaTyp(listing.cta_typ ?? "direktkop");
-        setBidStartSek(listing.bid_start_sek != null ? String(listing.bid_start_sek) : "");
-        setStatus(listing.status ?? "available");
-        setCategory(listing.category ?? "");
+        setStatus((listing.status as HandplockatStatus) ?? "available");
+
+        setCategory((listing as any).category ?? "");
+
         setDimensionLength(listing.dimensions_mm?.length != null ? String(listing.dimensions_mm.length) : "");
         setDimensionWidth(listing.dimensions_mm?.width != null ? String(listing.dimensions_mm.width) : "");
         setDimensionHeight(listing.dimensions_mm?.height != null ? String(listing.dimensions_mm.height) : "");
+
         setSkick(listing.skick ?? "");
+
+        const sizeMatch = listing.description?.match(/Storlek:\s*(.+)/i);
+        if (sizeMatch && sizeMatch[1]) {
+          setItemType("clothing");
+          setSizeValue(sizeMatch[1].trim());
+        } else {
+          setItemType("general");
+          setSizeValue("");
+        }
+
         setPickupArea(listing.pickup_area ?? "Sundsvall");
         setPickupWindow(listing.pickup_window ?? "");
-        setPickupDeadlineAt(listing.pickup_deadline_at ?? "");
-        setAuctionEndAt(listing.auction_end_at ?? "");
-        setSmsPhone(listing.sms_phone ?? COMPANY_SMS);
+        setPickupDeadlineAt((listing as any).pickup_deadline_at ?? "");
+
         setValuationJsonRaw(listing.valuation_json ? JSON.stringify(listing.valuation_json, null, 2) : "");
         setImagesOriginalRaw(Array.isArray(listing.images_original) ? listing.images_original.join("\n") : "");
         setImageCutout(listing.image_cutout ?? "");
+
         setLoadError(null);
       } catch (err) {
         if (!isMounted) return;
@@ -128,13 +217,51 @@ export default function HandplockatEdit() {
     };
   }, [id]);
 
+  // ----- Preview first original (signed url) -----
+  useEffect(() => {
+    let isMounted = true;
+
+    const run = async () => {
+      setFirstOriginalPreviewUrl("");
+      setFirstOriginalPreviewError(null);
+
+      if (!firstOriginal) return;
+
+      // Om någon råkat klistra in en URL så försöker vi visa den,
+      // men rotation/generering kräver path.
+      if (isHttpUrl(firstOriginal)) {
+        setFirstOriginalPreviewUrl(firstOriginal);
+        return;
+      }
+
+      if (!isSupabaseConfigured) return;
+
+      setFirstOriginalPreviewLoading(true);
+      try {
+        const signed = await tryCreateSignedUrl(firstOriginal, 600);
+        if (!signed) {
+          if (isMounted) setFirstOriginalPreviewError("Kunde inte hitta bilden i lagringen (kontrollera path/bucket).");
+          return;
+        }
+        if (isMounted) setFirstOriginalPreviewUrl(signed);
+      } finally {
+        if (isMounted) setFirstOriginalPreviewLoading(false);
+      }
+    };
+
+    void run();
+    return () => {
+      isMounted = false;
+    };
+  }, [firstOriginal]);
+
   const ensureListingId = () => {
     if (id) return id;
     setUploadError("Annons-ID saknas.");
     return "";
   };
 
-  const uploadFileToBucket = async (file: File, bucket: string, folder: string) => {
+  const uploadFileToBucket = async (file: File, bucket: "handplockat-private", folder: string) => {
     const safeFile = await stripExif(file);
     const ext = (safeFile.name.split(".").pop() || "bin").toLowerCase();
     const fileId = crypto.randomUUID();
@@ -174,28 +301,90 @@ export default function HandplockatEdit() {
     }
   };
 
-  const handleCutoutUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    if (!isSupabaseConfigured) {
-      setUploadError("Tjänsten är inte konfigurerad i denna miljö.");
-      return;
-    }
+  // ----- Rotate first original (download -> rotate -> upload same path) -----
+  async function handleRotateFirstOriginal() {
+    setUploadError(null);
+
     const listingId = ensureListingId();
     if (!listingId) return;
 
-    setUploadError(null);
-    setUploadingCutout(true);
+    const first = firstOriginal;
+    if (!first) {
+      setUploadError("Det finns ingen originalbild att rotera.");
+      return;
+    }
+
+    if (isHttpUrl(first)) {
+      setUploadError("Den första originalbilden är en URL. Rotation kräver att bilden är en storage-path.");
+      return;
+    }
+
+    setUploadingOriginal(true);
     try {
-      const file = files[0];
-      const { path } = await uploadFileToBucket(file, "handplockat-public", `handplockat/${listingId}`);
-      const { data } = supabase.storage.from("handplockat-public").getPublicUrl(path);
-      if (!data?.publicUrl) throw new Error("Kunde inte hämta publik länk.");
-      setImageCutout(data.publicUrl);
+      const downloaded = await tryDownloadBlob(first);
+      if (!downloaded) throw new Error(`Object not found: ${first}`);
+
+      const rotated = await rotateBlob(downloaded.blob, 90);
+      if (!rotated) throw new Error("Kunde inte rotera bilden.");
+
+      const { error: upErr } = await supabase.storage.from(downloaded.bucket).upload(first, rotated, {
+        upsert: true,
+        contentType: "image/png",
+      });
+      if (upErr) throw upErr;
+
+      // trigga refresh (samma text men ny render)
+      setImagesOriginalRaw((prev) => prev);
     } catch (err) {
-      setUploadError(getErrorMessage(err, "Kunde inte ladda upp frilagd bild."));
+      setUploadError(getErrorMessage(err, "Kunde inte rotera bilden."));
     } finally {
-      setUploadingCutout(false);
-      if (cutoutInputRef.current) cutoutInputRef.current.value = "";
+      setUploadingOriginal(false);
+    }
+  }
+
+  // ----- Generate annonsbild from first original via Edge Function -----
+  const handleGenerateAnnonsbild = async () => {
+    setUploadError(null);
+
+    const listingId = ensureListingId();
+    if (!listingId) return;
+
+    if (!firstOriginal) {
+      setUploadError("Ladda upp minst en originalbild först.");
+      return;
+    }
+
+    if (isHttpUrl(firstOriginal)) {
+      setUploadError("Originalbilden är en URL. Ladda upp bilden så den blir en storage-path först.");
+      return;
+    }
+
+    setUploadingAnnonsbild(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("handplockat-generate-images", {
+        body: {
+          listing_id: listingId,
+          source_image_paths: [firstOriginal],
+        },
+      });
+
+      if (error) throw error;
+      if ((data as any)?.ok === false) {
+        throw new Error((data as any)?.message || (data as any)?.error || "Kunde inte skapa annonsbild.");
+      }
+
+      const url =
+        (Array.isArray((data as any)?.public_urls) && (data as any)?.public_urls[0]) ||
+        (data as any)?.public_url ||
+        "";
+
+      if (!url) throw new Error("Fick ingen publik URL tillbaka från bildtjänsten.");
+
+      setImageCutout(String(url));
+    } catch (err) {
+      setUploadError(getErrorMessage(err, "Kunde inte skapa annonsbild."));
+    } finally {
+      setUploadingAnnonsbild(false);
     }
   };
 
@@ -224,12 +413,14 @@ export default function HandplockatEdit() {
       return;
     }
 
-    const finalBidStart = bidStartSek ? Number(bidStartSek) : null;
+    const sizeLine = itemType === "clothing" && sizeValue.trim() ? `Storlek: ${sizeValue.trim()}` : "";
+
     const pickupText = pickupWindow.trim()
       ? `${pickupArea.trim() || "Sundsvall"} – ${pickupWindow.trim()}`
       : `${pickupArea.trim() || "Sundsvall"} – tid enligt överenskommelse`;
+
     const dimensions_mm =
-      dimensionLength || dimensionWidth || dimensionHeight
+      itemType === "general" && (dimensionLength || dimensionWidth || dimensionHeight)
         ? {
             length: dimensionLength ? Number(dimensionLength) : null,
             width: dimensionWidth ? Number(dimensionWidth) : null,
@@ -242,20 +433,24 @@ export default function HandplockatEdit() {
       await updateHandplockatListing({
         id,
         title: title.trim(),
-        description: [description.trim(), extraInfo.trim()].filter(Boolean).join("\n\n"),
+        description: [description.trim(), sizeLine, extraInfo.trim()].filter(Boolean).join("\n\n"),
         price_sek: finalPrice,
-        cta_typ: ctaTyp,
-        bid_start_sek: finalBidStart,
+
+        // Frontend: endast direktköp
+        cta_typ: "direktkop",
+
         status,
         category: category.trim() || null,
         dimensions_mm,
+
         skick: skick.trim() || null,
+
         pickup_area: pickupArea.trim() || "Sundsvall",
         pickup_window: pickupWindow.trim() || null,
         pickup_text: pickupText,
+
         pickup_deadline_at: pickupDeadlineAt || null,
-        auction_end_at: auctionEndAt || null,
-        sms_phone: smsPhone.trim() || DEFAULT_SMS,
+
         payment_method: "swish",
         source,
         valuation_json: parsedValuation,
@@ -271,12 +466,29 @@ export default function HandplockatEdit() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    const confirmed = window.confirm("Är du säker på att du vill ta bort annonsen?");
+    if (!confirmed) return;
+
+    setSaving(true);
+    try {
+      await deleteHandplockatListing(id);
+      navigate("/handplockat");
+    } catch (err) {
+      setError(getErrorMessage(err, "Kunde inte ta bort annonsen."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ---- Guards / loading states ----
   if (loading) {
     return (
       <div className="min-h-[100svh] bg-background">
         <Header />
         <main className="container mx-auto px-4 py-12">
-          <p className="text-muted-foreground">Laddar annons...</p>
+          <p className="text-muted-foreground">Laddar annons…</p>
         </main>
         <Footer />
       </div>
@@ -310,7 +522,7 @@ export default function HandplockatEdit() {
   return (
     <div className="min-h-[100svh] bg-background">
       <Seo
-        title="Redigera annons | Handplockat Sundsvall"
+        title="Redigera annons | Handplockat"
         description="Redigera Handplockat-annons."
         canonical={`https://www.trygghand.com/admin/handplockat/redigera/${id}`}
         robots="noindex"
@@ -320,44 +532,27 @@ export default function HandplockatEdit() {
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
             <h1 className="text-2xl font-bold text-foreground">Redigera annons</h1>
-            <p className="text-sm text-muted-foreground mt-2">
-              Uppdatera annonsen och spara ändringar.
-            </p>
+            <p className="text-sm text-muted-foreground mt-2">Uppdatera annonsen och spara ändringar.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Grunduppgifter</h2>
+
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">Annons-ID</label>
-                <input
-                  value={id || ""}
-                  readOnly
-                  className="w-full rounded-xl border border-input px-3 py-2 text-sm bg-muted"
-                />
+                <input value={id || ""} readOnly className="w-full rounded-xl border border-input px-3 py-2 text-sm bg-muted" />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">Utgångspunkt</label>
                 <div className="flex flex-wrap gap-3">
                   <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="radio"
-                      name="source"
-                      value="valuation"
-                      checked={source === "valuation"}
-                      onChange={() => setSource("valuation")}
-                    />
+                    <input type="radio" name="source" value="valuation" checked={source === "valuation"} onChange={() => setSource("valuation")} />
                     Från värdering
                   </label>
                   <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="radio"
-                      name="source"
-                      value="manual"
-                      checked={source === "manual"}
-                      onChange={() => setSource("manual")}
-                    />
+                    <input type="radio" name="source" value="manual" checked={source === "manual"} onChange={() => setSource("manual")} />
                     Manuell annons
                   </label>
                 </div>
@@ -366,184 +561,103 @@ export default function HandplockatEdit() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Rubrik</label>
-                  <input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                  />
+                  <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Pris (SEK)</label>
-                  <input
-                    value={priceSek}
-                    onChange={(e) => setPriceSek(e.target.value)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                    type="number"
-                    min="0"
-                  />
+                  <input value={priceSek} onChange={(e) => setPriceSek(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" type="number" min="0" />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Kategori</label>
-                  <input
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                  />
+                  <input value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Typ av vara</label>
+                  <select value={itemType} onChange={(e) => setItemType(e.target.value as "general" | "clothing")} className="w-full rounded-xl border border-input px-3 py-2 text-sm">
+                    <option value="general">Allmänt</option>
+                    <option value="clothing">Kläder</option>
+                  </select>
+                </div>
+              </div>
+
+              {itemType === "clothing" ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Storlek</label>
+                  <input value={sizeValue} onChange={(e) => setSizeValue(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" placeholder="t.ex. S, M, L eller 34–46" />
+                </div>
+              ) : (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Mått (mm)</label>
                   <div className="grid grid-cols-3 gap-2">
-                    <input
-                      value={dimensionLength}
-                      onChange={(e) => setDimensionLength(e.target.value)}
-                      className="w-full rounded-xl border border-input px-2 py-2 text-sm"
-                      placeholder="L"
-                      type="number"
-                      min="0"
-                    />
-                    <input
-                      value={dimensionWidth}
-                      onChange={(e) => setDimensionWidth(e.target.value)}
-                      className="w-full rounded-xl border border-input px-2 py-2 text-sm"
-                      placeholder="B"
-                      type="number"
-                      min="0"
-                    />
-                    <input
-                      value={dimensionHeight}
-                      onChange={(e) => setDimensionHeight(e.target.value)}
-                      className="w-full rounded-xl border border-input px-2 py-2 text-sm"
-                      placeholder="H"
-                      type="number"
-                      min="0"
-                    />
+                    <input value={dimensionLength} onChange={(e) => setDimensionLength(e.target.value)} className="w-full rounded-xl border border-input px-2 py-2 text-sm" placeholder="L" type="number" min="0" />
+                    <input value={dimensionWidth} onChange={(e) => setDimensionWidth(e.target.value)} className="w-full rounded-xl border border-input px-2 py-2 text-sm" placeholder="B" type="number" min="0" />
+                    <input value={dimensionHeight} onChange={(e) => setDimensionHeight(e.target.value)} className="w-full rounded-xl border border-input px-2 py-2 text-sm" placeholder="H" type="number" min="0" />
                   </div>
                 </div>
-              </div>
+              )}
 
-              <h3 className="text-base font-semibold text-foreground">Beskrivning</h3>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Beskrivning</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[120px]"
-                  placeholder="Kort och tydlig beskrivning av föremålet"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Tänk på integritet: skriv inte namn, adresser eller andra personuppgifter.
-                </p>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[120px]" placeholder="Kort och tydlig beskrivning av föremålet" />
+                <p className="text-xs text-muted-foreground">Tänk på integritet: skriv inte namn, adresser eller andra personuppgifter.</p>
               </div>
 
-              <h3 className="text-base font-semibold text-foreground">Försäljningssätt</h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Försäljningssätt</label>
-                  <select
-                    value={ctaTyp}
-                    onChange={(e) => setCtaTyp(e.target.value as HandplockatCtaType)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                  >
-                    <option value="direktkop">Direktköp</option>
-                    <option value="bud">Budgivning</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Budstart (valfritt)</label>
-                  <input
-                    value={bidStartSek}
-                    onChange={(e) => setBidStartSek(e.target.value)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                    type="number"
-                    min="0"
-                  />
-                </div>
-              </div>
-
-              <h3 className="text-base font-semibold text-foreground">Upphämtning</h3>
+              <h3 className="text-base font-semibold text-foreground">Publicering</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Annonsstatus</label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as HandplockatStatus)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                  >
+                  <select value={status} onChange={(e) => setStatus(e.target.value as HandplockatStatus)} className="w-full rounded-xl border border-input px-3 py-2 text-sm">
                     <option value="draft">Utkast</option>
                     <option value="available">Publicerad</option>
                     <option value="reserved">Reserverad</option>
                     <option value="sold">Såld</option>
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Kontakt via SMS</label>
-                  <input
-                    value={smsPhone}
-                    onChange={(e) => setSmsPhone(e.target.value)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                    placeholder={DEFAULT_SMS}
-                  />
-                </div>
               </div>
 
+              <h3 className="text-base font-semibold text-foreground">Upphämtning</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Senaste hämtning</label>
-                  <input
-                    value={pickupDeadlineAt}
-                    onChange={(e) => setPickupDeadlineAt(e.target.value)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                    type="datetime-local"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Budgivning slutar</label>
-                  <input
-                    value={auctionEndAt}
-                    onChange={(e) => setAuctionEndAt(e.target.value)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                    type="datetime-local"
-                  />
+                  <input value={pickupDeadlineAt} onChange={(e) => setPickupDeadlineAt(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" type="datetime-local" />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Skick</label>
-                <input
-                  value={skick}
-                  onChange={(e) => setSkick(e.target.value)}
-                  className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                />
+                <select value={skick} onChange={(e) => setSkick(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm">
+                  <option value="">Välj skick</option>
+                  <option value="Nyskick">Nyskick</option>
+                  <option value="Mycket gott skick">Mycket gott skick</option>
+                  <option value="Gott skick">Gott skick</option>
+                  <option value="Okej skick">Okej skick</option>
+                  <option value="Slitet / renoveringsobjekt">Slitet / renoveringsobjekt</option>
+                </select>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Upphämtning (område)</label>
-                  <input
-                    value={pickupArea}
-                    onChange={(e) => setPickupArea(e.target.value)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                  />
+                  <input value={pickupArea} onChange={(e) => setPickupArea(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Upphämtningstid</label>
-                  <input
-                    value={pickupWindow}
-                    onChange={(e) => setPickupWindow(e.target.value)}
-                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                  />
+                  <input value={pickupWindow} onChange={(e) => setPickupWindow(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" placeholder="Tid enligt överenskommelse" />
                 </div>
               </div>
+
+              <p className="text-sm text-muted-foreground">Kontakt vid frågor: {COMPANY_EMAIL}</p>
             </div>
 
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Bilder</h2>
               <p className="text-xs text-muted-foreground">
-                Originalbilder sparas internt. Frilagda bilder visas publikt.
+                Originalbilder sparas internt. Annonsbilden skapas från första originalbilden när du klickar på “Skapa annonsbild”.
               </p>
+
               <div className="flex flex-wrap gap-3">
                 <input
                   ref={originalInputRef}
@@ -553,67 +667,84 @@ export default function HandplockatEdit() {
                   className="hidden"
                   onChange={(e) => handleOriginalUpload(e.target.files)}
                 />
-                <input
-                  ref={cutoutInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleCutoutUpload(e.target.files)}
-                />
+
                 <Button type="button" variant="outline" onClick={() => originalInputRef.current?.click()} disabled={uploadingOriginal}>
-                  {uploadingOriginal ? "Laddar upp..." : "Ladda upp originalbilder"}
+                  {uploadingOriginal ? "Laddar upp…" : "Ladda upp originalbilder"}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => cutoutInputRef.current?.click()} disabled={uploadingCutout}>
-                  {uploadingCutout ? "Laddar upp..." : "Ladda upp frilagd bild"}
+
+                <Button type="button" variant="outline" onClick={handleRotateFirstOriginal} disabled={uploadingOriginal || !firstOriginal}>
+                  {uploadingOriginal ? "Roterar…" : "Rotera första bilden"}
+                </Button>
+
+                <Button type="button" variant="outline" onClick={handleGenerateAnnonsbild} disabled={uploadingAnnonsbild || !firstOriginal}>
+                  {uploadingAnnonsbild ? "Skapar annonsbild…" : "Skapa annonsbild"}
+                </Button>
+
+                <Button type="button" variant="outline" onClick={() => setImageCutout("")} disabled={!imageCutout}>
+                  Ta bort annonsbild
                 </Button>
               </div>
+
               {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+
+              {firstOriginalPreviewError && <p className="text-xs text-destructive">{firstOriginalPreviewError}</p>}
+
+              {(firstOriginalPreviewLoading || firstOriginalPreviewUrl) && (
+                <div className="mt-2">
+                  <div className="w-48 h-48 rounded-xl overflow-hidden border border-border bg-secondary flex items-center justify-center">
+                    {firstOriginalPreviewLoading ? (
+                      <div className="text-xs text-muted-foreground">Laddar förhandsvisning…</div>
+                    ) : (
+                      <img src={firstOriginalPreviewUrl} alt="Förhandsvisning" className="object-contain w-full h-full" />
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Förhandsvisning av första originalbilden</div>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <label className="text-sm font-medium">Originalbilder (en per rad)</label>
+                <label className="text-sm font-medium">Originalbilder (paths, en per rad)</label>
                 <textarea
                   value={imagesOriginalRaw}
                   onChange={(e) => setImagesOriginalRaw(e.target.value)}
                   className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[100px]"
-                  placeholder="Länkar eller sparade sökvägar"
+                  placeholder="handplockat-original/<annons-id>/<fil>.jpg"
                 />
               </div>
+
               <div className="space-y-2">
-                <label className="text-sm font-medium">Frilagd bild (länk)</label>
+                <label className="text-sm font-medium">Annonsbild (publik länk)</label>
                 <input
                   value={imageCutout}
                   onChange={(e) => setImageCutout(e.target.value)}
                   className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                  placeholder="Länk till frilagd bild"
+                  placeholder="Skapas automatiskt av knappen"
                 />
               </div>
             </div>
 
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Extra information</h2>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Extra information (valfritt)</label>
-                <textarea
-                  value={extraInfo}
-                  onChange={(e) => setExtraInfo(e.target.value)}
-                  className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[80px]"
-                  placeholder="Extra information som ska synas i annonsen"
-                />
-              </div>
+              <h2 className="text-lg font-semibold">Extra information</h2>
+              <textarea
+                value={extraInfo}
+                onChange={(e) => setExtraInfo(e.target.value)}
+                className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[80px]"
+                placeholder="Eventuell extra information som ska synas i annonsen"
+              />
             </div>
 
             {error && <p className="text-destructive text-sm">{error}</p>}
 
             <div className="rounded-3xl border border-border bg-card p-6">
-              <h2 className="text-lg font-semibold">Spara och publicera</h2>
-              <div className="flex flex-wrap items-center gap-3 mt-4">
+              <div className="flex flex-wrap items-center gap-3">
                 <Button type="submit" disabled={saving}>
-                  {saving ? "Sparar..." : "Uppdatera annons"}
+                  {saving ? "Sparar…" : "Uppdatera annons"}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => navigate("/handplockat")}
-                >
-                  Visa publika annonser
+                <Button type="button" variant="destructive" onClick={handleDelete} disabled={saving}>
+                  Ta bort annons
+                </Button>
+                <Button type="button" variant="outline" onClick={() => navigate("/handplockat")}>
+                  Visa annonser
                 </Button>
               </div>
             </div>
