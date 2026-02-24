@@ -39,10 +39,8 @@ export default function CubePlannerApp() {
 
   if (loading) return null;
 
-  // Determine back link for customer/admin
-  const isAdminPath = location.pathname.startsWith("/portal/admin");
-  const isAdmin = !!customer?.is_admin || isAdminPath;
-  const backLink = isAdmin ? "/adminportal" : "/portal";
+  // Always return to customer portal to avoid admin login confusion.
+  const backLink = "/portal";
 
   return (
     <div className="cube-planner">

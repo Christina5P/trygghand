@@ -29,6 +29,10 @@ const AdminPortal = React.lazy(() => import("@/pages/Portal/AdminPortal"));
 const Portal = React.lazy(() => import("@/pages/Portal/Portal"));
 const CubePlannerApp = React.lazy(() => import("@/portal/cube-planner/CubePlannerApp"));
 const AuthPostbackTunnel = React.lazy(() => import("@/pages/AuthPostbackTunnel"));
+const HandplockatIndex = React.lazy(() => import("@/pages/Handplockat/HandplockatIndex"));
+const HandplockatListing = React.lazy(() => import("@/pages/Handplockat/HandplockatListing"));
+const HandplockatCreate = React.lazy(() => import("@/pages/Handplockat/HandplockatCreate"));
+const HandplockatEdit = React.lazy(() => import("@/pages/Handplockat/HandplockatEdit"));
 
 // 💼 Services
 const Services = React.lazy(() => import("@/pages/services"));
@@ -101,6 +105,10 @@ function App() {
                   {/* 🧑‍💼 Portaler */}
                   <Route path="/portal" element={<Portal />} />
                   <Route path="/adminportal" element={<AdminPortal />} />
+                  <Route path="/handplockat" element={<HandplockatIndex />} />
+                  <Route path="/handplockat/:listingId" element={<HandplockatListing />} />
+                  <Route path="/admin/handplockat/skapa" element={<HandplockatCreate />} />
+                  <Route path="/admin/handplockat/redigera/:id" element={<HandplockatEdit />} />
 
                   {/* 🛡️ Kundskyddade rutter */}
                   <Route element={<CustomerRoute />}>

@@ -1,0 +1,124 @@
+import { supabase, isUnauthorizedError } from "@/lib/supabase";
+import type { HandplockatListing } from "@/types";
+
+export type ListingInput = Omit<HandplockatListing, "created_at">;
+
+export async function fetchHandplockatListings(): Promise<HandplockatListing[]> {
+  const { data, error } = await supabase
+    .from("handplockat_listings_public")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as HandplockatListing[];
+}
+
+export async function fetchHandplockatListingById(id: string): Promise<HandplockatListing | null> {
+  const { data, error } = await supabase
+    .from("handplockat_listings_public")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data ?? null) as HandplockatListing | null;
+}
+
+export async function createHandplockatListing(input: ListingInput): Promise<HandplockatListing> {
+  const { data, error } = await supabase
+    .from("handplockat_listings")
+    .insert(input)
+    .select("*")
+    .single();
+
+  if (error) {
+    if (isUnauthorizedError(error)) {
+      throw new Error("Du saknar behorighet att skapa annonser.");
+    }
+    throw error;
+  }
+
+  return data as HandplockatListing;
+}
+
+export async function updateHandplockatListing(input: Partial<ListingInput> & { id: string }): Promise<HandplockatListing> {
+  const { id, ...changes } = input;
+
+  const { data, error } = await supabase
+    .from("handplockat_listings")
+    .update(changes)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    if (isUnauthorizedError(error)) {
+      throw new Error("Du saknar behorighet att uppdatera annonser.");
+    }
+    throw error;
+  }
+
+  return data as HandplockatListing;
+}
+
+export async function placeHandplockatBid(payload: {
+  listingId: string;
+  bidAmountSek: number;
+  bidderName?: string;
+  bidderPhone?: string;
+}): Promise<void> {
+  const { listingId, bidAmountSek, bidderName, bidderPhone } = payload;
+
+  const { error } = await supabase.rpc("place_handplockat_bid", {
+    p_listing_id: listingId,
+    p_bid_amount_sek: bidAmountSek,
+    p_bidder_name: bidderName ?? null,
+    p_bidder_phone: bidderPhone ?? null,
+  });
+
+  if (error) throw error;
+}
+
+export async function createHandplockatOrder(payload: {
+  listingId: string;
+  buyerName?: string;
+  buyerPhone?: string;
+  buyerEmail?: string;
+}): Promise<void> {
+  const { listingId, buyerName, buyerPhone, buyerEmail } = payload;
+
+  const { data, error } = await supabase.functions.invoke("handplockat-create-order", {
+    body: {
+      listing_id: listingId,
+      buyer_name: buyerName ?? null,
+      buyer_phone: buyerPhone ?? null,
+      buyer_email: buyerEmail ?? null,
+    },
+  });
+
+  if (error) throw error;
+  if ((data as any)?.ok === false) {
+    const msg = (data as any)?.error || (data as any)?.message || "Kunde inte skapa order.";
+    throw new Error(msg);
+  }
+}
+
+export function parseJsonInput(raw: string): unknown | null {
+  if (!raw.trim()) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function formatSek(value: number): string {
+  return new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(value) + " kr";
+}
+
+export function normalizeUrlList(raw: string): string[] {
+  return raw
+    .split(/\r?\n|,/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+}

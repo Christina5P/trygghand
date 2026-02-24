@@ -128,6 +128,46 @@ export interface Valuation {
 }
 
 // --------------------------------------------------------
+// HANDPLOCKAT LISTINGS
+// --------------------------------------------------------
+
+export type HandplockatCtaType = "bud" | "direktkop";
+export type HandplockatStatus = "draft" | "available" | "reserved" | "sold";
+export type HandplockatSource = "valuation" | "manual";
+
+export interface HandplockatListing {
+  id: string;
+  title: string;
+  description: string;
+  category?: string | null;
+  dimensions_mm?: {
+    length?: number | null;
+    width?: number | null;
+    height?: number | null;
+  } | null;
+  price_sek: number;
+  cta_typ: HandplockatCtaType;
+  bid_start_sek?: number | null;
+  current_bid_sek?: number | null;
+  bid_count?: number | null;
+  status: HandplockatStatus;
+  skick?: string | null;
+  pickup_area: string;
+  pickup_window?: string | null;
+  pickup_text?: string | null;
+  pickup_deadline_at?: string | null;
+  auction_end_at?: string | null;
+  sms_phone: string;
+  payment_method?: string | null;
+  source: HandplockatSource;
+  valuation_json?: any | null;
+  images_original?: string[] | null;
+  image_cutout?: string | null;
+  published_at?: string | null;
+  created_at?: string;
+}
+
+// --------------------------------------------------------
 // SUBSCRIPTIONS
 // --------------------------------------------------------
 

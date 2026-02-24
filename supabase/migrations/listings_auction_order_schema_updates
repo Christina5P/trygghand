@@ -1,0 +1,160 @@
+begin;
+
+-- 1) Add columns to listings
+alter table public.handplockat_listings
+  add column if not exists category text null,
+  add column if not exists dimensions_mm jsonb null,
+  add column if not exists pickup_deadline_at timestamptz null,
+  add column if not exists auction_end_at timestamptz null,
+  add column if not exists published_at timestamptz null;
+
+-- 2) Extend status enum/check to include draft (optional but recommended)
+alter table public.handplockat_listings
+  drop constraint if exists handplockat_listings_status_check;
+
+alter table public.handplockat_listings
+  add constraint handplockat_listings_status_check
+  check (status in ('draft','available','reserved','sold'));
+
+-- 3) Add CTA/date consistency checks
+alter table public.handplockat_listings
+  drop constraint if exists handplockat_listings_auction_end_check;
+
+alter table public.handplockat_listings
+  add constraint handplockat_listings_auction_end_check
+  check (
+    (cta_typ = 'bud' and auction_end_at is not null)
+    or (cta_typ = 'direktkop' and auction_end_at is null)
+  );
+
+-- 4) Indexes for new fields
+create index if not exists handplockat_listings_category_idx
+  on public.handplockat_listings (category);
+
+create index if not exists handplockat_listings_pickup_deadline_idx
+  on public.handplockat_listings (pickup_deadline_at);
+
+create index if not exists handplockat_listings_auction_end_idx
+  on public.handplockat_listings (auction_end_at);
+
+-- 5) Bids table (auction)
+create table if not exists public.handplockat_bids (
+  id uuid primary key default gen_random_uuid(),
+  listing_id uuid not null references public.handplockat_listings(id) on delete cascade,
+  bid_amount_sek integer not null check (bid_amount_sek > 0),
+  bidder_name text null,
+  bidder_phone text null, -- consider making this admin-only in views
+  created_at timestamptz not null default now()
+);
+
+create index if not exists handplockat_bids_listing_created_idx
+  on public.handplockat_bids (listing_id, created_at desc);
+
+create index if not exists handplockat_bids_listing_amount_idx
+  on public.handplockat_bids (listing_id, bid_amount_sek desc);
+
+alter table public.handplockat_bids enable row level security;
+
+-- Public read: only show bids for available/reserved listings, and maybe hide phone/name via a view instead
+drop policy if exists handplockat_bids_select_anon on public.handplockat_bids;
+create policy handplockat_bids_select_anon
+  on public.handplockat_bids
+  for select
+  to anon
+  using (
+    exists (
+      select 1 from public.handplockat_listings l
+      where l.id = listing_id
+        and l.status in ('available','reserved')
+        and l.cta_typ = 'bud'
+    )
+  );
+
+-- Admin full access
+drop policy if exists handplockat_bids_admin_all on public.handplockat_bids;
+create policy handplockat_bids_admin_all
+  on public.handplockat_bids
+  for all
+  to authenticated
+  using (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  )
+  with check (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+-- Optional: block anon inserts directly; use RPC for placing bids instead (recommended)
+revoke all on table public.handplockat_bids from anon;
+grant select on table public.handplockat_bids to anon;
+grant select, insert, update, delete on table public.handplockat_bids to authenticated;
+
+-- 6) Orders table (direct buy / reservation)
+create table if not exists public.handplockat_orders (
+  id uuid primary key default gen_random_uuid(),
+  listing_id uuid not null references public.handplockat_listings(id) on delete restrict,
+  buyer_name text null,
+  buyer_phone text null,
+  buyer_email text null,
+  pickup_place text null,
+  pickup_deadline_at timestamptz null,
+  status text not null default 'pending',
+  created_at timestamptz not null default now()
+);
+
+alter table public.handplockat_orders
+  drop constraint if exists handplockat_orders_status_check;
+alter table public.handplockat_orders
+  add constraint handplockat_orders_status_check
+  check (status in ('pending','reserved','cancelled','completed'));
+
+create index if not exists handplockat_orders_listing_idx
+  on public.handplockat_orders (listing_id, created_at desc);
+
+alter table public.handplockat_orders enable row level security;
+
+-- Orders: only admin can read/write (contains personal data)
+drop policy if exists handplockat_orders_admin_all on public.handplockat_orders;
+create policy handplockat_orders_admin_all
+  on public.handplockat_orders
+  for all
+  to authenticated
+  using (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  )
+  with check (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+  );
+
+revoke all on table public.handplockat_orders from anon;
+revoke all on table public.handplockat_orders from authenticated;
+grant select, insert, update, delete on table public.handplockat_orders to authenticated;
+
+-- 7) Update public view to include safe new fields
+drop view if exists public.handplockat_listings_public;
+
+create view public.handplockat_listings_public as
+select
+  id,
+  title,
+  description,
+  category,
+  dimensions_mm,
+  price_sek,
+  cta_typ,
+  bid_start_sek,
+  status,
+  skick,
+  pickup_area,
+  pickup_window,
+  pickup_deadline_at,
+  auction_end_at,
+  payment_method,
+  image_cutout,
+  created_at
+from public.handplockat_listings
+where status in ('available','reserved'); -- enforce public filter at view level too
+
+grant select on public.handplockat_listings_public to anon;
+grant select on public.handplockat_listings_public to authenticated;
+
+commit;
