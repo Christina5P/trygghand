@@ -775,6 +775,14 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
   >
     Kubikmätaren
   </Button>
+
+  {/* Handplockat-länk efter kubikmätaren */}
+  <Button
+    onClick={() => window.location.assign("/handplockat")}
+    className="bg-gradient-to-r from-yellow-400 to-yellow-300 text-black px-4 py-2 rounded-full shadow-md hover:translate-y-[-1px] transition mt-4"
+  >
+    <span role="img" aria-label="hand">🤲</span> Handplockat – Köp & sälj
+  </Button>
 </div>
  
  {/* Templates dialog */}

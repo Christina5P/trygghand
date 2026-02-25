@@ -1075,6 +1075,16 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                     </Button>
                 </div>
 
+                {/* Handplockat-länk efter kubikräknaren */}
+                <div className="flex justify-center my-6">
+                    <Button
+                        className="bg-gradient-to-r from-yellow-400 to-yellow-300 text-black px-4 py-2 rounded-full shadow-md hover:translate-y-[-1px] transition"
+                        onClick={() => window.location.assign('/handplockat')}
+                    >
+                        <span role="img" aria-label="hand">🤲</span> Handplockat – Köp & sälj
+                    </Button>
+                </div>
+
                  {/* 3. Kundinformation (Krav: Kund ska kunna redigera sin information) */}
                 <CollapsibleCard
                     defaultOpen={false}

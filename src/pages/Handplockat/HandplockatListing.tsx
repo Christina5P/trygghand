@@ -1,17 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Seo from "@/components/Seo";
-import {
-  createHandplockatOrder,
-  fetchHandplockatListingById,
-  formatSek,
-  placeHandplockatBid,
-} from "@/lib/handplockat";
+import { createHandplockatOrder, fetchHandplockatListingById, formatSek } from "@/lib/handplockat";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import type { HandplockatListing as HandplockatListingType } from "@/types";
 import { Badge } from "@/components/ui/badge";
-import { Copy, ShieldCheck, Smartphone } from "lucide-react";
+import { Copy, ShieldCheck, Smartphone, Mail } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+
+const CONTACT_EMAIL = "kontakt@trygghand.com";
 
 const getErrorMessage = (err: unknown, fallback: string) => {
   if (err && typeof err === "object" && "message" in err) {
@@ -33,23 +30,11 @@ function safeParseJson(value: HandplockatListingType["valuation_json"]) {
   return value as any;
 }
 
-function buildSmsBody(listingId: string, title: string, ctaTyp: "bud" | "direktkop") {
-  if (ctaTyp === "bud") return `ID ${listingId} - ${title} - bud: `;
-  return `ID ${listingId} - ${title} - köp direkt`;
-}
-
 export default function HandplockatListing() {
   const { listingId } = useParams();
   const [listing, setListing] = useState<HandplockatListingType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [bidAmount, setBidAmount] = useState("");
-  const [bidderName, setBidderName] = useState("");
-  const [bidderPhone, setBidderPhone] = useState("");
-  const [bidLoading, setBidLoading] = useState(false);
-  const [bidError, setBidError] = useState<string | null>(null);
-  const [bidSuccess, setBidSuccess] = useState<string | null>(null);
 
   const [orderName, setOrderName] = useState("");
   const [orderPhone, setOrderPhone] = useState("");
@@ -57,6 +42,7 @@ export default function HandplockatListing() {
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+  const [showOrderForm, setShowOrderForm] = useState(false);
 
   const { customer, loading: authLoading } = useAuth();
 
@@ -131,11 +117,7 @@ export default function HandplockatListing() {
       ? `${listing.pickup_area} – ${listing.pickup_window}`
       : listing.pickup_area || "Sundsvall – tid enligt överenskommelse";
 
-  const smsBody = buildSmsBody(listing.id, listing.title, "direktkop"); // cta_typ är alltid direktköp, parametern används ej längre
-  const smsLink = `sms:${listing.sms_phone}?&body=${encodeURIComponent(smsBody)}`;
-
   const priceLabel = formatSek(listing.price_sek);
-
   const paymentLabel = listing.payment_method ? listing.payment_method : "Swish";
   const skickLabel = listing.skick || valuation?.skick || "Okänt skick";
 
@@ -157,44 +139,8 @@ export default function HandplockatListing() {
       : null;
 
   const seoDescription = listing.description.length > 150 ? `${listing.description.slice(0, 150)}…` : listing.description;
-  // cta_typ är alltid direktköp, ingen auktion
 
-  const handlePlaceBid = async () => {
-    setBidError(null);
-    setBidSuccess(null);
-
-    const amount = Number(bidAmount);
-    if (!listing.id || Number.isNaN(amount) || amount <= 0) {
-      setBidError("Ange ett giltigt bud.");
-      return;
-    }
-    if (!bidderPhone.trim()) {
-      setBidError("Telefonnummer krävs för bud.");
-      return;
-    }
-
-    setBidLoading(true);
-    try {
-      await placeHandplockatBid({
-        listingId: listing.id,
-        bidAmountSek: amount,
-        bidderName: bidderName.trim() || undefined,
-        bidderPhone: bidderPhone.trim(),
-      });
-
-      setBidSuccess("Bud mottaget! Vi återkommer via SMS.");
-      setBidAmount("");
-      setBidderName("");
-      setBidderPhone("");
-
-      const refreshed = await fetchHandplockatListingById(listing.id);
-      if (refreshed) setListing(refreshed);
-    } catch (err) {
-      setBidError(getErrorMessage(err, "Kunde inte lägga bud."));
-    } finally {
-      setBidLoading(false);
-    }
-  };
+  const canEdit = !authLoading && (customer?.is_admin || (customer?.id && customer.id === listing.owner_id));
 
   const handleCreateOrder = async () => {
     setOrderError(null);
@@ -202,7 +148,7 @@ export default function HandplockatListing() {
 
     if (!listing.id) return;
     if (!orderPhone.trim()) {
-      setOrderError("Telefonnummer krävs för direktköp.");
+      setOrderError("Telefonnummer krävs för köp.");
       return;
     }
 
@@ -215,13 +161,15 @@ export default function HandplockatListing() {
         buyerEmail: orderEmail.trim() || undefined,
       });
 
-      setOrderSuccess("Tack! Vi har reserverat ditt köp och återkommer via SMS.");
+      // Uppdatera status till 'reserved'
+      const updated = await import("@/lib/handplockat").then(m => m.updateHandplockatListing({ id: listing.id, status: "reserved" }));
+      setListing(updated);
+
+      setOrderSuccess("Tack! Vi har tagit emot din reservation och återkommer via e-post.");
       setOrderName("");
       setOrderPhone("");
       setOrderEmail("");
-
-      const refreshed = await fetchHandplockatListingById(listing.id);
-      if (refreshed) setListing(refreshed);
+      setShowOrderForm(false);
     } catch (err) {
       setOrderError(getErrorMessage(err, "Kunde inte skapa order."));
     } finally {
@@ -246,13 +194,16 @@ export default function HandplockatListing() {
     },
   };
 
+  // ✅ Fixar TS-felet: string | null | undefined -> string | undefined
+  const ogImage = listing.image_cutout ?? undefined;
+
   return (
     <div className="min-h-[100svh] bg-background">
       <Seo
         title={`${listing.title} | Handplockat Sundsvall`}
         description={`Köp cirkulära fynd i Sundsvall. ${seoDescription}`}
         canonical={`https://www.trygghand.com/handplockat/${listing.id}`}
-        ogImage={listing.image_cutout ?? undefined}
+        ogImage={ogImage}
         jsonLd={productJsonLd}
       />
 
@@ -290,21 +241,21 @@ export default function HandplockatListing() {
                     </Badge>
                   </div>
 
-                  {!authLoading && (customer?.is_admin || customer?.id === listing.owner_id) && (
-                    <Link
-                      to={`/admin/handplockat/redigera/${listing.id}`}
-                      className="inline-flex items-center justify-center rounded-xl border border-border bg-card py-2 text-sm font-semibold text-foreground hover:bg-muted"
-                    >
-                      Redigera
-                    </Link>
-                  )}
-                  {!authLoading && (customer?.is_admin || customer?.id === listing.owner_id) && (
-                    <Link
-                      to={`/portal/handplockat/${listing.id}/redigera`}
-                      className="inline-flex items-center justify-center rounded-xl border border-border bg-card py-2 text-sm font-semibold text-foreground hover:bg-muted"
-                    >
-                      Redigera (portal)
-                    </Link>
+                  {canEdit && (
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        to={`/admin/handplockat/redigera/${listing.id}`}
+                        className="inline-flex flex-1 items-center justify-center rounded-xl border border-border bg-card py-2 text-sm font-semibold text-foreground hover:bg-muted"
+                      >
+                        Redigera (admin)
+                      </Link>
+                      <Link
+                        to={`/portal/handplockat/${listing.id}/redigera`}
+                        className="inline-flex flex-1 items-center justify-center rounded-xl border border-border bg-card py-2 text-sm font-semibold text-foreground hover:bg-muted"
+                      >
+                        Redigera (portal)
+                      </Link>
+                    </div>
                   )}
 
                   <div className="space-y-2">
@@ -319,7 +270,7 @@ export default function HandplockatListing() {
                     </div>
                   </div>
 
-                  <p className="text-sm text-muted-foreground">{listing.description}</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{listing.description}</p>
 
                   <div className="flex items-baseline justify-between">
                     <span className="text-2xl font-bold text-primary">{priceLabel}</span>
@@ -327,113 +278,101 @@ export default function HandplockatListing() {
 
                   <div className="space-y-2 text-sm">
                     {listing.category && (
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">Kategori</span>
-                        <span>{listing.category}</span>
+                        <span className="text-right">{listing.category}</span>
                       </div>
                     )}
                     {dimensionLabel && (
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">Mått</span>
-                        <span>{dimensionLabel}</span>
+                        <span className="text-right">{dimensionLabel}</span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
                       <span className="text-muted-foreground">Upphämtning</span>
-                      <span>{pickupText}</span>
+                      <span className="text-right">{pickupText}</span>
                     </div>
+
                     {listing.pickup_deadline_at && (
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">Hämtas senast</span>
-                        <span>{new Date(listing.pickup_deadline_at).toLocaleDateString("sv-SE")}</span>
+                        <span className="text-right">{new Date(listing.pickup_deadline_at).toLocaleDateString("sv-SE")}</span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between">
+
+                    <div className="flex items-center justify-between gap-4">
                       <span className="text-muted-foreground">Betalning</span>
-                      <span>{paymentLabel}</span>
+                      <span className="text-right">{paymentLabel}</span>
                     </div>
-                    <div className="flex items-center justify-between">
+
+                    <div className="flex items-center justify-between gap-4">
                       <span className="text-muted-foreground">Kontakt</span>
-                      <span>SMS {listing.sms_phone}</span>
+                      <span className="text-right">E-post</span>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <a
-                      href={smsLink}
-                      className="inline-flex w-full items-center justify-center rounded-xl bg-foreground text-background py-3 text-sm font-semibold transition-colors hover:bg-foreground/90"
-                    >
-                      Öppna SMS för köp
-                    </a>
-
                     <button
                       type="button"
-                      onClick={() => navigator.clipboard?.writeText(window.location.href)}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-2 text-sm font-medium text-foreground hover:bg-muted"
+                      onClick={() => setShowOrderForm((v) => !v)}
+                      className="inline-flex w-full items-center justify-center rounded-xl bg-[#1f305e] text-white py-3 text-sm font-semibold transition-colors hover:opacity-90"
                     >
-                      <Copy className="h-4 w-4" />
-                      Kopiera länk
+                      Köp
                     </button>
                   </div>
 
-                  <p className="text-xs text-muted-foreground">Köp sker via SMS – inte via Facebook.</p>
+                  {showOrderForm && (
+                    <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+                    
+                      <input
+                        value={orderName}
+                        onChange={(e) => setOrderName(e.target.value)}
+                        placeholder="Namn"
+                        className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={orderPhone}
+                        onChange={(e) => setOrderPhone(e.target.value)}
+                        placeholder="Telefonnummer"
+                        className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={orderEmail}
+                        onChange={(e) => setOrderEmail(e.target.value)}
+                        placeholder="E-post"
+                        className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                      />
 
-                  <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground">Direktköp</h3>
-                    <input
-                      value={orderName}
-                      onChange={(e) => setOrderName(e.target.value)}
-                      placeholder="Namn (valfritt)"
-                      className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                    />
-                    <input
-                      value={orderPhone}
-                      onChange={(e) => setOrderPhone(e.target.value)}
-                      placeholder="Telefonnummer"
-                      className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                    />
-                    <input
-                      value={orderEmail}
-                      onChange={(e) => setOrderEmail(e.target.value)}
-                      placeholder="E-post (valfritt)"
-                      className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                    />
-                    {orderError && <p className="text-xs text-destructive">{orderError}</p>}
-                    {orderSuccess && <p className="text-xs text-trust-green">{orderSuccess}</p>}
-                    <button
-                      type="button"
-                      onClick={handleCreateOrder}
-                      disabled={orderLoading}
-                      className="inline-flex w-full items-center justify-center rounded-xl bg-primary text-primary-foreground py-2 text-sm font-semibold hover:bg-primary/90"
-                    >
-                      {orderLoading ? "Reserverar…" : "Reservera köp"}
-                    </button>
-                  </div>
+                      {orderError && <p className="text-xs text-destructive">{orderError}</p>}
+                      {orderSuccess && <p className="text-xs text-trust-green">{orderSuccess}</p>}
+
+                      <button
+                        type="button"
+                        onClick={handleCreateOrder}
+                        disabled={orderLoading}
+                        className="inline-flex w-full items-center justify-center rounded-xl bg-primary text-white py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-60"
+                      >
+                        {orderLoading ? "Bekräftar…" : "Bekräfta"}
+                      </button>
+
+                      <p className="text-xs text-muted-foreground">
+                        Vi använder uppgifterna endast för att kontakta dig om köpet.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {valuation && (
                   <div className="rounded-3xl border border-border bg-card p-6 shadow-sm space-y-3">
                     <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Transparens</h2>
                     <p className="text-sm text-foreground">Pris satt med lokal värdeanalys.</p>
+
                     <div className="grid gap-3 text-sm">
                       <div className="rounded-xl bg-secondary/60 p-3">
                         <div className="text-xs text-muted-foreground">Värdespann</div>
                         <div className="font-semibold">{valuationRange ?? "-"}</div>
                       </div>
-                      {(valuation?.afterfragan_lokalt || valuation?.saljbarhet) && (
-                        <div className="rounded-xl bg-secondary/60 p-3">
-                          <div className="text-xs text-muted-foreground">Efterfrågan / säljbarhet</div>
-                          <div className="font-semibold">
-                            {[valuation?.afterfragan_lokalt, valuation?.saljbarhet].filter(Boolean).join(" • ")}
-                          </div>
-                        </div>
-                      )}
-                      {valuation?.motivering && (
-                        <div className="rounded-xl bg-secondary/60 p-3">
-                          <div className="text-xs text-muted-foreground">Motivering</div>
-                          <div className="line-clamp-3">{valuation.motivering}</div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
@@ -445,7 +384,11 @@ export default function HandplockatListing() {
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2">
                     <Smartphone className="h-4 w-4 text-primary" />
-                    Enkel kontakt via SMS
+                    Enkel kontakt via e-post
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2">
+             
+                   
                   </div>
                 </div>
               </div>
@@ -453,21 +396,6 @@ export default function HandplockatListing() {
           </div>
         </section>
       </main>
-
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-          <div>
-            <div className="text-xs text-muted-foreground">Pris</div>
-            <div className="text-base font-semibold text-foreground">{priceLabel}</div>
-          </div>
-          <a
-            href={smsLink}
-            className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-          >
-            Köp
-          </a>
-        </div>
-      </div>
     </div>
   );
 }

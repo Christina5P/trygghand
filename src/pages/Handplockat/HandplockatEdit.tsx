@@ -342,6 +342,8 @@ export default function HandplockatEdit() {
       // trigga refresh säkert (React måste få “ny” string)
       setImagesOriginalRaw((prev) => prev + "\n");
       setImagesOriginalRaw((prev) => prev.trimEnd());
+      // Cache-busta preview-url
+      setFirstOriginalPreviewUrl((url) => url ? url.split('?')[0] + `?t=${Date.now()}` : "");
     } catch (err) {
       setUploadError(getErrorMessage(err, "Kunde inte rotera bilden."));
     } finally {
@@ -483,11 +485,11 @@ export default function HandplockatEdit() {
   if (loading) {
     return (
       <div className="min-h-[100svh] bg-background">
-        <Header />
+        <Header handplockatLogo />
         <main className="container mx-auto px-4 py-12">
           <p className="text-muted-foreground">Laddar annons…</p>
         </main>
-        <Footer />
+        <Footer handplockatLogo />
       </div>
     );
   }
@@ -495,11 +497,11 @@ export default function HandplockatEdit() {
   if (loadError) {
     return (
       <div className="min-h-[100svh] bg-background">
-        <Header />
+        <Header handplockatLogo />
         <main className="container mx-auto px-4 py-12">
           <p className="text-destructive">{loadError}</p>
         </main>
-        <Footer />
+        <Footer handplockatLogo />
       </div>
     );
   }
@@ -528,7 +530,7 @@ export default function HandplockatEdit() {
         canonical={`https://www.trygghand.com/admin/handplockat/redigera/${id}`}
         robots="noindex"
       />
-      <Header />
+      <Header handplockatLogo />
       <main className="container mx-auto px-4 py-10 pb-20">
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
@@ -855,7 +857,7 @@ export default function HandplockatEdit() {
           </form>
         </div>
       </main>
-      <Footer />
+      <Footer handplockatLogo />
     </div>
   );
 }

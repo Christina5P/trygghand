@@ -1,7 +1,7 @@
 import { Phone, Mail, MapPin, Facebook, Linkedin, Instagram } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
-const Footer = () => {
+const Footer = ({ handplockatLogo }: { handplockatLogo?: boolean }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -16,6 +16,11 @@ const Footer = () => {
   };
   return (
     <footer id="footer" className="bg-foreground text-background py-8 text-center text-sm text-muted-foreground">
+      {handplockatLogo && (
+        <div className="mb-4 flex justify-center">
+          <img src="/handplocket_logo.png" alt="Handplockat" className="h-10" />
+        </div>
+      )}
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-5 gap-8 text-left">
           <div className="space-y-4">

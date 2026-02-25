@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Phone, Mail, User, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+// ...existing imports...
 import Logo from "./HouseHandsLogo.jsx";
 import { Customer } from "@/types"; // <-- adjust path if needed
 import { useAuth } from "@/hooks/useAuth"; // <-- adjust path if needed
 
-const Header: React.FC = () => {
+const Header: React.FC<{ handplockatLogo?: boolean }> = ({ handplockatLogo }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -63,7 +64,11 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <a href="#top" onClick={e => { e.preventDefault(); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
-            <Logo />
+            {handplockatLogo ? (
+              <img src="/handplocket_logo.png" alt="Handplockat" className="h-10" />
+            ) : (
+              <Logo />
+            )}
           </a>
         </div>
 

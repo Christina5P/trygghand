@@ -570,7 +570,7 @@ export default function HandplockatCreate() {
         canonical="https://www.trygghand.com/admin/handplockat/skapa"
         robots="noindex"
       />
-      <Header />
+      <Header handplockatLogo />
 
       <main className="container mx-auto px-4 py-10 pb-20">
         <div className="max-w-3xl mx-auto space-y-6">
@@ -962,7 +962,7 @@ export default function HandplockatCreate() {
         </div>
       </main>
 
-      <Footer />
+      <Footer handplockatLogo />
     </div>
   );
 }
