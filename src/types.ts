@@ -131,7 +131,6 @@ export interface Valuation {
 // HANDPLOCKAT LISTINGS
 // --------------------------------------------------------
 
-export type HandplockatCtaType = "bud" | "direktkop";
 export type HandplockatStatus = "draft" | "available" | "reserved" | "sold";
 export type HandplockatSource = "valuation" | "manual";
 
@@ -146,7 +145,8 @@ export interface HandplockatListing {
     height?: number | null;
   } | null;
   price_sek: number;
-  cta_typ: HandplockatCtaType;
+  owner_id: string;
+  //cta_typ: HandplockatCtaType;
   bid_start_sek?: number | null;
   current_bid_sek?: number | null;
   bid_count?: number | null;

@@ -373,6 +373,13 @@ const ValuationsView: React.FC<ValuationsViewProps> = ({
                   >
                     Visa detaljer
                   </Button>
+                  {/* Skapa annons-länken visas alltid i admins lista, och i användarens egna värderingar (eller admins egna) */}
+                  <a
+                    href={`/portal/handplockat/skapa?valuation=${v.id}`}
+                    className="inline-flex items-center justify-center rounded-md border border-primary bg-white text-primary px-3 h-8 text-xs sm:text-sm font-medium hover:bg-primary/10 transition"
+                  >
+                    Skapa annons
+                  </a>
                   <button
                     onClick={() => onDelete(v.id)}
                     className="text-xs text-red-600 hover:underline"

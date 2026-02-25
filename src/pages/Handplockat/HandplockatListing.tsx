@@ -131,15 +131,10 @@ export default function HandplockatListing() {
       ? `${listing.pickup_area} – ${listing.pickup_window}`
       : listing.pickup_area || "Sundsvall – tid enligt överenskommelse";
 
-  const smsBody = buildSmsBody(listing.id, listing.title, listing.cta_typ);
+  const smsBody = buildSmsBody(listing.id, listing.title, "direktkop"); // cta_typ är alltid direktköp, parametern används ej längre
   const smsLink = `sms:${listing.sms_phone}?&body=${encodeURIComponent(smsBody)}`;
 
-  const priceLabel =
-    listing.cta_typ === "bud" && listing.current_bid_sek
-      ? `Ledande bud ${formatSek(listing.current_bid_sek)}`
-      : listing.cta_typ === "bud" && listing.bid_start_sek
-        ? `Budstart ${formatSek(listing.bid_start_sek)}`
-        : formatSek(listing.price_sek);
+  const priceLabel = formatSek(listing.price_sek);
 
   const paymentLabel = listing.payment_method ? listing.payment_method : "Swish";
   const skickLabel = listing.skick || valuation?.skick || "Okänt skick";
@@ -162,7 +157,7 @@ export default function HandplockatListing() {
       : null;
 
   const seoDescription = listing.description.length > 150 ? `${listing.description.slice(0, 150)}…` : listing.description;
-  const isAuction = listing.cta_typ === "bud";
+  // cta_typ är alltid direktköp, ingen auktion
 
   const handlePlaceBid = async () => {
     setBidError(null);
@@ -295,12 +290,20 @@ export default function HandplockatListing() {
                     </Badge>
                   </div>
 
-                  {!authLoading && customer?.is_admin && (
+                  {!authLoading && (customer?.is_admin || customer?.id === listing.owner_id) && (
                     <Link
                       to={`/admin/handplockat/redigera/${listing.id}`}
                       className="inline-flex items-center justify-center rounded-xl border border-border bg-card py-2 text-sm font-semibold text-foreground hover:bg-muted"
                     >
                       Redigera
+                    </Link>
+                  )}
+                  {!authLoading && (customer?.is_admin || customer?.id === listing.owner_id) && (
+                    <Link
+                      to={`/portal/handplockat/${listing.id}/redigera`}
+                      className="inline-flex items-center justify-center rounded-xl border border-border bg-card py-2 text-sm font-semibold text-foreground hover:bg-muted"
+                    >
+                      Redigera (portal)
                     </Link>
                   )}
 
@@ -311,7 +314,7 @@ export default function HandplockatListing() {
                         {skickLabel}
                       </Badge>
                       <Badge variant="outline" className="text-xs font-normal border-primary/30 text-primary">
-                        {listing.cta_typ === "bud" ? "Budgivning" : "Direktköp"}
+                        Direktköp
                       </Badge>
                     </div>
                   </div>
@@ -320,18 +323,7 @@ export default function HandplockatListing() {
 
                   <div className="flex items-baseline justify-between">
                     <span className="text-2xl font-bold text-primary">{priceLabel}</span>
-                    {isAuction && listing.auction_end_at && (
-                      <span className="text-xs text-muted-foreground">
-                        Slutar {new Date(listing.auction_end_at).toLocaleDateString("sv-SE")}
-                      </span>
-                    )}
                   </div>
-
-                  {isAuction && (
-                    <div className="text-xs text-muted-foreground">
-                      {listing.bid_count ? `${listing.bid_count} bud` : "Inga bud angivna"}
-                    </div>
-                  )}
 
                   <div className="space-y-2 text-sm">
                     {listing.category && (
@@ -371,7 +363,7 @@ export default function HandplockatListing() {
                       href={smsLink}
                       className="inline-flex w-full items-center justify-center rounded-xl bg-foreground text-background py-3 text-sm font-semibold transition-colors hover:bg-foreground/90"
                     >
-                      {listing.cta_typ === "bud" ? "Öppna SMS för bud" : "Öppna SMS för köp"}
+                      Öppna SMS för köp
                     </a>
 
                     <button
@@ -386,73 +378,37 @@ export default function HandplockatListing() {
 
                   <p className="text-xs text-muted-foreground">Köp sker via SMS – inte via Facebook.</p>
 
-                  {isAuction ? (
-                    <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Lägg ditt bud</h3>
-                      <input
-                        value={bidAmount}
-                        onChange={(e) => setBidAmount(e.target.value)}
-                        type="number"
-                        min="0"
-                        placeholder="Budbelopp (SEK)"
-                        className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={bidderName}
-                        onChange={(e) => setBidderName(e.target.value)}
-                        placeholder="Namn (valfritt)"
-                        className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={bidderPhone}
-                        onChange={(e) => setBidderPhone(e.target.value)}
-                        placeholder="Telefonnummer"
-                        className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                      />
-                      {bidError && <p className="text-xs text-destructive">{bidError}</p>}
-                      {bidSuccess && <p className="text-xs text-trust-green">{bidSuccess}</p>}
-                      <button
-                        type="button"
-                        onClick={handlePlaceBid}
-                        disabled={bidLoading}
-                        className="inline-flex w-full items-center justify-center rounded-xl bg-primary text-primary-foreground py-2 text-sm font-semibold hover:bg-primary/90"
-                      >
-                        {bidLoading ? "Skickar…" : "Lägg bud"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Direktköp</h3>
-                      <input
-                        value={orderName}
-                        onChange={(e) => setOrderName(e.target.value)}
-                        placeholder="Namn (valfritt)"
-                        className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={orderPhone}
-                        onChange={(e) => setOrderPhone(e.target.value)}
-                        placeholder="Telefonnummer"
-                        className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={orderEmail}
-                        onChange={(e) => setOrderEmail(e.target.value)}
-                        placeholder="E-post (valfritt)"
-                        className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                      />
-                      {orderError && <p className="text-xs text-destructive">{orderError}</p>}
-                      {orderSuccess && <p className="text-xs text-trust-green">{orderSuccess}</p>}
-                      <button
-                        type="button"
-                        onClick={handleCreateOrder}
-                        disabled={orderLoading}
-                        className="inline-flex w-full items-center justify-center rounded-xl bg-primary text-primary-foreground py-2 text-sm font-semibold hover:bg-primary/90"
-                      >
-                        {orderLoading ? "Reserverar…" : "Reservera köp"}
-                      </button>
-                    </div>
-                  )}
+                  <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground">Direktköp</h3>
+                    <input
+                      value={orderName}
+                      onChange={(e) => setOrderName(e.target.value)}
+                      placeholder="Namn (valfritt)"
+                      className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                    />
+                    <input
+                      value={orderPhone}
+                      onChange={(e) => setOrderPhone(e.target.value)}
+                      placeholder="Telefonnummer"
+                      className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                    />
+                    <input
+                      value={orderEmail}
+                      onChange={(e) => setOrderEmail(e.target.value)}
+                      placeholder="E-post (valfritt)"
+                      className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                    />
+                    {orderError && <p className="text-xs text-destructive">{orderError}</p>}
+                    {orderSuccess && <p className="text-xs text-trust-green">{orderSuccess}</p>}
+                    <button
+                      type="button"
+                      onClick={handleCreateOrder}
+                      disabled={orderLoading}
+                      className="inline-flex w-full items-center justify-center rounded-xl bg-primary text-primary-foreground py-2 text-sm font-semibold hover:bg-primary/90"
+                    >
+                      {orderLoading ? "Reserverar…" : "Reservera köp"}
+                    </button>
+                  </div>
                 </div>
 
                 {valuation && (
@@ -501,14 +457,14 @@ export default function HandplockatListing() {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <div>
-            <div className="text-xs text-muted-foreground">{listing.cta_typ === "bud" ? "Budstart" : "Pris"}</div>
+            <div className="text-xs text-muted-foreground">Pris</div>
             <div className="text-base font-semibold text-foreground">{priceLabel}</div>
           </div>
           <a
             href={smsLink}
             className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
           >
-            {listing.cta_typ === "bud" ? "Buda" : "Köp"}
+            Köp
           </a>
         </div>
       </div>

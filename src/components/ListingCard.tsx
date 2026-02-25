@@ -9,11 +9,7 @@ interface ListingCardProps {
 
 const ListingCard = ({ listing }: ListingCardProps) => {
   const imageSrc = listing.image_cutout || "";
-  const priceLabel = listing.cta_typ === "bud" && listing.current_bid_sek
-    ? `Ledande bud ${formatSek(listing.current_bid_sek)}`
-    : listing.cta_typ === "bud" && listing.bid_start_sek
-      ? `Bud fran ${formatSek(listing.bid_start_sek)}`
-      : formatSek(listing.price_sek);
+  const priceLabel = formatSek(listing.price_sek);
 
   return (
     <Link
@@ -47,11 +43,6 @@ const ListingCard = ({ listing }: ListingCardProps) => {
           {listing.skick && (
             <Badge variant="secondary" className="text-xs font-normal">
               {listing.skick}
-            </Badge>
-          )}
-          {listing.cta_typ === "bud" && (
-            <Badge variant="outline" className="text-xs font-normal border-primary/30 text-primary">
-              Budgivning
             </Badge>
           )}
         </div>

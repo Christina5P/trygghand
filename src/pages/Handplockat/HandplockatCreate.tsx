@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { createHandplockatListing, normalizeUrlList, parseJsonInput } from "@/lib/handplockat";
 import { stripExif } from "@/integrations/supabaseUpload";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import type { HandplockatCtaType, HandplockatSource, HandplockatStatus, Valuation } from "@/types";
+import type { HandplockatSource, HandplockatStatus, Valuation } from "@/types";
 
 const COMPANY_SMS = "+46761169554";
 const CONTACT_EMAIL = "kontakt@trygghand.com";
@@ -98,6 +99,7 @@ async function tryCreateSignedUrl(pathOrUrl: string, expiresIn = 600): Promise<s
 
 export default function HandplockatCreate() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Annons-ID (osynligt) – skapas direkt
   const [listingId, setListingId] = useState(() => generateUuid());
@@ -106,7 +108,7 @@ export default function HandplockatCreate() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priceSek, setPriceSek] = useState<string>("");
-  const [ctaTyp, setCtaTyp] = useState<HandplockatCtaType>("direktkop"); // alltid direktköp
+  // cta_typ borttagen, alltid direktköp
   const [status, setStatus] = useState<HandplockatStatus>("draft");
 
   const [category, setCategory] = useState("");
@@ -341,7 +343,7 @@ export default function HandplockatCreate() {
       if (height && shouldFill(touched, "dimensionHeight", dimensionHeight)) setDimensionHeight(String(height));
     }
 
-    setCtaTyp("direktkop");
+    // ctaTyp borttagen
     if (shouldFill(touched, "pickupDeadlineAt", pickupDeadlineAt)) setPickupDeadlineAt(toLocalInputValue(addDays(7)));
   };
 
@@ -457,8 +459,14 @@ export default function HandplockatCreate() {
       return;
     }
 
-    if (isHttpUrl(first)) {
-      setUploadError("Originalbilden är en URL. Ladda upp bilden så den blir en storage-path först.");
+    // Om det är en Supabase storage-URL, konvertera till storage-path
+    let sourcePath = first;
+    const supabaseUrlPattern = /https:\/\/[^/]+\.supabase\.co\/storage\/v1\/object\/public\/([^?]+)/;
+    const match = first.match(supabaseUrlPattern);
+    if (match && match[1]) {
+      sourcePath = decodeURIComponent(match[1]);
+    } else if (isHttpUrl(first)) {
+      setUploadError("Endast uppladdade bilder från Supabase Storage kan användas. Ladda upp bilden först.");
       return;
     }
 
@@ -470,7 +478,7 @@ export default function HandplockatCreate() {
       const { data, error } = await supabase.functions.invoke("handplockat-generate-images", {
         body: {
           listing_id: id,
-          source_image_paths: [first],
+          source_image_paths: [sourcePath],
         },
       });
 
@@ -500,6 +508,7 @@ export default function HandplockatCreate() {
     if (!title.trim()) return setError("Rubrik saknas.");
     if (!description.trim()) return setError("Beskrivning saknas.");
     if (Number.isNaN(finalPrice) || finalPrice <= 0) return setError("Pris måste vara ett giltigt tal.");
+    if (!user?.id) return setError("Kunde inte hitta användar-id (logga in igen).");
 
     const sizeLine = itemType === "clothing" && sizeValue.trim() ? `Storlek: ${sizeValue.trim()}` : "";
 
@@ -520,13 +529,11 @@ export default function HandplockatCreate() {
     try {
       const listing = await createHandplockatListing({
         id: finalId,
+        owner_id: user.id,
         title: title.trim(),
         description: [description.trim(), sizeLine, extraInfo.trim()].filter(Boolean).join("\n\n"),
         price_sek: finalPrice,
-
-        cta_typ: "direktkop",
         bid_start_sek: null,
-
         status,
         category: category.trim() || null,
         dimensions_mm,
@@ -938,9 +945,7 @@ export default function HandplockatCreate() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Försäljningssätt</label>
-                  <select value={ctaTyp} disabled className="w-full rounded-xl border border-input px-3 py-2 text-sm bg-muted">
-                    <option value="direktkop">Direktköp</option>
-                  </select>
+                  {/* ctaTyp borttagen, alltid direktköp */}
                 </div>
               </div>
 

@@ -424,102 +424,108 @@ return (
   </div>
 
 {filteredValuations.map((v: Valuation) => (
-<div key={String(v.id)} className="p-4 border rounded bg-white">
-<div className="flex items-start gap-4">
-          {/* Bild / Placeholder */}
-          {v.image_urls && v.image_urls.length > 0 ? (
-            <SignedStorageImage
-              bucket="images"
-              path={v.image_urls[0]}
-              alt={`val-${v.id}-img`}
-              className="w-16 h-16 object-cover rounded-md border flex-shrink-0"
-            />
-          ) : (
-            <div className="w-16 h-16 bg-gray-50 rounded-md flex items-center justify-center text-xs text-gray-500 flex-shrink-0">
-              Ingen bild
-            </div>
-          )}
+  <div key={String(v.id)} className="p-4 border rounded bg-white">
+    <div className="flex items-start gap-4">
+      {/* Bild / Placeholder */}
+      {v.image_urls && v.image_urls.length > 0 ? (
+        <SignedStorageImage
+          bucket="images"
+          path={v.image_urls[0]}
+          alt={`val-${v.id}-img`}
+          className="w-16 h-16 object-cover rounded-md border flex-shrink-0"
+        />
+      ) : (
+        <div className="w-16 h-16 bg-gray-50 rounded-md flex items-center justify-center text-xs text-gray-500 flex-shrink-0">
+          Ingen bild
+        </div>
+      )}
 
-          <div className="flex-1">
-            {(() => {
-              const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
-              const price = getPriceLabel(analysis);
-              return (
-                <>
-                  <div className="text-sm font-semibold text-gray-900">
-                    {(() => {
-                      const base = (v as any)?.title ?? `Värdering #${String(v.id)}`;
-                      const label = getValuationObjectLabel(analysis);
-                      return label ? `${base} – ${label}` : base;
-                    })()}
-                  </div>
-                  {price && (
-                    <div className="text-base font-bold text-trust-blue mt-1">{price}</div>
-                  )}
-                </>
-              );
-            })()}
-            <div className="text-xs text-gray-500">
-              {v.created_at ? format(new Date(v.created_at), "yyyy-MM-dd", { locale: sv }) : ""}
-            </div>
-            <div className="mt-1 text-xs text-gray-600 line-clamp-2">
-              {getCleanDescription((v as any).analysis_result ?? (v as any).analysis ?? "")}
-            </div>
-
-            <div className="mt-3">
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                size="sm"
-                value={dispositions[String(v.id)] ?? ""}
-                onValueChange={(val) => {
-                  if (!val) return;
-                  setDisposition(String(v.id), val as Disposition);
-                }}
-                className="flex flex-wrap gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
-              >
-                {DISPOSITION_OPTIONS.map((opt) => (
-                  <ToggleGroupItem
-                    key={opt.key}
-                    value={opt.key}
-                    className={
-                      opt.key === "discard"
-                        ? "rounded-lg px-3 bg-background/40 hover:bg-background/60 text-foreground data-[state=on]:bg-destructive/10 data-[state=on]:shadow-sm"
-                        : "rounded-lg px-3 bg-background/40 hover:bg-background/60 data-[state=on]:bg-background data-[state=on]:shadow-sm"
-                    }
-                  >
-                    <opt.Icon className={opt.key === "discard" ? "h-4 w-4 text-destructive/80" : "h-4 w-4 text-muted-foreground"} />
-                    <span>{opt.label}</span>
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-
-            {showShareToggle && (
-              <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
-                <Switch
-                  checked={sharedById[String(v.id)] ?? true}
-                  onCheckedChange={(checked) => {
-                    void setSharedWithAdmin(String(v.id), checked);
-                  }}
-                />
-                <span>Dela med admin</span>
+      <div className="flex-1">
+        {(() => {
+          const analysis = (v as any).analysis_result ?? (v as any).analysis ?? "";
+          const price = getPriceLabel(analysis);
+          return (
+            <>
+              <div className="text-sm font-semibold text-gray-900">
+                {(() => {
+                  const base = (v as any)?.title ?? `Värdering #${String(v.id)}`;
+                  const label = getValuationObjectLabel(analysis);
+                  return label ? `${base} – ${label}` : base;
+                })()}
               </div>
-            )}
+              {price && (
+                <div className="text-base font-bold text-trust-blue mt-1">{price}</div>
+              )}
+            </>
+          );
+        })()}
+        <div className="text-xs text-gray-500">
+          {v.created_at ? format(new Date(v.created_at), "yyyy-MM-dd", { locale: sv }) : ""}
+        </div>
+        <div className="mt-1 text-xs text-gray-600 line-clamp-2">
+          {getCleanDescription((v as any).analysis_result ?? (v as any).analysis ?? "")}
+        </div>
 
-            <div className="mt-2">
-              <button
-                onClick={() => handleDelete(String(v.id))}
-                disabled={deletingValuationId === String(v.id)}
-                className="text-xs text-red-600 hover:underline disabled:opacity-50"
+        <div className="mt-3">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={dispositions[String(v.id)] ?? ""}
+            onValueChange={(val) => {
+              if (!val) return;
+              setDisposition(String(v.id), val as Disposition);
+            }}
+            className="flex flex-wrap gap-1 rounded-xl border border-border/50 bg-muted/30 p-1"
+          >
+            {DISPOSITION_OPTIONS.map((opt) => (
+              <ToggleGroupItem
+                key={opt.key}
+                value={opt.key}
+                className={
+                  opt.key === "discard"
+                    ? "rounded-lg px-3 bg-background/40 hover:bg-background/60 text-foreground data-[state=on]:bg-destructive/10 data-[state=on]:shadow-sm"
+                    : "rounded-lg px-3 bg-background/40 hover:bg-background/60 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+                }
               >
-                {deletingValuationId === String(v.id) ? "Raderar…" : "Radera"}
-              </button>
-            </div>
+                <opt.Icon className={opt.key === "discard" ? "h-4 w-4 text-destructive/80" : "h-4 w-4 text-muted-foreground"} />
+                <span>{opt.label}</span>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+
+        {showShareToggle && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
+            <Switch
+              checked={sharedById[String(v.id)] ?? true}
+              onCheckedChange={(checked) => {
+                void setSharedWithAdmin(String(v.id), checked);
+              }}
+            />
+            <span>Dela med admin</span>
           </div>
+        )}
+
+        <div className="mt-2 flex flex-wrap gap-2">
+          <a
+            href={`/portal/handplockat/skapa?valuation=${v.id}`}
+            className="inline-flex items-center justify-center rounded-md border border-primary bg-white text-primary px-3 h-8 text-xs sm:text-sm font-medium hover:bg-primary/10 transition"
+          >
+            Skapa annons
+          </a>
+          <button
+            onClick={() => handleDelete(String(v.id))}
+            disabled={deletingValuationId === String(v.id)}
+            className="text-xs text-red-600 hover:underline disabled:opacity-50"
+          >
+            {deletingValuationId === String(v.id) ? "Raderar…" : "Radera"}
+          </button>
         </div>
       </div>
-    ))}
+    </div>
+  </div>
+))}
 
   <div className="p-5 border rounded bg-white">
     <div className="flex items-start justify-between gap-4">

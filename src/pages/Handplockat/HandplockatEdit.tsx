@@ -361,8 +361,14 @@ export default function HandplockatEdit() {
       return;
     }
 
-    if (isHttpUrl(firstOriginal)) {
-      setUploadError("Originalbilden är en URL. Ladda upp bilden så den blir en storage-path först.");
+    // Om det är en Supabase storage-URL, konvertera till storage-path
+    let sourcePath = firstOriginal;
+    const supabaseUrlPattern = /https:\/\/[^/]+\.supabase\.co\/storage\/v1\/object\/public\/([^?]+)/;
+    const match = firstOriginal.match(supabaseUrlPattern);
+    if (match && match[1]) {
+      sourcePath = decodeURIComponent(match[1]);
+    } else if (isHttpUrl(firstOriginal)) {
+      setUploadError("Endast uppladdade bilder från Supabase Storage kan användas. Ladda upp bilden först.");
       return;
     }
 
@@ -371,7 +377,7 @@ export default function HandplockatEdit() {
       const { data, error } = await supabase.functions.invoke("handplockat-generate-images", {
         body: {
           listing_id: listingId,
-          source_image_paths: [firstOriginal],
+          source_image_paths: [sourcePath],
         },
       });
 
@@ -429,8 +435,6 @@ export default function HandplockatEdit() {
         description: [description.trim(), sizeLine, extraInfo.trim()].filter(Boolean).join("\n\n"),
         price_sek: finalPrice,
 
-        // Frontend: endast direktköp
-        cta_typ: "direktkop",
 
         status,
         category: category.trim() || null,
