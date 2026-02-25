@@ -363,21 +363,7 @@ export default function HandplockatListing() {
                   )}
                 </div>
 
-                {valuation && (
-                  <div className="rounded-3xl border border-border bg-card p-6 shadow-sm space-y-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Transparens</h2>
-                    <p className="text-sm text-foreground">Pris satt med lokal värdeanalys.</p>
-
-                    <div className="grid gap-3 text-sm">
-                      <div className="rounded-xl bg-secondary/60 p-3">
-                        <div className="text-xs text-muted-foreground">Värdespann</div>
-                        <div className="font-semibold">{valuationRange ?? "-"}</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="rounded-3xl border border-border bg-card p-6">
+                  <div className="rounded-3xl border border-border bg-card p-6">
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <ShieldCheck className="h-4 w-4 text-primary" />
                     Trygg handel med Swish-betalning

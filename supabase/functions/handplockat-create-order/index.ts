@@ -1,4 +1,3 @@
-// @ts-ignore - Deno std library types resolved at runtime
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // @ts-ignore - Remote supabase-js for Deno resolved at deploy/runtime
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
@@ -22,12 +21,13 @@ function isUuid(v: unknown): v is string {
   return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 }
 
-async function sendResendEmail(apiKey: string, payload: Record<string, unknown>) {
-  const res = await fetch("https://api.resend.com/emails", {
+async function sendBrevoEmail(apiKey: string, payload: Record<string, unknown>) {
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+      accept: "application/json",
+      "content-type": "application/json",
+      "api-key": apiKey,
     },
     body: JSON.stringify(payload),
   });
@@ -39,9 +39,9 @@ async function sendResendEmail(apiKey: string, payload: Record<string, unknown>)
 }
 
 async function sendOrderEmailToAdmin(apiKey: string, from: string, to: string, details: any) {
-  const subject = `Ny direktkop-reservation: ${details.title}`;
+  const subject = `Ny köp-reservation: ${details.title}`;
   const textContent = `
-Ny bestallning for Handplockat:
+Ny beställning från Handplockat:
 
 Annons: ${details.title}
 Listing ID: ${details.listingId}
@@ -49,34 +49,34 @@ Pris: ${details.price}
 Kontakt: ${details.buyerPhone || "-"}
 E-post: ${details.buyerEmail || "-"}
 
-Skapa uppfoljning i admin.
+Skapa uppföljning i admin.
 `;
 
-  await sendResendEmail(apiKey, {
-    from,
-    to,
-    subject,
-    text: textContent,
-  });
+  await sendBrevoEmail(apiKey, {
+  sender: { email: from },
+  to: [{ email: to }],
+  subject,
+  textContent: textContent,
+});
 }
 
 async function sendOrderConfirmationToBuyer(apiKey: string, from: string, to: string, details: any) {
-  const subject = `Bekraftelse – Handplockat | ${details.title}`;
+  const subject = `Bekräftelse – Handplockat | ${details.title}`;
   const textContent = `
 Hej!
 
-Vi har tagit emot ditt direktkop for ${details.title}.
-Vi bekraftar via SMS sa snart som mojligt.
+Vi har tagit emot ditt köp av ${details.title}.
+Vi bekräftar via mail så snart som möjligt.
 
 Handplockat | Sundsvall
 `;
 
-  await sendResendEmail(apiKey, {
-    from,
-    to,
-    subject,
-    text: textContent,
-  });
+ await sendBrevoEmail(apiKey, {
+  sender: { email: from },
+  to: [{ email: to }],
+  subject,
+  textContent: textContent,
+});
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -85,14 +85,14 @@ serve(async (req: Request): Promise<Response> => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const resendKey = Deno.env.get("RESEND_API_KEY");
-  const emailFrom = Deno.env.get("HANDPLOCKAT_EMAIL_FROM");
-  const adminEmail = Deno.env.get("HANDPLOCKAT_ADMIN_EMAIL");
+  const brevoKey = Deno.env.get("BREVO_API_KEY");
+const emailFrom = Deno.env.get("HANDPLOCKAT_EMAIL_FROM");
+const adminEmail = Deno.env.get("HANDPLOCKAT_ADMIN_EMAIL");
 
   if (!supabaseUrl || !serviceRoleKey) return json(500, { error: "Server configuration missing" });
-  if (!resendKey || !emailFrom || !adminEmail) {
-    return json(500, { error: "Email configuration missing" });
-  }
+  if (!brevoKey || !emailFrom || !adminEmail) {
+  return json(500, { error: "Email configuration missing" });
+}
 
   let payload: any;
   try {
@@ -122,7 +122,7 @@ serve(async (req: Request): Promise<Response> => {
   if (listingErr) return json(500, { error: "Kunde inte hamta annons." });
   if (!listing) return json(404, { error: "Annonsen hittades inte." });
   if ((listing as any).cta_typ !== "direktkop") return json(400, { error: "Annonsen ar inte tillganglig for direktkop." });
-  if ((listing as any).status !== "available") return json(409, { error: "Annonsen ar inte tillganglig." });
+  if ((listing as any).status !== "available") return json(409, { error: "Annonsen är inte tillgänglig." });
 
   const { data: orderRow, error: orderErr } = await service
     .from("handplockat_orders")
@@ -156,14 +156,21 @@ serve(async (req: Request): Promise<Response> => {
     buyerEmail,
   };
 
-  try {
-    await sendOrderEmailToAdmin(resendKey, emailFrom, adminEmail, details);
-    if (buyerEmail) {
-      await sendOrderConfirmationToBuyer(resendKey, emailFrom, buyerEmail, details);
-    }
-  } catch (err) {
-    console.error("Email send error", err);
-  }
+  async function sendBrevoEmail(apiKey: string, payload: Record<string, unknown>) {
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+      "api-key": apiKey,
+    },
+    body: JSON.stringify(payload),
+  });
 
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(`Email failed: ${msg}`);
+  }
+}
   return json(200, { ok: true, order_id: (orderRow as any)?.id });
 });
