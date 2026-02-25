@@ -226,7 +226,7 @@ export default function HandplockatListing() {
                   </div>
                   {!imageSrc && (
                     <p className="mt-4 text-xs text-muted-foreground">
-                      Frilagd bild saknas. Lägg till image_cutout för publik visning.
+                      Annons bild saknas. Lägg till image_cutout för publik visning.
                     </p>
                   )}
                 </div>
@@ -247,13 +247,13 @@ export default function HandplockatListing() {
                         to={`/admin/handplockat/redigera/${listing.id}`}
                         className="inline-flex flex-1 items-center justify-center rounded-xl border border-border bg-card py-2 text-sm font-semibold text-foreground hover:bg-muted"
                       >
-                        Redigera (admin)
+                        Redigera (Ägare)
                       </Link>
                       <Link
                         to={`/portal/handplockat/${listing.id}/redigera`}
                         className="inline-flex flex-1 items-center justify-center rounded-xl border border-border bg-card py-2 text-sm font-semibold text-foreground hover:bg-muted"
                       >
-                        Redigera (portal)
+                        Redigera (Admin)
                       </Link>
                     </div>
                   )}
@@ -396,6 +396,6 @@ export default function HandplockatListing() {
           </div>
         </section>
       </main>
-    </div>
-  );
+      </div>
+  )    
 }

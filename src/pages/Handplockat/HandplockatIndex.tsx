@@ -6,7 +6,7 @@ import type { HandplockatListing } from "@/types";
 import ListingCard from "@/components/ListingCard";
 import { ArrowRight, Search, ShieldCheck, Smartphone } from "lucide-react";
 
-const DEFAULT_DESCRIPTION = "Kop cirkulara fynd lokalt i Sundsvall. Handplockade annonser med trygga affarer.";
+const DEFAULT_DESCRIPTION = "Kop cirkulara fynd lokalt i Sundsvall. Handplockade annonser, förmedlade av Trygg Hand.";
 
 export default function HandplockatIndex() {
   const [listings, setListings] = useState<HandplockatListing[]>([]);
@@ -101,7 +101,7 @@ export default function HandplockatIndex() {
                   href="#listings"
                   className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
                 >
-                 Se vad som gömmer sig här
+                 Hitta ditt fynd
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </div>

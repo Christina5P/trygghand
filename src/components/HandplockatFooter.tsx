@@ -6,7 +6,7 @@ export default function HandplockatFooter() {
     <footer className="w-full bg-white border-t border-border mt-12">
       <div className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between gap-2 md:gap-6">
         <div className="flex items-center gap-3">
-          <HouseHandsLogo className="w-7 h-7 text-primary" />
+         
           <span className="font-bold text-base tracking-tight">Handplockat Sundsvall</span>
         </div>
         <div className="flex-1 flex justify-center">
