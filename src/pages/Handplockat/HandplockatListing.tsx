@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
-import { createHandplockatOrder, fetchHandplockatListingById, formatSek, placeHandplockatBid } from "@/lib/handplockat";
+import {
+  createHandplockatOrder,
+  fetchHandplockatListingById,
+  formatSek,
+  placeHandplockatBid,
+} from "@/lib/handplockat";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import type { HandplockatListing } from "@/types";
+import type { HandplockatListing as HandplockatListingType } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Copy, ShieldCheck, Smartphone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,12 +16,12 @@ import { useAuth } from "@/hooks/useAuth";
 const getErrorMessage = (err: unknown, fallback: string) => {
   if (err && typeof err === "object" && "message" in err) {
     const msg = (err as { message?: unknown }).message;
-    if (typeof msg === "string") return msg;
+    if (typeof msg === "string" && msg.trim()) return msg;
   }
   return fallback;
 };
 
-function safeParseJson(value: HandplockatListing["valuation_json"]) {
+function safeParseJson(value: HandplockatListingType["valuation_json"]) {
   if (!value) return null;
   if (typeof value === "string") {
     try {
@@ -32,26 +35,29 @@ function safeParseJson(value: HandplockatListing["valuation_json"]) {
 
 function buildSmsBody(listingId: string, title: string, ctaTyp: "bud" | "direktkop") {
   if (ctaTyp === "bud") return `ID ${listingId} - ${title} - bud: `;
-  return `ID ${listingId} - ${title} - kop direkt`;
+  return `ID ${listingId} - ${title} - köp direkt`;
 }
 
 export default function HandplockatListing() {
   const { listingId } = useParams();
-  const [listing, setListing] = useState<HandplockatListing | null>(null);
+  const [listing, setListing] = useState<HandplockatListingType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [bidAmount, setBidAmount] = useState("");
   const [bidderName, setBidderName] = useState("");
   const [bidderPhone, setBidderPhone] = useState("");
   const [bidLoading, setBidLoading] = useState(false);
   const [bidError, setBidError] = useState<string | null>(null);
   const [bidSuccess, setBidSuccess] = useState<string | null>(null);
+
   const [orderName, setOrderName] = useState("");
   const [orderPhone, setOrderPhone] = useState("");
   const [orderEmail, setOrderEmail] = useState("");
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+
   const { customer, loading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -66,20 +72,22 @@ export default function HandplockatListing() {
     }
 
     if (!isSupabaseConfigured) {
-      setError("Supabase ar inte konfigurerat i denna miljo.");
+      setError("Supabase är inte konfigurerat i denna miljö.");
       setLoading(false);
       return;
     }
 
     let isMounted = true;
+
     fetchHandplockatListingById(listingId)
       .then((data) => {
         if (!isMounted) return;
         setListing(data);
+        setError(null);
       })
       .catch((err) => {
         if (!isMounted) return;
-        setError(typeof err?.message === "string" ? err.message : "Kunde inte hamta annonsen.");
+        setError(typeof (err as any)?.message === "string" ? (err as any).message : "Kunde inte hämta annonsen.");
       })
       .finally(() => {
         if (!isMounted) return;
@@ -96,11 +104,9 @@ export default function HandplockatListing() {
   if (loading) {
     return (
       <div className="min-h-[100svh] bg-background">
-        <Header />
         <main className="container mx-auto px-4 py-12">
-          <p className="text-muted-foreground">Laddar annons...</p>
+          <p className="text-muted-foreground">Laddar annons…</p>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -108,14 +114,12 @@ export default function HandplockatListing() {
   if (error || !listing) {
     return (
       <div className="min-h-[100svh] bg-background">
-        <Header />
         <main className="container mx-auto px-4 py-12">
           <p className="text-destructive">{error ?? "Annonsen kunde inte hittas."}</p>
           <Link to="/handplockat" className="text-primary mt-4 inline-block">
             Tillbaka till Handplockat
           </Link>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -125,31 +129,39 @@ export default function HandplockatListing() {
     ? listing.pickup_text
     : listing.pickup_window
       ? `${listing.pickup_area} – ${listing.pickup_window}`
-      : listing.pickup_area || "Sundsvall – tid enligt overenskommelse";
+      : listing.pickup_area || "Sundsvall – tid enligt överenskommelse";
+
   const smsBody = buildSmsBody(listing.id, listing.title, listing.cta_typ);
   const smsLink = `sms:${listing.sms_phone}?&body=${encodeURIComponent(smsBody)}`;
-  const priceLabel = listing.cta_typ === "bud" && listing.current_bid_sek
-    ? `Ledande bud ${formatSek(listing.current_bid_sek)}`
-    : listing.cta_typ === "bud" && listing.bid_start_sek
-      ? `Budstart ${formatSek(listing.bid_start_sek)}`
-      : formatSek(listing.price_sek);
+
+  const priceLabel =
+    listing.cta_typ === "bud" && listing.current_bid_sek
+      ? `Ledande bud ${formatSek(listing.current_bid_sek)}`
+      : listing.cta_typ === "bud" && listing.bid_start_sek
+        ? `Budstart ${formatSek(listing.bid_start_sek)}`
+        : formatSek(listing.price_sek);
+
   const paymentLabel = listing.payment_method ? listing.payment_method : "Swish";
-  const skickLabel = listing.skick || valuation?.skick || "Okant skick";
-    const dimensionLabel = listing.dimensions_mm
-      ? [
-          listing.dimensions_mm.length ? `${listing.dimensions_mm.length} mm` : null,
-          listing.dimensions_mm.width ? `${listing.dimensions_mm.width} mm` : null,
-          listing.dimensions_mm.height ? `${listing.dimensions_mm.height} mm` : null,
-        ].filter(Boolean).join(" x ")
-      : null;
-  const valuationRange = valuation?.varde_min_sek || valuation?.varde_max_sek
-    ? `${valuation?.varde_min_sek ? formatSek(valuation.varde_min_sek) : "-"} –${valuation?.varde_max_sek ? ` ${formatSek(valuation.varde_max_sek)}` : " -"}`
+  const skickLabel = listing.skick || valuation?.skick || "Okänt skick";
+
+  const dimensionLabel = listing.dimensions_mm
+    ? [
+        listing.dimensions_mm.length ? `${listing.dimensions_mm.length} mm` : null,
+        listing.dimensions_mm.width ? `${listing.dimensions_mm.width} mm` : null,
+        listing.dimensions_mm.height ? `${listing.dimensions_mm.height} mm` : null,
+      ]
+        .filter(Boolean)
+        .join(" x ")
     : null;
 
-  const seoDescription = listing.description.length > 150
-    ? `${listing.description.slice(0, 150)}...`
-    : listing.description;
+  const valuationRange =
+    valuation?.varde_min_sek || valuation?.varde_max_sek
+      ? `${valuation?.varde_min_sek ? formatSek(valuation.varde_min_sek) : "-"} –${
+          valuation?.varde_max_sek ? ` ${formatSek(valuation.varde_max_sek)}` : " -"
+        }`
+      : null;
 
+  const seoDescription = listing.description.length > 150 ? `${listing.description.slice(0, 150)}…` : listing.description;
   const isAuction = listing.cta_typ === "bud";
 
   const handlePlaceBid = async () => {
@@ -157,12 +169,12 @@ export default function HandplockatListing() {
     setBidSuccess(null);
 
     const amount = Number(bidAmount);
-    if (!listing?.id || Number.isNaN(amount) || amount <= 0) {
+    if (!listing.id || Number.isNaN(amount) || amount <= 0) {
       setBidError("Ange ett giltigt bud.");
       return;
     }
     if (!bidderPhone.trim()) {
-      setBidError("Telefonnummer kravs for bud.");
+      setBidError("Telefonnummer krävs för bud.");
       return;
     }
 
@@ -174,14 +186,16 @@ export default function HandplockatListing() {
         bidderName: bidderName.trim() || undefined,
         bidderPhone: bidderPhone.trim(),
       });
-      setBidSuccess("Bud mottaget! Vi aterkommer via SMS.");
+
+      setBidSuccess("Bud mottaget! Vi återkommer via SMS.");
       setBidAmount("");
       setBidderName("");
       setBidderPhone("");
+
       const refreshed = await fetchHandplockatListingById(listing.id);
       if (refreshed) setListing(refreshed);
     } catch (err) {
-      setBidError(getErrorMessage(err, "Kunde inte lagga bud."));
+      setBidError(getErrorMessage(err, "Kunde inte lägga bud."));
     } finally {
       setBidLoading(false);
     }
@@ -191,9 +205,9 @@ export default function HandplockatListing() {
     setOrderError(null);
     setOrderSuccess(null);
 
-    if (!listing?.id) return;
+    if (!listing.id) return;
     if (!orderPhone.trim()) {
-      setOrderError("Telefonnummer kravs for direktkop.");
+      setOrderError("Telefonnummer krävs för direktköp.");
       return;
     }
 
@@ -205,10 +219,12 @@ export default function HandplockatListing() {
         buyerPhone: orderPhone.trim(),
         buyerEmail: orderEmail.trim() || undefined,
       });
-      setOrderSuccess("Tack! Vi har reserverat ditt kop och aterkommer via SMS.");
+
+      setOrderSuccess("Tack! Vi har reserverat ditt köp och återkommer via SMS.");
       setOrderName("");
       setOrderPhone("");
       setOrderEmail("");
+
       const refreshed = await fetchHandplockatListingById(listing.id);
       if (refreshed) setListing(refreshed);
     } catch (err) {
@@ -218,37 +234,53 @@ export default function HandplockatListing() {
     }
   };
 
+  // JSON-LD Product/Offer
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: listing.title,
+    description: listing.description,
+    image: listing.image_cutout ? [listing.image_cutout] : [],
+    url: `https://www.trygghand.com/handplockat/${listing.id}`,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "SEK",
+      price: listing.price_sek,
+      availability: listing.status === "available" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: `https://www.trygghand.com/handplockat/${listing.id}`,
+    },
+  };
+
   return (
     <div className="min-h-[100svh] bg-background">
       <Seo
         title={`${listing.title} | Handplockat Sundsvall`}
-        description={`Kop cirkulara fynd i Sundsvall. ${seoDescription}`}
+        description={`Köp cirkulära fynd i Sundsvall. ${seoDescription}`}
         canonical={`https://www.trygghand.com/handplockat/${listing.id}`}
+        ogImage={listing.image_cutout ?? undefined}
+        jsonLd={productJsonLd}
       />
-      <Header />
+
       <main className="pb-24">
         <section className="bg-gradient-to-br from-soft-gray via-background to-trust-green-light">
           <div className="container mx-auto px-4 py-10">
             <Link to="/handplockat" className="text-sm text-muted-foreground hover:text-foreground">
               ← Tillbaka till Handplockat
             </Link>
+
             <div className="mt-4 flex flex-col gap-8 lg:flex-row">
               <div className="flex-1">
                 <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                   <div className="aspect-[4/3] rounded-2xl bg-secondary/60 flex items-center justify-center">
                     {imageSrc ? (
-                      <img
-                        src={imageSrc}
-                        alt={listing.title}
-                        className="h-full w-full object-contain p-6"
-                      />
+                      <img src={imageSrc} alt={listing.title} className="h-full w-full object-contain p-6" />
                     ) : (
                       <span className="text-sm text-muted-foreground">Ingen bild</span>
                     )}
                   </div>
                   {!imageSrc && (
                     <p className="mt-4 text-xs text-muted-foreground">
-                      Frilagd bild saknas. Lagga till image_cutout for publik visning.
+                      Frilagd bild saknas. Lägg till image_cutout för publik visning.
                     </p>
                   )}
                 </div>
@@ -259,9 +291,10 @@ export default function HandplockatListing() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs uppercase tracking-widest text-muted-foreground">Handplockat</span>
                     <Badge variant="secondary" className="text-xs">
-                      {listing.status === "available" ? "Tillganglig" : listing.status}
+                      {listing.status === "available" ? "Tillgänglig" : listing.status}
                     </Badge>
                   </div>
+
                   {!authLoading && customer?.is_admin && (
                     <Link
                       to={`/admin/handplockat/redigera/${listing.id}`}
@@ -270,6 +303,7 @@ export default function HandplockatListing() {
                       Redigera
                     </Link>
                   )}
+
                   <div className="space-y-2">
                     <h1 className="text-2xl font-bold text-foreground">{listing.title}</h1>
                     <div className="flex flex-wrap gap-2">
@@ -277,11 +311,13 @@ export default function HandplockatListing() {
                         {skickLabel}
                       </Badge>
                       <Badge variant="outline" className="text-xs font-normal border-primary/30 text-primary">
-                        {listing.cta_typ === "bud" ? "Budgivning" : "Direktkop"}
+                        {listing.cta_typ === "bud" ? "Budgivning" : "Direktköp"}
                       </Badge>
                     </div>
                   </div>
+
                   <p className="text-sm text-muted-foreground">{listing.description}</p>
+
                   <div className="flex items-baseline justify-between">
                     <span className="text-2xl font-bold text-primary">{priceLabel}</span>
                     {isAuction && listing.auction_end_at && (
@@ -290,11 +326,13 @@ export default function HandplockatListing() {
                       </span>
                     )}
                   </div>
+
                   {isAuction && (
                     <div className="text-xs text-muted-foreground">
-                      {listing.bid_count ? `${listing.bid_count} bud` : "Inga bud anagda"}
+                      {listing.bid_count ? `${listing.bid_count} bud` : "Inga bud angivna"}
                     </div>
                   )}
+
                   <div className="space-y-2 text-sm">
                     {listing.category && (
                       <div className="flex items-center justify-between">
@@ -304,17 +342,17 @@ export default function HandplockatListing() {
                     )}
                     {dimensionLabel && (
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Matt</span>
+                        <span className="text-muted-foreground">Mått</span>
                         <span>{dimensionLabel}</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Upphamtning</span>
+                      <span className="text-muted-foreground">Upphämtning</span>
                       <span>{pickupText}</span>
                     </div>
                     {listing.pickup_deadline_at && (
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Hamtas senast</span>
+                        <span className="text-muted-foreground">Hämtas senast</span>
                         <span>{new Date(listing.pickup_deadline_at).toLocaleDateString("sv-SE")}</span>
                       </div>
                     )}
@@ -327,28 +365,30 @@ export default function HandplockatListing() {
                       <span>SMS {listing.sms_phone}</span>
                     </div>
                   </div>
+
                   <div className="space-y-2">
                     <a
                       href={smsLink}
                       className="inline-flex w-full items-center justify-center rounded-xl bg-foreground text-background py-3 text-sm font-semibold transition-colors hover:bg-foreground/90"
                     >
-                      {listing.cta_typ === "bud" ? "Oppna SMS for bud" : "Oppna SMS for kop"}
+                      {listing.cta_typ === "bud" ? "Öppna SMS för bud" : "Öppna SMS för köp"}
                     </a>
+
                     <button
                       type="button"
                       onClick={() => navigator.clipboard?.writeText(window.location.href)}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-2 text-sm font-medium text-foreground hover:bg-muted"
                     >
                       <Copy className="h-4 w-4" />
-                      Kopiera lank
+                      Kopiera länk
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Kop sker via SMS – inte via Facebook.
-                  </p>
-                  {isAuction && (
+
+                  <p className="text-xs text-muted-foreground">Köp sker via SMS – inte via Facebook.</p>
+
+                  {isAuction ? (
                     <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Lag ditt bud</h3>
+                      <h3 className="text-sm font-semibold text-foreground">Lägg ditt bud</h3>
                       <input
                         value={bidAmount}
                         onChange={(e) => setBidAmount(e.target.value)}
@@ -377,13 +417,12 @@ export default function HandplockatListing() {
                         disabled={bidLoading}
                         className="inline-flex w-full items-center justify-center rounded-xl bg-primary text-primary-foreground py-2 text-sm font-semibold hover:bg-primary/90"
                       >
-                        {bidLoading ? "Skickar..." : "Lagg bud"}
+                        {bidLoading ? "Skickar…" : "Lägg bud"}
                       </button>
                     </div>
-                  )}
-                  {!isAuction && (
+                  ) : (
                     <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Direktkop</h3>
+                      <h3 className="text-sm font-semibold text-foreground">Direktköp</h3>
                       <input
                         value={orderName}
                         onChange={(e) => setOrderName(e.target.value)}
@@ -410,7 +449,7 @@ export default function HandplockatListing() {
                         disabled={orderLoading}
                         className="inline-flex w-full items-center justify-center rounded-xl bg-primary text-primary-foreground py-2 text-sm font-semibold hover:bg-primary/90"
                       >
-                        {orderLoading ? "Reserverar..." : "Reservera kop"}
+                        {orderLoading ? "Reserverar…" : "Reservera köp"}
                       </button>
                     </div>
                   )}
@@ -419,15 +458,15 @@ export default function HandplockatListing() {
                 {valuation && (
                   <div className="rounded-3xl border border-border bg-card p-6 shadow-sm space-y-3">
                     <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Transparens</h2>
-                    <p className="text-sm text-foreground">Pris satt med lokal vardeanalys.</p>
+                    <p className="text-sm text-foreground">Pris satt med lokal värdeanalys.</p>
                     <div className="grid gap-3 text-sm">
                       <div className="rounded-xl bg-secondary/60 p-3">
-                        <div className="text-xs text-muted-foreground">Varde spann</div>
+                        <div className="text-xs text-muted-foreground">Värdespann</div>
                         <div className="font-semibold">{valuationRange ?? "-"}</div>
                       </div>
                       {(valuation?.afterfragan_lokalt || valuation?.saljbarhet) && (
                         <div className="rounded-xl bg-secondary/60 p-3">
-                          <div className="text-xs text-muted-foreground">Efterfragan / saljbarhet</div>
+                          <div className="text-xs text-muted-foreground">Efterfrågan / säljbarhet</div>
                           <div className="font-semibold">
                             {[valuation?.afterfragan_lokalt, valuation?.saljbarhet].filter(Boolean).join(" • ")}
                           </div>
@@ -469,12 +508,10 @@ export default function HandplockatListing() {
             href={smsLink}
             className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
           >
-            {listing.cta_typ === "bud" ? "Buda" : "Kop"}
+            {listing.cta_typ === "bud" ? "Buda" : "Köp"}
           </a>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import React, { Suspense, useEffect } from "react";
 import "@/index.css";
 import PwaHead from "@/components/PwaHead";
@@ -33,6 +33,7 @@ const HandplockatIndex = React.lazy(() => import("@/pages/Handplockat/Handplocka
 const HandplockatListing = React.lazy(() => import("@/pages/Handplockat/HandplockatListing"));
 const HandplockatCreate = React.lazy(() => import("@/pages/Handplockat/HandplockatCreate"));
 const HandplockatEdit = React.lazy(() => import("@/pages/Handplockat/HandplockatEdit"));
+const HandplockatLayout = React.lazy(() => import("@/components/HandplockatLayout"));
 
 // 💼 Services
 const Services = React.lazy(() => import("@/pages/services"));
@@ -105,10 +106,19 @@ function App() {
                   {/* 🧑‍💼 Portaler */}
                   <Route path="/portal" element={<Portal />} />
                   <Route path="/adminportal" element={<AdminPortal />} />
-                  <Route path="/handplockat" element={<HandplockatIndex />} />
-                  <Route path="/handplockat/:listingId" element={<HandplockatListing />} />
-                  <Route path="/admin/handplockat/skapa" element={<HandplockatCreate />} />
-                  <Route path="/admin/handplockat/redigera/:id" element={<HandplockatEdit />} />
+
+                  {/* Handplockat public layout */}
+                  <Route element={<HandplockatLayout />}>
+                    <Route path="/handplockat" element={<HandplockatIndex />} />
+                    <Route path="/handplockat/:listingId" element={<HandplockatListing />} />
+                  </Route>
+
+                  {/* Handplockat portal (skyddad) */}
+                  <Route element={<CustomerRoute />}>
+                    <Route path="/portal/handplockat" element={<HandplockatIndex />} />
+                    <Route path="/portal/handplockat/skapa" element={<HandplockatCreate />} />
+                    <Route path="/portal/handplockat/:id/redigera" element={<HandplockatEdit />} />
+                  </Route>
 
                   {/* 🛡️ Kundskyddade rutter */}
                   <Route element={<CustomerRoute />}>

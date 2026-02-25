@@ -1,0 +1,41 @@
+-- Public: bara publicerade annonser
+CREATE POLICY "public_read_available"
+ON handplockat_listings
+FOR SELECT
+USING (status = 'available');
+
+-- Inloggad: se sina egna
+CREATE POLICY "user_read_own"
+ON handplockat_listings
+FOR SELECT
+USING (auth.uid() = owner_id);
+
+-- Skapa: bara som sig själv
+CREATE POLICY "user_insert_own"
+ON handplockat_listings
+FOR INSERT
+WITH CHECK (auth.uid() = owner_id);
+
+-- Uppdatera: ägare eller admin
+CREATE POLICY "owner_or_admin_update"
+ON handplockat_listings
+FOR UPDATE
+USING (
+  auth.uid() = owner_id
+  OR EXISTS (
+    SELECT 1 FROM profiles p
+    WHERE p.id = auth.uid() AND p.is_admin = true
+  )
+);
+
+-- Ta bort: ägare eller admin
+CREATE POLICY "owner_or_admin_delete"
+ON handplockat_listings
+FOR DELETE
+USING (
+  auth.uid() = owner_id
+  OR EXISTS (
+    SELECT 1 FROM profiles p
+    WHERE p.id = auth.uid() AND p.is_admin = true
+  )
+);

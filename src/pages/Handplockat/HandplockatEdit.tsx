@@ -17,15 +17,15 @@ import { useAuth } from "@/hooks/useAuth";
 
 const COMPANY_EMAIL = "kontakt@trygghand.com";
 
+type BucketName = "handplockat-private" | "images";
+
 const getErrorMessage = (err: unknown, fallback: string) => {
   if (err && typeof err === "object" && "message" in err) {
     const msg = (err as { message?: unknown }).message;
-    if (typeof msg === "string") return msg;
+    if (typeof msg === "string" && msg.trim()) return msg;
   }
   return fallback;
 };
-
-type BucketName = "handplockat-private" | "images";
 
 const isHttpUrl = (v: string) => /^https?:\/\//i.test(v);
 
@@ -80,6 +80,7 @@ async function rotateBlob(blob: Blob, angle: number): Promise<Blob | null> {
     const out: Blob | null = await new Promise((resolve) => {
       canvas.toBlob((b) => resolve(b), "image/png");
     });
+
     return out;
   } catch {
     return null;
@@ -95,6 +96,8 @@ export default function HandplockatEdit() {
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [ownerId, setOwnerId] = useState<string | null>(null);
 
   const [source, setSource] = useState<HandplockatSource>("manual");
   const [title, setTitle] = useState("");
@@ -157,17 +160,14 @@ export default function HandplockatEdit() {
 
     const loadListing = async () => {
       try {
-        const { data, error } = await supabase
-          .from("handplockat_listings")
-          .select("*")
-          .eq("id", id)
-          .maybeSingle();
-
+        const { data, error } = await supabase.from("handplockat_listings").select("*").eq("id", id).maybeSingle();
         if (error) throw error;
         if (!data) throw new Error("Annonsen hittades inte.");
         if (!isMounted) return;
 
         const listing = data as HandplockatListing;
+
+        setOwnerId((listing as any).owner_id ?? null);
 
         setSource(listing.source ?? "manual");
         setTitle(listing.title ?? "");
@@ -227,8 +227,7 @@ export default function HandplockatEdit() {
 
       if (!firstOriginal) return;
 
-      // Om någon råkat klistra in en URL så försöker vi visa den,
-      // men rotation/generering kräver path.
+      // Om någon klistrat in en URL: visa den (rotation/generering kräver path)
       if (isHttpUrl(firstOriginal)) {
         setFirstOriginalPreviewUrl(firstOriginal);
         return;
@@ -244,6 +243,8 @@ export default function HandplockatEdit() {
           return;
         }
         if (isMounted) setFirstOriginalPreviewUrl(signed);
+      } catch (e) {
+        if (isMounted) setFirstOriginalPreviewError("Kunde inte skapa förhandsvisning.");
       } finally {
         if (isMounted) setFirstOriginalPreviewLoading(false);
       }
@@ -268,8 +269,8 @@ export default function HandplockatEdit() {
     const filename = `${fileId}.${ext}`;
     const path = `${folder}/${filename}`;
 
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(path, safeFile, { upsert: false });
-    if (uploadError) throw uploadError;
+    const { error: uploadErr } = await supabase.storage.from(bucket).upload(path, safeFile, { upsert: false });
+    if (uploadErr) throw uploadErr;
 
     return { path };
   };
@@ -280,15 +281,20 @@ export default function HandplockatEdit() {
       setUploadError("Tjänsten är inte konfigurerad i denna miljö.");
       return;
     }
+
     const listingId = ensureListingId();
     if (!listingId) return;
 
     setUploadError(null);
     setUploadingOriginal(true);
+
     try {
       const uploads = await Promise.all(
-        Array.from(files).map((file) => uploadFileToBucket(file, "handplockat-private", `handplockat-original/${listingId}`))
+        Array.from(files).map((file) =>
+          uploadFileToBucket(file, "handplockat-private", `handplockat-original/${listingId}`)
+        )
       );
+
       const paths = uploads.map((u) => u.path);
       const existing = normalizeUrlList(imagesOriginalRaw);
       const next = [...existing, ...paths].join("\n");
@@ -333,8 +339,9 @@ export default function HandplockatEdit() {
       });
       if (upErr) throw upErr;
 
-      // trigga refresh (samma text men ny render)
-      setImagesOriginalRaw((prev) => prev);
+      // trigga refresh säkert (React måste få “ny” string)
+      setImagesOriginalRaw((prev) => prev + "\n");
+      setImagesOriginalRaw((prev) => prev.trimEnd());
     } catch (err) {
       setUploadError(getErrorMessage(err, "Kunde inte rotera bilden."));
     } finally {
@@ -392,26 +399,12 @@ export default function HandplockatEdit() {
     event.preventDefault();
     setError(null);
 
-    if (!id) {
-      setError("Annons-ID saknas.");
-      return;
-    }
-
-    if (!title.trim()) {
-      setError("Rubrik saknas.");
-      return;
-    }
-
-    if (!description.trim()) {
-      setError("Beskrivning saknas.");
-      return;
-    }
+    if (!id) return setError("Annons-ID saknas.");
+    if (!title.trim()) return setError("Rubrik saknas.");
+    if (!description.trim()) return setError("Beskrivning saknas.");
 
     const finalPrice = Number(priceSek);
-    if (Number.isNaN(finalPrice) || finalPrice <= 0) {
-      setError("Pris måste vara ett giltigt tal.");
-      return;
-    }
+    if (Number.isNaN(finalPrice) || finalPrice <= 0) return setError("Pris måste vara ett giltigt tal.");
 
     const sizeLine = itemType === "clothing" && sizeValue.trim() ? `Storlek: ${sizeValue.trim()}` : "";
 
@@ -507,12 +500,16 @@ export default function HandplockatEdit() {
     );
   }
 
-  if (!authLoading && !customer?.is_admin) {
+  // Behörighet: admin eller owner_id
+  const isOwner = !!customer?.id && !!ownerId && customer.id === ownerId;
+  const canEdit = !!customer?.is_admin || isOwner;
+
+  if (!authLoading && !canEdit) {
     return (
       <div className="min-h-[100svh] bg-background">
         <Header />
         <main className="container mx-auto px-4 py-12">
-          <p className="text-destructive">Du saknar behörighet att redigera annonser.</p>
+          <p className="text-destructive">Du saknar behörighet att redigera denna annons.</p>
         </main>
         <Footer />
       </div>
@@ -541,18 +538,34 @@ export default function HandplockatEdit() {
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">Annons-ID</label>
-                <input value={id || ""} readOnly className="w-full rounded-xl border border-input px-3 py-2 text-sm bg-muted" />
+                <input
+                  value={id || ""}
+                  readOnly
+                  className="w-full rounded-xl border border-input px-3 py-2 text-sm bg-muted"
+                />
               </div>
 
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium">Utgångspunkt</label>
                 <div className="flex flex-wrap gap-3">
                   <label className="flex items-center gap-2 text-sm">
-                    <input type="radio" name="source" value="valuation" checked={source === "valuation"} onChange={() => setSource("valuation")} />
+                    <input
+                      type="radio"
+                      name="source"
+                      value="valuation"
+                      checked={source === "valuation"}
+                      onChange={() => setSource("valuation")}
+                    />
                     Från värdering
                   </label>
                   <label className="flex items-center gap-2 text-sm">
-                    <input type="radio" name="source" value="manual" checked={source === "manual"} onChange={() => setSource("manual")} />
+                    <input
+                      type="radio"
+                      name="source"
+                      value="manual"
+                      checked={source === "manual"}
+                      onChange={() => setSource("manual")}
+                    />
                     Manuell annons
                   </label>
                 </div>
@@ -561,22 +574,40 @@ export default function HandplockatEdit() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Rubrik</label>
-                  <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" />
+                  <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Pris (SEK)</label>
-                  <input value={priceSek} onChange={(e) => setPriceSek(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" type="number" min="0" />
+                  <input
+                    value={priceSek}
+                    onChange={(e) => setPriceSek(e.target.value)}
+                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                    type="number"
+                    min="0"
+                  />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Kategori</label>
-                  <input value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" />
+                  <input
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Typ av vara</label>
-                  <select value={itemType} onChange={(e) => setItemType(e.target.value as "general" | "clothing")} className="w-full rounded-xl border border-input px-3 py-2 text-sm">
+                  <select
+                    value={itemType}
+                    onChange={(e) => setItemType(e.target.value as "general" | "clothing")}
+                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                  >
                     <option value="general">Allmänt</option>
                     <option value="clothing">Kläder</option>
                   </select>
@@ -586,30 +617,67 @@ export default function HandplockatEdit() {
               {itemType === "clothing" ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Storlek</label>
-                  <input value={sizeValue} onChange={(e) => setSizeValue(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" placeholder="t.ex. S, M, L eller 34–46" />
+                  <input
+                    value={sizeValue}
+                    onChange={(e) => setSizeValue(e.target.value)}
+                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                    placeholder="t.ex. S, M, L eller 34–46"
+                  />
                 </div>
               ) : (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Mått (mm)</label>
                   <div className="grid grid-cols-3 gap-2">
-                    <input value={dimensionLength} onChange={(e) => setDimensionLength(e.target.value)} className="w-full rounded-xl border border-input px-2 py-2 text-sm" placeholder="L" type="number" min="0" />
-                    <input value={dimensionWidth} onChange={(e) => setDimensionWidth(e.target.value)} className="w-full rounded-xl border border-input px-2 py-2 text-sm" placeholder="B" type="number" min="0" />
-                    <input value={dimensionHeight} onChange={(e) => setDimensionHeight(e.target.value)} className="w-full rounded-xl border border-input px-2 py-2 text-sm" placeholder="H" type="number" min="0" />
+                    <input
+                      value={dimensionLength}
+                      onChange={(e) => setDimensionLength(e.target.value)}
+                      className="w-full rounded-xl border border-input px-2 py-2 text-sm"
+                      placeholder="L"
+                      type="number"
+                      min="0"
+                    />
+                    <input
+                      value={dimensionWidth}
+                      onChange={(e) => setDimensionWidth(e.target.value)}
+                      className="w-full rounded-xl border border-input px-2 py-2 text-sm"
+                      placeholder="B"
+                      type="number"
+                      min="0"
+                    />
+                    <input
+                      value={dimensionHeight}
+                      onChange={(e) => setDimensionHeight(e.target.value)}
+                      className="w-full rounded-xl border border-input px-2 py-2 text-sm"
+                      placeholder="H"
+                      type="number"
+                      min="0"
+                    />
                   </div>
                 </div>
               )}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Beskrivning</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[120px]" placeholder="Kort och tydlig beskrivning av föremålet" />
-                <p className="text-xs text-muted-foreground">Tänk på integritet: skriv inte namn, adresser eller andra personuppgifter.</p>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[120px]"
+                  placeholder="Kort och tydlig beskrivning av föremålet"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tänk på integritet: skriv inte namn, adresser eller andra personuppgifter.
+                </p>
               </div>
 
               <h3 className="text-base font-semibold text-foreground">Publicering</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Annonsstatus</label>
-                  <select value={status} onChange={(e) => setStatus(e.target.value as HandplockatStatus)} className="w-full rounded-xl border border-input px-3 py-2 text-sm">
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as HandplockatStatus)}
+                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                  >
                     <option value="draft">Utkast</option>
                     <option value="available">Publicerad</option>
                     <option value="reserved">Reserverad</option>
@@ -622,13 +690,22 @@ export default function HandplockatEdit() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Senaste hämtning</label>
-                  <input value={pickupDeadlineAt} onChange={(e) => setPickupDeadlineAt(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" type="datetime-local" />
+                  <input
+                    value={pickupDeadlineAt}
+                    onChange={(e) => setPickupDeadlineAt(e.target.value)}
+                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                    type="datetime-local"
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Skick</label>
-                <select value={skick} onChange={(e) => setSkick(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm">
+                <select
+                  value={skick}
+                  onChange={(e) => setSkick(e.target.value)}
+                  className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                >
                   <option value="">Välj skick</option>
                   <option value="Nyskick">Nyskick</option>
                   <option value="Mycket gott skick">Mycket gott skick</option>
@@ -641,11 +718,20 @@ export default function HandplockatEdit() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Upphämtning (område)</label>
-                  <input value={pickupArea} onChange={(e) => setPickupArea(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" />
+                  <input
+                    value={pickupArea}
+                    onChange={(e) => setPickupArea(e.target.value)}
+                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Upphämtningstid</label>
-                  <input value={pickupWindow} onChange={(e) => setPickupWindow(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm" placeholder="Tid enligt överenskommelse" />
+                  <input
+                    value={pickupWindow}
+                    onChange={(e) => setPickupWindow(e.target.value)}
+                    className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                    placeholder="Tid enligt överenskommelse"
+                  />
                 </div>
               </div>
 
@@ -668,15 +754,30 @@ export default function HandplockatEdit() {
                   onChange={(e) => handleOriginalUpload(e.target.files)}
                 />
 
-                <Button type="button" variant="outline" onClick={() => originalInputRef.current?.click()} disabled={uploadingOriginal}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => originalInputRef.current?.click()}
+                  disabled={uploadingOriginal}
+                >
                   {uploadingOriginal ? "Laddar upp…" : "Ladda upp originalbilder"}
                 </Button>
 
-                <Button type="button" variant="outline" onClick={handleRotateFirstOriginal} disabled={uploadingOriginal || !firstOriginal}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleRotateFirstOriginal}
+                  disabled={uploadingOriginal || !firstOriginal}
+                >
                   {uploadingOriginal ? "Roterar…" : "Rotera första bilden"}
                 </Button>
 
-                <Button type="button" variant="outline" onClick={handleGenerateAnnonsbild} disabled={uploadingAnnonsbild || !firstOriginal}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGenerateAnnonsbild}
+                  disabled={uploadingAnnonsbild || !firstOriginal}
+                >
                   {uploadingAnnonsbild ? "Skapar annonsbild…" : "Skapa annonsbild"}
                 </Button>
 
@@ -686,7 +787,6 @@ export default function HandplockatEdit() {
               </div>
 
               {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
-
               {firstOriginalPreviewError && <p className="text-xs text-destructive">{firstOriginalPreviewError}</p>}
 
               {(firstOriginalPreviewLoading || firstOriginalPreviewUrl) && (

@@ -157,6 +157,8 @@ const Header: React.FC = () => {
           <Link to="/#about" className="text-foreground hover:text-primary transition-colors">Om oss</Link>
           <Link to="/fragor-tips" className="text-foreground hover:text-primary transition-colors">Frågor och Tips</Link>
           <Link to="/#contact" className="text-foreground hover:text-primary transition-colors">Kontakt</Link>
+          {/* Diskret CTA till Handplockat */}
+          <a href="/handplockat" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2">Butik: Handplockat</a>
         </nav>
 
         {/* Mobile hamburger menu */}

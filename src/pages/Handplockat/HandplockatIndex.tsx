@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
 import { fetchHandplockatListings } from "@/lib/handplockat";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -8,7 +6,7 @@ import type { HandplockatListing } from "@/types";
 import ListingCard from "@/components/ListingCard";
 import { ArrowRight, Search, ShieldCheck, Smartphone } from "lucide-react";
 
-const DEFAULT_DESCRIPTION = "Kop cirkulara fynd lokalt i Sundsvall. Handplockade annonser med trygga affarer via SMS.";
+const DEFAULT_DESCRIPTION = "Kop cirkulara fynd lokalt i Sundsvall. Handplockade annonser med trygga affarer.";
 
 export default function HandplockatIndex() {
   const [listings, setListings] = useState<HandplockatListing[]>([]);
@@ -21,7 +19,7 @@ export default function HandplockatIndex() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      setError("Supabase ar inte konfigurerat i denna miljo.");
+      setError("Supabase är inte konfigurerat i denna miljö.");
       setLoading(false);
       return;
     }
@@ -34,7 +32,7 @@ export default function HandplockatIndex() {
       })
       .catch((err) => {
         if (!isMounted) return;
-        setError(typeof err?.message === "string" ? err.message : "Kunde inte hamta annonser.");
+        setError(typeof err?.message === "string" ? err.message : "Kunde inte hämta annonser.");
       })
       .finally(() => {
         if (!isMounted) return;
@@ -51,14 +49,35 @@ export default function HandplockatIndex() {
     [listings]
   );
 
+  // JSON-LD ItemList
+  const itemListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Handplockat Sundsvall',
+    description: DEFAULT_DESCRIPTION,
+    url: 'https://www.trygghand.com/handplockat',
+    itemListElement: visibleListings.map((listing, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      url: `https://www.trygghand.com/handplockat/${listing.id}`,
+      name: listing.title,
+      image: listing.image_cutout || undefined,
+      description: listing.description,
+    })),
+  };
+
+  // OG-image: första annonsbild eller fallback
+  const ogImage = visibleListings[0]?.image_cutout || '/handplockat.jpg';
+
   return (
     <div className="min-h-[100svh] bg-background">
       <Seo
-        title="Handplockat Sundsvall | Cirkular marknad"
+        title="Handplockat Sundsvall | Cirkulär marknad"
         description={DEFAULT_DESCRIPTION}
         canonical="https://www.trygghand.com/handplockat"
+        ogImage={ogImage}
+        jsonLd={itemListJsonLd}
       />
-      <Header />
       <main className="pb-16">
         <section className="relative overflow-hidden">
           <div className="absolute inset-0">
@@ -75,46 +94,18 @@ export default function HandplockatIndex() {
                 Handplockade fynd i Sundsvall
               </h1>
               <p className="text-lg text-primary-foreground/80 mb-8">
-                Kurerade second hand-prylar fran riktiga hem. Kop tryggt via SMS och Swish – lokalt och cirkulart.
+                Utvalda second hand-prylar från riktiga hem.<br/> Köp tryggt och enkelt – lokalt och cirkulärt.
               </p>
               <div className="flex flex-wrap gap-4">
                 <a
                   href="#listings"
                   className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
                 >
-                  Se alla fynd
+                 Se vad som gömmer sig här
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section className="border-b border-border bg-card">
-          <div className="container mx-auto px-4 py-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3 justify-center md:justify-start">
-                <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
-                <span className="text-sm text-muted-foreground">
-                  Trygg handel med Swish-betalning
-                </span>
-              </div>
-              <div className="flex items-center gap-3 justify-center">
-                <Smartphone className="w-5 h-5 text-primary shrink-0" />
-                <span className="text-sm text-muted-foreground">
-                  Enkel kontakt via SMS
-                </span>
-              </div>
-              <div className="flex items-center gap-3 justify-center md:justify-end">
-                <Search className="w-5 h-5 text-primary shrink-0" />
-                <span className="text-sm text-muted-foreground">
-                  Varderade med lokal analys
-                </span>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground text-center mt-4">
-              Kop sker via SMS – inte via Facebook.
-            </p>
           </div>
         </section>
 
@@ -126,7 +117,7 @@ export default function HandplockatIndex() {
             <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-8 text-center">
               <h2 className="text-xl font-semibold text-foreground">Inga aktuella annonser just nu</h2>
               <p className="text-muted-foreground mt-2">
-                Vi fyller pa med nya objekt hela tiden. Kom tillbaka snart eller folj oss i Facebook-gruppen.
+                Vi fyller på med nya objekt hela tiden. Kom tillbaka snart eller följ oss i Facebook-gruppen.
               </p>
             </div>
           )}
@@ -139,7 +130,7 @@ export default function HandplockatIndex() {
                     Aktuella fynd
                   </h2>
                   <p className="text-muted-foreground mt-1">
-                    {visibleListings.length} foremal till salu i Sundsvall
+                    {visibleListings.length} föremål till salu i Sundsvall
                   </p>
                 </div>
               </div>
@@ -152,7 +143,6 @@ export default function HandplockatIndex() {
           )}
         </section>
       </main>
-      <Footer />
     </div>
   );
 }

@@ -5,12 +5,14 @@ interface SeoProps {
   description: string;
   canonical?: string;
   robots?: string;
+  ogImage?: string;
+  jsonLd?: object | string;
 }
 
 const SITE_NAME = "Trygg Hand";
 const BASE_URL = "https://www.trygghand.com";
 
-export default function Seo({ title, description, canonical, robots }: SeoProps) {
+export default function Seo({ title, description, canonical, robots, ogImage, jsonLd }: SeoProps) {
   const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
   const canonicalUrl = canonical ? canonical : BASE_URL;
 
@@ -29,6 +31,14 @@ export default function Seo({ title, description, canonical, robots }: SeoProps)
       <meta property="og:locale" content="sv_SE" />
       <meta property="og:site_name" content={SITE_NAME} />
       <meta property="og:url" content={canonicalUrl} />
+      {ogImage && <meta property="og:image" content={ogImage} />}
+
+      {/* JSON-LD strukturerad data */}
+      {jsonLd && (
+        <script type="application/ld+json">
+          {typeof jsonLd === "string" ? jsonLd : JSON.stringify(jsonLd)}
+        </script>
+      )}
     </Helmet>
   );
 }

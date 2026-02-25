@@ -26,6 +26,8 @@ type TouchedField =
   | "pickupDeadlineAt"
   | "imagesOriginalRaw";
 
+type BucketName = "handplockat-private" | "images";
+
 const toLocalInputValue = (date: Date) => {
   const offset = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
@@ -36,7 +38,7 @@ const addDays = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 10
 const getErrorMessage = (err: unknown, fallback: string) => {
   if (err && typeof err === "object" && "message" in err) {
     const msg = (err as { message?: unknown }).message;
-    if (typeof msg === "string") return msg;
+    if (typeof msg === "string" && msg.trim()) return msg;
   }
   return fallback;
 };
@@ -79,8 +81,19 @@ const isClothingItem = (payload: any): boolean => {
   return false;
 };
 
-function isLikelyUrl(value: string): boolean {
-  return /^https?:\/\//i.test(value.trim());
+const isHttpUrl = (v: string) => /^https?:\/\//i.test(String(v || "").trim());
+
+async function tryCreateSignedUrl(pathOrUrl: string, expiresIn = 600): Promise<string | null> {
+  const value = String(pathOrUrl || "").trim();
+  if (!value) return null;
+  if (isHttpUrl(value)) return value;
+
+  const buckets: BucketName[] = ["handplockat-private", "images"];
+  for (const bucket of buckets) {
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(value, expiresIn);
+    if (!error && data?.signedUrl) return data.signedUrl;
+  }
+  return null;
 }
 
 export default function HandplockatCreate() {
@@ -155,27 +168,9 @@ export default function HandplockatCreate() {
 
   const parsedValuation = useMemo(() => parseJsonInput(valuationJsonRaw), [valuationJsonRaw]);
 
-  // ======================
-  // Signed URL helper + preview
-  // ======================
-  const createSignedUrlForPath = async (pathOrUrl: string): Promise<string | null> => {
-    const value = String(pathOrUrl || "").trim();
-    if (!value) return null;
-
-    // Om det redan är en URL, använd direkt
-    if (isLikelyUrl(value)) return value;
-
-    // Annars anta att det är en storage-path
-    const bucketsToTry = ["handplockat-private", "images"];
-    for (const bucket of bucketsToTry) {
-      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(value, 600);
-      if (!error && data?.signedUrl) return data.signedUrl;
-    }
-    return null;
-  };
-
   const firstOriginal = useMemo(() => normalizeUrlList(imagesOriginalRaw).filter(Boolean)[0] || "", [imagesOriginalRaw]);
 
+  // Preview av första original
   useEffect(() => {
     let mounted = true;
     setOriginalPreviewError(null);
@@ -187,11 +182,11 @@ export default function HandplockatCreate() {
 
     (async () => {
       try {
-        const url = await createSignedUrlForPath(firstOriginal);
+        const url = await tryCreateSignedUrl(firstOriginal, 600);
         if (!mounted) return;
         if (!url) {
           setOriginalPreviewUrl("");
-          setOriginalPreviewError("Kunde inte skapa förhandsvisning (signed URL).");
+          setOriginalPreviewError("Kunde inte skapa förhandsvisning (signed URL). Kontrollera path/bucket.");
           return;
         }
         setOriginalPreviewUrl(url);
@@ -207,9 +202,7 @@ export default function HandplockatCreate() {
     };
   }, [firstOriginal]);
 
-  // ======================
   // Hämta värderingar
-  // ======================
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setValuationsError("Tjänsten är inte konfigurerad i denna miljö.");
@@ -348,7 +341,6 @@ export default function HandplockatCreate() {
       if (height && shouldFill(touched, "dimensionHeight", dimensionHeight)) setDimensionHeight(String(height));
     }
 
-    // alltid direktköp i frontend
     setCtaTyp("direktkop");
     if (shouldFill(touched, "pickupDeadlineAt", pickupDeadlineAt)) setPickupDeadlineAt(toLocalInputValue(addDays(7)));
   };
@@ -379,7 +371,7 @@ export default function HandplockatCreate() {
     setError(null);
   };
 
-  // Preview signed URLs för värderingsbilder
+  // Preview värderingsbilder
   useEffect(() => {
     if (valuationImagePaths.length === 0) {
       setValuationImageUrls([]);
@@ -387,7 +379,7 @@ export default function HandplockatCreate() {
     }
 
     let isMounted = true;
-    Promise.all(valuationImagePaths.map((path) => createSignedUrlForPath(path)))
+    Promise.all(valuationImagePaths.map((path) => tryCreateSignedUrl(path, 600)))
       .then((urls) => {
         if (!isMounted) return;
         setValuationImageUrls(urls.filter(Boolean) as string[]);
@@ -402,10 +394,8 @@ export default function HandplockatCreate() {
     };
   }, [valuationImagePaths]);
 
-  // ======================
-  // Upload originalbilder -> handplockat-private
-  // ======================
-  const uploadFileToBucket = async (file: File, bucket: string, folder: string) => {
+  // Upload originalbilder
+  const uploadFileToBucket = async (file: File, bucket: "handplockat-private", folder: string) => {
     const safeFile = await stripExif(file);
     const ext = (safeFile.name.split(".").pop() || "bin").toLowerCase();
     const fileId = crypto.randomUUID();
@@ -431,7 +421,9 @@ export default function HandplockatCreate() {
 
     try {
       const uploads = await Promise.all(
-        Array.from(files).map((file) => uploadFileToBucket(file, "handplockat-private", `handplockat-original/${id}`))
+        Array.from(files).map((file) =>
+          uploadFileToBucket(file, "handplockat-private", `handplockat-original/${id}`)
+        )
       );
 
       const paths = uploads.map((u) => u.path);
@@ -449,9 +441,7 @@ export default function HandplockatCreate() {
     }
   };
 
-  // ======================
   // Generera annonsbild via handplockat-generate-images
-  // ======================
   const handleGenerateAnnonsbild = async () => {
     if (!isSupabaseConfigured) {
       setUploadError("Tjänsten är inte konfigurerad i denna miljö.");
@@ -467,6 +457,11 @@ export default function HandplockatCreate() {
       return;
     }
 
+    if (isHttpUrl(first)) {
+      setUploadError("Originalbilden är en URL. Ladda upp bilden så den blir en storage-path först.");
+      return;
+    }
+
     setUploadError(null);
     setGenerateImagesError(null);
     setGeneratingAnnonsbild(true);
@@ -475,7 +470,7 @@ export default function HandplockatCreate() {
       const { data, error } = await supabase.functions.invoke("handplockat-generate-images", {
         body: {
           listing_id: id,
-          source_image_paths: [first], // ✅ bara första originalet
+          source_image_paths: [first],
         },
       });
 
@@ -495,9 +490,6 @@ export default function HandplockatCreate() {
     }
   };
 
-  // ======================
-  // Submit
-  // ======================
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -532,7 +524,6 @@ export default function HandplockatCreate() {
         description: [description.trim(), sizeLine, extraInfo.trim()].filter(Boolean).join("\n\n"),
         price_sek: finalPrice,
 
-        // alltid direktköp (ingen bud i frontend)
         cta_typ: "direktkop",
         bid_start_sek: null,
 
@@ -545,6 +536,7 @@ export default function HandplockatCreate() {
         pickup_window: pickupWindow.trim() || null,
         pickup_text: pickupText,
         pickup_deadline_at: pickupDeadlineAt || null,
+
         auction_end_at: null,
 
         sms_phone: COMPANY_SMS,
@@ -563,9 +555,6 @@ export default function HandplockatCreate() {
     }
   };
 
-  // ======================
-  // UI
-  // ======================
   return (
     <div className="min-h-[100svh] bg-background">
       <Seo
@@ -586,7 +575,6 @@ export default function HandplockatCreate() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Utgå från värdering */}
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Utgå från värdering (valfritt)</h2>
               <p className="text-sm text-muted-foreground">
@@ -626,7 +614,6 @@ export default function HandplockatCreate() {
               )}
             </div>
 
-            {/* Grunduppgifter */}
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Grunduppgifter</h2>
 
@@ -785,13 +772,10 @@ export default function HandplockatCreate() {
                   className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[120px]"
                   placeholder="Kort och tydlig beskrivning."
                 />
-                <p className="text-xs text-muted-foreground">
-                  Skriv inte namn, adresser eller andra personuppgifter.
-                </p>
+                <p className="text-xs text-muted-foreground">Skriv inte namn, adresser eller andra personuppgifter.</p>
               </div>
             </div>
 
-            {/* Upphämtning */}
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Upphämtning</h2>
 
@@ -833,11 +817,10 @@ export default function HandplockatCreate() {
               <p className="text-xs text-muted-foreground">Kontakt: {CONTACT_EMAIL}</p>
             </div>
 
-            {/* Bilder */}
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Bilder</h2>
               <p className="text-xs text-muted-foreground">
-                Lägg till en eller flera originalbilder. När du är klar kan du skapa en annonsbild från den första originalbilden.
+                Lägg till originalbilder. Skapa sedan annonsbild från första originalbilden.
               </p>
 
               <input
@@ -890,19 +873,14 @@ export default function HandplockatCreate() {
                     setTouched((prev) => ({ ...prev, imagesOriginalRaw: true }));
                   }}
                   className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[100px]"
-                  placeholder="Sökvägar eller länkar"
+                  placeholder="handplockat-original/<annons-id>/<fil>.jpg"
                 />
               </div>
 
-              {/* Preview första original */}
               {originalPreviewUrl && (
                 <div className="mt-2">
                   <div className="w-48 h-48 rounded-xl overflow-hidden border border-border bg-secondary flex items-center justify-center">
-                    <img
-                      src={originalPreviewUrl}
-                      alt="Förhandsvisning av första originalbilden"
-                      className="object-contain w-full h-full"
-                    />
+                    <img src={originalPreviewUrl} alt="Förhandsvisning av första originalbilden" className="object-contain w-full h-full" />
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">Förhandsvisning av första originalbilden</div>
                 </div>
@@ -918,22 +896,16 @@ export default function HandplockatCreate() {
                 />
               </div>
 
-              {/* Preview annonsbild */}
               {imageCutout?.trim() && (
                 <div className="mt-2">
                   <div className="w-48 h-48 rounded-xl overflow-hidden border border-border bg-secondary flex items-center justify-center">
-                    <img
-                      src={imageCutout.trim()}
-                      alt="Förhandsvisning av annonsbild"
-                      className="object-contain w-full h-full"
-                    />
+                    <img src={imageCutout.trim()} alt="Förhandsvisning av annonsbild" className="object-contain w-full h-full" />
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">Förhandsvisning av annonsbild</div>
                 </div>
               )}
             </div>
 
-            {/* Extra info */}
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Extra information (valfritt)</h2>
               <textarea
@@ -946,7 +918,6 @@ export default function HandplockatCreate() {
 
             {error && <p className="text-destructive text-sm">{error}</p>}
 
-            {/* Spara */}
             <div className="rounded-3xl border border-border bg-card p-6">
               <h2 className="text-lg font-semibold">Spara</h2>
 
