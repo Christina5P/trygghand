@@ -1,9 +1,5 @@
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 
 export function useHandplockatAdminData() {
   const [loading, setLoading] = useState(true);
@@ -11,6 +7,9 @@ export function useHandplockatAdminData() {
   const [kpi, setKpi] = useState<any>(null);
   const [listings, setListings] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [tick, setTick] = useState(0);
+
+  const reload = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     let isMounted = true;
@@ -18,38 +17,54 @@ export function useHandplockatAdminData() {
       setLoading(true);
       setError(null);
       try {
-        // KPI
-        const { data: kpiData, error: kpiError } = await supabase.rpc("handplockat_admin_kpi");
-        if (kpiError) throw kpiError;
-        // Listings
         const { data: listingsData, error: listingsError } = await supabase
           .from("handplockat_listings")
           .select("*")
           .order("created_at", { ascending: false })
           .limit(50);
         if (listingsError) throw listingsError;
-        // Orders
+
         const { data: ordersData, error: ordersError } = await supabase
           .from("handplockat_orders")
           .select("*, listing:handplockat_listings(*)")
           .order("created_at", { ascending: false })
           .limit(50);
         if (ordersError) throw ordersError;
+
         if (!isMounted) return;
-        setKpi(kpiData);
-        setListings(listingsData);
-        setOrders(ordersData);
+
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        setKpi({
+          available:       listingsData?.filter((l) => l.status === "available").length ?? 0,
+          reserved:        listingsData?.filter((l) => l.status === "reserved").length ?? 0,
+          sold:            listingsData?.filter((l) => l.status === "sold").length ?? 0,
+          reservations_7d: listingsData?.filter((l) =>
+            l.status === "reserved" &&
+            new Date(l.updated_at ?? l.created_at) >= sevenDaysAgo
+          ).length ?? 0,
+          sold_sum_30d: listingsData
+            ?.filter((l) =>
+              l.status === "sold" &&
+              new Date(l.updated_at ?? l.created_at) >= thirtyDaysAgo
+            )
+            .reduce((sum, l) => sum + (l.price_sek ?? 0), 0) ?? 0,
+        });
+
+        setListings(listingsData ?? []);
+        setOrders(ordersData ?? []);
       } catch (err: any) {
+        if (!isMounted) return;
         setError(err.message || "Kunde inte hämta data");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     fetchData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    return () => { isMounted = false; };
+  }, [tick]);
 
-  return { loading, error, kpi, listings, orders };
+  return { loading, error, kpi, listings, orders, reload };
 }

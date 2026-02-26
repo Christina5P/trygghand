@@ -1,27 +1,43 @@
+// Hämta alla publika handplockat-annonser
+import type { PostgrestError } from "@supabase/supabase-js";
+
+export async function fetchHandplockatListings(): Promise<HandplockatListing[]> {
+  // Försök hämta från publik vy först
+  const { data, error }: { data: HandplockatListing[] | null; error: PostgrestError | null } = await supabase
+    .from("handplockat_listings_public")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
 import { supabase, isUnauthorizedError } from "@/lib/supabase";
 import type { HandplockatListing } from "@/types";
 
 export type ListingInput = Omit<HandplockatListing, "created_at">;
+export async function fetchHandplockatListingById(
+  id: string
+): Promise<HandplockatListing | null> {
 
-export async function fetchHandplockatListings(): Promise<HandplockatListing[]> {
-  const { data, error } = await supabase
-    .from("handplockat_listings_public")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []) as HandplockatListing[];
-}
-
-export async function fetchHandplockatListingById(id: string): Promise<HandplockatListing | null> {
-  const { data, error } = await supabase
+  // 1️⃣ försök publikt först
+  const pub = await supabase
     .from("handplockat_listings_public")
     .select("*")
     .eq("id", id)
     .maybeSingle();
 
-  if (error) throw error;
-  return (data ?? null) as HandplockatListing | null;
+  if (pub.error) throw pub.error;
+  if (pub.data) return pub.data;
+
+  // 2️⃣ fallback till riktiga tabellen (admin / owner)
+  const raw = await supabase
+    .from("handplockat_listings")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (raw.error) return null;
+
+  return raw.data ?? null;
 }
 
 export async function createHandplockatListing(input: ListingInput): Promise<HandplockatListing> {
@@ -117,10 +133,11 @@ export async function createHandplockatOrder(payload: {
   }
 }
 
-export function parseJsonInput(raw: string): unknown | null {
-  if (!raw.trim()) return null;
+export function parseJsonInput(raw: string | null | undefined): unknown | null {
+  const s = typeof raw === "string" ? raw : "";
+  if (!s.trim()) return null;
   try {
-    return JSON.parse(raw);
+    return JSON.parse(s);
   } catch {
     return null;
   }

@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 
 import "@/index.css";
 
@@ -26,6 +27,10 @@ import { getCookieConsent, acceptStatisticsCookies } from "@/utils/cookies";
 import ResetPassword from "@/components/ResetPassword";
 import About from "@/components/About";
 
+// ENDAST FÖR DEBUG – ta bort sen
+// @ts-ignore
+window.supabase = supabase;
+
 // --------------------
 // Lazy pages
 // --------------------
@@ -40,15 +45,12 @@ const Terms = React.lazy(() => import("@/pages/Terms"));
 const DodsbohanteringSundsvall = React.lazy(
   () => import("@/pages/DodsbohanteringSundsvall")
 );
-
 const SeniorforandringSundsvall = React.lazy(
   () => import("@/pages/SeniorforandringSundsvall")
 );
-
 const ChecklistaVidDodsfallSundsvall = React.lazy(
   () => import("@/pages/ChecklistaVidDodsfallSundsvall")
 );
-
 const VadIngarIDodsbohantering = React.lazy(
   () => import("@/pages/VadIngarIDodsbohantering")
 );
@@ -57,10 +59,6 @@ const FragorTips = React.lazy(() => import("@/components/FragorTips"));
 
 const Portal = React.lazy(() => import("@/pages/Portal/Portal"));
 const AdminPortal = React.lazy(() => import("@/pages/Portal/AdminPortal"));
-
-const CubePlannerApp = React.lazy(
-  () => import("@/portal/cube-planner/CubePlannerApp")
-);
 
 const AuthPostbackTunnel = React.lazy(
   () => import("@/pages/AuthPostbackTunnel")
@@ -77,9 +75,7 @@ const Magasinering = React.lazy(() => import("@/pages/services/Magasinering"));
 const RadgivningPlanering = React.lazy(
   () => import("@/pages/services/RadgivningPlanering")
 );
-const Juridikguide = React.lazy(
-  () => import("@/pages/services/Juridikguide")
-);
+const Juridikguide = React.lazy(() => import("@/pages/services/Juridikguide"));
 
 // Handplockat
 const HandplockatIndex = React.lazy(
@@ -123,17 +119,13 @@ function App() {
         <TooltipProvider>
           <BrowserRouter>
             <ScrollToTop />
-
             <Toaster />
             <Sonner />
 
             <Suspense fallback={<div className="p-6 text-center">Laddar…</div>}>
               <Routes>
                 {/* Auth */}
-                <Route
-                  path="/auth/postback/tunnel"
-                  element={<AuthPostbackTunnel />}
-                />
+                <Route path="/auth/postback/tunnel" element={<AuthPostbackTunnel />} />
 
                 {/* Start */}
                 <Route path="/" element={<Index />} />
@@ -141,23 +133,10 @@ function App() {
                 <Route path="/kontakt" element={<Navigate to="/#contact" />} />
 
                 {/* Info */}
-                <Route
-                  path="/dodsbohantering-sundsvall"
-                  element={<DodsbohanteringSundsvall />}
-                />
-                <Route
-                  path="/seniorforandring-sundsvall"
-                  element={<SeniorforandringSundsvall />}
-                />
-                <Route
-                  path="/checklista-vid-dodsfall-sundsvall"
-                  element={<ChecklistaVidDodsfallSundsvall />}
-                />
-                <Route
-                  path="/vad-ingar-i-dodsbohantering"
-                  element={<VadIngarIDodsbohantering />}
-                />
-
+                <Route path="/dodsbohantering-sundsvall" element={<DodsbohanteringSundsvall />} />
+                <Route path="/seniorforandring-sundsvall" element={<SeniorforandringSundsvall />} />
+                <Route path="/checklista-vid-dodsfall-sundsvall" element={<ChecklistaVidDodsfallSundsvall />} />
+                <Route path="/vad-ingar-i-dodsbohantering" element={<VadIngarIDodsbohantering />} />
                 <Route path="/about" element={<About />} />
 
                 {/* Services */}
@@ -165,69 +144,46 @@ function App() {
                 <Route path="/services/forsaljning" element={<Forsaljning />} />
                 <Route path="/services/flyttstad" element={<Flyttstad />} />
                 <Route path="/services/flytt" element={<Flytt />} />
-                <Route
-                  path="/services/tomning-bohag"
-                  element={<TomningBohag />}
-                />
+                <Route path="/services/tomning-bohag" element={<TomningBohag />} />
                 <Route path="/services/vardering" element={<Vardering />} />
-                <Route
-                  path="/services/magasinering"
-                  element={<Magasinering />}
-                />
-                <Route
-                  path="/services/radgivning-planering"
-                  element={<RadgivningPlanering />}
-                />
+                <Route path="/services/magasinering" element={<Magasinering />} />
+                <Route path="/services/radgivning-planering" element={<RadgivningPlanering />} />
                 <Route path="/services/juridikguide" element={<Juridikguide />} />
 
                 {/* Portal */}
                 <Route path="/portal" element={<Portal />} />
                 <Route path="/adminportal" element={<AdminPortal />} />
 
-                {/* Handplockat public */}
-                <Route element={<HandplockatLayout />}>
-                  <Route path="/handplockat" element={<HandplockatIndex />} />
-                  <Route
-                    path="/handplockat/:listingId"
-                    element={<HandplockatListing />}
-                  />
+                {/* ===================== */}
+                {/* HANDPLOCKAT – ADMIN   */}
+                {/* ===================== */}
+                {/* OBS: Admin-routes MÅSTE ligga FÖRE den publika /handplockat-routen */}
+                <Route element={<CustomerRoute />}>
+                  <Route path="/admin/handplockat" element={<AdminHandplockat />} />
+                  <Route path="/admin/handplockat/skapa" element={<HandplockatCreate />} />
+                  <Route path="/admin/handplockat/:id/redigera" element={<HandplockatEdit />} />
                 </Route>
 
-                {/* Handplockat protected (kund/portal) */}
+                {/* ===================== */}
+                {/* HANDPLOCKAT – PORTAL  */}
+                {/* ===================== */}
                 <Route element={<CustomerRoute />}>
-                  <Route
-                    path="/portal/handplockat"
-                    element={<HandplockatIndex />}
-                  />
-                  <Route
-                    path="/portal/handplockat/skapa"
-                    element={<HandplockatCreate />}
-                  />
-                  <Route
-                    path="/portal/handplockat/:id/redigera"
-                    element={<HandplockatEdit />}
-                  />
+                  <Route path="/portal/handplockat" element={<HandplockatIndex />} />
+                  <Route path="/portal/handplockat/skapa" element={<HandplockatCreate />} />
+                  <Route path="/portal/handplockat/:id/redigera" element={<HandplockatEdit />} />
+                </Route>
 
-                  {/* Admin Handplockat (NYTT prefix: /handplockat/admin) */}
-                  <Route
-                    path="/handplockat/admin"
-                    element={<AdminHandplockat />}
-                  />
-                  {/* Admin create/edit routes under /handplockat/admin */}
-                  <Route
-                    path="/handplockat/admin/skapa"
-                    element={<HandplockatCreate />}
-                  />
-                  <Route
-                    path="/handplockat/admin/:id/redigera"
-                    element={<HandplockatEdit />}
-                  />
-
-                  {/* Bakåtkompatibelt alias (din gamla) */}
-                  <Route
-                    path="/admin/handplockat"
-                    element={<Navigate to="/handplockat/admin" replace />}
-                  />
+                {/* ===================== */}
+                {/* HANDPLOCKAT – PUBLIK  */}
+                {/* ===================== */}
+                {/* Gammal alias */}
+                <Route
+                  path="/handplockat/admindashboard"
+                  element={<Navigate to="/admin/handplockat" replace />}
+                />
+                <Route path="/handplockat" element={<HandplockatLayout />}>
+                  <Route index element={<HandplockatIndex />} />
+                  <Route path=":id" element={<HandplockatListing />} />
                 </Route>
 
                 {/* Policy */}
