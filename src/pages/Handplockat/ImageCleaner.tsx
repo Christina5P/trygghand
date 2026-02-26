@@ -1,50 +1,58 @@
 import React, { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { removeBgAndUpload } from "@/hooks/useRemoveBackground";
 import { Button } from "@/components/ui/button";
 
 type Props = {
-  path: string; // storage path (t.ex. handplockat-original/...)
-  onDone?: (publicUrl: string) => void; // callback när den är klar
+  listingId: string;
+  sourceImagePaths: string[]; // storage paths i private bucket
+  sourceBucket?: "handplockat-private"; // valfri, default private
+  onDone?: (publicUrls: string[]) => void;
 };
 
-export default function ImageCleaner({ path, onDone }: Props) {
+export default function ImageCleaner({
+  listingId,
+  sourceImagePaths,
+  sourceBucket = "handplockat-private",
+  onDone,
+}: Props) {
   const [loading, setLoading] = useState(false);
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [publicUrls, setPublicUrls] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   const handleRemoveBg = async () => {
-    if (!path) return;
+    if (!listingId || !sourceImagePaths?.length) return;
 
     setLoading(true);
     setErr(null);
 
     try {
-      // Skapa en signed URL för privat bucket (originalbild)
-      const signed = await supabase.storage
-        .from("handplockat-private")
-        .createSignedUrl(path, 600);
-
-      if (signed.error || !signed.data?.signedUrl) {
-        throw signed.error || new Error("Kunde inte skapa signed URL.");
+      // Säkerställ att vi skickar storage-paths (inte URL)
+      if (sourceImagePaths.some((p) => /^https?:\/\//i.test(p))) {
+        throw new Error("sourceImagePaths måste vara storage-paths (inte URL).");
       }
 
-      // Kör background removal + uploadar resultatet till handplockat-public
-      const cleanPublicUrl = await removeBgAndUpload(signed.data.signedUrl);
+      const { data, error } = await supabase.functions.invoke("handplockat-generate-images", {
+        body: {
+          listing_id: listingId,
+          source_image_paths: sourceImagePaths,
+          
+        },
+      });
 
-      setResultUrl(cleanPublicUrl);
-      onDone?.(cleanPublicUrl);
-    } catch (e: unknown) {
+      if (error) throw error;
+      if (!data?.public_urls?.length) throw new Error("Inga public_urls returnerades.");
+
+      setPublicUrls(data.public_urls);
+      onDone?.(data.public_urls);
+    } catch (e: any) {
       console.error(e);
-      const msg =
-        e && typeof e === "object" && "message" in e && typeof (e as any).message === "string"
-          ? (e as any).message
-          : "Kunde inte ta bort bakgrund.";
-      setErr(msg);
+      setErr(typeof e?.message === "string" ? e.message : "Kunde inte ta bort bakgrund.");
     } finally {
       setLoading(false);
     }
   };
+
+  const first = publicUrls[0] ?? null;
 
   return (
     <div className="space-y-3">
@@ -52,25 +60,19 @@ export default function ImageCleaner({ path, onDone }: Props) {
         type="button"
         variant="outline"
         onClick={handleRemoveBg}
-        disabled={loading || !path}
+        disabled={loading || !listingId || sourceImagePaths.length === 0}
       >
         {loading ? "Bearbetar..." : "Ta bort bakgrund"}
       </Button>
 
       {err && <p className="text-xs text-destructive">{err}</p>}
 
-      {resultUrl && (
+      {first && (
         <div className="space-y-2">
           <div className="w-48 h-48 rounded-xl overflow-hidden border border-border bg-secondary flex items-center justify-center">
-            <img
-              src={resultUrl}
-              alt="Rensad bild"
-              className="object-contain w-full h-full"
-            />
+            <img src={first} alt="Rensad bild" className="object-contain w-full h-full" />
           </div>
-          <div className="text-xs text-muted-foreground">
-            Rensad bild (sparad i Storage)
-          </div>
+          <div className="text-xs text-muted-foreground">Rensad bild (sparad i handplockat-public)</div>
         </div>
       )}
     </div>

@@ -211,7 +211,9 @@ serve(async (req: Request): Promise<Response> => {
   if (!admin) return json(403, { error: "Forbidden" });
 
   // Om source_bucket skickas in → använd bara den, annars prova private + images
-  const buckets = sourceBucket ? [sourceBucket] : ["handplockat-private", "images"];
+ const buckets = sourceBucket
+  ? [sourceBucket]
+  : ["handplockat-private", "handplockat-public"];
 
   try {
     const publicUrls: string[] = [];
@@ -261,7 +263,13 @@ if (bytes.byteLength > MAX_BYTES) {
 
     return json(200, { ok: true, public_urls: publicUrls });
   } catch (err) {
-    console.error("handplockat-generate-images error", err);
-    return json(500, { error: getErrorMessage(err, "Kunde inte skapa annonsbilder") });
+  console.error("handplockat-generate-images error", err);
+  const msg = getErrorMessage(err, "Kunde inte skapa annonsbilder");
+
+  if (msg.startsWith("Object not found:")) {
+    return json(404, { error: msg, tried_buckets: buckets });
   }
+
+  return json(500, { error: msg });
+}
 });
