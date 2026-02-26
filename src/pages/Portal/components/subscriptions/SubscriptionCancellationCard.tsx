@@ -4,6 +4,7 @@ import type { CancellationStatus, Customer, SubscriptionCancellation } from "@/t
 import { CancellationStatusSelect } from "./status";
 import { formatYmd } from "./utils";
 import { CommentBubble } from "@/pages/Portal/components/shared/CommentBubble";
+import { supabase } from "@/lib/supabase";
 
 export function SubscriptionCancellationCard({
   item,
