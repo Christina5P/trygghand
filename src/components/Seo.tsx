@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
 
@@ -31,6 +32,36 @@ export default function Seo({
     pathname.startsWith("/portal/handplockat") ||
     pathname.startsWith("/admin/handplockat");
 
+  useEffect(() => {
+    const base = isHandplockat ? "/handplockat-favicon" : "/favicon";
+
+    const iconSelectors = [
+      'link[rel="icon"]',
+      'link[rel="shortcut icon"]',
+      'link[rel="apple-touch-icon"]',
+    ];
+    document
+      .querySelectorAll(iconSelectors.join(","))
+      .forEach((node) => node.parentNode?.removeChild(node));
+
+    const links: Array<{ rel: string; href: string; sizes?: string; type?: string }> = [
+      { rel: "icon", href: `${base}-32x32.png?v=${isHandplockat ? "handplockat" : "main"}` },
+      { rel: "icon", href: `${base}-32x32.png`, sizes: "32x32", type: "image/png" },
+      { rel: "icon", href: `${base}-16x16.png`, sizes: "16x16", type: "image/png" },
+      { rel: "shortcut icon", href: `${base}-32x32.png` },
+      { rel: "apple-touch-icon", href: `${base}-192x192.png`, sizes: "192x192" },
+    ];
+
+    links.forEach(({ rel, href, sizes, type }) => {
+      const el = document.createElement("link");
+      el.setAttribute("rel", rel);
+      el.setAttribute("href", href);
+      if (sizes) el.setAttribute("sizes", sizes);
+      if (type) el.setAttribute("type", type);
+      document.head.appendChild(el);
+    });
+  }, [isHandplockat]);
+
   return (
     <Helmet>
       <title>{fullTitle}</title>
@@ -41,6 +72,7 @@ export default function Seo({
       {/* ✅ Byt favicon baserat på route (inte canonical) */}
       {isHandplockat ? (
         <>
+          <link rel="icon" href="/handplockat-favicon-32x32.png?v=handplockat" />
           <link rel="icon" type="image/png" sizes="32x32" href="/handplockat-favicon-32x32.png" />
           <link rel="icon" type="image/png" sizes="16x16" href="/handplockat-favicon-16x16.png" />
           <link rel="shortcut icon" href="/handplockat-favicon-32x32.png" />
@@ -48,6 +80,7 @@ export default function Seo({
         </>
       ) : (
         <>
+          <link rel="icon" href="/favicon-32x32.png?v=main" />
           <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
           <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
           <link rel="shortcut icon" href="/favicon-32x32.png" />

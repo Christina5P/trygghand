@@ -32,6 +32,17 @@ function formatSek(val: number) {
   return new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(val) + " kr";
 }
 
+function parseField(message: string | null | undefined, label: string): string | null {
+  const prefix = `${label}:`;
+  const line = String(message || "")
+    .split("\n")
+    .map((v) => v.trim())
+    .find((v) => v.startsWith(prefix));
+  if (!line) return null;
+  const value = line.slice(prefix.length).trim();
+  return value || null;
+}
+
 function maskEmail(value: string | null | undefined): string {
   const email = String(value || "").trim();
   if (!email || !email.includes("@")) return "-";
@@ -49,7 +60,7 @@ function maskPhone(value: string | null | undefined): string {
 }
 
 export default function AdminHandplockatDashboard() {
-  const { loading, error, kpi, listings, orders, reload } = useHandplockatAdminData();
+  const { loading, error, kpi, listings, orders, purchaseInterests, reload } = useHandplockatAdminData();
   const { customer } = useAuth();
   const navigate = useNavigate();
 
@@ -57,6 +68,15 @@ export default function AdminHandplockatDashboard() {
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
   const [orderStatusUpdating, setOrderStatusUpdating] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null);
+  const [interestDeletingId, setInterestDeletingId] = useState<string | null>(null);
+  const [editingInterestId, setEditingInterestId] = useState<string | null>(null);
+  const [interestSaving, setInterestSaving] = useState(false);
+  const [interestDraft, setInterestDraft] = useState<{
+    category: string;
+    budgetSek: string;
+    area: string;
+    wish: string;
+  }>({ category: "", budgetSek: "", area: "", wish: "" });
   const [listingSort, setListingSort] = useState<
     "default" | "title-asc" | "title-desc" | "status-asc" | "status-desc"
   >("default");
@@ -102,6 +122,61 @@ export default function AdminHandplockatDashboard() {
     if (error) alert("Kunde inte uppdatera orderstatus: " + error.message);
     else reload();
     setOrderStatusUpdating(null);
+  }
+
+  async function handleDeletePurchaseInterest(id: string) {
+    const ok = window.confirm("Ta bort denna köpförfrågan?");
+    if (!ok) return;
+
+    setInterestDeletingId(id);
+    const { error } = await supabase.from("contact_requests").delete().eq("id", id);
+    if (error) {
+      alert("Kunde inte ta bort köpförfrågan: " + error.message);
+    } else {
+      reload();
+    }
+    setInterestDeletingId(null);
+  }
+
+  function startEditPurchaseInterest(item: any) {
+    setEditingInterestId(String(item.id));
+    setInterestDraft({
+      category: parseField(item.message, "Kategori") || "",
+      budgetSek: parseField(item.message, "Budget (SEK)") || "",
+      area: parseField(item.message, "Område") || "",
+      wish: parseField(item.message, "Önskemål") || "",
+    });
+  }
+
+  async function savePurchaseInterest(item: any) {
+    setInterestSaving(true);
+    const imagePath = parseField(item.message, "Bild (intern path)");
+    const imageFile = parseField(item.message, "Bildefil");
+
+    const nextMessage = [
+      "[Köpintresse Handplockat]",
+      interestDraft.category.trim() ? `Kategori: ${interestDraft.category.trim()}` : "",
+      interestDraft.budgetSek.trim() ? `Budget (SEK): ${interestDraft.budgetSek.trim()}` : "",
+      interestDraft.area.trim() ? `Område: ${interestDraft.area.trim()}` : "",
+      interestDraft.wish.trim() ? `Önskemål: ${interestDraft.wish.trim()}` : "",
+      imagePath ? `Bild (intern path): ${imagePath}` : "",
+      imageFile ? `Bildefil: ${imageFile}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const { error } = await supabase
+      .from("contact_requests")
+      .update({ message: nextMessage, updated_at: new Date().toISOString() })
+      .eq("id", item.id);
+
+    if (error) {
+      alert("Kunde inte spara köpförfrågan: " + error.message);
+    } else {
+      setEditingInterestId(null);
+      reload();
+    }
+    setInterestSaving(false);
   }
 
   function toggleArchiveSold(id: string) {
@@ -332,6 +407,145 @@ export default function AdminHandplockatDashboard() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Orders tabell */}
+          <div className="mb-12">
+            <h2 className="text-xl font-semibold mb-4">Köpförfrågningar ({purchaseInterests.length})</h2>
+            <div className="overflow-x-auto rounded-lg border shadow-sm">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="bg-muted text-left">
+                    <th className="p-3">Kategori</th>
+                    <th className="p-3">Önskemål</th>
+                    <th className="p-3">Budget</th>
+                    <th className="p-3">Område</th>
+                    <th className="p-3">Kontakt</th>
+                    <th className="p-3">Skapad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {purchaseInterests.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                        Inga köpförfrågningar ännu
+                      </td>
+                    </tr>
+                  )}
+                  {purchaseInterests.map((item) => {
+                    const category = parseField(item.message, "Kategori") || "-";
+                    const wish = parseField(item.message, "Önskemål") || "-";
+                    const budget = parseField(item.message, "Budget (SEK)") || "-";
+                    const area = parseField(item.message, "Område") || "-";
+                    const isEditing = editingInterestId === String(item.id);
+                    const fullName =
+                      String(item?.name || "").trim() ||
+                      `${String(item?.firstname || "").trim()} ${String(item?.lastname || "").trim()}`.trim() ||
+                      "-";
+
+                    return (
+                      <tr key={item.id} className="border-t hover:bg-muted/40 transition">
+                        <td className="p-3">
+                          {isEditing ? (
+                            <input
+                              value={interestDraft.category}
+                              onChange={(e) => setInterestDraft((prev) => ({ ...prev, category: e.target.value }))}
+                              className="w-full rounded border px-2 py-1 text-sm"
+                              placeholder="Kategori"
+                            />
+                          ) : (
+                            category
+                          )}
+                        </td>
+                        <td className="p-3 max-w-[340px] text-muted-foreground whitespace-pre-line">
+                          {isEditing ? (
+                            <textarea
+                              value={interestDraft.wish}
+                              onChange={(e) => setInterestDraft((prev) => ({ ...prev, wish: e.target.value }))}
+                              className="w-full rounded border px-2 py-1 text-sm min-h-[70px]"
+                              placeholder="Önskemål"
+                            />
+                          ) : (
+                            wish
+                          )}
+                        </td>
+                        <td className="p-3 whitespace-nowrap">
+                          {isEditing ? (
+                            <input
+                              value={interestDraft.budgetSek}
+                              onChange={(e) => setInterestDraft((prev) => ({ ...prev, budgetSek: e.target.value }))}
+                              className="w-full rounded border px-2 py-1 text-sm"
+                              placeholder="Budget"
+                            />
+                          ) : budget !== "-" ? `${budget} kr` : "-"}
+                        </td>
+                        <td className="p-3">
+                          {isEditing ? (
+                            <input
+                              value={interestDraft.area}
+                              onChange={(e) => setInterestDraft((prev) => ({ ...prev, area: e.target.value }))}
+                              className="w-full rounded border px-2 py-1 text-sm"
+                              placeholder="Område"
+                            />
+                          ) : (
+                            area
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <div>{fullName}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {showPersonalData && customer?.is_admin ? (item.email || "-") : maskEmail(item.email)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {showPersonalData && customer?.is_admin ? (item.phone || "-") : maskPhone(item.phone)}
+                          </div>
+                        </td>
+                        <td className="p-3 text-muted-foreground whitespace-nowrap">
+                          {item.created_at
+                            ? new Date(item.created_at).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" })
+                            : "-"}
+                          <div className="mt-2 flex gap-2">
+                            {isEditing ? (
+                              <>
+                                <button
+                                  onClick={() => savePurchaseInterest(item)}
+                                  disabled={interestSaving}
+                                  className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 text-xs font-semibold px-2 py-1 rounded"
+                                >
+                                  {interestSaving ? "Sparar..." : "Spara"}
+                                </button>
+                                <button
+                                  onClick={() => setEditingInterestId(null)}
+                                  className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 text-xs font-semibold px-2 py-1 rounded"
+                                >
+                                  Avbryt
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => startEditPurchaseInterest(item)}
+                                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold px-2 py-1 rounded"
+                                >
+                                  Redigera
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePurchaseInterest(String(item.id))}
+                                  disabled={interestDeletingId === String(item.id)}
+                                  className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold px-2 py-1 rounded"
+                                >
+                                  {interestDeletingId === String(item.id) ? "Tar bort..." : "Ta bort"}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

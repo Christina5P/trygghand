@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import Seo from "@/components/Seo";
 import AdminHandplockatDashboard from "./AdminHandplockatDashboard";
 
 export default function AdminHandplockat() {
@@ -51,54 +52,82 @@ export default function AdminHandplockat() {
   }, [loading, user]);
 
   if (loading || checkingAdmin || (user && isAdmin === null)) {
-    return <div className="p-8 text-center">Laddar...</div>;
+    return (
+      <>
+        <Seo
+          title="Admin Handplockat"
+          description="Administrera annonser, ordrar och köpförfrågningar i Handplockat."
+          canonical="https://www.trygghand.com/admin/handplockat"
+          robots="noindex,nofollow"
+        />
+        <div className="p-8 text-center">Laddar...</div>
+      </>
+    );
   }
 
   if (!user) {
     return (
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError(null);
-          if (!signIn) return setError("Inloggning ej tillgänglig");
-          const { error } = await signIn(email, password);
-          if (error) setError(error.message);
-        }}
-        className="max-w-sm mx-auto mt-16 p-6 bg-white rounded shadow"
-      >
-        <h2 className="text-xl font-bold mb-4">Admininloggning</h2>
-
-        <input
-          type="email"
-          placeholder="E-post"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mb-2 w-full border p-2 rounded"
-          required
+      <>
+        <Seo
+          title="Admin Handplockat"
+          description="Administrera annonser, ordrar och köpförfrågningar i Handplockat."
+          canonical="https://www.trygghand.com/admin/handplockat"
+          robots="noindex,nofollow"
         />
-        <input
-          type="password"
-          placeholder="Lösenord"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mb-4 w-full border p-2 rounded"
-          required
-        />
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded font-semibold"
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError(null);
+            if (!signIn) return setError("Inloggning ej tillgänglig");
+            const { error } = await signIn(email, password);
+            if (error) setError(error.message);
+          }}
+          className="max-w-sm mx-auto mt-16 p-6 bg-white rounded shadow"
         >
-          Logga in
-        </button>
+          <h2 className="text-xl font-bold mb-4">Admininloggning</h2>
 
-        {error && <div className="text-red-600 mt-2">{error}</div>}
-      </form>
+          <input
+            type="email"
+            placeholder="E-post"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mb-2 w-full border p-2 rounded"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Lösenord"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mb-4 w-full border p-2 rounded"
+            required
+          />
+
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-2 rounded font-semibold"
+          >
+            Logga in
+          </button>
+
+          {error && <div className="text-red-600 mt-2">{error}</div>}
+        </form>
+      </>
     );
   }
 
   if (!isAdmin) {
-    return <div className="p-8 text-center text-red-600">Ej behörig</div>;
+    return (
+      <>
+        <Seo
+          title="Admin Handplockat"
+          description="Administrera annonser, ordrar och köpförfrågningar i Handplockat."
+          canonical="https://www.trygghand.com/admin/handplockat"
+          robots="noindex,nofollow"
+        />
+        <div className="p-8 text-center text-red-600">Ej behörig</div>
+      </>
+    );
   }
 
   return <AdminHandplockatDashboard />;

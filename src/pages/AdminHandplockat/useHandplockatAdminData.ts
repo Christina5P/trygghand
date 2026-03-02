@@ -7,6 +7,7 @@ export function useHandplockatAdminData() {
   const [kpi, setKpi] = useState<any>(null);
   const [listings, setListings] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [purchaseInterests, setPurchaseInterests] = useState<any[]>([]);
   const [tick, setTick] = useState(0);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
@@ -30,6 +31,13 @@ export function useHandplockatAdminData() {
           .order("created_at", { ascending: false })
           .limit(50);
         if (ordersError) throw ordersError;
+
+        const { data: contactData, error: contactError } = await supabase
+          .from("contact_requests")
+          .select("id, firstname, lastname, name, email, phone, message, created_at")
+          .order("created_at", { ascending: false })
+          .limit(150);
+        if (contactError) throw contactError;
 
         if (!isMounted) return;
 
@@ -69,6 +77,11 @@ export function useHandplockatAdminData() {
 
         setListings(normalizedListings);
         setOrders(ordersData ?? []);
+        setPurchaseInterests(
+          (contactData ?? []).filter((row) =>
+            String(row?.message || "").includes("[Köpintresse Handplockat]")
+          )
+        );
       } catch (err: any) {
         if (!isMounted) return;
         setError(err.message || "Kunde inte hämta data");
@@ -80,5 +93,5 @@ export function useHandplockatAdminData() {
     return () => { isMounted = false; };
   }, [tick]);
 
-  return { loading, error, kpi, listings, orders, reload };
+  return { loading, error, kpi, listings, orders, purchaseInterests, reload };
 }
