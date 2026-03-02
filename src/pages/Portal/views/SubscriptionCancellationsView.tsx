@@ -61,10 +61,42 @@ export function SubscriptionCancellationsView({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [providerFilter, setProviderFilter] = useState<string>("all");
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [latestCustomerCommentAt, setLatestCustomerCommentAt] = useState<Record<string, string>>({});
+  const [unreadTick, setUnreadTick] = useState(0);
   const [customerOverrideByCancellationId, setCustomerOverrideByCancellationId] = useState<Record<string, string | null>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [archivedCustomerMap, setArchivedCustomerMap] = useState<Record<string, string>>({});
   const [showArchivedCancellations, setShowArchivedCancellations] = useState(false);
+
+  const lastReadAtKey = (cancellationId: string) =>
+    `adminPortal:cancellation:lastReadAt:${user?.id || ""}:${cancellationId}`;
+
+  const markCancellationAsRead = (cancellationId: string) => {
+    if (!user?.id) return;
+    try {
+      window.localStorage.setItem(lastReadAtKey(cancellationId), new Date().toISOString());
+      setUnreadTick((t) => t + 1);
+    } catch {
+      // ignore
+    }
+  };
+
+  const hasUnread = (cancellationId: string) => {
+    void unreadTick;
+    if (!user?.id) return false;
+    try {
+      const latestAt = latestCustomerCommentAt[cancellationId];
+      if (!latestAt) return false;
+      const latestMs = Date.parse(latestAt);
+      if (!Number.isFinite(latestMs)) return false;
+
+      const lastReadAt = window.localStorage.getItem(lastReadAtKey(cancellationId));
+      const lastReadMs = lastReadAt ? Date.parse(lastReadAt) : 0;
+      return latestMs > lastReadMs;
+    } catch {
+      return false;
+    }
+  };
 
   const customerMap = useMemo(() => {
     const map: Record<string, Customer> = {};
@@ -263,6 +295,50 @@ export function SubscriptionCancellationsView({
     if (next) setSelected(next);
   }, [effectiveCancellations, selected]);
 
+  useEffect(() => {
+    const cancellationIds = effectiveCancellations.map((c) => c.id).filter(Boolean);
+    if (cancellationIds.length === 0) {
+      setLatestCustomerCommentAt({});
+      return;
+    }
+
+    let isMounted = true;
+    const run = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("cancellation_comments")
+          .select("cancellation_id, user_id, created_at")
+          .in("cancellation_id", cancellationIds)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+
+        if (!isMounted) return;
+
+        const latestByCancellation: Record<string, string> = {};
+        for (const cancellation of effectiveCancellations) {
+          const latestCustomer = (data || []).find(
+            (row: any) =>
+              row?.cancellation_id === cancellation.id &&
+              row?.user_id === cancellation.customer_id &&
+              typeof row?.created_at === "string"
+          ) as { created_at?: string } | undefined;
+
+          latestByCancellation[cancellation.id] = latestCustomer?.created_at || "";
+        }
+
+        setLatestCustomerCommentAt(latestByCancellation);
+      } catch {
+        if (!isMounted) return;
+        setLatestCustomerCommentAt({});
+      }
+    };
+
+    void run();
+    return () => {
+      isMounted = false;
+    };
+  }, [effectiveCancellations]);
+
   const filtered = useMemo(() => {
     return effectiveCancellations.filter((c) => {
       const providerOk = showProviderFilter
@@ -319,6 +395,11 @@ export function SubscriptionCancellationsView({
 
   const activeFiltered = filtered.filter((c) => !isArchivedCustomer(c.customer_id ?? null));
   const archivedFiltered = filtered.filter((c) => isArchivedCustomer(c.customer_id ?? null));
+
+  const handleOpenCancellation = (item: SubscriptionCancellation) => {
+    markCancellationAsRead(item.id);
+    setSelected(item);
+  };
 
   return (
     <div className="space-y-4">
@@ -390,7 +471,9 @@ export function SubscriptionCancellationsView({
                     canEditStatus={isAdmin}
                     canDelete={isAdmin}
                     isDeleting={deletingId === c.id}
-                    onOpen={() => setSelected(c)}
+                    unread={hasUnread(c.id)}
+                    readStatusLabel={hasUnread(c.id) ? "Oläst" : "Läst"}
+                    onOpen={() => handleOpenCancellation(c)}
                     onStatusChange={(next) => handleStatusChange(c.id, next)}
                     onDelete={() => handleDeleteCancellation(c.id)}
                   />
@@ -426,7 +509,9 @@ export function SubscriptionCancellationsView({
                         canEditStatus={isAdmin}
                         canDelete={isAdmin}
                         isDeleting={deletingId === c.id}
-                        onOpen={() => setSelected(c)}
+                        unread={hasUnread(c.id)}
+                        readStatusLabel={hasUnread(c.id) ? "Oläst" : "Läst"}
+                        onOpen={() => handleOpenCancellation(c)}
                         onStatusChange={(next) => handleStatusChange(c.id, next)}
                         onDelete={() => handleDeleteCancellation(c.id)}
                       />

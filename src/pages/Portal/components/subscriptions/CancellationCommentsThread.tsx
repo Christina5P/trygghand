@@ -47,6 +47,18 @@ export function CancellationCommentsThread({
       });
   }, [comments, customerId, currentUserId]);
 
+  const lastReadAtMs = useMemo(() => {
+    if (!isAdmin || !currentUserId) return 0;
+    try {
+      const key = `adminPortal:cancellation:lastReadAt:${currentUserId}:${cancellationId}`;
+      const value = window.localStorage.getItem(key);
+      const parsed = value ? Date.parse(value) : 0;
+      return Number.isFinite(parsed) ? parsed : 0;
+    } catch {
+      return 0;
+    }
+  }, [cancellationId, currentUserId, isAdmin]);
+
   const send = async () => {
     if (!canComment) return;
     const message = text.trim();
@@ -109,6 +121,11 @@ export function CancellationCommentsThread({
                     {c.role === "admin" ? "Admin" : "Kund"}
                     <span className="opacity-70"> · </span>
                     <span className="opacity-70">{c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd HH:mm") : ""}</span>
+                    {isAdmin && c.role === "customer" && (
+                      <span className="ml-2 inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium opacity-100">
+                        {c.created_at && Date.parse(c.created_at) > lastReadAtMs ? "Oläst" : "Läst"}
+                      </span>
+                    )}
                   </div>
 
                   {canDelete(c) && (

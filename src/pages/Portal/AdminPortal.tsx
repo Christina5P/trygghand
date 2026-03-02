@@ -171,6 +171,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [gdprCleanupBusyId, setGdprCleanupBusyId] = useState<string | null>(null);
   const [gdprDeleteBusyId, setGdprDeleteBusyId] = useState<string | null>(null);
   const [gdprDownloadBusyId, setGdprDownloadBusyId] = useState<string | null>(null);
+  const [isGdprSectionOpen, setIsGdprSectionOpen] = useState(false);
 
   const checkIsAdmin = useCallback(async () => {
     if (!user?.id) return false;
@@ -937,9 +938,22 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
             <div className="space-y-8">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold text-trust-blue">GDPR-export (admin)</CardTitle>
-                  <CardDescription>Hantera inkomna GDPR-begäranden.</CardDescription>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-trust-blue">GDPR-export (admin)</CardTitle>
+                      <CardDescription>Hantera inkomna GDPR-begäranden.</CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsGdprSectionOpen((v) => !v)}
+                    >
+                      {isGdprSectionOpen ? "Fäll ihop" : "Öppna"}
+                    </Button>
+                  </div>
                 </CardHeader>
+                {isGdprSectionOpen ? (
                 <CardContent className="space-y-3">
                   <div className="text-sm text-muted-foreground">
                     "Skapa utdrag" bygger filen. "Ladda ner" hämtar den färdiga filen när status är klar.
@@ -1069,6 +1083,13 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                   </div>
 
                 </CardContent>
+                ) : (
+                  <CardContent>
+                    <div className="text-sm text-muted-foreground">
+                      GDPR-export är ihopfälld. Klicka på <strong>Öppna</strong> när du vill skapa eller hantera en begäran.
+                    </div>
+                  </CardContent>
+                )}
               </Card>
 
               {/* Aktiva kunder */}

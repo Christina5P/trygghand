@@ -284,6 +284,7 @@ const CasesView: React.FC<CasesViewProps> = ({
   const renderCaseCard = (caseItem: Case) => {
     const totalCount = caseCommentsCounts[caseItem.id] || 0;
     const unread = hasUnread(caseItem.id);
+    const readStatusLabel = unread ? "Oläst" : "Läst";
 
     return (
       <Card
@@ -298,6 +299,11 @@ const CasesView: React.FC<CasesViewProps> = ({
             Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}
             {caseItem.scheduled_date && ` | Schemalagt: ${format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}`}
           </CardDescription>
+          <div className="mt-2">
+            <Badge variant="outline" className={unread ? "border-amber-400 text-amber-700" : "border-emerald-400 text-emerald-700"}>
+              {readStatusLabel}
+            </Badge>
+          </div>
           <div
             className="mt-2 flex flex-wrap gap-2 sm:absolute sm:top-2 sm:right-2 sm:mt-0"
             onClick={(e) => e.stopPropagation()}

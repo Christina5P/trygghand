@@ -15,6 +15,8 @@ export function SubscriptionCancellationCard({
   canEditStatus,
   canDelete = false,
   isDeleting = false,
+  unread = false,
+  readStatusLabel = "Läst",
   onOpen,
   onStatusChange,
   onDelete,
@@ -27,6 +29,8 @@ export function SubscriptionCancellationCard({
   canEditStatus: boolean;
   canDelete?: boolean;
   isDeleting?: boolean;
+  unread?: boolean;
+  readStatusLabel?: string;
   onOpen: () => void;
   onStatusChange: (next: CancellationStatus) => void;
   onDelete?: () => void;
@@ -54,6 +58,11 @@ export function SubscriptionCancellationCard({
           <CardDescription className="truncate">
             {caseTypeLabel} · {item.custom_service_name || item.service_type || "Abonnemang"}
           </CardDescription>
+          <div className="mt-2">
+            <span className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-medium ${unread ? "border-amber-400 text-amber-700" : "border-emerald-400 text-emerald-700"}`}>
+              {readStatusLabel}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
           <div className={`rounded transition-colors ${getStatusColor(item.status)}`} style={{ minWidth: 110, minHeight: 28, display: 'flex', alignItems: 'center' }}>
@@ -86,9 +95,9 @@ export function SubscriptionCancellationCard({
       </CardHeader>
 
       <CommentBubble
-        className={`absolute bottom-2 right-2 transition-all ${count > 0 ? 'ring-2 ring-blue-400 scale-110' : ''}`}
+        className={`absolute bottom-2 right-2 transition-all ${unread ? 'ring-2 ring-blue-400 scale-110' : ''}`}
         count={count}
-        highlight={count > 0}
+        highlight={unread}
       />
 
       <CardContent className="space-y-1 text-sm">
