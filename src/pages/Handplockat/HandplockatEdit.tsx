@@ -142,6 +142,7 @@ export default function HandplockatEdit() {
   const [saving, setSaving] = useState(false);
 
   const originalInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const parsedValuation = useMemo(() => parseJsonInput(valuationJsonRaw), [valuationJsonRaw]);
 
@@ -314,6 +315,7 @@ export default function HandplockatEdit() {
     } finally {
       setUploadingOriginal(false);
       if (originalInputRef.current) originalInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
   };
 
@@ -780,6 +782,15 @@ export default function HandplockatEdit() {
                   onChange={(e) => handleOriginalUpload(e.target.files)}
                 />
 
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => handleOriginalUpload(e.target.files)}
+                />
+
                 <Button
                   type="button"
                   variant="outline"
@@ -787,6 +798,15 @@ export default function HandplockatEdit() {
                   disabled={uploadingOriginal}
                 >
                   {uploadingOriginal ? "Laddar upp…" : "Ladda upp originalbilder"}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={uploadingOriginal}
+                >
+                  Ta bild med kamera
                 </Button>
 
                 <Button

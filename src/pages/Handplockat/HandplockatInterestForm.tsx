@@ -162,6 +162,7 @@ export default function HandplockatInterestForm() {
             onChange={(e) => setBudgetSek(e.target.value)}
             placeholder="Budget (SEK)"
             type="number"
+            inputMode="numeric"
             min="0"
             disabled={isLoading}
           />
@@ -212,7 +213,7 @@ export default function HandplockatInterestForm() {
         {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
         {successMessage && <p className="text-sm text-trust-green">{successMessage}</p>}
 
-        <Button type="submit" size="sm" disabled={isLoading}>
+        <Button type="submit" size="sm" className="w-full sm:w-auto" disabled={isLoading}>
           {isLoading ? "Skickar..." : "Skicka köpintresse"}
         </Button>
       </form>

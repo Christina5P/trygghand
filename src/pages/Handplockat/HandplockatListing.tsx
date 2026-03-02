@@ -5,7 +5,7 @@ import { createHandplockatOrder, fetchHandplockatListingById, formatSek } from "
 import { isSupabaseConfigured } from "@/lib/supabase";
 import type { HandplockatListing as HandplockatListingType } from "@/types";
 import { Badge } from "@/components/ui/badge";
-import { Copy, ShieldCheck, Smartphone, Mail } from "lucide-react";
+import { ShieldCheck, Smartphone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const CONTACT_EMAIL = "kontakt@trygghand.com";
@@ -316,7 +316,7 @@ export default function HandplockatListing() {
                     <button
                       type="button"
                       onClick={() => setShowOrderForm((v) => !v)}
-                      className="inline-flex w-full items-center justify-center rounded-xl bg-[#1f305e] text-white py-3 text-sm font-semibold transition-colors hover:opacity-90"
+                      className="inline-flex w-full items-center justify-center rounded-xl bg-primary text-primary-foreground py-3 text-sm font-semibold transition-colors hover:opacity-90"
                     >
                       Köp
                     </button>
@@ -335,12 +335,16 @@ export default function HandplockatListing() {
                         value={orderPhone}
                         onChange={(e) => setOrderPhone(e.target.value)}
                         placeholder="Telefonnummer"
+                        type="tel"
+                        autoComplete="tel"
                         className="w-full rounded-xl border border-input px-3 py-2 text-sm"
                       />
                       <input
                         value={orderEmail}
                         onChange={(e) => setOrderEmail(e.target.value)}
                         placeholder="E-post"
+                        type="email"
+                        autoComplete="email"
                         className="w-full rounded-xl border border-input px-3 py-2 text-sm"
                       />
 

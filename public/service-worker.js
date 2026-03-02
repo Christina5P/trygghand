@@ -2,6 +2,8 @@ const CACHE_NAME = 'trygg-hand-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
+  '/handplockat',
+  '/handplockat.jpg',
   '/manifest.json',
   '/favicon.ico',
   '/favicon-16x16.png',
@@ -82,6 +84,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const isNavigationRequest = event.request.mode === 'navigate';
+
   event.respondWith((async () => {
     try {
       const response = await fetch(event.request);
@@ -99,6 +103,11 @@ self.addEventListener('fetch', (event) => {
 
       return response;
     } catch {
+      if (isNavigationRequest) {
+        const appShell = await caches.match('/index.html');
+        if (appShell) return appShell;
+      }
+
       // Return cached version if network fails
       const cachedResponse = await caches.match(event.request);
       return cachedResponse || new Response('Offline - denna resurs är inte tillgänglig offline', {
