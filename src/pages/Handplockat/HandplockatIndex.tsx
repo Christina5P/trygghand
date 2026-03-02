@@ -6,7 +6,7 @@ import type { HandplockatListing } from "@/types";
 import ListingCard from "@/components/ListingCard";
 import { ArrowRight, Search, ShieldCheck, Smartphone } from "lucide-react";
 
-const DEFAULT_DESCRIPTION = "Kop cirkulara fynd lokalt i Sundsvall. Handplockade annonser, förmedlade av Trygg Hand.";
+const DEFAULT_DESCRIPTION = "Köp cirkulära fynd lokalt i Sundsvall. Second hand, loppis och återbruk med handplockade annonser, förmedlade av Trygg Hand.";
 
 export default function HandplockatIndex() {
   const [listings, setListings] = useState<HandplockatListing[]>([]);
@@ -72,7 +72,7 @@ export default function HandplockatIndex() {
   return (
     <div className="min-h-[100svh] bg-background">
       <Seo
-        title="Handplockat Sundsvall | Cirkulär marknad"
+        title="Handplockat Sundsvall | Second hand, loppis och återbruk"
         description={DEFAULT_DESCRIPTION}
         canonical="https://www.trygghand.com/handplockat"
         ogImage={ogImage}

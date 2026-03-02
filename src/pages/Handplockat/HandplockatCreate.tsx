@@ -52,10 +52,20 @@ const getErrorMessage = (err: unknown, fallback: string) => {
   return fallback;
 };
 
+function isUuid(v: unknown): v is string {
+  return (
+    typeof v === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      v
+    )
+  );
+}
+
 function generateUuid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
+  // fallback (inte krypto-säker, men bättre än att sakna id)
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -316,7 +326,9 @@ export default function HandplockatCreate() {
         if (!mounted) return;
         if (!url) {
           setOriginalPreviewUrl("");
-          setOriginalPreviewError("Kunde inte skapa förhandsvisning. Kontrollera att bilden finns i Storage.");
+          setOriginalPreviewError(
+            "Kunde inte skapa förhandsvisning. Kontrollera att bilden finns i Storage."
+          );
           return;
         }
         setOriginalPreviewUrl(url);
@@ -424,8 +436,11 @@ export default function HandplockatCreate() {
     return `${objectLabel ?? "Värdering"} ${created ? `(${created})` : ""}`.trim();
   };
 
+  // ✅ Ny robust ensure: id måste vara UUID, annars skapas ett nytt.
   const ensureListingId = () => {
-    if (listingId?.trim()) return listingId.trim();
+    const current = typeof listingId === "string" ? listingId.trim() : "";
+    if (isUuid(current)) return current;
+
     const newId = generateUuid();
     setListingId(newId);
     return newId;
@@ -574,7 +589,10 @@ export default function HandplockatCreate() {
   ) => {
     const safeFile = await stripExif(file);
     const ext = (safeFile.name.split(".").pop() || "bin").toLowerCase();
-    const fileId = crypto.randomUUID();
+
+    // ✅ använd vår generator (faller tillbaka om crypto saknas)
+    const fileId = generateUuid();
+
     const filename = `${fileId}.${ext}`;
     const path = `${folder}/${filename}`;
 
@@ -725,7 +743,7 @@ export default function HandplockatCreate() {
     event.preventDefault();
     setError(null);
 
-    const finalId = ensureListingId();
+    const finalId = ensureListingId(); // ✅ alltid uuid här
     const finalPrice = Number(priceSek);
 
     if (!title.trim()) return setError("Rubrik saknas.");
@@ -792,11 +810,14 @@ export default function HandplockatCreate() {
         image_cutout: imageCutout.trim() || null,
       });
 
+      // ✅ om backend inte returnerar id av någon anledning, använd finalId
+      const createdId = (listing as any)?.id ? String((listing as any).id) : finalId;
+
       if (status === "draft") {
-  navigate(`/admin/handplockat/redigera/${listing.id}`);
-} else {
-  navigate(`/handplockat/${listing.id}`);
-}
+        navigate(`/admin/handplockat/redigera/${createdId}`);
+      } else {
+        navigate(`/handplockat/${createdId}`);
+      }
     } catch (err) {
       setError(getErrorMessage(err, "Kunde inte skapa annons."));
     } finally {

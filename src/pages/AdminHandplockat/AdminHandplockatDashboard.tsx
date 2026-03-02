@@ -58,12 +58,22 @@ export default function AdminHandplockatDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold">Handplockat Admin</h1>
-        <button
-          onClick={() => navigate("/admin/handplockat/skapa")}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg transition"
-        >
-          + Skapa ny annons
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate("/admin/handplockat/skapa")}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg transition"
+          >
+            + Skapa ny annons
+          </button>
+          <a
+            href="/handplockat"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold px-5 py-2 rounded-lg transition shadow"
+          >
+            Publik Handplockat-sida
+          </a>
+        </div>
       </div>
 
       {loading && <div className="p-8 text-center text-muted-foreground">Laddar data...</div>}

@@ -40,14 +40,15 @@ export default function HandplockatHeader() {
           </a>
         </nav>
 
-        <div className="hidden md:flex items-center gap-3 text-sm text-muted-foreground justify-end">
-          <span>En del av</span>
+        <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground justify-end">
+          <span>Handplockat är</span>
           <Link
             to="/"
             className="underline underline-offset-4 hover:text-primary"
           >
-            Trygg Hand
+            Trygg Hands
           </Link>
+          <span>marknadsplats för privatpersoner</span>
         </div>
 
         {/* Mobil meny */}
@@ -60,15 +61,16 @@ export default function HandplockatHeader() {
             >
               Alla fynd
             </a>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>En del av</span>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span>Handplockat är</span>
               <Link
                 to="/"
                 className="underline underline-offset-4 hover:text-primary"
                 onClick={() => setMenuOpen(false)}
               >
-                Trygg Hand
+                Trygg Hands
               </Link>
+              <span>marknadsplats för privatpersoner</span>
             </div>
           </div>
         )}

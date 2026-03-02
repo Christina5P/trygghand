@@ -41,6 +41,61 @@ const Header: React.FC<{ handplockatLogo?: boolean }> = ({ handplockatLogo }) =>
     setServicesOpen(false);
   };
 
+  function HandplockatNavBlock() {
+  const { pathname } = useLocation();
+
+  const isHandplockat =
+    pathname.startsWith("/handplockat") ||
+    pathname.startsWith("/portal/handplockat") ||
+    pathname.startsWith("/admin/handplockat");
+
+  return (
+    <Link
+      to="/handplockat"
+      className={[
+        "group ml-2 hidden items-center gap-3 rounded-2xl px-3 py-2 md:flex",
+        "border border-border bg-emerald-50/60 backdrop-blur",
+        "shadow-sm transition hover:shadow-md hover:bg-emerald-50/90",
+        isHandplockat ? "ring-1 ring-emerald-300/60" : "",
+      ].join(" ")}
+      aria-label="Gå till Handplockat"
+      title="Handplockat – Marknad för fynd och vintage"
+    >
+      {/* Logo / ikon */}
+      <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-emerald-50">
+        <img
+          src="/handplockat-favicon-32x32.png"
+          alt="Handplockat"
+          className="h-7 w-auto opacity-95 transition group-hover:scale-[1.02]"
+        />
+      </div>
+
+      {/* Text */}
+      <div className="leading-tight">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">
+            Handplockat
+          </span>
+
+          {/* Diskret badge */}
+          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-trust-blue">
+            Marknad
+          </span>
+        </div>
+
+        <div className="text-xs text-muted-foreground">
+          Fynd • Vintage • Hållbart
+        </div>
+      </div>
+
+      {/* Subtil pil */}
+      <span className="ml-1 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground">
+        →
+      </span>
+    </Link>
+  );
+}
+
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (desktopServicesRef.current && !desktopServicesRef.current.contains(e.target as Node)) {
@@ -160,8 +215,8 @@ const Header: React.FC<{ handplockatLogo?: boolean }> = ({ handplockatLogo }) =>
           <Link to="/#about" className="text-foreground hover:text-primary transition-colors">Om oss</Link>
           <Link to="/fragor-tips" className="text-foreground hover:text-primary transition-colors">Frågor och Tips</Link>
           <Link to="/#contact" className="text-foreground hover:text-primary transition-colors">Kontakt</Link>
-          {/* Diskret CTA till Handplockat */}
-          <a href="/handplockat" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2">Butik: Handplockat</a>
+          <HandplockatNavBlock />
+
         </nav>
 
         {/* Mobile hamburger menu */}
@@ -175,6 +230,26 @@ const Header: React.FC<{ handplockatLogo?: boolean }> = ({ handplockatLogo }) =>
             </summary>
             <nav className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-background border border-border shadow-lg z-50">
               <Link to="/#about" className="block px-4 py-2 text-foreground hover:bg-primary/10" onClick={closeMobileMenu}>Om oss</Link>
+              <div className="border-t border-border">
+                <Link
+                  to="/handplockat"
+                  className="block bg-emerald-50/60 px-4 py-3 text-foreground hover:bg-emerald-50/90"
+                  onClick={closeMobileMenu}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                        <img src="/handplockat-favicon-32x32.png" alt="Handplockat" className="h-5 w-auto" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold">Handplockat</div>
+                        <div className="text-xs text-muted-foreground">Marknad för fynd och vintage</div>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-trust-blue">Marknad</span>
+                  </div>
+                </Link>
+              </div>
               <div className="border-t border-border">
                 <button
                   type="button"

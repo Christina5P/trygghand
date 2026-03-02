@@ -200,8 +200,8 @@ export default function HandplockatListing() {
   return (
     <div className="min-h-[100svh] bg-background">
       <Seo
-        title={`${listing.title} | Handplockat Sundsvall`}
-        description={`Köp cirkulära fynd i Sundsvall. ${seoDescription}`}
+        title={`${listing.title} | Handplockat Sundsvall – second hand och loppis`}
+        description={`Köp cirkulära fynd i Sundsvall. Second hand, loppis och återbruk. ${seoDescription}`}
         canonical={`https://www.trygghand.com/handplockat/${listing.id}`}
         ogImage={ogImage}
         jsonLd={productJsonLd}

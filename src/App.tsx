@@ -94,6 +94,9 @@ const HandplockatLayout = React.lazy(
   () => import("@/components/HandplockatLayout")
 );
 
+const HandplockatTerms = React.lazy(
+  () => import("@/pages/Handplockat/HandplockatTerms")
+);
 // Admin Handplockat
 const AdminHandplockat = React.lazy(() => import("@/pages/AdminHandplockat"));
 
@@ -192,6 +195,11 @@ function App() {
                 <Route path="/clearcookies" element={<ClearCookies />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
+                <Route path="/handplockat-terms" element={<HandplockatTerms />} />
+                <Route
+                  path="/handplockatTerms"
+                  element={<Navigate to="/handplockat-terms" replace />}
+                />
 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />

@@ -1,5 +1,6 @@
 import React from "react";
 import HouseHandsLogo from "@/components/HouseHandsLogo";
+import { Link } from "react-router-dom";
 
 export default function HandplockatFooter() {
   return (
@@ -16,8 +17,11 @@ export default function HandplockatFooter() {
           </span>
         </div>
         <div className="flex flex-col md:items-end text-xs text-muted-foreground gap-1 justify-end">
-          <span>En del av Trygg Hand</span>
+          <span>Handplockat är Trygg Hands marknadsplats för privatpersoner</span>
           <span>Betalning via Swish · Enkelt och tryggt köp</span>
+          <Link to="/handplockat-terms" className="underline hover:text-foreground transition-colors">
+            Användarvillkor
+          </Link>
         </div>
       </div>
     </footer>

@@ -18,10 +18,12 @@ import type { Case, Customer, Comment, ServiceType } from "@/types";
 
 interface CasesViewProps {
   cases: Case[];
+  casesForCount?: Case[];
   customers: Customer[]; // För att skicka till NewCaseForm
   onDataUpdated: () => Promise<void> | void;
   onOpenCase?: (c: Case) => void;
   onUnreadCasesChange?: (count: number) => void;
+  onActiveCasesCountChange?: (count: number) => void;
 }
 
 // --- Hjälpfunktioner för status (kopierade från CustomerPortal) ---
@@ -54,10 +56,12 @@ const statusOptions = [
 
 const CasesView: React.FC<CasesViewProps> = ({
   cases,
+  casesForCount,
   customers,
   onDataUpdated,
   onOpenCase,
   onUnreadCasesChange,
+  onActiveCasesCountChange,
 }) => {
   const { user } = useAuth(); // Används för att skicka till NewCaseForm som default adminId
   const [isNewCaseDialogOpen, setIsNewCaseDialogOpen] = useState(false);
@@ -222,10 +226,12 @@ const CasesView: React.FC<CasesViewProps> = ({
     }
   }, [cases, fetchCaseCommentsCount, fetchLatestCustomerComment]);
 
+  const countCasesSource = casesForCount ?? cases;
+
   useEffect(() => {
     const missingIds = Array.from(
       new Set(
-        cases
+        countCasesSource
           .map((caseItem) => caseItem.customer_id)
           .filter((id): id is string => Boolean(id) && !customers.find((c) => c.id === id))
           .filter((id) => !archivedCustomerMap[id])
@@ -254,7 +260,7 @@ const CasesView: React.FC<CasesViewProps> = ({
     };
 
     void fetchArchivedNames();
-  }, [cases, customers, archivedCustomerMap]);
+  }, [countCasesSource, customers, archivedCustomerMap]);
 
   const getCustomerName = (customerId: string | null) => {
     if (!customerId) return "Okänd";
@@ -269,6 +275,11 @@ const CasesView: React.FC<CasesViewProps> = ({
 
   const activeCases = cases.filter((caseItem) => !isArchivedCustomer(caseItem.customer_id ?? null));
   const archivedCases = cases.filter((caseItem) => isArchivedCustomer(caseItem.customer_id ?? null));
+  const activeCasesCount = countCasesSource.filter((caseItem) => !isArchivedCustomer(caseItem.customer_id ?? null)).length;
+
+  useEffect(() => {
+    onActiveCasesCountChange?.(activeCasesCount);
+  }, [activeCasesCount, onActiveCasesCountChange]);
 
   const renderCaseCard = (caseItem: Case) => {
     const totalCount = caseCommentsCounts[caseItem.id] || 0;

@@ -142,6 +142,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     fetchValuations,   
   } = useAdminData();
   const [unreadCaseCount, setUnreadCaseCount] = useState(0);
+  const [activeCasesCount, setActiveCasesCount] = useState<number | null>(null);
   const hasUnreadMessages = unreadCaseCount > 0;
   const adminBannerText = useMemo(() => {
     if (!hasUnreadMessages) return "";
@@ -387,6 +388,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     if (statusFilter === "all") return cases;
     return (cases || []).filter((c) => normalizeStatus(c.status) === statusFilter);
   }, [cases, statusFilter]);
+
+  const casesCountLabel = activeCasesCount ?? cases.length;
 
   // Fullmakt templates (previously undefined) and helper to open/download them
   type FullmaktTemplate = { id: string; name: string; storage_path: string };
@@ -777,12 +780,12 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
   </Button>
 
   {/* Handplockat-länk efter kubikmätaren */}
-  <Button
-    onClick={() => window.location.assign("/handplockat")}
-    className="bg-gradient-to-r from-yellow-400 to-yellow-300 text-black px-4 py-2 rounded-full shadow-md hover:translate-y-[-1px] transition mt-4"
-  >
-    <span role="img" aria-label="hand">🤲</span> Handplockat – Köp & sälj
-  </Button>
+    <Button
+      onClick={() => window.location.assign("/admin/handplockat")}
+      className="bg-gradient-to-r from-yellow-400 to-yellow-300 text-black px-4 py-2 rounded-full shadow-md hover:translate-y-[-1px] transition mt-4"
+    >
+      <span role="img" aria-label="hand">🤲</span> Handplockat – Köp & sälj
+    </Button>
 </div>
  
  {/* Templates dialog */}
@@ -844,7 +847,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                         <SelectValue placeholder="Välj vy" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="cases">Ärenden ({cases.length})</SelectItem>
+                        <SelectItem value="cases">Ärenden ({casesCountLabel})</SelectItem>
                         <SelectItem value="subscriptions">Uppsägningar ({cancellations.length})</SelectItem>
                         <SelectItem value="valuations">Värderingar ({valuations.length})</SelectItem>
                         <SelectItem value="customers">Kunder ({customers.length})</SelectItem>
@@ -857,7 +860,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                   {/* Desktop/tablet: tabbar */}
           <TabsList className="hidden md:flex min-w-[900px] w-auto bg-slate-200/80 shadow-sm rounded-lg p-1 flex-wrap gap-1 border border-slate-200 overflow-x-auto">
                     <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="cases">
-                      Ärenden ({cases.length})
+                      Ärenden ({casesCountLabel})
                     </TabsTrigger>
                     <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="subscriptions">
                       Uppsägningar ({cancellations.length})
@@ -898,10 +901,12 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 
             <CasesView
               cases={filteredCases}
+              casesForCount={cases}
               customers={customers}
               onDataUpdated={fetchData}
              onOpenCase={(c) => setSelectedCase(c)}
               onUnreadCasesChange={setUnreadCaseCount}
+              onActiveCasesCountChange={setActiveCasesCount}
             />
           </TabsContent>
 
