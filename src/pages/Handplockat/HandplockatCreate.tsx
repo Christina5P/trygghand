@@ -744,14 +744,25 @@ export default function HandplockatCreate() {
     setError(null);
 
     const finalId = ensureListingId(); // ✅ alltid uuid här
-    const finalPrice = Number(priceSek);
+    const isDraft = status === "draft";
+    const rawPrice = Number(priceSek);
+    const finalPrice =
+      isDraft && (!priceSek.trim() || Number.isNaN(rawPrice)) ? 0 : rawPrice;
 
-    if (!title.trim()) return setError("Rubrik saknas.");
-    if (!description.trim()) return setError("Beskrivning saknas.");
-    if (Number.isNaN(finalPrice) || finalPrice <= 0)
-      return setError("Pris måste vara ett giltigt tal.");
+    if (!isDraft) {
+      if (!title.trim()) return setError("Rubrik saknas.");
+      if (!description.trim()) return setError("Beskrivning saknas.");
+      if (Number.isNaN(finalPrice) || finalPrice <= 0)
+        return setError("Pris måste vara ett giltigt tal.");
+    } else if (Number.isNaN(finalPrice) || finalPrice < 0) {
+      return setError("Pris måste vara 0 eller högre för utkast.");
+    }
+
     if (!user?.id)
       return setError("Kunde inte hitta användar-id (logga in igen).");
+
+    const safeTitle = title.trim() || "Utkast";
+    const safeDescription = description.trim();
 
     const sizeLine =
       itemType === "clothing" && sizeValue.trim()
@@ -777,12 +788,12 @@ export default function HandplockatCreate() {
 
     setSaving(true);
     try {
-      const listing = await createHandplockatListing({
+      const createdId = await createHandplockatListing({
         id: finalId,
         owner_id: user.id,
 
-        title: title.trim(),
-        description: [description.trim(), sizeLine, extraInfo.trim()]
+        title: safeTitle,
+        description: [safeDescription, sizeLine, extraInfo.trim()]
           .filter(Boolean)
           .join("\n\n"),
 
@@ -809,9 +820,6 @@ export default function HandplockatCreate() {
         images_original: normalizeUrlList(imagesOriginalRaw),
         image_cutout: imageCutout.trim() || null,
       });
-
-      // ✅ om backend inte returnerar id av någon anledning, använd finalId
-      const createdId = (listing as any)?.id ? String((listing as any).id) : finalId;
 
       if (status === "draft") {
         navigate(`/admin/handplockat/redigera/${createdId}`);
@@ -1323,7 +1331,7 @@ export default function HandplockatCreate() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Kontakt</label>
                   <div className="text-sm text-muted-foreground">
-                    {CONTACT_EMAIL}
+                    e-post: <br />{CONTACT_EMAIL}
                   </div>
                 </div>
               </div>

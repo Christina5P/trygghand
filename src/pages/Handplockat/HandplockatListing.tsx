@@ -31,7 +31,7 @@ function safeParseJson(value: HandplockatListingType["valuation_json"]) {
 }
 
 export default function HandplockatListing() {
-  const { listingId } = useParams();
+  const { id: listingId } = useParams();
   const [listing, setListing] = useState<HandplockatListingType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -308,7 +308,7 @@ export default function HandplockatListing() {
 
                     <div className="flex items-center justify-between gap-4">
                       <span className="text-muted-foreground">Kontakt</span>
-                      <span className="text-right">E-post</span>
+                      <span className="text-right">E-post {CONTACT_EMAIL}</span>
                     </div>
                   </div>
 

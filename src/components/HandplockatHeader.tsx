@@ -44,7 +44,7 @@ export default function HandplockatHeader() {
           <span>Handplockat är</span>
           <Link
             to="/"
-            className="underline underline-offset-4 hover:text-primary"
+            className="underline underline-offset-4 hover:text-primary font-semibold text-foreground"
           >
             Trygg Hands
           </Link>
@@ -65,10 +65,10 @@ export default function HandplockatHeader() {
               <span>Handplockat är</span>
               <Link
                 to="/"
-                className="underline underline-offset-4 hover:text-primary"
+                className="underline underline-offset-4 hover:text-primary font-semibold text-foreground"
                 onClick={() => setMenuOpen(false)}
               >
-                Trygg Hands
+                Trygg Hand
               </Link>
               <span>marknadsplats för privatpersoner</span>
             </div>

@@ -1,20 +1,59 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Seo from "@/components/Seo";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import { fetchHandplockatListings } from "@/lib/handplockat";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import type { HandplockatListing } from "@/types";
 import ListingCard from "@/components/ListingCard";
+import HandplockatInterestForm from "./HandplockatInterestForm";
 import { ArrowRight, Search, ShieldCheck, Smartphone } from "lucide-react";
 
 const DEFAULT_DESCRIPTION = "Köp cirkulära fynd lokalt i Sundsvall. Second hand, loppis och återbruk med handplockade annonser, förmedlade av Trygg Hand.";
 
+type HandplockatInterest = {
+  id: string;
+  category: string | null;
+  budgetSek: string | null;
+  area: string | null;
+  wish: string | null;
+  imageUrl: string | null;
+  createdAt: string | null;
+};
+
 export default function HandplockatIndex() {
+  const { customer, loading: authLoading } = useAuth();
   const [listings, setListings] = useState<HandplockatListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [interests, setInterests] = useState<HandplockatInterest[]>([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch("/api/handplockat-interest-list")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Kunde inte hämta köpintressen.");
+        return response.json();
+      })
+      .then((payload) => {
+        if (!isMounted) return;
+        const next = Array.isArray(payload?.interests) ? payload.interests : [];
+        setInterests(next);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setInterests([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -48,6 +87,8 @@ export default function HandplockatIndex() {
     () => listings.filter((listing) => listing.status === "available"),
     [listings]
   );
+
+  const canCreate = !authLoading && !!customer;
 
   // JSON-LD ItemList
   const itemListJsonLd = {
@@ -110,6 +151,14 @@ export default function HandplockatIndex() {
         </section>
 
         <section id="listings" className="container mx-auto px-4 py-12">
+          {canCreate && (
+            <div className="mb-6 flex items-center justify-end">
+              <Button asChild>
+                <Link to="/portal/handplockat/skapa">Skapa annons</Link>
+              </Button>
+            </div>
+          )}
+
           {loading && <p className="text-muted-foreground">Laddar annonser...</p>}
           {error && <p className="text-destructive">{error}</p>}
 
@@ -141,6 +190,61 @@ export default function HandplockatIndex() {
               </div>
             </div>
           )}
+
+          {!loading && !error && (
+            <div className="mt-10 rounded-3xl border border-border bg-card p-6 md:p-8">
+              <h3 className="text-xl font-semibold text-foreground">Aktuella köpintressen</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                Besökare kan se vad andra söker just nu. Kontaktuppgifter visas inte publikt.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Visar köpintressen från de senaste 90 dagarna.
+              </p>
+
+              {interests.length === 0 ? (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Inga publika köpintressen ännu. Skicka in ett köpintresse i formuläret ovan.
+                </p>
+              ) : (
+                <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {interests.map((interest) => (
+                    <div key={interest.id} className="rounded-2xl border border-border bg-background p-4 space-y-2">
+                      {interest.imageUrl && (
+                        <div className="aspect-[4/3] rounded-xl overflow-hidden bg-secondary/60">
+                          <img src={interest.imageUrl} alt="Köpintresse" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      {interest.category && (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Kategori:</span> {interest.category}
+                        </p>
+                      )}
+                      {interest.budgetSek && (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Budget:</span> {interest.budgetSek} kr
+                        </p>
+                      )}
+                      {interest.area && (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Område:</span> {interest.area}
+                        </p>
+                      )}
+                      {interest.wish && (
+                        <p className="text-sm text-muted-foreground whitespace-pre-line">{interest.wish}</p>
+                      )}
+                      {interest.createdAt && (
+                        <p className="text-xs text-muted-foreground">
+                          Inlagd {new Date(interest.createdAt).toLocaleDateString("sv-SE")}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!loading && !error && <HandplockatInterestForm />}
         </section>
       </main>
     </div>

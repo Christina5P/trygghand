@@ -88,7 +88,8 @@ async function sendOrderConfirmationToBuyer(
 Hej!
 
 Vi har tagit emot ditt köp av ${details.title}.
-Vi bekräftar via mail så snart som möjligt.
+Vi återkommer med plats och tid för överlämning.
+Om du vill ta kontakt direkt går det bra att maila till kontakt@trygghand.com 
 
 Handplockat | Sundsvall
 `;
@@ -198,14 +199,31 @@ serve(async (req: Request): Promise<Response> => {
     buyerEmail,
   };
 
+  const emailTracking: Record<string, unknown> = {
+    email_last_error: null,
+  };
+
   try {
     await sendOrderEmailToAdmin(brevoKey, emailFrom, adminEmail, details);
+    emailTracking.admin_email_sent_at = new Date().toISOString();
+
     if (buyerEmail) {
       await sendOrderConfirmationToBuyer(brevoKey, emailFrom, buyerEmail, details);
+      emailTracking.buyer_email_sent_at = new Date().toISOString();
     }
   } catch (err) {
     console.error("Email send error", err);
+    emailTracking.email_last_error = err instanceof Error ? err.message : String(err);
     // Ordern ska fortfarande gå igenom även om mail faller.
+  }
+
+  try {
+    await service
+      .from("handplockat_orders")
+      .update(emailTracking)
+      .eq("id", (orderRow as any)?.id);
+  } catch (trackingErr) {
+    console.error("Could not persist email tracking", trackingErr);
   }
 
   return json(200, { ok: true, order_id: (orderRow as any)?.id });

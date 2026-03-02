@@ -27,6 +27,16 @@ const getErrorMessage = (err: unknown, fallback: string) => {
   return fallback;
 };
 
+const toDateInputValue = (value: string | null | undefined): string => {
+  if (!value) return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
+};
+
 const isHttpUrl = (v: string) => /^https?:\/\//i.test(v);
 
 async function tryCreateSignedUrl(path: string, expiresIn = 600): Promise<string | null> {
@@ -194,7 +204,7 @@ export default function HandplockatEdit() {
 
         setPickupArea(listing.pickup_area ?? "Sundsvall");
         setPickupWindow(listing.pickup_window ?? "");
-        setPickupDeadlineAt((listing as any).pickup_deadline_at ?? "");
+        setPickupDeadlineAt(toDateInputValue((listing as any).pickup_deadline_at));
 
         setValuationJsonRaw(listing.valuation_json ? JSON.stringify(listing.valuation_json, null, 2) : "");
         setImagesOriginalRaw(Array.isArray(listing.images_original) ? listing.images_original.join("\n") : "");
@@ -408,11 +418,20 @@ export default function HandplockatEdit() {
     setError(null);
 
     if (!id) return setError("Annons-ID saknas.");
-    if (!title.trim()) return setError("Rubrik saknas.");
-    if (!description.trim()) return setError("Beskrivning saknas.");
+    const isDraft = status === "draft";
+    const rawPrice = Number(priceSek);
+    const finalPrice = isDraft && (!priceSek.trim() || Number.isNaN(rawPrice)) ? 0 : rawPrice;
 
-    const finalPrice = Number(priceSek);
-    if (Number.isNaN(finalPrice) || finalPrice <= 0) return setError("Pris måste vara ett giltigt tal.");
+    if (!isDraft) {
+      if (!title.trim()) return setError("Rubrik saknas.");
+      if (!description.trim()) return setError("Beskrivning saknas.");
+      if (Number.isNaN(finalPrice) || finalPrice <= 0) return setError("Pris måste vara ett giltigt tal.");
+    } else if (Number.isNaN(finalPrice) || finalPrice < 0) {
+      return setError("Pris måste vara 0 eller högre för utkast.");
+    }
+
+    const safeTitle = title.trim() || "Utkast";
+    const safeDescription = description.trim();
 
     const sizeLine = itemType === "clothing" && sizeValue.trim() ? `Storlek: ${sizeValue.trim()}` : "";
 
@@ -433,8 +452,8 @@ export default function HandplockatEdit() {
     try {
       await updateHandplockatListing({
         id,
-        title: title.trim(),
-        description: [description.trim(), sizeLine, extraInfo.trim()].filter(Boolean).join("\n\n"),
+        title: safeTitle,
+        description: [safeDescription, sizeLine, extraInfo.trim()].filter(Boolean).join("\n\n"),
         price_sek: finalPrice,
 
 
@@ -509,6 +528,7 @@ export default function HandplockatEdit() {
   // Behörighet: admin eller owner_id
   const isOwner = !!customer?.id && !!ownerId && customer.id === ownerId;
   const canEdit = !!customer?.is_admin || isOwner;
+  const CONTACT_EMAIL = "kontakt@trygghand.com";
 
   if (!authLoading && !canEdit) {
     return (
@@ -700,7 +720,7 @@ export default function HandplockatEdit() {
                     value={pickupDeadlineAt}
                     onChange={(e) => setPickupDeadlineAt(e.target.value)}
                     className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                    type="datetime-local"
+                    type="date"
                   />
                 </div>
               </div>
@@ -741,7 +761,7 @@ export default function HandplockatEdit() {
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground">Kontakt vid frågor: {COMPANY_EMAIL}</p>
+              <p className="text-sm text-muted-foreground">Kontakt: e-post: <br />{CONTACT_EMAIL}</p>
             </div>
 
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">

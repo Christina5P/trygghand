@@ -17,7 +17,9 @@ export default function HandplockatFooter() {
           </span>
         </div>
         <div className="flex flex-col md:items-end text-xs text-muted-foreground gap-1 justify-end">
-          <span>Handplockat är Trygg Hands marknadsplats för privatpersoner</span>
+          <span>
+            Handplockat är <strong className="font-semibold text-foreground">Trygg Hand</strong>s marknadsplats för privatpersoner
+          </span>
           <span>Betalning via Swish · Enkelt och tryggt köp</span>
           <Link to="/handplockat-terms" className="underline hover:text-foreground transition-colors">
             Användarvillkor

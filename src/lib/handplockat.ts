@@ -40,11 +40,11 @@ export async function fetchHandplockatListingById(
   return raw.data ?? null;
 }
 
-export async function createHandplockatListing(input: ListingInput): Promise<HandplockatListing> {
+export async function createHandplockatListing(input: ListingInput): Promise<string> {
   const { data, error } = await supabase
     .from("handplockat_listings")
-    .insert(input)
-    .select("*")
+    .insert([input])
+    .select("id")
     .single();
 
   if (error) {
@@ -54,7 +54,11 @@ export async function createHandplockatListing(input: ListingInput): Promise<Han
     throw error;
   }
 
-  return data as HandplockatListing;
+  if (!data?.id) {
+    throw new Error("Annons id saknas efter insert");
+  }
+
+  return String(data.id);
 }
 
 export async function updateHandplockatListing(input: Partial<ListingInput> & { id: string }): Promise<HandplockatListing> {

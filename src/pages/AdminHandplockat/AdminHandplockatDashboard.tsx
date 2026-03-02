@@ -1,33 +1,86 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useHandplockatAdminData } from "./useHandplockatAdminData";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 
-const STATUS_LABELS: Record<string, string> = {
+const LISTING_STATUS_LABELS: Record<string, string> = {
+  draft: "Utkast",
   available: "Tillgänglig",
   reserved: "Reserverad",
   sold: "Såld",
-  hidden: "Dold",
+};
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  pending: "Väntande",
+  reserved: "Reserverad",
+  cancelled: "Avbruten",
+  completed: "Slutförd",
 };
 
 const STATUS_COLORS: Record<string, string> = {
+  draft: "bg-blue-100 text-blue-800",
   available: "bg-green-100 text-green-800",
   reserved: "bg-yellow-100 text-yellow-800",
   sold: "bg-gray-100 text-gray-600",
-  hidden: "bg-red-100 text-red-700",
+  pending: "bg-amber-100 text-amber-800",
+  cancelled: "bg-red-100 text-red-700",
+  completed: "bg-emerald-100 text-emerald-800",
 };
 
 function formatSek(val: number) {
   return new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(val) + " kr";
 }
 
+function maskEmail(value: string | null | undefined): string {
+  const email = String(value || "").trim();
+  if (!email || !email.includes("@")) return "-";
+  const [name, domain] = email.split("@");
+  const safeName = name.length <= 2 ? `${name[0] || "*"}*` : `${name.slice(0, 2)}***`;
+  return `${safeName}@${domain}`;
+}
+
+function maskPhone(value: string | null | undefined): string {
+  const phone = String(value || "").trim();
+  if (!phone) return "-";
+  const clean = phone.replace(/\s+/g, "");
+  if (clean.length <= 4) return "***";
+  return `${clean.slice(0, 3)}***${clean.slice(-2)}`;
+}
+
 export default function AdminHandplockatDashboard() {
   const { loading, error, kpi, listings, orders, reload } = useHandplockatAdminData();
+  const { customer } = useAuth();
   const navigate = useNavigate();
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
+  const [orderStatusUpdating, setOrderStatusUpdating] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null);
+  const [listingSort, setListingSort] = useState<
+    "default" | "title-asc" | "title-desc" | "status-asc" | "status-desc"
+  >("default");
+  const [showPersonalData, setShowPersonalData] = useState(false);
+  const [hideSold, setHideSold] = useState(false);
+  const [showArchivedSold, setShowArchivedSold] = useState(false);
+  const [archivedSoldIds, setArchivedSoldIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("handplockat_admin_archived_sold_ids");
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("handplockat_admin_archived_sold_ids", JSON.stringify(archivedSoldIds));
+    } catch {
+      // ignore storage errors
+    }
+  }, [archivedSoldIds]);
 
   async function handleStatusChange(id: string, newStatus: string) {
     setStatusUpdating(id);
@@ -39,6 +92,57 @@ export default function AdminHandplockatDashboard() {
     else reload();
     setStatusUpdating(null);
   }
+
+  async function handleOrderStatusChange(id: string, newStatus: string) {
+    setOrderStatusUpdating(id);
+    const { error } = await supabase
+      .from("handplockat_orders")
+      .update({ status: newStatus })
+      .eq("id", id);
+    if (error) alert("Kunde inte uppdatera orderstatus: " + error.message);
+    else reload();
+    setOrderStatusUpdating(null);
+  }
+
+  function toggleArchiveSold(id: string) {
+    setArchivedSoldIds((prev) =>
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
+    );
+  }
+
+  const visibleListings = useMemo(() => {
+    let next = [...listings];
+    const statusRank: Record<string, number> = {
+      draft: 1,
+      available: 2,
+      reserved: 3,
+      sold: 4,
+    };
+
+    if (hideSold) {
+      next = next.filter((l) => l.status !== "sold");
+    }
+
+    if (!showArchivedSold) {
+      next = next.filter((l) => !(l.status === "sold" && archivedSoldIds.includes(String(l.id))));
+    }
+
+    if (listingSort !== "default") {
+      next.sort((a, b) => {
+        const av = String(a?.title || "");
+        const bv = String(b?.title || "");
+        const as = statusRank[String(a?.status || "")] ?? 99;
+        const bs = statusRank[String(b?.status || "")] ?? 99;
+
+        if (listingSort === "title-asc") return av.localeCompare(bv, "sv-SE");
+        if (listingSort === "title-desc") return bv.localeCompare(av, "sv-SE");
+        if (listingSort === "status-asc") return as !== bs ? as - bs : av.localeCompare(bv, "sv-SE");
+        return as !== bs ? bs - as : av.localeCompare(bv, "sv-SE");
+      });
+    }
+
+    return next;
+  }, [listings, hideSold, showArchivedSold, archivedSoldIds, listingSort]);
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -84,10 +188,10 @@ export default function AdminHandplockatDashboard() {
           {/* KPI-kort */}
           <div className="grid gap-4 grid-cols-2 lg:grid-cols-5 mb-10">
             {[
+              { label: "Utkast", value: kpi?.draft },
               { label: "Tillgängliga", value: kpi?.available },
               { label: "Reserverade", value: kpi?.reserved },
               { label: "Sålda", value: kpi?.sold },
-              { label: "Reserv. (7 dagar)", value: kpi?.reservations_7d },
               { label: "Sålt värde (30 dagar)", value: kpi?.sold_sum_30d ? formatSek(kpi.sold_sum_30d) : "0 kr" },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-xl bg-card p-5 shadow border">
@@ -99,7 +203,45 @@ export default function AdminHandplockatDashboard() {
 
           {/* Listings tabell */}
           <div className="mb-12">
-            <h2 className="text-xl font-semibold mb-4">Objekt ({listings.length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="text-xl font-semibold">Objekt ({visibleListings.length})</h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={listingSort}
+                  onChange={(e) =>
+                    setListingSort(
+                      e.target.value as
+                        | "default"
+                        | "title-asc"
+                        | "title-desc"
+                        | "status-asc"
+                        | "status-desc"
+                    )
+                  }
+                  className="text-sm border rounded px-2 py-1"
+                >
+                  <option value="default">Sortering: Senast först</option>
+                  <option value="title-asc">Rubrik A–Ö</option>
+                  <option value="title-desc">Rubrik Ö–A</option>
+                  <option value="status-asc">Status: Utkast → Såld</option>
+                  <option value="status-desc">Status: Såld → Utkast</option>
+                </select>
+
+                <button
+                  onClick={() => setHideSold((v) => !v)}
+                  className="text-sm border rounded px-3 py-1 hover:bg-muted"
+                >
+                  {hideSold ? "Visa sålda" : "Dölj sålda"}
+                </button>
+
+                <button
+                  onClick={() => setShowArchivedSold((v) => !v)}
+                  className="text-sm border rounded px-3 py-1 hover:bg-muted"
+                >
+                  {showArchivedSold ? "Dölj arkiverade" : "Visa arkiverade"}
+                </button>
+              </div>
+            </div>
             <div className="overflow-x-auto rounded-lg border shadow-sm">
               <table className="min-w-full text-sm">
                 <thead>
@@ -114,14 +256,14 @@ export default function AdminHandplockatDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {listings.length === 0 && (
+                  {visibleListings.length === 0 && (
                     <tr>
                       <td colSpan={7} className="p-6 text-center text-muted-foreground">
                         Inga annonser ännu
                       </td>
                     </tr>
                   )}
-                  {listings.map((l) => (
+                  {visibleListings.map((l) => (
                     <tr key={l.id} className="border-t hover:bg-muted/40 transition">
                       <td className="p-3">
                         {l.image_cutout ? (
@@ -150,7 +292,7 @@ export default function AdminHandplockatDashboard() {
                           onChange={(e) => handleStatusChange(l.id, e.target.value)}
                           className={`text-xs font-semibold px-2 py-1 rounded border cursor-pointer ${STATUS_COLORS[l.status] ?? "bg-gray-100"}`}
                         >
-                          {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                          {Object.entries(LISTING_STATUS_LABELS).map(([val, label]) => (
                             <option key={val} value={val}>{label}</option>
                           ))}
                         </select>
@@ -178,6 +320,14 @@ export default function AdminHandplockatDashboard() {
                           >
                             {deletingId === l.id ? "..." : "Ta bort"}
                           </button>
+                          {l.status === "sold" && (
+                            <button
+                              onClick={() => toggleArchiveSold(String(l.id))}
+                              className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 text-xs font-semibold px-3 py-1.5 rounded transition"
+                            >
+                              {archivedSoldIds.includes(String(l.id)) ? "Återställ" : "Arkivera"}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -189,7 +339,15 @@ export default function AdminHandplockatDashboard() {
 
           {/* Orders tabell */}
           <div>
-            <h2 className="text-xl font-semibold mb-4">Orders ({orders.length})</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="text-xl font-semibold">Orders ({orders.length})</h2>
+              <button
+                onClick={() => setShowPersonalData((v) => !v)}
+                className="text-sm border rounded px-3 py-1 hover:bg-muted"
+              >
+                {showPersonalData ? "Dölj personuppgifter" : "Visa personuppgifter"}
+              </button>
+            </div>
             <div className="overflow-x-auto rounded-lg border shadow-sm">
               <table className="min-w-full text-sm">
                 <thead>
@@ -221,13 +379,24 @@ export default function AdminHandplockatDashboard() {
                       </td>
                       <td className="p-3">
                         <div>{o.buyer_name ?? "-"}</div>
-                        <div className="text-xs text-muted-foreground">{o.buyer_email}</div>
-                        <div className="text-xs text-muted-foreground">{o.buyer_phone}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {showPersonalData && customer?.is_admin ? (o.buyer_email || "-") : maskEmail(o.buyer_email)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {showPersonalData && customer?.is_admin ? (o.buyer_phone || "-") : maskPhone(o.buyer_phone)}
+                        </div>
                       </td>
                       <td className="p-3">
-                        <span className={`text-xs font-semibold px-2 py-1 rounded ${STATUS_COLORS[o.status] ?? "bg-gray-100"}`}>
-                          {STATUS_LABELS[o.status] ?? o.status}
-                        </span>
+                        <select
+                          value={o.status}
+                          disabled={orderStatusUpdating === o.id}
+                          onChange={(e) => handleOrderStatusChange(o.id, e.target.value)}
+                          className={`text-xs font-semibold px-2 py-1 rounded border cursor-pointer ${STATUS_COLORS[o.status] ?? "bg-gray-100"}`}
+                        >
+                          {Object.entries(ORDER_STATUS_LABELS).map(([val, label]) => (
+                            <option key={val} value={val}>{label}</option>
+                          ))}
+                        </select>
                       </td>
                       <td className="p-3 text-xs space-y-0.5">
                         <div className={o.admin_email_sent_at ? "text-green-700" : "text-muted-foreground"}>

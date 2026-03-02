@@ -37,15 +37,29 @@ export function useHandplockatAdminData() {
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
+        const openOrderListingIds = new Set(
+          (ordersData ?? [])
+            .filter((order) => order?.listing_id && ["pending", "reserved"].includes(String(order.status)))
+            .map((order) => String(order.listing_id))
+        );
+
+        const normalizedListings = (listingsData ?? []).map((listing) => {
+          if (openOrderListingIds.has(String(listing.id)) && listing.status === "available") {
+            return { ...listing, status: "reserved" };
+          }
+          return listing;
+        });
+
         setKpi({
-          available:       listingsData?.filter((l) => l.status === "available").length ?? 0,
-          reserved:        listingsData?.filter((l) => l.status === "reserved").length ?? 0,
-          sold:            listingsData?.filter((l) => l.status === "sold").length ?? 0,
-          reservations_7d: listingsData?.filter((l) =>
+          draft:           normalizedListings.filter((l) => l.status === "draft").length ?? 0,
+          available:       normalizedListings.filter((l) => l.status === "available").length ?? 0,
+          reserved:        normalizedListings.filter((l) => l.status === "reserved").length ?? 0,
+          sold:            normalizedListings.filter((l) => l.status === "sold").length ?? 0,
+          reservations_7d: normalizedListings.filter((l) =>
             l.status === "reserved" &&
             new Date(l.updated_at ?? l.created_at) >= sevenDaysAgo
           ).length ?? 0,
-          sold_sum_30d: listingsData
+          sold_sum_30d: normalizedListings
             ?.filter((l) =>
               l.status === "sold" &&
               new Date(l.updated_at ?? l.created_at) >= thirtyDaysAgo
@@ -53,7 +67,7 @@ export function useHandplockatAdminData() {
             .reduce((sum, l) => sum + (l.price_sek ?? 0), 0) ?? 0,
         });
 
-        setListings(listingsData ?? []);
+        setListings(normalizedListings);
         setOrders(ordersData ?? []);
       } catch (err: any) {
         if (!isMounted) return;

@@ -1,5 +1,6 @@
 /api/templates/download  /.netlify/functions/templates-download  200!
 /api/templates/list      /.netlify/functions/templates-list      200!
 /api/contact-request     /.netlify/functions/contact-request     200!
+/api/handplockat-interest-list  /.netlify/functions/handplockat-interest-list  200!
 
 /*                     /index.html                              200

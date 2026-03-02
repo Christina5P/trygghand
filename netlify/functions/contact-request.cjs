@@ -72,6 +72,9 @@ exports.handler = async (event) => {
   const phone = ((body?.phone ?? "") + "").trim();
   const message = ((body?.message ?? "") + "").trim();
   const gdpr_consent = !!body?.gdpr_consent;
+  const interestImageBase64 = typeof body?.interest_image_base64 === "string" ? body.interest_image_base64.trim() : "";
+  const interestImageName = typeof body?.interest_image_name === "string" ? body.interest_image_name.trim() : "";
+  const interestImageType = typeof body?.interest_image_type === "string" ? body.interest_image_type.trim() : "";
 
   if (!firstname || !phone) {
     return json(400, { error: "firstname and phone are required" });
@@ -86,12 +89,59 @@ exports.handler = async (event) => {
   try {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    let interestImagePath = null;
+    if (interestImageBase64) {
+      if (!interestImageType.startsWith("image/")) {
+        return json(400, { error: "Invalid image type" });
+      }
+
+      let fileBuffer;
+      try {
+        fileBuffer = Buffer.from(interestImageBase64, "base64");
+      } catch {
+        return json(400, { error: "Invalid image payload" });
+      }
+
+      if (!fileBuffer || fileBuffer.length === 0) {
+        return json(400, { error: "Invalid image payload" });
+      }
+
+      const maxBytes = 5 * 1024 * 1024;
+      if (fileBuffer.length > maxBytes) {
+        return json(400, { error: "Image too large (max 5 MB)" });
+      }
+
+      const extFromType = (interestImageType.split("/")[1] || "jpg").toLowerCase();
+      const sanitizedExt = extFromType.replace(/[^a-z0-9]/g, "") || "jpg";
+      const random = Math.random().toString(36).slice(2, 8);
+      const filename = `${Date.now()}-${random}.${sanitizedExt}`;
+      const storagePath = `handplockat-interest/${filename}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("handplockat-private")
+        .upload(storagePath, fileBuffer, {
+          contentType: interestImageType,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error("[contact-request] image upload error", uploadError);
+        return json(500, { error: "Failed to upload image" });
+      }
+
+      interestImagePath = storagePath;
+    }
+
     const payload = {
       firstname,
       lastname: lastname || "",
       email,
       phone,
-      message,
+      message: [
+        message,
+        interestImagePath ? `Bild (intern path): ${interestImagePath}` : "",
+        interestImageName ? `Bildefil: ${interestImageName}` : "",
+      ].filter(Boolean).join("\n"),
       gdpr_consent,
     };
 

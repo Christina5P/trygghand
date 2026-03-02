@@ -24,6 +24,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/handplockat-interest-list"
+  to = "/.netlify/functions/handplockat-interest-list"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
