@@ -37,6 +37,22 @@ const toDateInputValue = (value: string | null | undefined): string => {
   return parsed.toISOString().slice(0, 10);
 };
 
+function getCutoutStoragePath(cutoutUrl: string, fallbackListingId: string): string {
+  try {
+    const parsed = new URL(cutoutUrl, window.location.origin);
+    const marker = "/handplockat-public/";
+    const idx = parsed.pathname.indexOf(marker);
+    if (idx >= 0) {
+      const path = parsed.pathname.slice(idx + marker.length);
+      if (path) return decodeURIComponent(path);
+    }
+  } catch {
+    // ignore and fallback
+  }
+
+  return `handplockat/${fallbackListingId}/1.png`;
+}
+
 const isHttpUrl = (v: string) => /^https?:\/\//i.test(v);
 
 async function tryCreateSignedUrl(path: string, expiresIn = 600): Promise<string | null> {
@@ -141,8 +157,22 @@ export default function HandplockatEdit() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorReady, setEditorReady] = useState(false);
+  const [editorError, setEditorError] = useState<string | null>(null);
+  const [savingEditedImage, setSavingEditedImage] = useState(false);
+  const [brushSize, setBrushSize] = useState(26);
+  const [zoom2x, setZoom2x] = useState(false);
+  const [undoStack, setUndoStack] = useState<string[]>([]);
+  const [redoStack, setRedoStack] = useState<string[]>([]);
+
   const originalInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const editCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawingRef = useRef(false);
+  const strokeDirtyRef = useRef(false);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const baseSnapshotRef = useRef<string | null>(null);
 
   const parsedValuation = useMemo(() => parseJsonInput(valuationJsonRaw), [valuationJsonRaw]);
 
@@ -266,6 +296,222 @@ export default function HandplockatEdit() {
       isMounted = false;
     };
   }, [firstOriginal]);
+
+  const getCanvasPoint = (
+    event: React.PointerEvent<HTMLCanvasElement>
+  ): { x: number; y: number } => {
+    const canvas = event.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
+    const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const drawSnapshotToCanvas = (snapshot: string) => {
+    const canvas = editCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.drawImage(img, 0, 0);
+    };
+    img.src = snapshot;
+  };
+
+  const pushUndoSnapshot = () => {
+    const canvas = editCanvasRef.current;
+    if (!canvas) return;
+    try {
+      const snap = canvas.toDataURL("image/png");
+      setUndoStack((prev) => [...prev, snap].slice(-20));
+      setRedoStack([]);
+    } catch {
+      setEditorError("Kunde inte spara historik för ångra/gör om.");
+    }
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length <= 1) return;
+    const current = undoStack[undoStack.length - 1];
+    const previous = undoStack[undoStack.length - 2];
+    drawSnapshotToCanvas(previous);
+    setUndoStack((prev) => prev.slice(0, -1));
+    setRedoStack((prev) => [...prev, current].slice(-20));
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    drawSnapshotToCanvas(next);
+    setRedoStack((prev) => prev.slice(0, -1));
+    setUndoStack((prev) => [...prev, next].slice(-20));
+  };
+
+  const handleResetEditor = () => {
+    const base = baseSnapshotRef.current;
+    if (!base) return;
+    drawSnapshotToCanvas(base);
+    setUndoStack([base]);
+    setRedoStack([]);
+  };
+
+  const handleCanvasPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!editorReady) return;
+    const canvas = event.currentTarget;
+    const point = getCanvasPoint(event);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    drawingRef.current = true;
+    strokeDirtyRef.current = false;
+    lastPointRef.current = point;
+    canvas.setPointerCapture(event.pointerId);
+
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(0,0,0,1)";
+    ctx.lineWidth = brushSize;
+
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+    strokeDirtyRef.current = true;
+  };
+
+  const handleCanvasPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!drawingRef.current || !editorReady) return;
+    event.preventDefault();
+
+    const canvas = event.currentTarget;
+    const point = getCanvasPoint(event);
+    const from = lastPointRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(0,0,0,1)";
+    ctx.lineWidth = brushSize;
+
+    if (from) {
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(point.x, point.y);
+      ctx.stroke();
+      strokeDirtyRef.current = true;
+    }
+
+    lastPointRef.current = point;
+  };
+
+  const finishDrawing = () => {
+    if (!drawingRef.current) return;
+    drawingRef.current = false;
+    lastPointRef.current = null;
+    if (strokeDirtyRef.current) pushUndoSnapshot();
+    strokeDirtyRef.current = false;
+  };
+
+  const handleSaveEditedImage = async () => {
+    if (!isSupabaseConfigured) {
+      setEditorError("Tjänsten är inte konfigurerad i denna miljö.");
+      return;
+    }
+
+    const canvas = editCanvasRef.current;
+    if (!canvas) return;
+
+    const listingId = ensureListingId();
+    if (!listingId) return;
+
+    setSavingEditedImage(true);
+    setEditorError(null);
+
+    try {
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (!result) return reject(new Error("Kunde inte skapa PNG från canvas."));
+          resolve(result);
+        }, "image/png");
+      });
+
+      const path = getCutoutStoragePath(imageCutout.trim(), listingId);
+
+      const { error: uploadError } = await supabase.storage
+        .from("handplockat-public")
+        .upload(path, blob, { upsert: true, contentType: "image/png" });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("handplockat-public").getPublicUrl(path);
+      const freshUrl = `${data.publicUrl}?t=${Date.now()}`;
+      setImageCutout(freshUrl);
+      setEditorOpen(false);
+      setZoom2x(false);
+    } catch (err) {
+      setEditorError(getErrorMessage(err, "Kunde inte spara redigerad annonsbild."));
+    } finally {
+      setSavingEditedImage(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!editorOpen || !imageCutout.trim()) return;
+
+    let cancelled = false;
+    setEditorReady(false);
+    setEditorError(null);
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (cancelled) return;
+      const canvas = editCanvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        setEditorError("Kunde inte starta bildredigeraren.");
+        return;
+      }
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.drawImage(img, 0, 0);
+
+      try {
+        const snapshot = canvas.toDataURL("image/png");
+        baseSnapshotRef.current = snapshot;
+        setUndoStack([snapshot]);
+        setRedoStack([]);
+        setEditorReady(true);
+      } catch {
+        setEditorError("Kunde inte läsa bilddata för redigering.");
+      }
+    };
+    img.onerror = () => {
+      if (cancelled) return;
+      setEditorError("Kunde inte läsa annonsbilden för redigering.");
+    };
+    img.src = imageCutout.trim();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editorOpen, imageCutout]);
 
   const ensureListingId = () => {
     if (id) return id;
@@ -867,6 +1113,110 @@ export default function HandplockatEdit() {
                   placeholder="Skapas automatiskt av knappen"
                 />
               </div>
+
+              {imageCutout?.trim() && (
+                <div className="rounded-xl border border-border p-4 space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setEditorOpen((prev) => !prev);
+                        setEditorError(null);
+                      }}
+                    >
+                      {editorOpen ? "Stäng sudda" : "Sudda bakgrundsrester"}
+                    </Button>
+                    {editorOpen && (
+                      <Button
+                        type="button"
+                        variant={zoom2x ? "default" : "outline"}
+                        onClick={() => setZoom2x((prev) => !prev)}
+                      >
+                        Zoom 2x
+                      </Button>
+                    )}
+                  </div>
+
+                  {editorOpen && (
+                    <>
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        <label htmlFor="eraser-size-edit" className="font-medium">
+                          Penselstorlek
+                        </label>
+                        <input
+                          id="eraser-size-edit"
+                          type="range"
+                          min={8}
+                          max={80}
+                          step={1}
+                          value={brushSize}
+                          onChange={(e) => setBrushSize(Number(e.target.value))}
+                        />
+                        <span className="text-muted-foreground">{brushSize}px</span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" variant="outline" onClick={handleUndo} disabled={undoStack.length <= 1}>
+                          Ångra
+                        </Button>
+                        <Button type="button" variant="outline" onClick={handleRedo} disabled={redoStack.length === 0}>
+                          Gör om
+                        </Button>
+                        <Button type="button" variant="outline" onClick={handleResetEditor} disabled={!editorReady}>
+                          Återställ
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleSaveEditedImage}
+                          disabled={!editorReady || savingEditedImage}
+                        >
+                          {savingEditedImage ? "Sparar..." : "Spara suddad bild"}
+                        </Button>
+                      </div>
+
+                      <div className="rounded-xl border border-border overflow-auto max-h-[70vh] bg-secondary/30 p-2">
+                        <canvas
+                          ref={editCanvasRef}
+                          onPointerDown={handleCanvasPointerDown}
+                          onPointerMove={handleCanvasPointerMove}
+                          onPointerUp={finishDrawing}
+                          onPointerCancel={finishDrawing}
+                          style={{
+                            width: "100%",
+                            maxWidth: "720px",
+                            height: "auto",
+                            display: "block",
+                            touchAction: "none",
+                            transform: zoom2x ? "scale(2)" : "none",
+                            transformOrigin: "top left",
+                            cursor: "crosshair",
+                          }}
+                        />
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        Dra med fingret eller musen för att sudda bort rester. Bilden skrivs över när du sparar.
+                      </p>
+
+                      {editorError && <p className="text-xs text-destructive">{editorError}</p>}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {imageCutout?.trim() && (
+                <div className="mt-2">
+                  <div className="w-48 h-48 rounded-xl overflow-hidden border border-border bg-secondary flex items-center justify-center">
+                    <img
+                      src={imageCutout.trim()}
+                      alt="Förhandsvisning av annonsbild"
+                      className="object-contain w-full h-full"
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Förhandsvisning av annonsbild</div>
+                </div>
+              )}
             </div>
 
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
