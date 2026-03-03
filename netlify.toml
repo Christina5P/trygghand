@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "pwd; echo '--- ROOT ---'; ls -la; echo '--- CHECK FILES ---'; ls -la package.json vite.config.*; echo '--- PUBLIC ---'; ls -la public; npm ci; npm run build; echo '--- DIST ---'; ls -la dist; echo '--- SITEMAP ---'; ls -la dist/sitemap.xml || true"
   publish = "dist"
 
 [functions]
