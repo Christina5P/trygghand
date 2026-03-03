@@ -6,6 +6,11 @@
   directory = "netlify/functions"
 
 [[redirects]]
+  from = "/stadning"
+  to = "/flyttstad"
+  status = 301
+
+[[redirects]]
   from = "/api/templates/download"
   to = "/.netlify/functions/templates-download"
   status = 200
@@ -29,13 +34,19 @@
   status = 200
   force = true
 
+# Ensure static assets aren't swallowed by SPA fallback
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/sitemap.xml"
+  status = 200
+
+[[redirects]]
+  from = "/robots.txt"
+  to = "/robots.txt"
+  status = 200
+
+# SPA fallback (must be LAST)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-  [[redirects]]
-  from = "/stadning"
-  to = "/flyttstad"
-  status = 301
-  force = true
