@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",
+    "dev:push": "node scripts/dev-push.mjs",
     "dev:status": "node scripts/dev-status.mjs",
     "dev:kill": "node scripts/dev-kill.mjs",
     "images:prompts": "node scripts/item-image-prompts.mjs",

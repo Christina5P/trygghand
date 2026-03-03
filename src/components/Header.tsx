@@ -78,7 +78,7 @@ const Header: React.FC<{ handplockatLogo?: boolean }> = ({ handplockatLogo }) =>
           </span>
 
           {/* Diskret badge */}
-          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-trust-blue">
+          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-s font-semibold text-trust-blue">
             Marknad
           </span>
         </div>
@@ -88,10 +88,6 @@ const Header: React.FC<{ handplockatLogo?: boolean }> = ({ handplockatLogo }) =>
         </div>
       </div>
 
-      {/* Subtil pil */}
-      <span className="ml-1 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground">
-        →
-      </span>
     </Link>
   );
 }
@@ -246,7 +242,7 @@ const Header: React.FC<{ handplockatLogo?: boolean }> = ({ handplockatLogo }) =>
                         <div className="text-xs text-muted-foreground">Marknad för fynd och vintage</div>
                       </div>
                     </div>
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-trust-blue">Marknad</span>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-trust-blue">Marknad</span>
                   </div>
                 </Link>
               </div>

@@ -120,3 +120,68 @@ self.addEventListener('fetch', (event) => {
     }
   })());
 });
+
+self.addEventListener('push', (event) => {
+  let payload = {
+    title: 'Ny uppdatering',
+    body: 'Du har en uppdatering i kundportalen.',
+    icon: '/favicon-192x192.png',
+    badge: '/favicon-96x96.png',
+    url: '/portal',
+    type: 'case_update',
+  };
+
+  try {
+    const parsed = event.data ? event.data.json() : null;
+    if (parsed && typeof parsed === 'object') {
+      payload = {
+        ...payload,
+        ...parsed,
+        url: typeof parsed.url === 'string' && parsed.url.startsWith('/portal') ? parsed.url : '/portal',
+      };
+    }
+  } catch {
+    // ignore invalid push payload
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon,
+      badge: payload.badge,
+      data: {
+        url: payload.url,
+        type: payload.type,
+      },
+      tag: `trygghand-${payload.type || 'push'}`,
+      renotify: true,
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetPath =
+    event.notification?.data?.url && typeof event.notification.data.url === 'string'
+      ? event.notification.data.url
+      : '/portal';
+
+  const absoluteUrl = new URL(targetPath, self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          client.navigate(absoluteUrl);
+          return client.focus();
+        }
+      }
+
+      if (clients.openWindow) {
+        return clients.openWindow(absoluteUrl);
+      }
+
+      return Promise.resolve();
+    })
+  );
+});

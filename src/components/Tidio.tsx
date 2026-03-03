@@ -32,6 +32,15 @@ export default function Tidio() {
   border-radius: 12px !important;
   box-shadow: 0 8px 30px rgba(16,24,40,0.35) !important;
 }
+
+@media (max-width: 767px) {
+  .tidio-chat-iframe, .tidio-widget, #tidio-chat {
+    width: min(88vw, 340px) !important;
+    height: min(60vh, 420px) !important;
+    right: 12px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 88px) !important;
+  }
+}
 `;
     document.head.appendChild(style);
 

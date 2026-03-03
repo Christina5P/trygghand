@@ -242,13 +242,13 @@ export default function HandplockatCreate() {
 
   const [skick, setSkick] = useState("");
   const [pickupArea, setPickupArea] = useState("Sundsvall");
-  const [pickupWindow, setPickupWindow] = useState("");
+  const [pickupWindow, setPickupWindow] = useState("Enligt överenskommelse");
   const [pickupDeadlineAt, setPickupDeadlineAt] = useState(
     toLocalDateValue(addDays(7))
   );
 
   const [valuationJsonRaw, setValuationJsonRaw] = useState("");
-  const [extraInfo, setExtraInfo] = useState("");
+  const [extraInfo, setExtraInfo] = useState("Ta med bärhjälp");
 
   const [imagesOriginalRaw, setImagesOriginalRaw] = useState("");
   const [imageCutout, setImageCutout] = useState("");

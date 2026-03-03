@@ -41,6 +41,33 @@ async function requireAdmin(service: any, userId: string): Promise<boolean> {
   return false;
 }
 
+async function invokeSendPush(params: {
+  supabaseUrl: string;
+  serviceRoleKey: string;
+  userId: string;
+  caseId: string;
+  messageId?: string;
+}) {
+  try {
+    await fetch(`${params.supabaseUrl}/functions/v1/send-push`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${params.serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        userId: params.userId,
+        type: "new_message",
+        caseId: params.caseId,
+        messageId: params.messageId,
+        url: `/portal?caseId=${params.caseId}`,
+      }),
+    });
+  } catch (err) {
+    console.error("send-push invoke failed", err);
+  }
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -89,15 +116,26 @@ serve(async (req: Request): Promise<Response> => {
   if (caseErr) return json(500, { error: "Internal server error" });
   if (!caseRow) return json(404, { error: "Not found" });
 
-  const { error: insErr } = await service.from("case_comments").insert({
+  const { data: insertedComment, error: insErr } = await service.from("case_comments").insert({
     case_id: caseId,
     author_id: user.id,
     customer_id: (caseRow as any).customer_id,
     author_type: "admin",
     content: comment,
-  });
+  }).select("id").single();
 
   if (insErr) return json(500, { error: "Internal server error" });
+
+  const customerId = String((caseRow as any).customer_id || "");
+  if (customerId && customerId !== user.id) {
+    await invokeSendPush({
+      supabaseUrl,
+      serviceRoleKey,
+      userId: customerId,
+      caseId,
+      messageId: (insertedComment as any)?.id,
+    });
+  }
 
   // Do not echo comment back in response
   return json(200, { ok: true });

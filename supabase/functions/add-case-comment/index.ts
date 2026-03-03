@@ -40,6 +40,61 @@ async function isAdmin(service: any, userId: string): Promise<boolean> {
   return false;
 }
 
+async function findPrimaryAdminUserId(service: any): Promise<string | null> {
+  const { data: roleRow, error: roleErr } = await service
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", "admin")
+    .limit(1)
+    .maybeSingle();
+
+  if (!roleErr && (roleRow as any)?.user_id) {
+    return String((roleRow as any).user_id);
+  }
+
+  const { data: profileRow, error: profileErr } = await service
+    .from("profiles")
+    .select("id")
+    .eq("role", "admin")
+    .limit(1)
+    .maybeSingle();
+
+  if (!profileErr && (profileRow as any)?.id) {
+    return String((profileRow as any).id);
+  }
+
+  return null;
+}
+
+async function invokeSendPush(params: {
+  supabaseUrl: string;
+  serviceRoleKey: string;
+  userId: string;
+  type: "new_message" | "case_update" | "booked_time";
+  caseId: string;
+  messageId?: string;
+  url: string;
+}) {
+  try {
+    await fetch(`${params.supabaseUrl}/functions/v1/send-push`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${params.serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        userId: params.userId,
+        type: params.type,
+        caseId: params.caseId,
+        messageId: params.messageId,
+        url: params.url,
+      }),
+    });
+  } catch (err) {
+    console.error("send-push invoke failed", err);
+  }
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -93,15 +148,29 @@ serve(async (req: Request): Promise<Response> => {
   const ownerId = (caseRow as any).customer_id as string;
   if (!admin && ownerId !== user.id) return json(403, { error: "Forbidden" });
 
-  const { error: insErr } = await service.from("case_comments").insert({
+  const { data: insertedComment, error: insErr } = await service.from("case_comments").insert({
     case_id: caseId,
     author_id: user.id,
     customer_id: ownerId,
     author_type: admin ? "admin" : "customer",
     content: message,
-  });
+  }).select("id").single();
 
   if (insErr) return json(500, { error: "Internal server error" });
+
+  const recipientId = admin ? ownerId : await findPrimaryAdminUserId(service);
+
+  if (recipientId && recipientId !== user.id) {
+    await invokeSendPush({
+      supabaseUrl,
+      serviceRoleKey,
+      userId: recipientId,
+      type: "new_message",
+      caseId,
+      messageId: (insertedComment as any)?.id,
+      url: `/portal?caseId=${caseId}`,
+    });
+  }
 
   // Do not echo free-text back
   return json(200, { ok: true });

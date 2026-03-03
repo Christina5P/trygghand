@@ -25,6 +25,32 @@ function isIsoDate(v: unknown): v is string {
   return typeof v === "string" && !Number.isNaN(Date.parse(v));
 }
 
+async function invokeSendPush(params: {
+  supabaseUrl: string;
+  serviceRoleKey: string;
+  userId: string;
+  caseId: string;
+  type: "case_update" | "new_message" | "booked_time";
+}) {
+  try {
+    await fetch(`${params.supabaseUrl}/functions/v1/send-push`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${params.serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        userId: params.userId,
+        type: params.type,
+        caseId: params.caseId,
+        url: `/portal?caseId=${params.caseId}`,
+      }),
+    });
+  } catch (err) {
+    console.error("send-push invoke failed", err);
+  }
+}
+
 async function requireAdmin(service: any, userId: string): Promise<boolean> {
   const { data: roles, error: rolesErr } = await service
     .from("user_roles")
@@ -169,6 +195,14 @@ serve(async (req: Request): Promise<Response> => {
     // logga men stoppa ej flödet
     console.error("Notification error", e);
   }
+
+  await invokeSendPush({
+    supabaseUrl,
+    serviceRoleKey,
+    userId: customerId,
+    caseId: (created as any)?.id,
+    type: "case_update",
+  });
 
   return json(200, { ok: true, case_id: (created as any)?.id });
 });

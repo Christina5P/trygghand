@@ -37,6 +37,7 @@ import { ChangePasswordSection } from "./components/ChangePasswordSection";
 import { isMissingColumnError, isUnauthorizedError, tryRefreshSession } from "@/lib/supabase";
 import { useNotifications } from "@/hooks/useNotifications";
 import { getNotificationDescription } from "@/lib/notifications";
+import PushNotificationToggle from "@/components/PushNotificationToggle";
 
 import type { Dispatch, SetStateAction } from "react";
 
@@ -279,6 +280,16 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         },
         [lastReadCountKey, caseCommentsCounts, storageUserId]
     );
+
+    useEffect(() => {
+        if (!cases.length) return;
+        const caseIdFromUrl = new URLSearchParams(window.location.search).get("caseId");
+        if (!caseIdFromUrl) return;
+        const match = cases.find((item) => item.id === caseIdFromUrl);
+        if (!match) return;
+        setSelectedCase(match);
+        markCaseAsRead(match.id);
+    }, [cases, markCaseAsRead]);
 
         const unreadCaseMessagesCount = useMemo(() => {
                 if (!cases?.length) return 0;
@@ -1126,6 +1137,10 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                           <h4 className="font-semibold mb-3">Ändra lösenord</h4>
                           <ChangePasswordSection />
                         </div>
+
+                                                <div className="border-t pt-4 mt-4">
+                                                    <PushNotificationToggle />
+                                                </div>
 
                                                 <div className="border-t pt-4 mt-4">
                                                     <h4 className="font-semibold mb-2">Registerutdrag (GDPR)</h4>
