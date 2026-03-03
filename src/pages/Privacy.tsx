@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -39,92 +38,145 @@ export default function Privacy() {
 
       <h2 className="font-semibold mt-6">Vem ansvarar för uppgifterna?</h2>
       <p className="mb-2">
-        Trygg Partner (559564-3445) är personuppgiftsansvarig. Det innebär att Trygg Hand är ansvarig för dina personuppgifter. För frågor: <a href="mailto:kontakt@trygghand.com" className="underline">kontakt@trygghand.com</a>
+        Trygg Hand AB (559564-3445) är personuppgiftsansvarig. Det innebär att vi ansvarar för dina personuppgifter.
+      </p>
+      <p className="mb-2">
+        För frågor: <a href="mailto:kontakt@trygghand.com" className="underline">kontakt@trygghand.com</a>
       </p>
 
       <h2 className="font-semibold mt-6">Vad samlar vi in?</h2>
       <ul className="list-disc pl-5 mt-2">
-        <li>Kontaktuppgifter du själv lämnar (som namn, e‑post, telefon).</li>
-        <li>Information som behövs för att utföra våra tjänster (t.ex. adress vid flytt/uppdrag, personnummer).</li>
-        <li>Tekniska data: cookies (se cookie‑policy) och loggar för att hålla tjänsten igång.</li>
+        <li>Kontaktuppgifter du själv lämnar (som namn, e-post och telefon).</li>
+        <li>Information som behövs för att utföra våra tjänster (t.ex. adress vid flytt/uppdrag, personnummer vid RUT-avdrag).</li>
+        <li>Information kopplad till uppdrag, kundportal och kommunikation i ärenden.</li>
+        <li>Vid köp eller försäljning via Handplockat behandlar vi uppgifter som behövs för att genomföra affären (t.ex. kontaktuppgifter och upphämtningsinformation).</li>
+        <li>Tekniska data: cookies (se cookie-policy nedan) och loggar för att hålla tjänsten igång.</li>
       </ul>
+      <p className="mb-2 mt-2">
+        Vi lagrar även kategorisering av värderingar (t.ex. sälja, skänka, behålla) för att kunna utföra avtalade tjänster.
+      </p>
 
-      <h2 className="font-semibold mt-6">Varför samlar vi in det?</h2>
+      <h2 className="font-semibold mt-6">Push-notiser (valfritt)</h2>
       <p className="mb-2">
-        För att: genomföra avtal, hantera bokningar och kontakter, förbättra tjänsten (statistik) samt följa lagar.
+        Om du väljer att aktivera push-notiser i kundportalen sparas en teknisk prenumeration kopplad till din enhet.
+      </p>
+      <p className="mb-2">Push-notiser:</p>
+      <ul className="list-disc pl-5 mt-2">
+        <li>Är frivilliga</li>
+        <li>Kräver ditt samtycke</li>
+        <li>Kan stängas av när som helst</li>
+      </ul>
+      <p className="mb-2 mt-2">
+        Notiser innehåller aldrig känsliga personuppgifter, utan endast generell information, exempelvis: “Du har en uppdatering i kundportalen.”
       </p>
       <p className="mb-2">
-        Vi lagrar kategorisering av värderingar (t.ex. sälja, skänka, behålla) för att kunna utföra avtalade tjänster.  </p>
+        Vid användning av push-notiser kan viss teknisk information behandlas av din webbläsarleverantör (t.ex. Google, Apple eller Mozilla).
+      </p>
+
+      <h2 className="font-semibold mt-6">Varför samlar vi in det?</h2>
+      <p className="mb-2">För att:</p>
+      <ul className="list-disc pl-5 mt-2">
+        <li>Genomföra avtal</li>
+        <li>Hantera bokningar och kontakter</li>
+        <li>Administrera köp och försäljning</li>
+        <li>Kommunicera med dig</li>
+        <li>Förbättra tjänsten (statistik)</li>
+        <li>Följa lagar och bokföringskrav</li>
+      </ul>
 
       <h2 className="font-semibold mt-6">Rättslig grund</h2>
-      <p className="mb-2">Vi använder avtals- eller berättigat intresse för nödvändiga behandlingar. För statistik används ditt samtycke (om du godkänner cookies).</p>
+      <p className="mb-2">Vi använder:</p>
+      <ul className="list-disc pl-5 mt-2">
+        <li>Avtal – för att kunna utföra våra tjänster</li>
+        <li>Rättslig förpliktelse – exempelvis bokföringslagen</li>
+        <li>Berättigat intresse – för nödvändig administration</li>
+        <li>Samtycke – för statistik och push-notiser</li>
+      </ul>
+      <p className="mb-2 mt-2">Du kan när som helst återkalla ett samtycke.</p>
 
       <h2 className="font-semibold mt-6">Hur länge sparar vi uppgifter?</h2>
-      <p className="mb-2">Vi sparar endast så länge det behövs för ändamålet eller enligt lag (t.ex. bokföring). Kontakta oss för exakta lagringstider för din situation.</p>
+      <p className="mb-2">Vi sparar endast uppgifter så länge det behövs för ändamålet eller enligt lag.</p>
+      <ul className="list-disc pl-5 mt-2">
+        <li>Bokföringsunderlag sparas enligt bokföringslagen (7 år)</li>
+        <li>Uppdrags- och kundportalsuppgifter sparas så länge uppdraget pågår och en rimlig tid därefter</li>
+        <li>Push-notiser sparas tills du stänger av dem</li>
+        <li>Intresseanmälningar utan genomfört uppdrag sparas högst 12 månader</li>
+      </ul>
+      <p className="mb-2 mt-2">Kontakta oss för exakta lagringstider i din situation.</p>
 
       <h2 className="font-semibold mt-6">Tredje parter / leverantörer</h2>
       <p className="mb-2">
-        Vi använder vissa tjänster (databas). Dessa är personuppgiftsbiträden och vi har avtal för att skydda dina uppgifter. För statistik använder vi Google (Google Ireland Limited) som personuppgiftsbiträde.
+        Vi använder vissa tjänster för webb, databas, bokföring och kommunikation. Dessa är personuppgiftsbiträden och vi har avtal för att skydda dina uppgifter.
+      </p>
+      <p className="mb-2">
+        För statistik använder vi Google (Google Ireland Limited).
       </p>
 
       <h2 className="font-semibold mt-6">Dina rättigheter</h2>
       <ul className="list-disc pl-5 mt-2">
-        <li>Begära tillgång till dina uppgifter.</li>
-        <li>Begära rättelse eller radering.</li>
-        <li>Begära begränsning eller invända mot behandling.</li>
-        <li>Dataportabilitet (få ut dina uppgifter i maskinläsbar form).</li>
+        <li>Begära tillgång till dina uppgifter</li>
+        <li>Begära rättelse eller radering</li>
+        <li>Begära begränsning eller invända mot behandling</li>
+        <li>Få ut dina uppgifter i maskinläsbar form (dataportabilitet)</li>
       </ul>
-
-      <h2 className="font-semibold mt-6">Hur begär jag något?</h2>
       <p className="mb-2">
-        Skicka e‑post till <a href="mailto:kontakt@trygghand.com" className="underline">kontakt@trygghand.com</a> med vad du vill (ex: radera mina uppgifter). Vi svarar normalt inom 30 dagar.
+        Skicka e-post till <a href="mailto:kontakt@trygghand.com" className="underline">kontakt@trygghand.com</a> med vad du vill (t.ex. “radera mina uppgifter”). Vi svarar normalt inom 30 dagar.
       </p>
 
-      <h2 className="font-semibold mt-6">Vill du radera cookies eller ändra val?</h2>
-      <p className="mb-2">
-        Använd vår sida för att rensa cookies eller kontakta oss. För att återkalla samtycke kan du ta bort cookien <code>trygghand_cookie_consent</code> eller besöka <a href="/clearcookies" className="underline">/clearcookies</a>.
-      </p>
-
-      <h2 className="font-semibold mt-8">Cookies - detaljerad information</h2>
+      <h2 className="font-semibold mt-8">Cookies – detaljerad information</h2>
       <p className="mb-4 text-base">
         Vi använder några enkla cookies. Här förklarar vi kort vad de gör och varför.
       </p>
 
       <h3 className="font-semibold mt-4">Användning av Google Tag Manager och Google Analytics</h3>
       <p className="mb-2 text-base">
-        Vi använder Google Tag Manager som ett tekniskt verktyg för att hantera trafik till hemsidan. Google Tag Manager i sig lagrar inte några personuppgifter.
+        Vi använder Google Tag Manager som ett tekniskt verktyg för att hantera trafik till hemsidan. Google Tag Manager i sig lagrar inte personuppgifter.
       </p>
       <p className="mb-2 text-base">
-        Google Analytics 4 används endast för statistik och förbättring av vår tjänst, men endast efter att du har gett ditt aktiva samtycke. Vi använder Google Consent Mode, vilket innebär att analyscookies är blockerade som standard. Ingen statistik skickas innan du aktivt godkänner det. Du kan återkalla ditt samtycke när som helst genom att använda länken "Rensa cookies" längst ned på sidan.
+        Google Analytics 4 används endast för statistik och förbättring av vår tjänst, och endast efter att du har gett ditt aktiva samtycke.
+      </p>
+      <p className="mb-2 text-base">
+        Vi använder Google Consent Mode, vilket innebär att analyscookies är blockerade som standard. Ingen statistik skickas innan du aktivt godkänner det.
+      </p>
+      <p className="mb-2 text-base">
+        Statistiken är pseudonymiserad och används för att förstå hur webbplatsen används och förbättra informationen.
+      </p>
+      <p className="mb-2 text-base">
+        Du kan när som helst återkalla ditt samtycke genom att använda länken “Rensa cookies” längst ned på sidan.
       </p>
 
       <h3 className="font-semibold mt-4">Cookies vi använder</h3>
       <ul className="list-disc pl-5 mt-3 space-y-2 text-base">
         <li>
-          <strong>trygghand_cookie_consent</strong> — Denna cookie sparar ditt val om du vill tillåta oss att samla in anonym statistik.
-          Den används enbart för att komma ihåg ditt val och påverkar inte webbplatsens funktion. Den sparas i 12 månader.
+          <strong>trygghand_cookie_consent</strong><br />
+          Denna cookie sparar ditt val om du vill tillåta statistik. Den används enbart för att komma ihåg ditt val och påverkar inte webbplatsens funktion.
+          Den sparas i 12 månader.
         </li>
       </ul>
 
       <h3 className="font-semibold mt-4">Vad betyder det?</h3>
-      <p className="mb-2 text-base">
-        - Nödvändiga cookies: Krävs för att webbplatsen ska fungera. <br />
-        - Statistik (valfritt): Hjälper oss förstå hur sidan används och göra den bättre. Vi sätter sådana cookies bara om du godkänner.
-      </p>
+      <ul className="list-disc pl-5 mt-2 text-base">
+        <li>Nödvändiga cookies: Krävs för att webbplatsen ska fungera.</li>
+        <li>Statistik (valfritt): Hjälper oss förstå hur sidan används och göra den bättre. Vi sätter sådana cookies bara om du godkänner.</li>
+      </ul>
 
-      <h3 className="font-semibold mt-4">Vår trygghetsgaranti:</h3>
+      <h3 className="font-semibold mt-4">Vår trygghetsgaranti</h3>
       <p className="text-base mb-4">
-        Vi samlar <strong>inga</strong> personliga uppgifter som namn, adress eller personnummer via cookies. All statistik är anonymiserad och hjälper oss bara att se vilka sidor som är mest hjälpsamma för dig.
+        Vi samlar inga personliga uppgifter som namn, adress eller personnummer via cookies.
       </p>
-
-      <h3 className="font-semibold mt-4">Cookies för Statistik (Om du godkänner):</h3>
       <p className="text-base mb-4">
-        Google Analytics för att förstå hur vår sida används. Dessa cookies samlar in data om t.ex. hur länge du stannar på en sida. Syfte: Förbättra vår information och göra sidan mer lättanvänd.
+        Vi säljer aldrig dina personuppgifter.
+      </p>
+      <p className="text-base mb-4">
+        Vi samlar endast in det som behövs för att kunna hjälpa dig på ett tryggt och professionellt sätt.
       </p>
 
-      <h3 className="font-semibold mt-4">Ändra eller dra tillbaka ditt val:</h3>
+      <h3 className="font-semibold mt-4">Ändra eller dra tillbaka ditt val</h3>
       <p className="text-base mb-6">
-       Det ska vara enkelt att ändra sig! Du kan alltid klicka på länken <a href="/clearcookies" className="text-primary underline hover:text-primary/80">Rensa cookies</a> längst ned på sidan för att enkelt ändra dina inställningar. Självklart kan du också ringa oss så hjälper vi dig.
+       Det ska vara enkelt att ändra sig. Du kan alltid klicka på länken <a href="/clearcookies" className="text-primary underline hover:text-primary/80">Rensa cookies</a> längst ned på sidan för att ändra dina inställningar.
+      </p>
+      <p className="text-base mb-6">
+        Du kan också ta bort cookien <code>trygghand_cookie_consent</code> i din webbläsare eller kontakta oss så hjälper vi dig.
       </p>
 
       <p className="text-sm text-muted-foreground">Senast uppdaterad: 2026-01-07</p>
