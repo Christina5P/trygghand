@@ -10,7 +10,8 @@ import ListingCard from "@/components/ListingCard";
 import HandplockatInterestForm from "./HandplockatInterestForm";
 import { ArrowRight, Search, ShieldCheck, Smartphone } from "lucide-react";
 
-const DEFAULT_DESCRIPTION = "Upptäck handplockade second hand-föremål från hem i Sundsvall. Nya fynd läggs upp löpande.";
+const DEFAULT_DESCRIPTION =
+  "Handplockade second hand-fynd i Sundsvall med lokala upphämtningar. Upptäck utvalda objekt för återbruk och cirkulär handel.";
 
 type HandplockatInterest = {
   id: string;
@@ -110,10 +111,10 @@ export default function HandplockatIndex() {
   return (
     <div className="min-h-[100svh] bg-background">
       <Seo
-        title="Handplockat – Lokala second hand-fynd i Sundsvall"
+        title="Handplockat – Second hand i Sundsvall"
         description={DEFAULT_DESCRIPTION}
         canonical="https://www.trygghand.com/handplockat"
-        ogImage="/handplockat-og.jpg"
+        ogImage="https://www.trygghand.com/handplockat-og.jpg"
         jsonLd={itemListJsonLd}
       />
       <main className="pb-16">
@@ -123,6 +124,8 @@ export default function HandplockatIndex() {
               src="/handplockat.jpg"
               alt="Handplockade vintagefynd"
               className="w-full h-full object-cover"
+              fetchPriority="high"
+              decoding="async"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/50 to-transparent" />
           </div>
@@ -183,8 +186,8 @@ export default function HandplockatIndex() {
                 </div>
               </div>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {visibleListings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
+                {visibleListings.map((listing, index) => (
+                  <ListingCard key={listing.id} listing={listing} eager={index < 3} />
                 ))}
               </div>
             </div>
@@ -210,7 +213,13 @@ export default function HandplockatIndex() {
                     <div key={interest.id} className="rounded-2xl border border-border bg-background p-4 space-y-2">
                       {interest.imageUrl && (
                         <div className="aspect-[4/3] rounded-xl overflow-hidden bg-secondary/60">
-                          <img src={interest.imageUrl} alt="Köpintresse" className="w-full h-full object-cover" />
+                          <img
+                            src={interest.imageUrl}
+                            alt="Köpintresse"
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                          />
                         </div>
                       )}
                       {interest.category && (

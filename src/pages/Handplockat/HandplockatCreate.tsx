@@ -182,6 +182,46 @@ async function rotateBlob(
   return out;
 }
 
+async function optimizeListingImageBlob(
+  blob: Blob,
+  maxDimension = 1600
+): Promise<{ blob: Blob; extension: "webp" | "png"; contentType: "image/webp" | "image/png" }> {
+  const image = await createImageBitmap(blob);
+  const longestSide = Math.max(image.width, image.height);
+  const scale = longestSide > maxDimension ? maxDimension / longestSide : 1;
+
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return { blob, extension: "png", contentType: "image/png" };
+  }
+
+  ctx.drawImage(image, 0, 0, width, height);
+
+  const webpBlob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob((next) => resolve(next), "image/webp", 0.82);
+  });
+
+  if (webpBlob) {
+    return { blob: webpBlob, extension: "webp", contentType: "image/webp" };
+  }
+
+  const pngBlob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((next) => {
+      if (!next) return reject(new Error("Kunde inte skapa PNG-bild."));
+      resolve(next);
+    }, "image/png");
+  });
+
+  return { blob: pngBlob, extension: "png", contentType: "image/png" };
+}
+
 async function removeBgLocalAndUpload(args: {
   listingId: string;
   sourcePathOrUrl: string;
@@ -202,12 +242,18 @@ async function removeBgLocalAndUpload(args: {
   // Valbar rotation
   const rotated = await rotateBlob(cutoutBlob, rotationDeg);
 
-  // Ladda upp PNG till handplockat-public
-  const targetPath = `handplockat/${listingId}/${targetIndex}.png`;
+  // Minska filstorlek för snabbare mobilladdning
+  const optimized = await optimizeListingImageBlob(rotated);
+
+  // Ladda upp optimerad annonsbild till handplockat-public
+  const targetPath = `handplockat/${listingId}/${targetIndex}.${optimized.extension}`;
 
   const { error: uploadError } = await supabase.storage
     .from("handplockat-public")
-    .upload(targetPath, rotated, { upsert: true, contentType: "image/png" });
+    .upload(targetPath, optimized.blob, {
+      upsert: true,
+      contentType: optimized.contentType,
+    });
 
   if (uploadError) throw uploadError;
 

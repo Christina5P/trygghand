@@ -5,9 +5,10 @@ import { formatSek } from "@/lib/handplockat";
 
 interface ListingCardProps {
   listing: HandplockatListing;
+  eager?: boolean;
 }
 
-const ListingCard = ({ listing }: ListingCardProps) => {
+const ListingCard = ({ listing, eager = false }: ListingCardProps) => {
   const imageSrc = listing.image_cutout || listing.images_cutout?.[0] || "";
   const priceLabel = formatSek(listing.price_sek);
 
@@ -22,7 +23,9 @@ const ListingCard = ({ listing }: ListingCardProps) => {
             src={imageSrc}
             alt={listing.title}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
+            loading={eager ? "eager" : "lazy"}
+            fetchPriority={eager ? "high" : "auto"}
+            decoding="async"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">

@@ -9,6 +9,8 @@
     "dev:status": "node scripts/dev-status.mjs",
     "dev:kill": "node scripts/dev-kill.mjs",
     "images:prompts": "node scripts/item-image-prompts.mjs",
+    "images:reoptimize-handplockat": "node scripts/reoptimize-handplockat-images.mjs",
+    "images:reoptimize-handplockat:write": "node scripts/reoptimize-handplockat-images.mjs --write",
     "build": "vite build",
     "start": "vite preview",
     "start:proxy": "node server/index.js",
@@ -80,6 +82,7 @@
     "react-resizable-panels": "^2.1.9",
     "react-router-dom": "^6.30.3",
     "recharts": "^2.15.4",
+    "sharp": "^0.34.5",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
@@ -110,6 +113,7 @@
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.38.0",
     "vite": "^7.1.5",
+    "vite-plugin-prerender": "^1.0.8",
     "vite-plugin-sitemap": "^0.8.2"
   }
 }

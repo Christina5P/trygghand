@@ -6,6 +6,7 @@ interface SeoProps {
   title: string;
   description: string;
   canonical?: string;
+  ogUrl?: string;
   robots?: string;
   ogImage?: string;
   jsonLd?: object | string;
@@ -18,14 +19,23 @@ export default function Seo({
   title,
   description,
   canonical,
+  ogUrl,
   robots,
   ogImage,
   jsonLd,
 }: SeoProps) {
   const { pathname } = useLocation();
 
+  const toAbsoluteUrl = (value: string) => {
+    if (/^https?:\/\//i.test(value)) return value;
+    const normalizedPath = value.startsWith("/") ? value : `/${value}`;
+    return `${BASE_URL}${normalizedPath}`;
+  };
+
   const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
-  const canonicalUrl = canonical ?? `${BASE_URL}${pathname}`;
+  const canonicalUrl = toAbsoluteUrl(canonical ?? pathname);
+  const ogUrlValue = toAbsoluteUrl(ogUrl ?? canonicalUrl);
+  const ogImageUrl = ogImage ? toAbsoluteUrl(ogImage) : undefined;
 
   const isHandplockat =
     pathname.startsWith("/handplockat") ||
@@ -93,8 +103,8 @@ export default function Seo({
       <meta property="og:type" content="website" />
       <meta property="og:locale" content="sv_SE" />
       <meta property="og:site_name" content={SITE_NAME} />
-      <meta property="og:url" content={canonicalUrl} />
-      {ogImage && <meta property="og:image" content={ogImage} />}
+      <meta property="og:url" content={ogUrlValue} />
+      {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
 
       {jsonLd && (
         <script type="application/ld+json">

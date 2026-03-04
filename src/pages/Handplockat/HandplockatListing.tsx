@@ -253,7 +253,14 @@ export default function HandplockatListing() {
                 <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                   <div className="aspect-[4/3] rounded-2xl bg-secondary/60 flex items-center justify-center">
                     {imageSrc ? (
-                      <img src={imageSrc} alt={listing.title} className="h-full w-full object-contain p-6" />
+                      <img
+                        src={imageSrc}
+                        alt={listing.title}
+                        className="h-full w-full object-contain p-6"
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
+                      />
                     ) : (
                       <span className="text-sm text-muted-foreground">Ingen bild</span>
                     )}
@@ -267,7 +274,13 @@ export default function HandplockatListing() {
                           className="aspect-square rounded-xl overflow-hidden border border-border bg-secondary/60"
                           onClick={() => setActiveImageSrc(url)}
                         >
-                          <img src={url} alt={listing.title} className="h-full w-full object-contain" />
+                          <img
+                            src={url}
+                            alt={listing.title}
+                            className="h-full w-full object-contain"
+                            loading="lazy"
+                            decoding="async"
+                          />
                         </button>
                       ))}
                     </div>

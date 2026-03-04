@@ -46,6 +46,16 @@
   to = "/robots.txt"
   status = 200
 
+[[redirects]]
+  from = "/handplockat-og.jpg"
+  to = "/handplockat-og.jpg"
+  status = 200
+
+[[redirects]]
+  from = "/og.jpg"
+  to = "/og.jpg"
+  status = 200
+
 # SPA fallback (must be LAST)
 [[redirects]]
   from = "/*"

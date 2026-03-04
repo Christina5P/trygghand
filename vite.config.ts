@@ -3,6 +3,55 @@ import react from "@vitejs/plugin-react";
 import Sitemap from "vite-plugin-sitemap";
 import path from "path";
 import fs from "fs";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const vitePrerender = require("vite-plugin-prerender") as typeof import("vite-plugin-prerender").default;
+
+const HANDPLOCKAT_SEO = {
+  title: "Handplockat – Second hand i Sundsvall | Trygg Hand",
+  description:
+    "Handplockade second hand-fynd i Sundsvall med lokala upphämtningar. Upptäck utvalda objekt för återbruk och cirkulär handel.",
+  canonical: "https://www.trygghand.com/handplockat",
+  ogImage: "https://www.trygghand.com/handplockat-og.jpg",
+};
+
+function injectHandplockatSeo(html: string) {
+  const replacements: Array<[RegExp, string]> = [
+    [/<title>[\s\S]*?<\/title>/i, `<title>${HANDPLOCKAT_SEO.title}</title>`],
+    [
+      /<meta\s+name=["']description["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
+      `<meta name="description" content="${HANDPLOCKAT_SEO.description}">`,
+    ],
+    [
+      /<link\s+rel=["']canonical["']\s+href=["'][^"']*["']\s*\/?\s*>/i,
+      `<link rel="canonical" href="${HANDPLOCKAT_SEO.canonical}">`,
+    ],
+    [
+      /<meta\s+property=["']og:title["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
+      `<meta property="og:title" content="${HANDPLOCKAT_SEO.title}">`,
+    ],
+    [
+      /<meta\s+property=["']og:description["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
+      `<meta property="og:description" content="${HANDPLOCKAT_SEO.description}">`,
+    ],
+    [
+      /<meta\s+property=["']og:image["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
+      `<meta property="og:image" content="${HANDPLOCKAT_SEO.ogImage}">`,
+    ],
+    [
+      /<meta\s+property=["']og:url["']\s+content=["'][^"']*["']\s*\/?\s*>/i,
+      `<meta property="og:url" content="${HANDPLOCKAT_SEO.canonical}">`,
+    ],
+  ];
+
+  let nextHtml = html;
+  replacements.forEach(([pattern, replacement]) => {
+    nextHtml = nextHtml.replace(pattern, replacement);
+  });
+
+  return nextHtml;
+}
 
 export default defineConfig(({ command }) => {
   // When tests run with VITE_ENV=test, use test environment file
@@ -37,6 +86,23 @@ export default defineConfig(({ command }) => {
   return {
     plugins: [
       react(),
+      vitePrerender({
+        staticDir: path.join(__dirname, "dist"),
+        routes: ["/", "/handplockat"],
+        renderer: new vitePrerender.PuppeteerRenderer({
+          renderAfterTime: 3000,
+          headless: true,
+        }),
+        postProcess(renderedRoute: { route: string; html: string }) {
+          if (renderedRoute.route === "/handplockat" || renderedRoute.route === "/handplockat/") {
+            return {
+              ...renderedRoute,
+              html: injectHandplockatSeo(renderedRoute.html),
+            };
+          }
+          return renderedRoute;
+        },
+      }),
       Sitemap({
         hostname: "https://www.trygghand.com",
         lastmod: new Date("2026-02-08"),
