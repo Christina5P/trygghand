@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # Tipsa Google och Bing om var din sitemap ligger
-Sitemap: https://trygghand.com/sitemap.xml
+Sitemap: https://www.trygghand.com/sitemap.xml

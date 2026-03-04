@@ -37,8 +37,9 @@
 # Ensure static assets aren't swallowed by SPA fallback
 [[redirects]]
   from = "/sitemap.xml"
-  to = "/sitemap.xml"
+  to = "/.netlify/functions/sitemap"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/robots.txt"

@@ -8,7 +8,7 @@ const VadIngarIDodsbohantering: React.FC = () => {
       <Helmet>
         <title>Vad ingår i en dödsbohantering? | Trygg Hand</title>
         <meta name="description" content="Lär dig vad som ingår i en professionell dödsbohantering. Från planering till avslutande administration." />
-        <link rel="canonical" href="https://trygghand.se/vad-ingar-i-dodsbohantering" />
+        <link rel="canonical" href="https://www.trygghand.com/vad-ingar-i-dodsbohantering" />
       </Helmet>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-6">Vad ingår i en dödsbohantering?</h1>

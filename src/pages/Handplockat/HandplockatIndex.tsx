@@ -10,7 +10,7 @@ import ListingCard from "@/components/ListingCard";
 import HandplockatInterestForm from "./HandplockatInterestForm";
 import { ArrowRight, Search, ShieldCheck, Smartphone } from "lucide-react";
 
-const DEFAULT_DESCRIPTION = "Köp cirkulära fynd lokalt i Sundsvall. Second hand, loppis och återbruk med handplockade annonser, förmedlade av Trygg Hand.";
+const DEFAULT_DESCRIPTION = "Upptäck handplockade second hand-föremål från hem i Sundsvall. Nya fynd läggs upp löpande.";
 
 type HandplockatInterest = {
   id: string;
@@ -107,19 +107,13 @@ export default function HandplockatIndex() {
     })),
   };
 
-  // OG-image: första annonsbild eller fallback
-  const ogImage =
-    visibleListings[0]?.image_cutout ||
-    visibleListings[0]?.images_cutout?.[0] ||
-    '/handplockat.jpg';
-
   return (
     <div className="min-h-[100svh] bg-background">
       <Seo
-        title="Handplockat Sundsvall | Second hand, loppis och återbruk"
+        title="Handplockat – Lokala second hand-fynd i Sundsvall"
         description={DEFAULT_DESCRIPTION}
         canonical="https://www.trygghand.com/handplockat"
-        ogImage={ogImage}
+        ogImage="/handplockat-og.jpg"
         jsonLd={itemListJsonLd}
       />
       <main className="pb-16">
@@ -135,10 +129,12 @@ export default function HandplockatIndex() {
           <div className="relative container mx-auto px-4 py-16 md:py-24">
             <div className="max-w-lg">
               <h1 className="text-4xl md:text-5xl text-primary-foreground mb-4 leading-tight">
-                Handplockade fynd i Sundsvall
+                Handplockade second hand-fynd i Sundsvall
               </h1>
-              <p className="text-lg text-primary-foreground/80 mb-8">
-                Utvalda second hand-prylar från riktiga hem.<br/> Köp tryggt och enkelt – lokalt och cirkulärt.
+              <p className="text-muted-foreground max-w-xl mb-8">
+              Upptäck handplockade second hand-föremål från hem i Sundsvall och närområdet.
+              Här lägger vi upp utvalda saker från flyttar och bohag som får en ny chans istället för att slängas.
+              Nya fynd publiceras löpande.
               </p>
               <div className="flex flex-wrap gap-4">
                 <a

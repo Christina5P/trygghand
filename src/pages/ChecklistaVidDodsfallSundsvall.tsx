@@ -8,7 +8,7 @@ const ChecklistaVidDodsfallSundsvall: React.FC = () => {
       <Helmet>
         <title>Checklista vid dödsfall i Sundsvall | Trygg Hand</title>
         <meta name="description" content="Praktisk checklista vid dödsfall i Sundsvall. Få hjälp med allt från bouppteckning till tömning av bostaden." />
-        <link rel="canonical" href="https://trygghand.se/checklista-vid-dodsfall-sundsvall" />
+        <link rel="canonical" href="https://www.trygghand.com/checklista-vid-dodsfall-sundsvall" />
       </Helmet>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-6">Checklista vid dödsfall i Sundsvall</h1>
