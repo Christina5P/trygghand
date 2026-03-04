@@ -411,11 +411,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     }, [customer?.id, toast, handleUnauthorized]);
 
     useEffect(() => {
-        if (!customer?.id) return;
-        fetchCases();
-    }, [customer?.id, fetchCases]);
-
-    useEffect(() => {
         void fetchLatestGdprRequest();
     }, [fetchLatestGdprRequest]);
 

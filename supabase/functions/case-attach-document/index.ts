@@ -21,6 +21,10 @@ function isUuid(v: unknown): v is string {
   return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 }
 
+function isAllowedCaseDocumentPath(path: string, ownerId: string, caseId: string): boolean {
+  return path.startsWith(`customers/${ownerId}/cases/${caseId}/`) || path.startsWith(`cases/${caseId}/`);
+}
+
 async function isAdmin(service: any, userId: string): Promise<boolean> {
   const { data: roles, error: rolesErr } = await service
     .from("user_roles")
@@ -119,7 +123,7 @@ serve(async (req: Request): Promise<Response> => {
   const ownerId = (row as any).customer_id as string;
   if (!admin && ownerId !== user.id) return json(403, { error: "Forbidden" });
 
-  if (!path || !path.startsWith(`customers/${ownerId}/cases/${caseId}/`)) {
+  if (!path || !isAllowedCaseDocumentPath(path, ownerId, caseId)) {
     return json(400, { error: "Invalid path" });
   }
 

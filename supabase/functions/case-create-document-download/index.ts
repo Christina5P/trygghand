@@ -24,6 +24,29 @@ function isUuid(v: unknown): v is string {
   return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 }
 
+function isAllowedCaseDocumentPath(path: string, ownerId: string, caseId: string): boolean {
+  return path.startsWith(`customers/${ownerId}/cases/${caseId}/`) || path.startsWith(`cases/${caseId}/`);
+}
+
+function candidateCaseDocumentPaths(path: string, ownerId: string, caseId: string): string[] {
+  const candidates = new Set<string>([path]);
+
+  const legacyPrefix = `cases/${caseId}/`;
+  const customerPrefix = `customers/${ownerId}/cases/${caseId}/`;
+
+  if (path.startsWith(legacyPrefix)) {
+    const suffix = path.slice(legacyPrefix.length);
+    candidates.add(`${customerPrefix}${suffix}`);
+  }
+
+  if (path.startsWith(customerPrefix)) {
+    const suffix = path.slice(customerPrefix.length);
+    candidates.add(`${legacyPrefix}${suffix}`);
+  }
+
+  return Array.from(candidates);
+}
+
 async function isAdmin(service: any, userId: string): Promise<boolean> {
   const { data: roles, error: rolesErr } = await service
     .from("user_roles")
@@ -93,15 +116,22 @@ serve(async (req: Request): Promise<Response> => {
   const ownerId = (row as any).customer_id as string;
   if (!admin && ownerId !== user.id) return json(req, 403, { error: "Forbidden" });
 
-  if (!path || !path.startsWith(`customers/${ownerId}/cases/${caseId}/`)) {
+  if (!path || !isAllowedCaseDocumentPath(path, ownerId, caseId)) {
     return json(req, 400, { error: "Invalid path" });
   }
 
-  const { data, error } = await service.storage.from("case-documents").createSignedUrl(path, 3600);
-  if (error) return json(req, 500, { error: "Internal server error" });
+  const candidates = candidateCaseDocumentPaths(path, ownerId, caseId);
 
-  const signedUrl = (data as any)?.signedUrl;
-  if (!signedUrl) return json(req, 500, { error: "Internal server error" });
+  let signedUrl: string | null = null;
+  for (const candidatePath of candidates) {
+    const { data, error } = await service.storage.from("case-documents").createSignedUrl(candidatePath, 3600);
+    if (!error && typeof (data as any)?.signedUrl === "string" && (data as any).signedUrl.length > 0) {
+      signedUrl = (data as any).signedUrl;
+      break;
+    }
+  }
+
+  if (!signedUrl) return json(req, 404, { error: "File not found" });
 
   return json(req, 200, { ok: true, signedUrl });
 });

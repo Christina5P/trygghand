@@ -94,7 +94,7 @@ serve(async (req: Request): Promise<Response> => {
   const ownerId = (caseRow as any).customer_id as string;
   if (!admin && ownerId !== user.id) return json(403, { error: "Forbidden" });
 
-  const path = `customers/${ownerId}/cases/${caseId}/${crypto.randomUUID()}.${fileExt}`;
+  const path = `cases/${caseId}/${crypto.randomUUID()}.${fileExt}`;
 
   const { data, error } = await service.storage.from("case-documents").createSignedUploadUrl(path);
   if (error) return json(500, { error: "Internal server error" });

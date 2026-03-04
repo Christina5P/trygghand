@@ -86,25 +86,56 @@ export function CaseDocumentsSection({
   }, [documents, showDeleted]);
 
   const openFile = async (path: string) => {
-    const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
-    const res = await fetch(`/api/templates/download?bucket=case-documents&path=${encodeURIComponent(path)}`);
-    if (!res.ok) throw new Error(`Kunde inte hämta filen (${res.status})`);
-    const blob = await res.blob();
-    const objectUrl = URL.createObjectURL(blob);
-
-    if (popup && !popup.closed) {
-      popup.location.href = objectUrl;
-    } else {
-      window.open(objectUrl, "_blank", "noopener,noreferrer");
+    const popup = window.open("", "_blank");
+    if (!popup) {
+      toast({
+        title: "Popup blockerad",
+        description: "Tillåt popup-fönster för att öppna dokument.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setTimeout(() => {
+    try {
+      popup.opener = null;
+    } catch {
+      // ignore
+    }
+
+    try {
+      const runSignedUrl = () =>
+        supabase.functions.invoke("case-create-document-download", {
+          body: { case_id: caseId, path },
+        });
+
+      let { data, error } = await runSignedUrl();
+      if (error && isUnauthorizedError(error)) {
+        const ok = await handleUnauthorized();
+        if (ok) ({ data, error } = await runSignedUrl());
+      }
+
+      const signedUrl = (data as any)?.signedUrl;
+      console.log("signedUrl", signedUrl);
+      if (error) throw error;
+      if ((data as any)?.ok !== true || typeof signedUrl !== "string" || signedUrl.length === 0) {
+        throw new Error("Missing signedUrl");
+      }
+
+      if (!popup.closed) {
+        popup.location.href = signedUrl;
+      }
+    } catch (err: any) {
       try {
-        URL.revokeObjectURL(objectUrl);
+        if (!popup.closed) popup.close();
       } catch {
         // ignore
       }
-    }, 60_000);
+      toast({
+        title: "Kunde inte öppna dokument",
+        description: err?.message || "Något gick fel",
+        variant: "destructive",
+      });
+    }
   };
 
   const uploadFiles = async (files: FileList) => {
