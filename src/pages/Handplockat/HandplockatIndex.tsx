@@ -134,7 +134,7 @@ export default function HandplockatIndex() {
               <h1 className="text-4xl md:text-5xl text-primary-foreground mb-4 leading-tight">
                 Handplockade second hand-fynd i Sundsvall
               </h1>
-              <p className="text-muted-foreground max-w-xl mb-8">
+              <p className="text-primary-foreground max-w-xl mb-8">
               Upptäck handplockade second hand-föremål från hem i Sundsvall och närområdet.
               Här lägger vi upp utvalda saker från flyttar och bohag som får en ny chans istället för att slängas.
               Nya fynd publiceras löpande.

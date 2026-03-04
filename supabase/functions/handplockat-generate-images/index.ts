@@ -40,6 +40,14 @@ function isUuid(v: unknown): v is string {
   );
 }
 
+function sanitizePreferredCutoutPath(path: string, listingId: string): string | null {
+  const value = String(path || "").trim().replace(/^\/+/, "");
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return null;
+  if (!value.startsWith(`handplockat/${listingId}/`)) return null;
+  return value;
+}
+
 // ✅ Matchar din SQL/RLS: profiles.is_admin = true
 async function isAdmin(service: any, userId: string): Promise<boolean> {
   const { data: profile, error } = await service
@@ -184,6 +192,10 @@ serve(async (req: Request): Promise<Response> => {
   const listingId = payload?.listing_id;
   const sourcePaths = Array.isArray(payload?.source_image_paths) ? payload.source_image_paths.map(String) : [];
   const sourceBucket = typeof payload?.source_bucket === "string" ? payload.source_bucket : null;
+  const preferredCutoutPath =
+    typeof payload?.cutout_storage_path === "string"
+      ? sanitizePreferredCutoutPath(payload.cutout_storage_path, String(payload?.listing_id || ""))
+      : null;
 
   if (!isUuid(listingId)) return json(400, { error: "Invalid listing_id" });
   if (sourcePaths.length === 0) return json(400, { error: "Missing source_image_paths" });
@@ -233,8 +245,12 @@ if (bytes.byteLength > MAX_BYTES) {
 
       const processed = await generateImage(removal.bytes, useAlpha);
 
-      const filename = `${i + 1}.${useAlpha ? "png" : "jpg"}`;
-      const targetPath = `handplockat/${listingId}/${filename}`;
+      const defaultFilename = `${i + 1}.${useAlpha ? "png" : "jpg"}`;
+      const defaultTargetPath = `handplockat/${listingId}/${defaultFilename}`;
+
+      const targetPath = i === 0 && preferredCutoutPath
+        ? `${preferredCutoutPath.replace(/\.(png|jpg|jpeg|webp)$/i, "")}.${useAlpha ? "png" : "jpg"}`
+        : defaultTargetPath;
 
       const contentType = useAlpha ? "image/png" : "image/jpeg";
 
