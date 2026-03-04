@@ -4,6 +4,7 @@ alter table handplockat_orders enable row level security;
 alter table profiles enable row level security;
 
 -- Policy: tillåt admin att läsa alla listings
+drop policy if exists "Admin kan läsa alla listings" on handplockat_listings;
 create policy "Admin kan läsa alla listings"
   on handplockat_listings
   for select
@@ -12,6 +13,7 @@ create policy "Admin kan läsa alla listings"
   );
 
 -- Policy: tillåt admin att läsa alla orders
+drop policy if exists "Admin kan läsa alla orders" on handplockat_orders;
 create policy "Admin kan läsa alla orders"
   on handplockat_orders
   for select
@@ -20,6 +22,7 @@ create policy "Admin kan läsa alla orders"
   );
 
 -- Policy: tillåt användare att läsa sin egen profil
+drop policy if exists "Allow user to read own profile" on profiles;
 create policy "Allow user to read own profile"
   on profiles
   for select

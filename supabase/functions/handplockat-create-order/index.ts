@@ -56,13 +56,18 @@ async function sendOrderEmailToAdmin(
   to: string,
   details: any
 ) {
-  const subject = `Ny köp-reservation: ${details.title}`;
+  const subject =
+    details.orderType === "price_offer"
+      ? `Nytt prisförslag: ${details.title}`
+      : `Ny köp-reservation: ${details.title}`;
   const textContent = `
-Ny beställning från Handplockat:
+Nytt ärende från Handplockat:
 
 Annons: ${details.title}
 Listing ID: ${details.listingId}
 Pris: ${details.price}
+Typ: ${details.orderType === "price_offer" ? "Prisförslag" : "Direktköp"}
+Prisförslag: ${details.offeredPriceLabel || "-"}
 Kontakt: ${details.buyerPhone || "-"}
 E-post: ${details.buyerEmail || "-"}
 
@@ -83,12 +88,23 @@ async function sendOrderConfirmationToBuyer(
   to: string,
   details: any
 ) {
-  const subject = `Bekräftelse – Handplockat | ${details.title}`;
+  const subject =
+    details.orderType === "price_offer"
+      ? `Bekräftelse på prisförslag – Handplockat | ${details.title}`
+      : `Bekräftelse – Handplockat | ${details.title}`;
   const textContent = `
 Hej!
 
-Vi har tagit emot ditt köp av ${details.title}.
-Vi återkommer med plats och tid för överlämning.
+${
+  details.orderType === "price_offer"
+    ? `Vi har tagit emot ditt prisförslag på ${details.offeredPriceLabel || "-"} för ${details.title}.`
+    : `Vi har tagit emot ditt köp av ${details.title}.`
+}
+${
+  details.orderType === "price_offer"
+    ? "Vi återkommer så snart säljaren har tagit ställning till ditt prisförslag."
+    : "Vi återkommer med plats och tid för överlämning."
+}
 Om du vill ta kontakt direkt går det bra att maila till kontakt@trygghand.com 
 
 Handplockat | Sundsvall
@@ -142,9 +158,24 @@ serve(async (req: Request): Promise<Response> => {
   const buyerEmail = payload?.buyer_email
     ? String(payload.buyer_email).trim()
     : null;
+  const orderType =
+    payload?.order_type === "price_offer" ? "price_offer" : "direct_buy";
+  const offeredPriceRaw = payload?.offered_price_sek;
+  const offeredPriceSek =
+    typeof offeredPriceRaw === "number"
+      ? offeredPriceRaw
+      : typeof offeredPriceRaw === "string"
+      ? Number(offeredPriceRaw)
+      : null;
 
   if (!isUuid(listingId)) return json(400, { error: "Invalid listing_id" });
   if (!buyerPhone) return json(400, { error: "Missing buyer_phone" });
+  if (
+    orderType === "price_offer" &&
+    (offeredPriceSek == null || Number.isNaN(offeredPriceSek) || offeredPriceSek <= 0)
+  ) {
+    return json(400, { error: "Missing or invalid offered_price_sek" });
+  }
 
   const service = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -160,7 +191,7 @@ serve(async (req: Request): Promise<Response> => {
 
   if (listingErr) return json(500, { error: "Kunde inte hamta annons." });
   if (!listing) return json(404, { error: "Annonsen hittades inte." });
-  if ((listing as any).cta_typ !== "direktkop") {
+  if (orderType === "direct_buy" && (listing as any).cta_typ !== "direktkop") {
     return json(400, { error: "Annonsen ar inte tillganglig for direktkop." });
   }
   if ((listing as any).status !== "available") {
@@ -174,21 +205,25 @@ serve(async (req: Request): Promise<Response> => {
       buyer_name: buyerName,
       buyer_phone: buyerPhone,
       buyer_email: buyerEmail,
+      order_type: orderType,
+      offered_price_sek: orderType === "price_offer" ? offeredPriceSek : null,
       pickup_place: (listing as any).pickup_area ?? null,
       pickup_deadline_at: (listing as any).pickup_deadline_at ?? null,
-      status: "reserved",
+      status: orderType === "direct_buy" ? "reserved" : "pending",
     })
     .select("id")
     .single();
 
   if (orderErr) return json(500, { error: "Kunde inte skapa order." });
 
-  const { error: updateErr } = await service
-    .from("handplockat_listings")
-    .update({ status: "reserved" })
-    .eq("id", listingId);
+  if (orderType === "direct_buy") {
+    const { error: updateErr } = await service
+      .from("handplockat_listings")
+      .update({ status: "reserved" })
+      .eq("id", listingId);
 
-  if (updateErr) return json(500, { error: "Kunde inte reservera annons." });
+    if (updateErr) return json(500, { error: "Kunde inte reservera annons." });
+  }
 
   const priceLabel = `${(listing as any).price_sek} kr`;
   const details = {
@@ -197,6 +232,11 @@ serve(async (req: Request): Promise<Response> => {
     price: priceLabel,
     buyerPhone,
     buyerEmail,
+    orderType,
+    offeredPriceLabel:
+      orderType === "price_offer" && typeof offeredPriceSek === "number"
+        ? `${offeredPriceSek} kr`
+        : null,
   };
 
   const emailTracking: Record<string, unknown> = {

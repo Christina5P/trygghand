@@ -45,8 +45,8 @@ $$;
 grant execute on function public.customer_get_my_valuations() to authenticated;
 
 create or replace function public.admin_create_valuation(
-  p_customer_id uuid default null,
   p_analysis text,
+  p_customer_id uuid default null,
   p_image_urls text[] default null
 )
 returns jsonb
@@ -88,7 +88,7 @@ begin
 end;
 $$;
 
-grant execute on function public.admin_create_valuation(uuid, text, text[]) to authenticated;
+grant execute on function public.admin_create_valuation(text, uuid, text[]) to authenticated;
 
 create or replace function public.admin_set_valuation_customer(
   p_valuation_id uuid,

@@ -39,10 +39,13 @@ export default function HandplockatListing() {
   const [orderName, setOrderName] = useState("");
   const [orderPhone, setOrderPhone] = useState("");
   const [orderEmail, setOrderEmail] = useState("");
+  const [offeredPriceSek, setOfferedPriceSek] = useState("");
+  const [orderMode, setOrderMode] = useState<"direct_buy" | "price_offer">("direct_buy");
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [activeImageSrc, setActiveImageSrc] = useState("");
 
   const { customer, loading: authLoading } = useAuth();
 
@@ -86,6 +89,19 @@ export default function HandplockatListing() {
   }, [listingId]);
 
   const valuation = useMemo(() => safeParseJson(listing?.valuation_json), [listing]);
+  const cutoutImages = useMemo(() => {
+    if (!listing) return [] as string[];
+    const fromArray = Array.isArray((listing as any).images_cutout)
+      ? ((listing as any).images_cutout as string[]).filter(Boolean)
+      : [];
+    if (fromArray.length > 0) return fromArray;
+    return listing.image_cutout ? [listing.image_cutout] : [];
+  }, [listing]);
+
+  useEffect(() => {
+    const first = cutoutImages[0] || "";
+    setActiveImageSrc(first);
+  }, [cutoutImages]);
 
   if (loading) {
     return (
@@ -110,7 +126,7 @@ export default function HandplockatListing() {
     );
   }
 
-  const imageSrc = listing.image_cutout || "";
+  const imageSrc = activeImageSrc || "";
   const pickupText = listing.pickup_text
     ? listing.pickup_text
     : listing.pickup_window
@@ -148,8 +164,16 @@ export default function HandplockatListing() {
 
     if (!listing.id) return;
     if (!orderPhone.trim()) {
-      setOrderError("Telefonnummer krävs för köp.");
+      setOrderError("Telefonnummer krävs.");
       return;
+    }
+
+    const parsedOffer = Number(offeredPriceSek);
+    if (orderMode === "price_offer") {
+      if (!offeredPriceSek.trim() || Number.isNaN(parsedOffer) || parsedOffer <= 0) {
+        setOrderError("Ange ett giltigt prisförslag.");
+        return;
+      }
     }
 
     setOrderLoading(true);
@@ -159,16 +183,26 @@ export default function HandplockatListing() {
         buyerName: orderName.trim() || undefined,
         buyerPhone: orderPhone.trim(),
         buyerEmail: orderEmail.trim() || undefined,
+        orderType: orderMode,
+        offeredPriceSek: orderMode === "price_offer" ? parsedOffer : undefined,
       });
 
-      // Uppdatera status till 'reserved'
-      const updated = await import("@/lib/handplockat").then(m => m.updateHandplockatListing({ id: listing.id, status: "reserved" }));
-      setListing(updated);
+      if (orderMode === "direct_buy") {
+        const updated = await import("@/lib/handplockat").then((m) =>
+          m.updateHandplockatListing({ id: listing.id, status: "reserved" })
+        );
+        setListing(updated);
+      }
 
-      setOrderSuccess("Tack! Vi har tagit emot din reservation och återkommer via e-post.");
+      setOrderSuccess(
+        orderMode === "direct_buy"
+          ? "Tack! Vi har tagit emot din reservation och återkommer via e-post."
+          : "Tack! Vi har tagit emot ditt prisförslag och återkommer via e-post."
+      );
       setOrderName("");
       setOrderPhone("");
       setOrderEmail("");
+      setOfferedPriceSek("");
       setShowOrderForm(false);
     } catch (err) {
       setOrderError(getErrorMessage(err, "Kunde inte skapa order."));
@@ -183,7 +217,7 @@ export default function HandplockatListing() {
     "@type": "Product",
     name: listing.title,
     description: listing.description,
-    image: listing.image_cutout ? [listing.image_cutout] : [],
+    image: cutoutImages,
     url: `https://www.trygghand.com/handplockat/${listing.id}`,
     offers: {
       "@type": "Offer",
@@ -195,7 +229,7 @@ export default function HandplockatListing() {
   };
 
   // ✅ Fixar TS-felet: string | null | undefined -> string | undefined
-  const ogImage = listing.image_cutout ?? undefined;
+  const ogImage = cutoutImages[0] ?? undefined;
 
   return (
     <div className="min-h-[100svh] bg-background">
@@ -224,9 +258,23 @@ export default function HandplockatListing() {
                       <span className="text-sm text-muted-foreground">Ingen bild</span>
                     )}
                   </div>
+                  {cutoutImages.length > 1 && (
+                    <div className="mt-3 grid grid-cols-4 gap-2">
+                      {cutoutImages.map((url) => (
+                        <button
+                          key={url}
+                          type="button"
+                          className="aspect-square rounded-xl overflow-hidden border border-border bg-secondary/60"
+                          onClick={() => setActiveImageSrc(url)}
+                        >
+                          <img src={url} alt={listing.title} className="h-full w-full object-contain" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {!imageSrc && (
                     <p className="mt-4 text-xs text-muted-foreground">
-                      Annons bild saknas. Lägg till image_cutout för publik visning.
+                      Annonsbild saknas. Lägg till image_cutout eller images_cutout för publik visning.
                     </p>
                   )}
                 </div>
@@ -315,10 +363,35 @@ export default function HandplockatListing() {
                   <div className="space-y-2">
                     <button
                       type="button"
-                      onClick={() => setShowOrderForm((v) => !v)}
-                      className="inline-flex w-full items-center justify-center rounded-xl bg-primary text-primary-foreground py-3 text-sm font-semibold transition-colors hover:opacity-90"
+                      onClick={() => {
+                        setOrderError(null);
+                        setOrderSuccess(null);
+                        setOrderMode("direct_buy");
+                        setShowOrderForm(true);
+                      }}
+                      className={`inline-flex w-full items-center justify-center rounded-xl py-3 text-sm font-semibold transition-colors ${
+                        orderMode === "direct_buy"
+                          ? "bg-primary text-primary-foreground hover:opacity-90"
+                          : "border border-border bg-card text-foreground hover:bg-muted"
+                      }`}
                     >
                       Köp
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOrderError(null);
+                        setOrderSuccess(null);
+                        setOrderMode("price_offer");
+                        setShowOrderForm(true);
+                      }}
+                      className={`inline-flex w-full items-center justify-center rounded-xl py-3 text-sm font-semibold transition-colors ${
+                        orderMode === "price_offer"
+                          ? "bg-primary text-primary-foreground hover:opacity-90"
+                          : "border border-border bg-card text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      Prisförslag
                     </button>
                   </div>
 
@@ -347,6 +420,16 @@ export default function HandplockatListing() {
                         autoComplete="email"
                         className="w-full rounded-xl border border-input px-3 py-2 text-sm"
                       />
+                      {orderMode === "price_offer" && (
+                        <input
+                          value={offeredPriceSek}
+                          onChange={(e) => setOfferedPriceSek(e.target.value)}
+                          placeholder="Ditt prisförslag (kr)"
+                          type="number"
+                          min="1"
+                          className="w-full rounded-xl border border-input px-3 py-2 text-sm"
+                        />
+                      )}
 
                       {orderError && <p className="text-xs text-destructive">{orderError}</p>}
                       {orderSuccess && <p className="text-xs text-trust-green">{orderSuccess}</p>}
@@ -357,7 +440,7 @@ export default function HandplockatListing() {
                         disabled={orderLoading}
                         className="inline-flex w-full items-center justify-center rounded-xl bg-primary text-white py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-60"
                       >
-                        {orderLoading ? "Bekräftar…" : "Bekräfta"}
+                        {orderLoading ? "Skickar…" : "Bekräfta"}
                       </button>
 
                       <p className="text-xs text-muted-foreground">

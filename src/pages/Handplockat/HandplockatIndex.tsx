@@ -102,13 +102,16 @@ export default function HandplockatIndex() {
       position: idx + 1,
       url: `https://www.trygghand.com/handplockat/${listing.id}`,
       name: listing.title,
-      image: listing.image_cutout || undefined,
+      image: listing.image_cutout || listing.images_cutout?.[0] || undefined,
       description: listing.description,
     })),
   };
 
   // OG-image: första annonsbild eller fallback
-  const ogImage = visibleListings[0]?.image_cutout || '/handplockat.jpg';
+  const ogImage =
+    visibleListings[0]?.image_cutout ||
+    visibleListings[0]?.images_cutout?.[0] ||
+    '/handplockat.jpg';
 
   return (
     <div className="min-h-[100svh] bg-background">

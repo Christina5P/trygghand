@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
@@ -101,6 +101,7 @@ async function rotateBlob(blob: Blob, angle: number): Promise<Blob | null> {
 
 export default function HandplockatEdit() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const { customer, loading: authLoading } = useAuth();
 
@@ -137,6 +138,7 @@ export default function HandplockatEdit() {
   const [uploadingOriginal, setUploadingOriginal] = useState(false);
   const [uploadingAnnonsbild, setUploadingAnnonsbild] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [generatedAnnonsbilder, setGeneratedAnnonsbilder] = useState<string[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -209,6 +211,7 @@ export default function HandplockatEdit() {
 
         setValuationJsonRaw(listing.valuation_json ? JSON.stringify(listing.valuation_json, null, 2) : "");
         setImagesOriginalRaw(Array.isArray(listing.images_original) ? listing.images_original.join("\n") : "");
+        setGeneratedAnnonsbilder(Array.isArray((listing as any).images_cutout) ? (listing as any).images_cutout.filter(Boolean) : []);
         setImageCutout(listing.image_cutout ?? "");
 
         setLoadError(null);
@@ -310,6 +313,7 @@ export default function HandplockatEdit() {
       const existing = normalizeUrlList(imagesOriginalRaw);
       const next = [...existing, ...paths].join("\n");
       setImagesOriginalRaw(next);
+      setGeneratedAnnonsbilder([]);
     } catch (err) {
       setUploadError(getErrorMessage(err, "Kunde inte ladda upp originalbilder."));
     } finally {
@@ -370,28 +374,36 @@ export default function HandplockatEdit() {
     const listingId = ensureListingId();
     if (!listingId) return;
 
-    if (!firstOriginal) {
+    if (originals.length === 0) {
       setUploadError("Ladda upp minst en originalbild först.");
       return;
     }
 
-    // Om det är en Supabase storage-URL, konvertera till storage-path
-    let sourcePath = firstOriginal;
     const supabaseUrlPattern = /https:\/\/[^/]+\.supabase\.co\/storage\/v1\/object\/public\/([^?]+)/;
-    const match = firstOriginal.match(supabaseUrlPattern);
-    if (match && match[1]) {
-      sourcePath = decodeURIComponent(match[1]);
-    } else if (isHttpUrl(firstOriginal)) {
-      setUploadError("Endast uppladdade bilder från Supabase Storage kan användas. Ladda upp bilden först.");
-      return;
+    const sourcePaths: string[] = [];
+
+    for (const original of originals) {
+      const match = original.match(supabaseUrlPattern);
+      if (match && match[1]) {
+        sourcePaths.push(decodeURIComponent(match[1]));
+        continue;
+      }
+
+      if (isHttpUrl(original)) {
+        setUploadError("En eller flera bilder är externa URL:er. Endast uppladdade bilder från Supabase Storage kan användas.");
+        return;
+      }
+
+      sourcePaths.push(original);
     }
 
     setUploadingAnnonsbild(true);
+    setGeneratedAnnonsbilder([]);
     try {
       const { data, error } = await supabase.functions.invoke("handplockat-generate-images", {
         body: {
           listing_id: listingId,
-          source_image_paths: [sourcePath],
+          source_image_paths: sourcePaths,
         },
       });
 
@@ -400,14 +412,18 @@ export default function HandplockatEdit() {
         throw new Error((data as any)?.message || (data as any)?.error || "Kunde inte skapa annonsbild.");
       }
 
-      const url =
-        (Array.isArray((data as any)?.public_urls) && (data as any)?.public_urls[0]) ||
-        (data as any)?.public_url ||
-        "";
+      const urls = Array.isArray((data as any)?.public_urls)
+        ? ((data as any).public_urls as string[]).filter(Boolean)
+        : [];
 
-      if (!url) throw new Error("Fick ingen publik URL tillbaka från bildtjänsten.");
+      if (urls.length === 0 && (data as any)?.public_url) {
+        urls.push(String((data as any).public_url));
+      }
 
-      setImageCutout(String(url));
+      if (!urls.length) throw new Error("Fick ingen publik URL tillbaka från bildtjänsten.");
+
+      setGeneratedAnnonsbilder(urls);
+      setImageCutout(String(urls[0]));
     } catch (err) {
       setUploadError(getErrorMessage(err, "Kunde inte skapa annonsbild."));
     } finally {
@@ -476,9 +492,23 @@ export default function HandplockatEdit() {
         valuation_json: parsedValuation,
         images_original: normalizeUrlList(imagesOriginalRaw),
         image_cutout: imageCutout.trim() || null,
+        images_cutout:
+          generatedAnnonsbilder.length > 0
+            ? generatedAnnonsbilder
+            : imageCutout.trim()
+            ? [imageCutout.trim()]
+            : [],
       });
 
-      navigate(`/handplockat/${id}`);
+      if (status === "draft") {
+        const isPortalFlow = location.pathname.startsWith("/portal/handplockat");
+        const editPath = isPortalFlow
+          ? `/portal/handplockat/${id}/redigera`
+          : `/admin/handplockat/${id}/redigera`;
+        navigate(editPath);
+      } else {
+        navigate(`/handplockat/${id}`);
+      }
     } catch (err) {
       setError(getErrorMessage(err, "Kunde inte uppdatera annons."));
     } finally {
@@ -769,7 +799,7 @@ export default function HandplockatEdit() {
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Bilder</h2>
               <p className="text-xs text-muted-foreground">
-                Originalbilder sparas internt. Annonsbilden skapas från första originalbilden när du klickar på “Skapa annonsbild”.
+                Originalbilder sparas internt. Annonsbilder skapas från alla originalbilder när du klickar på “Skapa annonsbilder”.
               </p>
 
               <div className="flex flex-wrap gap-3">
@@ -822,9 +852,9 @@ export default function HandplockatEdit() {
                   type="button"
                   variant="outline"
                   onClick={handleGenerateAnnonsbild}
-                  disabled={uploadingAnnonsbild || !firstOriginal}
+                  disabled={uploadingAnnonsbild || originals.length === 0}
                 >
-                  {uploadingAnnonsbild ? "Skapar annonsbild…" : "Skapa annonsbild"}
+                  {uploadingAnnonsbild ? "Skapar annonsbilder…" : "Skapa annonsbilder"}
                 </Button>
 
                 <Button type="button" variant="outline" onClick={() => setImageCutout("")} disabled={!imageCutout}>
@@ -852,11 +882,34 @@ export default function HandplockatEdit() {
                 <label className="text-sm font-medium">Originalbilder (paths, en per rad)</label>
                 <textarea
                   value={imagesOriginalRaw}
-                  onChange={(e) => setImagesOriginalRaw(e.target.value)}
+                  onChange={(e) => {
+                    setImagesOriginalRaw(e.target.value);
+                    setGeneratedAnnonsbilder([]);
+                  }}
                   className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[100px]"
                   placeholder="handplockat-original/<annons-id>/<fil>.jpg"
                 />
               </div>
+
+              {generatedAnnonsbilder.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Genererade annonsbilder</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {generatedAnnonsbilder.map((url) => (
+                      <button
+                        key={url}
+                        type="button"
+                        className="aspect-square rounded-xl border border-border bg-secondary/60 overflow-hidden"
+                        onClick={() => setImageCutout(url)}
+                        aria-label="Välj som annonsbild"
+                      >
+                        <img src={url} alt="Genererad annonsbild" className="h-full w-full object-contain" />
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Klicka på en bild för att välja den som annonsbild.</p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Annonsbild (publik länk)</label>

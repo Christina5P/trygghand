@@ -1,7 +1,7 @@
 // /workspaces/trygghand/src/pages/Handplockat/HandplockatCreate.tsx
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -186,8 +186,9 @@ async function removeBgLocalAndUpload(args: {
   listingId: string;
   sourcePathOrUrl: string;
   rotationDeg: 0 | 90 | 180 | 270;
+  targetIndex: number;
 }): Promise<string> {
-  const { listingId, sourcePathOrUrl, rotationDeg } = args;
+  const { listingId, sourcePathOrUrl, rotationDeg, targetIndex } = args;
 
   const inputUrl = /^https?:\/\//i.test(sourcePathOrUrl)
     ? sourcePathOrUrl
@@ -202,7 +203,7 @@ async function removeBgLocalAndUpload(args: {
   const rotated = await rotateBlob(cutoutBlob, rotationDeg);
 
   // Ladda upp PNG till handplockat-public
-  const targetPath = `handplockat/${listingId}/1.png`;
+  const targetPath = `handplockat/${listingId}/${targetIndex}.png`;
 
   const { error: uploadError } = await supabase.storage
     .from("handplockat-public")
@@ -221,6 +222,7 @@ async function removeBgLocalAndUpload(args: {
 
 export default function HandplockatCreate() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   const [listingId, setListingId] = useState(() => generateUuid());
@@ -248,7 +250,7 @@ export default function HandplockatCreate() {
   );
 
   const [valuationJsonRaw, setValuationJsonRaw] = useState("");
-  const [extraInfo, setExtraInfo] = useState("");
+  const [extraInfo, setExtraInfo] = useState("Ta med bärhjälp");
 
   const [imagesOriginalRaw, setImagesOriginalRaw] = useState("");
   const [imageCutout, setImageCutout] = useState("");
@@ -279,6 +281,7 @@ export default function HandplockatCreate() {
 
   const [annonsbildKlar, setAnnonsbildKlar] = useState(false);
   const [rotationDeg, setRotationDeg] = useState<0 | 90 | 180 | 270>(0);
+  const [generatedAnnonsbilder, setGeneratedAnnonsbilder] = useState<string[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -554,6 +557,7 @@ export default function HandplockatCreate() {
     setStepImported(false);
     setStepGenerated(false);
     setAnnonsbildKlar(false);
+    setGeneratedAnnonsbilder([]);
     setImportImagesError(null);
     setGenerateImagesError(null);
 
@@ -633,6 +637,7 @@ export default function HandplockatCreate() {
       setStepImported(true);
       setStepGenerated(false);
       setAnnonsbildKlar(false);
+      setGeneratedAnnonsbilder([]);
     } catch (err) {
       setUploadError(getErrorMessage(err, "Kunde inte ladda upp originalbilder."));
     } finally {
@@ -693,6 +698,7 @@ export default function HandplockatCreate() {
       setStepImported(true);
       setStepGenerated(false);
       setAnnonsbildKlar(false);
+      setGeneratedAnnonsbilder([]);
     } catch (err) {
       setImportImagesError(getErrorMessage(err, "Kunde inte importera bilder."));
     } finally {
@@ -708,9 +714,7 @@ export default function HandplockatCreate() {
 
     const id = ensureListingId();
     const originals = normalizeUrlList(imagesOriginalRaw).filter(Boolean);
-    const first = originals[0];
-
-    if (!first) {
+    if (originals.length === 0) {
       setGenerateImagesError("Importera eller ladda upp minst en originalbild först.");
       return;
     }
@@ -719,15 +723,22 @@ export default function HandplockatCreate() {
     setGeneratingAnnonsbild(true);
     setAnnonsbildKlar(false);
     setStepGenerated(false);
+    setGeneratedAnnonsbilder([]);
 
     try {
-      const publicUrl = await removeBgLocalAndUpload({
-        listingId: id,
-        sourcePathOrUrl: first,
-        rotationDeg,
-      });
+      const publicUrls: string[] = [];
+      for (let index = 0; index < originals.length; index += 1) {
+        const publicUrl = await removeBgLocalAndUpload({
+          listingId: id,
+          sourcePathOrUrl: originals[index],
+          rotationDeg,
+          targetIndex: index + 1,
+        });
+        publicUrls.push(publicUrl);
+      }
 
-      setImageCutout(publicUrl);
+      setGeneratedAnnonsbilder(publicUrls);
+      setImageCutout(publicUrls[0] || "");
       setAnnonsbildKlar(true);
       setStepGenerated(true);
     } catch (err) {
@@ -819,10 +830,20 @@ export default function HandplockatCreate() {
 
         images_original: normalizeUrlList(imagesOriginalRaw),
         image_cutout: imageCutout.trim() || null,
+        images_cutout:
+          generatedAnnonsbilder.length > 0
+            ? generatedAnnonsbilder
+            : imageCutout.trim()
+            ? [imageCutout.trim()]
+            : [],
       });
 
       if (status === "draft") {
-        navigate(`/admin/handplockat/redigera/${createdId}`);
+        const isPortalFlow = location.pathname.startsWith("/portal/handplockat");
+        const editPath = isPortalFlow
+          ? `/portal/handplockat/${createdId}/redigera`
+          : `/admin/handplockat/${createdId}/redigera`;
+        navigate(editPath);
       } else {
         navigate(`/handplockat/${createdId}`);
       }
@@ -1149,7 +1170,7 @@ export default function HandplockatCreate() {
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Bilder</h2>
               <p className="text-xs text-muted-foreground">
-                Ladda upp originalbilder eller importera från värdering. Skapa sedan annonsbild från första originalbilden.
+                Ladda upp originalbilder eller importera från värdering. Skapa sedan annonsbilder från alla originalbilder.
               </p>
 
               <input
@@ -1203,6 +1224,7 @@ export default function HandplockatCreate() {
                     setStepImported(normalizeUrlList(e.target.value).length > 0);
                     setStepGenerated(false);
                     setAnnonsbildKlar(false);
+                    setGeneratedAnnonsbilder([]);
                   }}
                   className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[100px]"
                   placeholder="handplockat-original/<annons-id>/<fil>.jpg"
@@ -1253,7 +1275,7 @@ export default function HandplockatCreate() {
                   onClick={handleGenerateAnnonsbild}
                   disabled={generatingAnnonsbild || normalizeUrlList(imagesOriginalRaw).length === 0}
                 >
-                  {generatingAnnonsbild ? "Skapar annonsbild…" : "Skapa annonsbild"}
+                  {generatingAnnonsbild ? "Skapar annonsbilder…" : "Skapa annonsbilder"}
                 </Button>
 
                 {stepGenerated && (
@@ -1264,6 +1286,30 @@ export default function HandplockatCreate() {
 
                 {generateImagesError && <p className="text-xs text-destructive">{generateImagesError}</p>}
               </div>
+
+              {generatedAnnonsbilder.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium">Genererade annonsbilder</div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {generatedAnnonsbilder.map((url) => (
+                      <button
+                        key={url}
+                        type="button"
+                        className="aspect-square rounded-xl border border-border bg-secondary/60 overflow-hidden"
+                        onClick={() => {
+                          setImageCutout(url);
+                          setAnnonsbildKlar(true);
+                          setStepGenerated(true);
+                        }}
+                        aria-label="Välj som annonsbild"
+                      >
+                        <img src={url} alt="Genererad annonsbild" className="h-full w-full object-contain" />
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Klicka på en bild för att välja den som annonsbild.</p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Annonsbild (länk)</label>

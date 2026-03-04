@@ -8,7 +8,7 @@ interface ListingCardProps {
 }
 
 const ListingCard = ({ listing }: ListingCardProps) => {
-  const imageSrc = listing.image_cutout || "";
+  const imageSrc = listing.image_cutout || listing.images_cutout?.[0] || "";
   const priceLabel = formatSek(listing.price_sek);
 
   return (

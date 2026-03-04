@@ -47,7 +47,12 @@ export function useHandplockatAdminData() {
 
         const openOrderListingIds = new Set(
           (ordersData ?? [])
-            .filter((order) => order?.listing_id && ["pending", "reserved"].includes(String(order.status)))
+            .filter(
+              (order) =>
+                order?.listing_id &&
+                ["pending", "reserved"].includes(String(order.status)) &&
+                ["direct_buy", null, undefined].includes(order.order_type)
+            )
             .map((order) => String(order.listing_id))
         );
 

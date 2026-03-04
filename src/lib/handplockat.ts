@@ -14,6 +14,17 @@ import { supabase, isUnauthorizedError } from "@/lib/supabase";
 import type { HandplockatListing } from "@/types";
 
 export type ListingInput = Omit<HandplockatListing, "created_at">;
+
+function isMissingImagesCutoutColumn(error: PostgrestError | null): boolean {
+  const message = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
+  return message.includes("images_cutout") && (message.includes("does not exist") || message.includes("column"));
+}
+
+function withoutImagesCutout<T extends { images_cutout?: string[] | null }>(payload: T): Omit<T, "images_cutout"> {
+  const { images_cutout, ...rest } = payload;
+  return rest;
+}
+
 export async function fetchHandplockatListingById(
   id: string
 ): Promise<HandplockatListing | null> {
@@ -41,11 +52,21 @@ export async function fetchHandplockatListingById(
 }
 
 export async function createHandplockatListing(input: ListingInput): Promise<string> {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("handplockat_listings")
     .insert([input])
     .select("id")
     .single();
+
+  if (error && isMissingImagesCutoutColumn(error)) {
+    const retry = await supabase
+      .from("handplockat_listings")
+      .insert([withoutImagesCutout(input)])
+      .select("id")
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     if (isUnauthorizedError(error)) {
@@ -64,12 +85,23 @@ export async function createHandplockatListing(input: ListingInput): Promise<str
 export async function updateHandplockatListing(input: Partial<ListingInput> & { id: string }): Promise<HandplockatListing> {
   const { id, ...changes } = input;
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("handplockat_listings")
     .update(changes)
     .eq("id", id)
     .select("*")
     .single();
+
+  if (error && isMissingImagesCutoutColumn(error)) {
+    const retry = await supabase
+      .from("handplockat_listings")
+      .update(withoutImagesCutout(changes))
+      .eq("id", id)
+      .select("*")
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     if (isUnauthorizedError(error)) {
@@ -118,8 +150,10 @@ export async function createHandplockatOrder(payload: {
   buyerName?: string;
   buyerPhone?: string;
   buyerEmail?: string;
+  orderType?: "direct_buy" | "price_offer";
+  offeredPriceSek?: number;
 }): Promise<void> {
-  const { listingId, buyerName, buyerPhone, buyerEmail } = payload;
+  const { listingId, buyerName, buyerPhone, buyerEmail, orderType, offeredPriceSek } = payload;
 
   const { data, error } = await supabase.functions.invoke("handplockat-create-order", {
     body: {
@@ -127,6 +161,8 @@ export async function createHandplockatOrder(payload: {
       buyer_name: buyerName ?? null,
       buyer_phone: buyerPhone ?? null,
       buyer_email: buyerEmail ?? null,
+      order_type: orderType ?? "direct_buy",
+      offered_price_sek: typeof offeredPriceSek === "number" ? offeredPriceSek : null,
     },
   });
 

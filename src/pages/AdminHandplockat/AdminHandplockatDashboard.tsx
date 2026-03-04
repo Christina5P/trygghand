@@ -594,6 +594,12 @@ export default function AdminHandplockatDashboard() {
                       <td className="p-3">
                         <div>{o.buyer_name ?? "-"}</div>
                         <div className="text-xs text-muted-foreground">
+                          {o.order_type === "price_offer" ? "Prisförslag" : "Direktköp"}
+                          {o.order_type === "price_offer" && o.offered_price_sek
+                            ? ` • ${o.offered_price_sek} kr`
+                            : ""}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
                           {showPersonalData && customer?.is_admin ? (o.buyer_email || "-") : maskEmail(o.buyer_email)}
                         </div>
                         <div className="text-xs text-muted-foreground">

@@ -163,6 +163,7 @@ export interface HandplockatListing {
   valuation_json?: any | null;
   images_original?: string[] | null;
   image_cutout?: string | null;
+  images_cutout?: string[] | null;
   published_at?: string | null;
   created_at?: string;
 }
