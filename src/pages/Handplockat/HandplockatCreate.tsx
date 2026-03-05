@@ -135,7 +135,10 @@ const isClothingItem = (payload: any): boolean => {
 
 const isHttpUrl = (v: string) => /^https?:\/\//i.test(String(v || "").trim());
 
-function getCutoutStoragePath(cutoutUrl: string, fallbackListingId: string): string {
+function getCutoutStoragePath(
+  cutoutUrl: string,
+  fallbackListingId: string
+): string {
   try {
     const parsed = new URL(cutoutUrl, window.location.origin);
     const marker = "/handplockat-public/";
@@ -151,6 +154,18 @@ function getCutoutStoragePath(cutoutUrl: string, fallbackListingId: string): str
   return `handplockat/${fallbackListingId}/1.png`;
 }
 
+/**
+ * ✅ Kritisk fix:
+ * Vissa flöden råkar få endast filnamn (t.ex. "1769...jpg") utan folder.
+ * För valuations ligger de normalt i "valuations/<fil>" i bucket "images".
+ */
+function ensureValuationFolder(path: string): string {
+  const p = String(path || "").trim().replace(/^\/+/, "");
+  if (!p) return p;
+  if (p.includes("/")) return p;
+  return `valuations/${p}`;
+}
+
 async function tryCreateSignedUrl(
   pathOrUrl: string,
   expiresIn = 600
@@ -159,6 +174,7 @@ async function tryCreateSignedUrl(
   if (!value) return null;
   if (isHttpUrl(value)) return value;
 
+  // Försök som path först (normalfall)
   const buckets: BucketName[] = ["handplockat-private", "images"];
   for (const bucket of buckets) {
     const { data, error } = await supabase.storage
@@ -166,6 +182,16 @@ async function tryCreateSignedUrl(
       .createSignedUrl(value, expiresIn);
     if (!error && data?.signedUrl) return data.signedUrl;
   }
+
+  // ✅ Fallback: om vi bara fått filnamn, prova valuations/<fil> i images-bucket
+  if (!value.includes("/")) {
+    const vPath = ensureValuationFolder(value);
+    const { data, error } = await supabase.storage
+      .from("images")
+      .createSignedUrl(vPath, expiresIn);
+    if (!error && data?.signedUrl) return data.signedUrl;
+  }
+
   return null;
 }
 
@@ -201,7 +227,11 @@ async function rotateBlob(
 async function optimizeListingImageBlob(
   blob: Blob,
   maxDimension = 1600
-): Promise<{ blob: Blob; extension: "webp" | "png"; contentType: "image/webp" | "image/png" }> {
+): Promise<{
+  blob: Blob;
+  extension: "webp" | "png";
+  contentType: "image/webp" | "image/png";
+}> {
   const image = await createImageBitmap(blob);
   const longestSide = Math.max(image.width, image.height);
   const scale = longestSide > maxDimension ? maxDimension / longestSide : 1;
@@ -245,7 +275,13 @@ async function removeBgLocalAndUpload(args: {
   targetIndex: number;
   targetPathOverride?: string;
 }): Promise<string> {
-  const { listingId, sourcePathOrUrl, rotationDeg, targetIndex, targetPathOverride } = args;
+  const {
+    listingId,
+    sourcePathOrUrl,
+    rotationDeg,
+    targetIndex,
+    targetPathOverride,
+  } = args;
 
   const inputUrl = /^https?:\/\//i.test(sourcePathOrUrl)
     ? sourcePathOrUrl
@@ -281,7 +317,8 @@ async function removeBgLocalAndUpload(args: {
     .from("handplockat-public")
     .getPublicUrl(targetPath);
 
-  if (!pub?.publicUrl) throw new Error("Kunde inte skapa public URL för annonsbilden.");
+  if (!pub?.publicUrl)
+    throw new Error("Kunde inte skapa public URL för annonsbilden.");
 
   return pub.publicUrl;
 }
@@ -337,17 +374,23 @@ export default function HandplockatCreate() {
   const [importImagesError, setImportImagesError] = useState<string | null>(null);
 
   const [generatingAnnonsbild, setGeneratingAnnonsbild] = useState(false);
-  const [generateImagesError, setGenerateImagesError] = useState<string | null>(null);
+  const [generateImagesError, setGenerateImagesError] = useState<string | null>(
+    null
+  );
 
   const [uploadingOriginal, setUploadingOriginal] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [originalPreviewUrl, setOriginalPreviewUrl] = useState<string>("");
-  const [originalPreviewError, setOriginalPreviewError] = useState<string | null>(null);
+  const [originalPreviewError, setOriginalPreviewError] = useState<string | null>(
+    null
+  );
 
   const [annonsbildKlar, setAnnonsbildKlar] = useState(false);
   const [rotationDeg, setRotationDeg] = useState<0 | 90 | 180 | 270>(0);
-  const [generatedAnnonsbilder, setGeneratedAnnonsbilder] = useState<string[]>([]);
+  const [generatedAnnonsbilder, setGeneratedAnnonsbilder] = useState<string[]>(
+    []
+  );
 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -489,21 +532,100 @@ export default function HandplockatCreate() {
     return raw;
   };
 
-  const getValuationImagePaths = (valuation: Valuation, payload: any): string[] => {
-    if (Array.isArray((valuation as any).image_paths))
-      return ((valuation as any).image_paths as any[]).map(String).filter(Boolean);
+  const toStoragePath = (value: unknown): string | null => {
+    const raw = String(value || "").trim();
+    if (!raw) return null;
 
-    if (Array.isArray(payload?.image_paths))
-      return payload.image_paths.map(String).filter(Boolean);
+    const fromSupabaseObjectPath = (pathname: string): string | null => {
+      const decoded = decodeURIComponent(pathname || "").replace(/^\/+/, "");
+      if (!decoded) return null;
 
-    if (Array.isArray(payload?.analysis_result?.image_paths))
-      return payload.analysis_result.image_paths.map(String).filter(Boolean);
+      const storageMatch = decoded.match(
+        /^storage\/v1\/object\/(?:public|sign|authenticated)\/[^/]+\/(.+)$/i
+      );
+      if (storageMatch?.[1]) return storageMatch[1].replace(/^\/+/, "") || null;
 
-    if (Array.isArray((valuation as any).image_urls))
-      return ((valuation as any).image_urls as any[]).map(String).filter(Boolean);
+      const objectMatch = decoded.match(
+        /^object\/(?:public|sign|authenticated)\/[^/]+\/(.+)$/i
+      );
+      if (objectMatch?.[1]) return objectMatch[1].replace(/^\/+/, "") || null;
 
-    if (Array.isArray(payload?.image_urls))
-      return payload.image_urls.map(String).filter(Boolean);
+      return null;
+    };
+
+    if (!isHttpUrl(raw)) {
+      const fromObject = fromSupabaseObjectPath(raw);
+      if (fromObject) return fromObject;
+
+      const cleaned = raw
+        .replace(/^\/+/, "")
+        .replace(/^(images|handplockat-private|handplockat-public)\//i, "");
+      return cleaned || null;
+    }
+
+    try {
+      const parsed = new URL(raw);
+      return fromSupabaseObjectPath(parsed.pathname);
+    } catch {
+      // ignore parse failures and fall through
+    }
+
+    return null;
+  };
+
+  const normalizeStoragePaths = (items: unknown[]): string[] => {
+    const normalized = items
+      .map((item) => toStoragePath(item))
+      .filter((item): item is string => Boolean(item));
+
+    // Behåll folder om den finns, men om det bara blev filnamn -> gör det robust
+    return Array.from(new Set(normalized.map((p) => p.trim()).filter(Boolean)));
+  };
+
+  const firstNonEmptyImagePaths = (...candidates: unknown[]): string[] => {
+    for (const candidate of candidates) {
+      if (!Array.isArray(candidate)) continue;
+      const normalized = normalizeStoragePaths(candidate);
+      if (normalized.length > 0) return normalized;
+    }
+    return [];
+  };
+
+  const getValuationImagePaths = (
+    valuation: Valuation,
+    payload: any
+  ): string[] => {
+    const fromArrays = firstNonEmptyImagePaths(
+      (valuation as any).image_paths,
+      (valuation as any).image_urls,
+      payload?.image_paths,
+      payload?.analysis_result?.image_paths,
+      payload?.analysis?.image_paths,
+      payload?.analysis_result?.image_urls,
+      payload?.analysis?.image_urls,
+      payload?.image_urls
+    );
+
+    if (fromArrays.length > 0) {
+      // ✅ Extra robust: om någon råkar vara "bara filnamn", prefixa valuations/
+      return fromArrays.map((p) => (p.includes("/") ? p : ensureValuationFolder(p)));
+    }
+
+    const singleCandidates = [
+      (valuation as any).signedURL,
+      (valuation as any).signedUrl,
+      payload?.signedURL,
+      payload?.signedUrl,
+      payload?.analysis_result?.signedURL,
+      payload?.analysis_result?.signedUrl,
+      payload?.analysis?.signedURL,
+      payload?.analysis?.signedUrl,
+    ];
+
+    for (const candidate of singleCandidates) {
+      const path = toStoragePath(candidate);
+      if (path) return [path.includes("/") ? path : ensureValuationFolder(path)];
+    }
 
     return [];
   };
@@ -596,7 +718,9 @@ export default function HandplockatCreate() {
     setRedoStack([]);
   };
 
-  const handleCanvasPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+  const handleCanvasPointerDown = (
+    event: React.PointerEvent<HTMLCanvasElement>
+  ) => {
     if (!editorReady) return;
     const canvas = event.currentTarget;
     const point = getCanvasPoint(event);
@@ -621,7 +745,9 @@ export default function HandplockatCreate() {
     strokeDirtyRef.current = true;
   };
 
-  const handleCanvasPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+  const handleCanvasPointerMove = (
+    event: React.PointerEvent<HTMLCanvasElement>
+  ) => {
     if (!drawingRef.current || !editorReady) return;
     event.preventDefault();
 
@@ -841,7 +967,9 @@ export default function HandplockatCreate() {
       return;
     }
 
-    setValuationJsonRaw(typeof payload === "string" ? payload : JSON.stringify(payload, null, 2));
+    setValuationJsonRaw(
+      typeof payload === "string" ? payload : JSON.stringify(payload, null, 2)
+    );
 
     const paths = getValuationImagePaths(selected, payload);
     setValuationImagePaths(paths);
@@ -950,10 +1078,10 @@ export default function HandplockatCreate() {
     }
 
     const id = ensureListingId();
-    const paths = valuationImagePaths.filter(Boolean);
+    const valuationId = selectedValuationId.trim();
 
-    if (paths.length === 0) {
-      setImportImagesError("Ingen bild hittades i värderingen.");
+    if (!valuationId) {
+      setImportImagesError("Välj en värdering innan du importerar bilder.");
       return;
     }
 
@@ -961,13 +1089,18 @@ export default function HandplockatCreate() {
     setImportingImages(true);
 
     try {
+      // ✅ Skicka exakt storage paths (och gör dem robusta)
+      const safePaths = valuationImagePaths
+        .filter(Boolean)
+        .map((p) => (p.includes("/") ? p : ensureValuationFolder(p)));
+
       const { data, error } = await supabase.functions.invoke(
         "handplockat-import-valuation-images",
         {
           body: {
             listing_id: id,
-            source_image_paths: paths,
-            source_bucket: "images", // ✅ viktigt: dina valuation-bilder ligger i bucket "images"
+            valuation_id: valuationId,
+            source_image_paths: safePaths,
           },
         }
       );
@@ -976,9 +1109,7 @@ export default function HandplockatCreate() {
 
       if ((data as any)?.ok === false) {
         throw new Error(
-          (data as any)?.error ||
-            (data as any)?.message ||
-            "Import misslyckades."
+          (data as any)?.error || (data as any)?.message || "Import misslyckades."
         );
       }
 
@@ -1051,7 +1182,6 @@ export default function HandplockatCreate() {
     }
   };
 
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -1094,10 +1224,9 @@ export default function HandplockatCreate() {
 
     const pickupAreaSafe = pickupArea.trim() || "Alnö";
     const pickupWindowSafe = pickupWindow.trim() || "Enligt överenskommelse";
-    const pickupText =
-      pickupWindow.trim()
-        ? `${pickupAreaSafe} – ${pickupWindow.trim()}`
-        : `${pickupAreaSafe} – tid enligt överenskommelse`;
+    const pickupText = pickupWindow.trim()
+      ? `${pickupAreaSafe} – ${pickupWindow.trim()}`
+      : `${pickupAreaSafe} – tid enligt överenskommelse`;
 
     setSaving(true);
     try {
@@ -1208,20 +1337,29 @@ export default function HandplockatCreate() {
                 </Button>
               </div>
 
-              {valuationsLoading && <p className="text-xs text-muted-foreground">Laddar värderingar…</p>}
-              {valuationsError && <p className="text-xs text-destructive">{valuationsError}</p>}
+              {valuationsLoading && (
+                <p className="text-xs text-muted-foreground">Laddar värderingar…</p>
+              )}
+              {valuationsError && (
+                <p className="text-xs text-destructive">{valuationsError}</p>
+              )}
 
               {stepFilled && (
-                <p className="text-sm font-medium text-green-600">
-                  Uppgifter ifyllda ✓
-                </p>
+                <p className="text-sm font-medium text-green-600">Uppgifter ifyllda ✓</p>
               )}
 
               {valuationImageUrls.length > 0 && (
                 <div className="grid grid-cols-3 gap-3">
                   {valuationImageUrls.map((url) => (
-                    <div key={url} className="aspect-square rounded-xl bg-secondary/60 overflow-hidden">
-                      <img src={url} alt="Bild från värdering" className="h-full w-full object-cover" />
+                    <div
+                      key={url}
+                      className="aspect-square rounded-xl bg-secondary/60 overflow-hidden"
+                    >
+                      <img
+                        src={url}
+                        alt="Bild från värdering"
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                   ))}
                 </div>
@@ -1244,7 +1382,9 @@ export default function HandplockatCreate() {
                 )}
               </div>
 
-              {importImagesError && <p className="text-xs text-destructive">{importImagesError}</p>}
+              {importImagesError && (
+                <p className="text-xs text-destructive">{importImagesError}</p>
+              )}
             </div>
 
             {/* GRUNDUPPGIFTER */}
@@ -1515,7 +1655,9 @@ export default function HandplockatCreate() {
               </div>
 
               {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
-              {originalPreviewError && <p className="text-xs text-destructive">{originalPreviewError}</p>}
+              {originalPreviewError && (
+                <p className="text-xs text-destructive">{originalPreviewError}</p>
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Originalbilder (en per rad)</label>
@@ -1582,12 +1724,12 @@ export default function HandplockatCreate() {
                 </Button>
 
                 {stepGenerated && (
-                  <div className="text-sm font-medium text-green-600">
-                    Annonsbild klar ✓
-                  </div>
+                  <div className="text-sm font-medium text-green-600">Annonsbild klar ✓</div>
                 )}
 
-                {generateImagesError && <p className="text-xs text-destructive">{generateImagesError}</p>}
+                {generateImagesError && (
+                  <p className="text-xs text-destructive">{generateImagesError}</p>
+                )}
               </div>
 
               {generatedAnnonsbilder.length > 0 && (
@@ -1606,11 +1748,17 @@ export default function HandplockatCreate() {
                         }}
                         aria-label="Välj som annonsbild"
                       >
-                        <img src={url} alt="Genererad annonsbild" className="h-full w-full object-contain" />
+                        <img
+                          src={url}
+                          alt="Genererad annonsbild"
+                          className="h-full w-full object-contain"
+                        />
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">Klicka på en bild för att välja den som annonsbild.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Klicka på en bild för att välja den som annonsbild.
+                  </p>
                 </div>
               )}
 
@@ -1672,13 +1820,28 @@ export default function HandplockatCreate() {
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant="outline" onClick={handleUndo} disabled={undoStack.length <= 1}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleUndo}
+                          disabled={undoStack.length <= 1}
+                        >
                           Ångra
                         </Button>
-                        <Button type="button" variant="outline" onClick={handleRedo} disabled={redoStack.length === 0}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleRedo}
+                          disabled={redoStack.length === 0}
+                        >
                           Gör om
                         </Button>
-                        <Button type="button" variant="outline" onClick={handleResetEditor} disabled={!editorReady}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleResetEditor}
+                          disabled={!editorReady}
+                        >
                           Återställ
                         </Button>
                         <Button
@@ -1771,7 +1934,8 @@ export default function HandplockatCreate() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Kontakt</label>
                   <div className="text-sm text-muted-foreground">
-                    e-post: <br />{CONTACT_EMAIL}
+                    e-post: <br />
+                    {CONTACT_EMAIL}
                   </div>
                 </div>
               </div>
