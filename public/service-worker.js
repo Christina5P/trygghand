@@ -3,7 +3,7 @@ const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/handplockat',
-  '/handplockat.jpg',
+  '/handplockat.webp',
   '/manifest.json',
   '/favicon.ico',
   '/favicon-16x16.png',

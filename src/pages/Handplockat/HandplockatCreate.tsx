@@ -309,7 +309,7 @@ export default function HandplockatCreate() {
   const [dimensionHeight, setDimensionHeight] = useState("");
 
   const [skick, setSkick] = useState("");
-  const [pickupArea, setPickupArea] = useState("Sundsvall");
+  const [pickupArea, setPickupArea] = useState("Alnö");
   const [pickupWindow, setPickupWindow] = useState("Enligt överenskommelse");
   const [pickupDeadlineAt, setPickupDeadlineAt] = useState(
     toLocalDateValue(addDays(7))
@@ -1092,7 +1092,7 @@ export default function HandplockatCreate() {
           }
         : null;
 
-    const pickupAreaSafe = pickupArea.trim() || "Sundsvall";
+    const pickupAreaSafe = pickupArea.trim() || "Alnö";
     const pickupWindowSafe = pickupWindow.trim() || "Enligt överenskommelse";
     const pickupText =
       pickupWindow.trim()
@@ -1319,6 +1319,7 @@ export default function HandplockatCreate() {
                     <option value="Belysning">Belysning</option>
                     <option value="Textil">Textil</option>
                     <option value="Sport">Sport</option>
+                    <option value="Övrigt">Övrigt</option>
                   </select>
                 </div>
 
@@ -1452,7 +1453,7 @@ export default function HandplockatCreate() {
                     value={pickupArea}
                     onChange={(e) => setPickupArea(e.target.value)}
                     className="w-full rounded-xl border border-input px-3 py-2 text-sm"
-                    placeholder="T.ex. Sundsvall"
+                    placeholder="T.ex. Alnö"
                   />
                 </div>
               </div>

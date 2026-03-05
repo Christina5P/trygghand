@@ -23,9 +23,11 @@ const ListingCard = ({ listing, eager = false }: ListingCardProps) => {
             src={imageSrc}
             alt={listing.title}
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-            loading={eager ? "eager" : "lazy"}
-            fetchPriority={eager ? "high" : "auto"}
+            loading="lazy"
+            fetchPriority="auto"
             decoding="async"
+            width={600}
+            height={600}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">

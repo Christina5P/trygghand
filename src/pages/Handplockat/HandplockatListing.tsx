@@ -258,7 +258,7 @@ export default function HandplockatListing() {
                         alt={listing.title}
                         className="h-full w-full object-contain p-6"
                         loading="eager"
-                        fetchPriority="high"
+                        fetchPriority="auto"
                         decoding="async"
                       />
                     ) : (

@@ -29,6 +29,7 @@ export default function HandplockatIndex() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [interests, setInterests] = useState<HandplockatInterest[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("Alla");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -89,6 +90,31 @@ export default function HandplockatIndex() {
     [listings]
   );
 
+  const categoryFilters = useMemo(() => {
+    const categories = Array.from(
+      new Set(
+        visibleListings
+          .map((listing) => (listing.category || "").trim())
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b, "sv"));
+
+    return ["Alla", ...categories];
+  }, [visibleListings]);
+
+  const filteredListings = useMemo(() => {
+    if (selectedCategory === "Alla") return visibleListings;
+    return visibleListings.filter(
+      (listing) => (listing.category || "").trim() === selectedCategory
+    );
+  }, [visibleListings, selectedCategory]);
+
+  useEffect(() => {
+    if (!categoryFilters.includes(selectedCategory)) {
+      setSelectedCategory("Alla");
+    }
+  }, [categoryFilters, selectedCategory]);
+
   const canCreate = !authLoading && !!customer;
 
   // JSON-LD ItemList
@@ -121,7 +147,7 @@ export default function HandplockatIndex() {
         <section className="relative overflow-hidden">
           <div className="absolute inset-0">
             <img
-              src="/handplockat.jpg"
+              src="/handplockat.webp"
               alt="Handplockade vintagefynd"
               className="w-full h-full object-cover"
               fetchPriority="high"
@@ -181,15 +207,45 @@ export default function HandplockatIndex() {
                     Aktuella fynd
                   </h2>
                   <p className="text-muted-foreground mt-1">
-                    {visibleListings.length} föremål till salu i Sundsvall
+                    {filteredListings.length} föremål till salu i Sundsvall
                   </p>
                 </div>
               </div>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {visibleListings.map((listing, index) => (
-                  <ListingCard key={listing.id} listing={listing} eager={index < 3} />
-                ))}
+
+              <div className="mb-6 flex flex-wrap gap-2">
+                {categoryFilters.map((category) => {
+                  const isActive = selectedCategory === category;
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => setSelectedCategory(category)}
+                      className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                        isActive
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  );
+                })}
               </div>
+
+              {filteredListings.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-8 text-center">
+                  <h2 className="text-xl font-semibold text-foreground">Inga annonser i vald kategori</h2>
+                  <p className="text-muted-foreground mt-2">
+                    Prova en annan kategori eller visa alla.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredListings.map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
