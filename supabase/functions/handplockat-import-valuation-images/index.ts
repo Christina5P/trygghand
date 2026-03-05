@@ -99,7 +99,8 @@ function toStoragePath(value: unknown): string | null {
     return (
       raw
         .replace(/^\/+/, "")
-        .replace(/^(images|handplockat-private|handplockat-public)\//i, "") || null
+        .replace(/^(images|handplockat-private|handplockat-public)\//i, "") ||
+      null
     );
   }
 
@@ -206,7 +207,11 @@ function inferExtFromMime(mime: string | undefined): string | null {
   return null;
 }
 
-async function downloadFromBuckets(service: any, buckets: string[], path: string) {
+async function downloadFromBuckets(
+  service: any,
+  buckets: string[],
+  path: string
+) {
   for (const bucket of buckets) {
     const { data, error } = await service.storage.from(bucket).download(path);
     if (!error && data) {
@@ -283,12 +288,12 @@ serve(async (req: Request): Promise<Response> => {
   if (valuationError) return json(500, { error: "Could not verify valuation" });
   if (!valuation) return json(404, { error: "Valuation not found" });
 
-  const valuationAuthUserId = String((valuation as any)?.auth_user_id || "");
-  const valuationCustomerId = String((valuation as any)?.customer_id || "");
-
-  const isOwner =
-    (valuationAuthUserId && valuationAuthUserId === user.id) ||
-    (valuationCustomerId && valuationCustomerId === user.id);
+  // ✅ Ägarskap: kund ska kunna importera även om admin har "bytt kund" på värderingen.
+  // Vi tar customer_id först (nytt), annars auth_user_id (äldre rader).
+  const valuationCustomerId = String((valuation as any)?.customer_id ?? "");
+  const valuationAuthUserId = String((valuation as any)?.auth_user_id ?? "");
+  const ownerId = valuationCustomerId || valuationAuthUserId;
+  const isOwner = Boolean(ownerId) && ownerId === user.id;
 
   if (!admin && !isOwner) {
     // logga utan persondata
@@ -296,6 +301,7 @@ serve(async (req: Request): Promise<Response> => {
       user_id: user.id,
       valuation_id: valuationId,
       listing_id: listingId,
+      owner_id: ownerId || null,
       created_at: new Date().toISOString(),
     });
     return json(403, { error: "Forbidden" });
@@ -311,7 +317,9 @@ serve(async (req: Request): Promise<Response> => {
   if (sourcePathsFromClient.length > 0) {
     // Ingen URL tillåten i klientdata
     if (sourcePathsFromClient.some((p) => isHttpUrl(p))) {
-      return json(400, { error: "source_image_paths måste vara storage-paths (inte URL)." });
+      return json(400, {
+        error: "source_image_paths måste vara storage-paths (inte URL).",
+      });
     }
 
     const allowedSet = new Set(allowedSourcePaths);
@@ -343,7 +351,9 @@ serve(async (req: Request): Promise<Response> => {
 
       const MAX_BYTES = 10_000_000;
       if (bytes.byteLength > MAX_BYTES) {
-        return json(413, { error: "Bilden är för stor att importera (max 10 MB)." });
+        return json(413, {
+          error: "Bilden är för stor att importera (max 10 MB).",
+        });
       }
 
       const ext =
