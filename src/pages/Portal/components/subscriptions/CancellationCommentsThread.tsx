@@ -30,6 +30,7 @@ export function CancellationCommentsThread({
   canComment: boolean;
 }) {
   const { toast } = useToast();
+  void customerId;
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -38,14 +39,14 @@ export function CancellationCommentsThread({
     return comments
       .filter((c) => !c.deleted_at)
       .map((c) => {
-        const isCustomer = c.user_id === customerId;
+        const isCustomer = (c as any)?.role === "customer";
         return {
           ...c,
           role: isCustomer ? ("customer" as const) : ("admin" as const),
           isMine: !!currentUserId && c.user_id === currentUserId,
         };
       });
-  }, [comments, customerId, currentUserId]);
+  }, [comments, currentUserId]);
 
   const lastReadAtMs = useMemo(() => {
     if (!isAdmin || !currentUserId) return 0;

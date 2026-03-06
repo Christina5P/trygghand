@@ -102,16 +102,35 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     setEditingCustomer((prev) => ({ ...((prev as unknown) as any), [name]: value }) as Customer);
   };
 
-  // Call this to persist updates (replace with your real API / supabase call)
+  // Call this to persist updates to customer profile
   const handleUpdateCustomer = async (updates?: Partial<Customer>) => {
+    if (!customer?.id) return;
     const payload = updates ? ({ ...editingCustomer, ...updates } as Customer) : editingCustomer;
+    setLoadingSave(true);
     try {
-           console.log("Updating customer:", payload);
-      // reflect successful update locally
+      console.log("Updating customer:", payload);
+      
+      const { error } = await supabase
+        .from("customers")
+        .update({
+          name: payload.name,
+          email: payload.email || null,
+          phone: payload.phone || null,
+          personal_number: payload.personal_number || null,
+        })
+        .eq("id", customer.id);
+      
+      if (error) throw error;
+      
+      // Update local state
       setEditingCustomer(payload);
+      
+      toast({ title: "Sparat", description: "Dina ändringar har sparats." });
     } catch (err) {
       console.error("Failed to update customer", err);
-      // optionally show toast/error UI
+      toast({ title: "Kunde inte spara", description: (err as any)?.message || "Något gick fel", variant: "destructive" });
+    } finally {
+      setLoadingSave(false);
     }
   };
 
@@ -521,24 +540,12 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                     .from("subscription_cancellations")
                     .select("*")
                     .eq("customer_id", customer.id)
-                    .is("deleted_at", null)
                     .order("created_at", { ascending: false });
 
             let { data, error } = await run();
             if (error && isUnauthorizedError(error)) {
                 const ok = await handleUnauthorized();
                 if (ok) ({ data, error } = await run());
-            }
-
-            if (error && isMissingColumnError(error, "deleted_at")) {
-                const runNoSoftDelete = () =>
-                    supabase
-                        .from("subscription_cancellations")
-                        .select("*")
-                        .eq("customer_id", customer.id)
-                        .order("created_at", { ascending: false });
-
-                ({ data, error } = await runNoSoftDelete());
             }
 
             if (error) throw error;

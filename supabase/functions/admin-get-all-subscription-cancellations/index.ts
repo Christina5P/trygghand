@@ -61,19 +61,11 @@ serve(async (req: Request): Promise<Response> => {
   const baseSelect =
     "id, customer_id, subscription_id, provider, service_type, custom_service_name, notice_period, last_due_date, provider_contact, notes, status, documents, admin_notes, created_at, updated_at";
 
-  // Prefer excluding soft-deleted rows. If deleted_at doesn't exist yet, fall back.
-  let result = await service
+  // Query subscription_cancellations (no soft-delete column exists)
+  const result = await service
     .from("subscription_cancellations")
-    .select(`${baseSelect}, deleted_at`)
-    .is("deleted_at", null)
+    .select(baseSelect)
     .order("created_at", { ascending: false });
-
-  if (result.error) {
-    result = await service
-      .from("subscription_cancellations")
-      .select(baseSelect)
-      .order("created_at", { ascending: false });
-  }
 
   if (result.error) return json(500, { error: "Internal server error" });
 

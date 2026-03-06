@@ -48,6 +48,7 @@ import CustomerManagement from "./views/CustomerManagement";
 import ArchivedCustomersList from "./views/ArchivedCustomersList";
 import CreateCustomerForm from "@/components/CreateCustomerForm";
 import { useNavigate } from "react-router-dom";
+import PushNotificationToggle from "@/components/PushNotificationToggle";
 
 
 const CaseDetailsDialog: React.FC<{
@@ -853,10 +854,11 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                         <SelectItem value="valuations">Värderingar ({valuations.length})</SelectItem>
                         <SelectItem value="customers">Kunder ({customers.length})</SelectItem>
               <SelectItem value="key_receipts">Nyckelkvittens</SelectItem>
+                        <SelectItem value="settings">Inställningar</SelectItem>
                         <SelectItem value="contact_requests">Kontakt ({activeContactCount})</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {/* Desktop/tablet: tabbar */}
           <TabsList className="hidden md:flex min-w-[900px] w-auto bg-slate-200/80 shadow-sm rounded-lg p-1 flex-wrap gap-1 border border-slate-200 overflow-x-auto">
@@ -878,6 +880,9 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                     <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="contact_requests">
                       Kontakt ({activeContactCount})
                     </TabsTrigger>
+                    <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="settings">
+                      Inställningar
+                    </TabsTrigger>
                   </TabsList>
           {/* Ärenden */}
                   <TabsContent value="cases">
@@ -1171,6 +1176,21 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                         {contactRequestList}
                       </div>
                   </TabsContent>
+
+          {/* Inställningar */}
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Inställningar</CardTitle>
+                <CardDescription>Hantera dina inställningar för adminportalen</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <PushNotificationToggle />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
               </Tabs>
           </div>          {/* 1. Kunddialog (CustomersDialog) */}
           {selectedCustomer && (

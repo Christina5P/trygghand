@@ -49,10 +49,13 @@ export function SubscriptionCancellationsView({
   onDataUpdated,
   showProviderFilter = true,
 }: Props) {
+  void subscriptions; // keep prop stable; subscriptions may be used elsewhere later
+
   const { toast } = useToast();
   const { user, customer } = useAuth();
   const isAdmin = customer?.is_admin === true;
-  const [loading, setLoading] = useState(false);
+
+  const [loading] = useState(false); // left in place (may be set by parent patterns)
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<SubscriptionCancellation | null>(null);
   const [showDialog, setShowDialog] = useState(false);
@@ -63,10 +66,17 @@ export function SubscriptionCancellationsView({
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [latestCustomerCommentAt, setLatestCustomerCommentAt] = useState<Record<string, string>>({});
   const [unreadTick, setUnreadTick] = useState(0);
-  const [customerOverrideByCancellationId, setCustomerOverrideByCancellationId] = useState<Record<string, string | null>>({});
+  const [customerOverrideByCancellationId, setCustomerOverrideByCancellationId] = useState<
+    Record<string, string | null>
+  >({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [archivedCustomerMap, setArchivedCustomerMap] = useState<Record<string, string>>({});
   const [showArchivedCancellations, setShowArchivedCancellations] = useState(false);
+
+  const toMs = (iso?: string | null) => {
+    const ms = iso ? Date.parse(iso) : NaN;
+    return Number.isFinite(ms) ? ms : 0;
+  };
 
   const lastReadAtKey = (cancellationId: string) =>
     `adminPortal:cancellation:lastReadAt:${user?.id || ""}:${cancellationId}`;
@@ -83,15 +93,17 @@ export function SubscriptionCancellationsView({
 
   const hasUnread = (cancellationId: string) => {
     void unreadTick;
+    if (!isAdmin) return false;
     if (!user?.id) return false;
+
     try {
       const latestAt = latestCustomerCommentAt[cancellationId];
-      if (!latestAt) return false;
-      const latestMs = Date.parse(latestAt);
-      if (!Number.isFinite(latestMs)) return false;
+      const latestMs = toMs(latestAt);
+      if (!latestMs) return false;
 
       const lastReadAt = window.localStorage.getItem(lastReadAtKey(cancellationId));
-      const lastReadMs = lastReadAt ? Date.parse(lastReadAt) : 0;
+      const lastReadMs = toMs(lastReadAt);
+
       return latestMs > lastReadMs;
     } catch {
       return false;
@@ -121,9 +133,7 @@ export function SubscriptionCancellationsView({
   });
 
   useEffect(() => {
-    // IMPORTANT: customer/admin UI should derive provider/type options ONLY from
-    // existing subscription_cancellations, since the subscriptions table may be
-    // incomplete or blocked by RLS/schema drift.
+    // Provider/type options derived from existing cancellations
     const isNonEmpty = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
 
     const uniqueProviders = Array.from(
@@ -159,7 +169,11 @@ export function SubscriptionCancellationsView({
 
       const provider = provider_choice === "__other__" ? (provider_custom || "").trim() : provider_choice;
       if (!provider) {
-        toast({ title: "Saknar leverantör", description: "Välj leverantör eller skriv annan.", variant: "destructive" });
+        toast({
+          title: "Saknar leverantör",
+          description: "Välj leverantör eller skriv annan.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -295,23 +309,29 @@ export function SubscriptionCancellationsView({
     if (next) setSelected(next);
   }, [effectiveCancellations, selected]);
 
+  // Fetch latest customer comment timestamp per cancellation (for unread)
   useEffect(() => {
     const cancellationIds = effectiveCancellations.map((c) => c.id).filter(Boolean);
+    if (!isAdmin || !user?.id) {
+      setLatestCustomerCommentAt({});
+      return;
+    }
     if (cancellationIds.length === 0) {
       setLatestCustomerCommentAt({});
       return;
     }
 
     let isMounted = true;
-    const run = async () => {
+
+    const fetchLatest = async () => {
       try {
         const { data, error } = await supabase
           .from("cancellation_comments")
-          .select("cancellation_id, user_id, created_at")
+          .select("cancellation_id, role, created_at")
           .in("cancellation_id", cancellationIds)
           .order("created_at", { ascending: false });
-        if (error) throw error;
 
+        if (error) throw error;
         if (!isMounted) return;
 
         const latestByCancellation: Record<string, string> = {};
@@ -319,7 +339,7 @@ export function SubscriptionCancellationsView({
           const latestCustomer = (data || []).find(
             (row: any) =>
               row?.cancellation_id === cancellation.id &&
-              row?.user_id === cancellation.customer_id &&
+              row?.role === "customer" &&
               typeof row?.created_at === "string"
           ) as { created_at?: string } | undefined;
 
@@ -333,16 +353,26 @@ export function SubscriptionCancellationsView({
       }
     };
 
-    void run();
+    void fetchLatest();
+
+    // Light polling so unread updates when customer writes while admin is on the list
+    const interval = window.setInterval(() => {
+      void fetchLatest();
+    }, 45_000);
+
     return () => {
       isMounted = false;
+      window.clearInterval(interval);
     };
-  }, [effectiveCancellations]);
+    // NOTE: unreadTick included so UI re-evaluates immediately after marking read
+  }, [effectiveCancellations, isAdmin, user?.id, unreadTick]);
 
   const filtered = useMemo(() => {
     return effectiveCancellations.filter((c) => {
       const providerOk = showProviderFilter
-        ? (providerFilter === "all" ? true : (c.provider || "") === providerFilter)
+        ? providerFilter === "all"
+          ? true
+          : (c.provider || "") === providerFilter
         : true;
       const statusOk = statusFilter === "all" ? true : c.status === statusFilter;
       return providerOk && statusOk;
@@ -363,10 +393,7 @@ export function SubscriptionCancellationsView({
 
     const fetchArchivedNames = async () => {
       try {
-        const { data, error } = await supabase
-          .from("archived_customers")
-          .select("id, name")
-          .in("id", missingIds);
+        const { data, error } = await supabase.from("archived_customers").select("id, name").in("id", missingIds);
 
         if (error) throw error;
 
@@ -449,7 +476,9 @@ export function SubscriptionCancellationsView({
 
       <div className="space-y-6">
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Hämtar...</div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Hämtar...
+          </div>
         ) : (
           <>
             {activeFiltered.length === 0 ? (
@@ -460,24 +489,27 @@ export function SubscriptionCancellationsView({
               </Card>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {activeFiltered.map((c) => (
-                  <SubscriptionCancellationCard
-                    key={c.id}
-                    item={c}
-                    customer={customerMap[c.customer_id]}
-                    customerNameOverride={getCustomerName(c.customer_id ?? null)}
-                    caseTypeLabel="Uppsägning"
-                    commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
-                    canEditStatus={isAdmin}
-                    canDelete={isAdmin}
-                    isDeleting={deletingId === c.id}
-                    unread={hasUnread(c.id)}
-                    readStatusLabel={hasUnread(c.id) ? "Oläst" : "Läst"}
-                    onOpen={() => handleOpenCancellation(c)}
-                    onStatusChange={(next) => handleStatusChange(c.id, next)}
-                    onDelete={() => handleDeleteCancellation(c.id)}
-                  />
-                ))}
+                {activeFiltered.map((c) => {
+                  const unread = isAdmin ? hasUnread(c.id) : false;
+                  return (
+                    <SubscriptionCancellationCard
+                      key={c.id}
+                      item={c}
+                      customer={customerMap[c.customer_id]}
+                      customerNameOverride={getCustomerName(c.customer_id ?? null)}
+                      caseTypeLabel="Uppsägning"
+                      commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
+                      canEditStatus={isAdmin}
+                      canDelete={isAdmin}
+                      isDeleting={deletingId === c.id}
+                      unread={unread}
+                      readStatusLabel={unread ? "Oläst" : "Läst"}
+                      onOpen={() => handleOpenCancellation(c)}
+                      onStatusChange={(next) => handleStatusChange(c.id, next)}
+                      onDelete={() => handleDeleteCancellation(c.id)}
+                    />
+                  );
+                })}
               </div>
             )}
 
@@ -489,8 +521,9 @@ export function SubscriptionCancellationsView({
               >
                 {showArchivedCancellations ? "Fäll ihop" : "Visa"} arkiverade uppsägningar ({archivedFiltered.length})
               </Button>
-              {showArchivedCancellations && (
-                archivedFiltered.length === 0 ? (
+
+              {showArchivedCancellations &&
+                (archivedFiltered.length === 0 ? (
                   <Card>
                     <CardContent className="pt-6">
                       <p className="text-sm text-muted-foreground">Inga arkiverade uppsägningar.</p>
@@ -498,27 +531,29 @@ export function SubscriptionCancellationsView({
                   </Card>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {archivedFiltered.map((c) => (
-                      <SubscriptionCancellationCard
-                        key={c.id}
-                        item={c}
-                        customer={customerMap[c.customer_id]}
-                        customerNameOverride={getCustomerName(c.customer_id ?? null)}
-                        caseTypeLabel="Uppsägning"
-                        commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
-                        canEditStatus={isAdmin}
-                        canDelete={isAdmin}
-                        isDeleting={deletingId === c.id}
-                        unread={hasUnread(c.id)}
-                        readStatusLabel={hasUnread(c.id) ? "Oläst" : "Läst"}
-                        onOpen={() => handleOpenCancellation(c)}
-                        onStatusChange={(next) => handleStatusChange(c.id, next)}
-                        onDelete={() => handleDeleteCancellation(c.id)}
-                      />
-                    ))}
+                    {archivedFiltered.map((c) => {
+                      const unread = isAdmin ? hasUnread(c.id) : false;
+                      return (
+                        <SubscriptionCancellationCard
+                          key={c.id}
+                          item={c}
+                          customer={customerMap[c.customer_id]}
+                          customerNameOverride={getCustomerName(c.customer_id ?? null)}
+                          caseTypeLabel="Uppsägning"
+                          commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
+                          canEditStatus={isAdmin}
+                          canDelete={isAdmin}
+                          isDeleting={deletingId === c.id}
+                          unread={unread}
+                          readStatusLabel={unread ? "Oläst" : "Läst"}
+                          onOpen={() => handleOpenCancellation(c)}
+                          onStatusChange={(next) => handleStatusChange(c.id, next)}
+                          onDelete={() => handleDeleteCancellation(c.id)}
+                        />
+                      );
+                    })}
                   </div>
-                )
-              )}
+                ))}
             </div>
           </>
         )}
@@ -531,6 +566,7 @@ export function SubscriptionCancellationsView({
             <DialogTitle>Skapa nytt uppdrag</DialogTitle>
             <CardDescription>Skapa ett nytt abonnemangsärende för vald kund.</CardDescription>
           </DialogHeader>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -555,6 +591,7 @@ export function SubscriptionCancellationsView({
                   </FormItem>
                 )}
               />
+
               <div className="grid md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -563,10 +600,14 @@ export function SubscriptionCancellationsView({
                     <FormItem>
                       <FormLabel>Leverantör</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger><SelectValue placeholder="Välj leverantör" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Välj leverantör" />
+                        </SelectTrigger>
                         <SelectContent>
                           {providers.map((p) => (
-                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                            <SelectItem key={p} value={p}>
+                              {p}
+                            </SelectItem>
                           ))}
                           <SelectItem value="__other__">Annan leverantör</SelectItem>
                         </SelectContent>
@@ -601,10 +642,14 @@ export function SubscriptionCancellationsView({
                     <FormItem>
                       <FormLabel>Typ av abonnemang</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger><SelectValue placeholder="Välj typ" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Välj typ" />
+                        </SelectTrigger>
                         <SelectContent>
                           {serviceTypes.map((s) => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
                           ))}
                           <SelectItem value="__other__">Annat / Manuell inmatning</SelectItem>
                         </SelectContent>
@@ -624,7 +669,12 @@ export function SubscriptionCancellationsView({
                       <FormItem>
                         <FormLabel>Annan typ</FormLabel>
                         <FormControl>
-                          <Input placeholder="Skriv typ (t.ex. Bredband, Mobil, El)" {...field} value={field.value ?? ""} maxLength={120} />
+                          <Input
+                            placeholder="Skriv typ (t.ex. Bredband, Mobil, El)"
+                            {...field}
+                            value={field.value ?? ""}
+                            maxLength={120}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -641,10 +691,14 @@ export function SubscriptionCancellationsView({
                     <FormItem>
                       <FormLabel>Uppsägningstid</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <SelectTrigger><SelectValue placeholder="Välj" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Välj" />
+                        </SelectTrigger>
                         <SelectContent>
                           {noticeOptions.map((n) => (
-                            <SelectItem key={n} value={n}>{n}</SelectItem>
+                            <SelectItem key={n} value={n}>
+                              {n}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -660,7 +714,7 @@ export function SubscriptionCancellationsView({
                     <FormItem>
                       <FormLabel>Sista förfallodatum</FormLabel>
                       <FormControl>
-                          <Input type="date" {...field} value={field.value ?? ""} />
+                        <Input type="date" {...field} value={field.value ?? ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -689,7 +743,12 @@ export function SubscriptionCancellationsView({
                   <FormItem>
                     <FormLabel>Noteringar till ärendet</FormLabel>
                     <FormControl>
-                      <Textarea rows={3} placeholder="Övrig info till kund eller leverantör" {...field} value={field.value ?? ""} />
+                      <Textarea
+                        rows={3}
+                        placeholder="Övrig info till kund eller leverantör"
+                        {...field}
+                        value={field.value ?? ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -716,9 +775,15 @@ export function SubscriptionCancellationsView({
               />
 
               <DialogFooter>
-                <Button variant="ghost" type="button" onClick={resetDialog}>Avbryt</Button>
+                <Button variant="ghost" type="button" onClick={resetDialog}>
+                  Avbryt
+                </Button>
                 <Button type="submit" disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UploadCloud className="h-4 w-4 mr-2" />}
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <UploadCloud className="h-4 w-4 mr-2" />
+                  )}
                   Spara uppsägning
                 </Button>
               </DialogFooter>
