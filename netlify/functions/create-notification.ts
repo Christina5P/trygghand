@@ -26,6 +26,20 @@ export async function handler(event: any) {
   if (actor_id === recipient_id) {
     return { statusCode: 204, body: '' };
   }
+
+  // Archive old status notifications for same recipient + ref_id + type
+  // by marking them as read (prevents notification spam)
+  if (type === 'case_status' || type === 'cancellation_status') {
+    await supabase
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('user_id', recipient_id)
+      .eq('ref_id', ref_id)
+      .eq('ref_type', ref_type)
+      .eq('type', type)
+      .is('read_at', null);
+  }
+
   const { error } = await supabase
     .from('notifications')
     .insert([{

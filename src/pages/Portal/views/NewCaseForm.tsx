@@ -179,19 +179,7 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
                             if (fetchCaseComments) await fetchCaseComments(caseToEdit.id);
                         }}
                         canComment={true}
-                    />
-
-                    <CaseDocumentsSection
-                        caseId={caseToEdit.id}
-                        documents={caseDocuments}
-                        canUpload={true}
-                        onRefresh={async () => {
-                            await fetchCaseDocuments(caseToEdit.id);
-                        }}
-                    />
-                </div>
-            ) : (
-                <div className="mb-6 rounded border p-3 text-sm text-muted-foreground">
+                        otherPartyLastReadAt={isAdmin ? caseToEdit.customer_last_read_at : caseToEdit.admin_last_read_at}
                     Spara ärendet först för att kunna lägga till kommentarer och dokument.
                 </div>
             )}

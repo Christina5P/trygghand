@@ -26,10 +26,13 @@ export function useNotifications() {
       return;
     }
     setLoading(true);
+    // Only fetch active (unread) notifications
+    // Archived notifications (read_at !== null) from status changes are excluded
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
+      .is('read_at', null)
       .order('created_at', { ascending: false });
     if (!error) setNotifications(data || []);
     setLoading(false);

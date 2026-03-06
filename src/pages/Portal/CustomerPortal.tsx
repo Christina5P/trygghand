@@ -397,6 +397,63 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         };
     }, [customer?.id, toast, user?.id, markCaseAsRead, fetchCaseCommentsCount]);
 
+    // --- Hämta Uppsägningar ---
+    const fetchCancellations = useCallback(async () => {
+        if (!customer?.id) return;
+        setLoadingCancellations(true);
+        try {
+            const { data, error } = await supabase
+                .from("subscription_cancellations")
+                .select("*, admin_last_read_at, customer_last_read_at")
+                .eq("customer_id", customer.id)
+                .order("created_at", { ascending: false });
+
+            if (error) throw error;
+            setCancellations(data || []);
+        } catch (err) {
+            console.error("Failed to fetch cancellations", err);
+        } finally {
+            setLoadingCancellations(false);
+        }
+    }, [customer?.id]);
+
+    // Realtime för nya kommentarer i kundens uppsägningar
+    useEffect(() => {
+        if (!customer?.id) return;
+
+        const channel = supabase
+            .channel(`cancellation_comments_customer_${customer.id}`)
+            .on(
+                "postgres_changes",
+                { event: "INSERT", schema: "public", table: "cancellation_comments" },
+                (payload) => {
+                    const row = payload.new as any;
+                    const cancellationId = row?.cancellation_id as string | undefined;
+                    if (!cancellationId) return;
+
+                    const currentId = user?.id ?? customer?.id;
+
+                    // Notifiera inte på egna kommentarer
+                    if (row?.user_id && currentId && row.user_id === currentId) {
+                        return;
+                    }
+
+                    toast({
+                        title: "Nytt meddelande",
+                        description: "Nytt meddelande i en uppsägning",
+                    });
+
+                    // Trigger re-fetch av cancellations för att få uppdaterad comment_count
+                    fetchCancellations();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [customer?.id, toast, user?.id, fetchCancellations]);
+
     // --- Hämta Ärenden ---
     const fetchCases = useCallback(async () => {
         if (!customer?.id) return;
@@ -404,7 +461,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         const run = () =>
             supabase
                 .from("cases")
-                .select("*, service_type:service_type_id(name, description)")
+                .select("*, service_type:service_type_id(name, description), admin_last_read_at, customer_last_read_at")
                 .eq("customer_id", customer.id)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: false });
@@ -529,41 +586,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             setLoadingValuations(false);
         }
     }, [customer?.id, toast]);
-
-    // --- Hämta Uppsägningar ---
-    const fetchCancellations = useCallback(async () => {
-        if (!customer?.id) return;
-        setLoadingCancellations(true);
-        try {
-            const run = () =>
-                supabase
-                    .from("subscription_cancellations")
-                    .select("*")
-                    .eq("customer_id", customer.id)
-                    .order("created_at", { ascending: false });
-
-            let { data, error } = await run();
-            if (error && isUnauthorizedError(error)) {
-                const ok = await handleUnauthorized();
-                if (ok) ({ data, error } = await run());
-            }
-
-            if (error) throw error;
-            const mapped = (data || []).map((c: any) => ({
-                ...c,
-                id: String(c.id),
-                customer_id: c.customer_id != null ? String(c.customer_id) : c.customer_id,
-                subscription_id: c.subscription_id != null ? String(c.subscription_id) : null,
-            }));
-            setCancellations(mapped as SubscriptionCancellation[]);
-        } catch (err) {
-            console.error("Error fetching cancellations:", err);
-            toast({ title: "Fel", description: "Kunde inte hämta uppsägningar", variant: "destructive" });
-            setCancellations([]);
-        } finally {
-            setLoadingCancellations(false);
-        }
-    }, [customer?.id, handleUnauthorized, toast]);
 
     // --- Hämta fullmakter för kund ---
     const fetchDocuments = useCallback(async () => {
@@ -810,7 +832,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                                 {totalUnread > 0 && (
                                         <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
                                                 <div>
-                                                    Du har <span className="font-semibold">{totalUnread}</span> nya notiser.
+                                                    Du har <span className="font-semibold">{totalUnread}</span> nya uppdateringar.
                                                 </div>
                                                 {bannerDescriptions.length > 0 && (
                                                     <ul className="mt-1 list-disc space-y-0.5 pl-5 text-blue-900">

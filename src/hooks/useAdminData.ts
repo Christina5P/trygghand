@@ -31,7 +31,7 @@ export const useAdminData = () => {
     try {
       const { data, error } = await supabase
         .from("cases")
-        .select("*, service_type:service_type_id(*)")
+        .select("*, service_type:service_type_id(*), admin_last_read_at, customer_last_read_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       setCases(data ?? []);

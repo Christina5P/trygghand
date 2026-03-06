@@ -156,6 +156,38 @@ serve(async (req: Request): Promise<Response> => {
 
     if (insErr) return json(req, 500, { error: "Internal server error" });
 
+    // Send notification to customer if admin commented
+    if (admin) {
+      const { data: cancellationRow, error: cancellationErr } = await service
+        .from("subscription_cancellations")
+        .select("id, customer_id")
+        .eq("id", cancellationId)
+        .maybeSingle();
+
+      if (!cancellationErr && cancellationRow) {
+        const customerId = isRecord(cancellationRow) ? cancellationRow.customer_id : undefined;
+        if (customerId && customerId !== userId) {
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${serviceRoleKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                user_id: customerId,
+                title: "Nytt meddelande",
+                body: "Du har fått ett nytt meddelande i en uppsägning",
+                data: { type: "cancellation_comment", cancellation_id: cancellationId },
+              }),
+            });
+          } catch (e) {
+            console.error("send-push failed", e);
+          }
+        }
+      }
+    }
+
     // Do not echo free-text back
     return json(req, 200, { ok: true });
   } catch {

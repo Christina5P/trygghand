@@ -63,58 +63,82 @@ const CasesView: React.FC<CasesViewProps> = ({
   onUnreadCasesChange,
   onActiveCasesCountChange,
 }) => {
-  const { user } = useAuth(); // Används för att skicka till NewCaseForm som default adminId
+  const { user, customer } = useAuth();
+  const isAdmin = customer?.is_admin === true;
   const [isNewCaseDialogOpen, setIsNewCaseDialogOpen] = useState(false);
   const [editingCase, setEditingCase] = useState<Case | null>(null);
   const [caseComments, setCaseComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [caseCommentsCounts, setCaseCommentsCounts] = useState<Record<string, number>>({});
   const [latestCustomerCommentAt, setLatestCustomerCommentAt] = useState<Record<string, string>>({});
-  const [unreadTick, setUnreadTick] = useState(0);
+  const [latestAdminCommentAt, setLatestAdminCommentAt] = useState<Record<string, string>>({});
+  const [localReadAtByCaseId, setLocalReadAtByCaseId] = useState<
+    Record<string, { admin_last_read_at?: string; customer_last_read_at?: string }>
+  >({});
   const [archivedCustomerMap, setArchivedCustomerMap] = useState<Record<string, string>>({});
   const [showArchivedCases, setShowArchivedCases] = useState(false);
 
-  const lastReadAtKey = useCallback(
-    (caseId: string) => `adminPortal:lastReadAt:${user?.id || ""}:${caseId}`,
-    [user?.id]
-  );
+  const toMs = (iso?: string | null) => {
+    const ms = iso ? Date.parse(iso) : NaN;
+    return Number.isFinite(ms) ? ms : 0;
+  };
 
   const markCaseAsRead = useCallback(
-    (caseId: string) => {
+    async (caseId: string) => {
       if (!user?.id) return;
       try {
-        const now = new Date().toISOString();
-        window.localStorage.setItem(lastReadAtKey(caseId), now);
-        setUnreadTick((t) => t + 1);
-      } catch {
-        // ignore
+        // Call Edge Function to update DB timestamp
+        await supabase.functions.invoke("mark-case-as-read", {
+          body: { case_id: caseId },
+        });
+        // Optimistic local update so unread state flips immediately
+        const nowIso = new Date().toISOString();
+        setLocalReadAtByCaseId((prev) => ({
+          ...prev,
+          [caseId]: {
+            ...(prev[caseId] ?? {}),
+            ...(isAdmin
+              ? { admin_last_read_at: nowIso }
+              : { customer_last_read_at: nowIso }),
+          },
+        }));
+        // Refresh data for admin to get any new updates
+        if (isAdmin) void onDataUpdated();
+      } catch (err) {
+        console.error("Failed to mark case as read:", err);
       }
     },
-    [lastReadAtKey, user?.id]
+    [user?.id, isAdmin, onDataUpdated]
   );
 
   const hasUnread = useCallback(
-    (caseId: string) => {
-      void unreadTick;
+    (caseItem: Case) => {
       if (!user?.id) return false;
+
       try {
-        const lastReadAt = window.localStorage.getItem(lastReadAtKey(caseId));
-        const lastReadMs = lastReadAt ? Date.parse(lastReadAt) : 0;
-        const latestAt = latestCustomerCommentAt[caseId];
-        if (!latestAt) return false;
-        const latestMs = Date.parse(latestAt);
-        if (!Number.isFinite(latestMs)) return false;
-        return latestMs > lastReadMs;
+        // Admin checks if customer has commented since admin last read
+        // Customer checks if admin has commented since customer last read
+        const myLastReadAt = isAdmin
+          ? (localReadAtByCaseId[caseItem.id]?.admin_last_read_at ?? caseItem.admin_last_read_at)
+          : (localReadAtByCaseId[caseItem.id]?.customer_last_read_at ?? caseItem.customer_last_read_at);
+        
+        const theirLatestCommentAt = isAdmin
+          ? latestCustomerCommentAt[caseItem.id]
+          : latestAdminCommentAt[caseItem.id];
+        
+        const myLastReadMs = toMs(myLastReadAt);
+        const theirLatestMs = toMs(theirLatestCommentAt);
+        return theirLatestMs > 0 && theirLatestMs > myLastReadMs;
       } catch {
         return false;
       }
     },
-    [latestCustomerCommentAt, lastReadAtKey, unreadTick, user?.id]
+    [isAdmin, latestCustomerCommentAt, latestAdminCommentAt, localReadAtByCaseId, user?.id, toMs]
   );
 
   const unreadCasesCount = React.useMemo(() => {
     if (!cases?.length) return 0;
-    return cases.reduce((acc, caseItem) => (hasUnread(caseItem.id) ? acc + 1 : acc), 0);
+    return cases.reduce((acc, caseItem) => (hasUnread(caseItem) ? acc + 1 : acc), 0);
   }, [cases, hasUnread]);
 
   useEffect(() => {
@@ -177,22 +201,43 @@ const CasesView: React.FC<CasesViewProps> = ({
     }
   }, []);
 
+  const fetchLatestAdminComment = useCallback(async (caseId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("case_comments")
+        .select("created_at")
+        .eq("case_id", caseId)
+        .eq("author_type", "admin")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      const createdAt = (data as any)?.[0]?.created_at as string | undefined;
+      setLatestAdminCommentAt((prev) => ({
+        ...prev,
+        [caseId]: createdAt || "",
+      }));
+    } catch (err) {
+      console.error("Error fetching latest admin comment:", err);
+      setLatestAdminCommentAt((prev) => ({ ...prev, [caseId]: "" }));
+    }
+  }, []);
+
   const handleOpenNewCaseDialog = () => {
     setEditingCase(null); // Nollställ för nytt ärende
     setCaseComments([]); // Rensa kommentarer
     setIsNewCaseDialogOpen(true);
   };
 
-  const handleEditCase = (caseItem: Case) => {
+  const handleEditCase = async (caseItem: Case) => {
     setEditingCase(caseItem);
     setIsNewCaseDialogOpen(true);
+    // Notify parent (AdminPortal) so it can show full case dialog/details
+    onOpenCase?.(caseItem);
     // Ladda kommentarer när ett ärende öppnas för redigering
     if (caseItem.id) {
         fetchCaseComments(caseItem.id);
-        markCaseAsRead(caseItem.id);
+        await markCaseAsRead(caseItem.id);
     }
-   // Notify parent (AdminPortal) so it can show full case dialog/details
-   onOpenCase?.(caseItem);
   };
 
   const handleCaseFormClose = async () => {
@@ -221,10 +266,11 @@ const CasesView: React.FC<CasesViewProps> = ({
         if (caseItem.id) {
           fetchCaseCommentsCount(caseItem.id);
           fetchLatestCustomerComment(caseItem.id);
+          fetchLatestAdminComment(caseItem.id);
         }
       });
     }
-  }, [cases, fetchCaseCommentsCount, fetchLatestCustomerComment]);
+  }, [cases, fetchCaseCommentsCount, fetchLatestCustomerComment, fetchLatestAdminComment]);
 
   const countCasesSource = casesForCount ?? cases;
 
@@ -283,7 +329,7 @@ const CasesView: React.FC<CasesViewProps> = ({
 
   const renderCaseCard = (caseItem: Case) => {
     const totalCount = caseCommentsCounts[caseItem.id] || 0;
-    const unread = hasUnread(caseItem.id);
+    const unread = hasUnread(caseItem);
     const readStatusLabel = unread ? "Oläst" : "Läst";
 
     return (

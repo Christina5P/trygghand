@@ -22,6 +22,7 @@ export function CaseCommentsThread({
   comments,
   onRefresh,
   canComment,
+  otherPartyLastReadAt,
 }: {
   caseId: string;
   currentUserId: string | null | undefined;
@@ -29,6 +30,7 @@ export function CaseCommentsThread({
   comments: CaseComment[];
   onRefresh: () => Promise<void>;
   canComment: boolean;
+  otherPartyLastReadAt?: string | null;
 }) {
   const { toast } = useToast();
   const [text, setText] = useState("");
@@ -47,17 +49,10 @@ export function CaseCommentsThread({
       });
   }, [comments, currentUserId]);
 
-  const lastReadAtMs = useMemo(() => {
-    if (!isAdmin || !currentUserId) return 0;
-    try {
-      const key = `adminPortal:lastReadAt:${currentUserId}:${caseId}`;
-      const value = window.localStorage.getItem(key);
-      const parsed = value ? Date.parse(value) : 0;
-      return Number.isFinite(parsed) ? parsed : 0;
-    } catch {
-      return 0;
-    }
-  }, [caseId, currentUserId, isAdmin]);
+  const otherPartyLastReadMs = useMemo(() => {
+    const parsed = otherPartyLastReadAt ? Date.parse(otherPartyLastReadAt) : NaN;
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, [otherPartyLastReadAt]);
 
   const send = async () => {
     if (!canComment) return;
@@ -120,9 +115,13 @@ export function CaseCommentsThread({
                     {roleLabel(c.author_type)}
                     <span className="opacity-70"> · </span>
                     <span className="opacity-70">{c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd HH:mm") : ""}</span>
-                    {isAdmin && c.author_type === "customer" && (
+                    {c.mine && (
                       <span className="ml-2 inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium opacity-100">
-                        {c.created_at && Date.parse(c.created_at) > lastReadAtMs ? "Oläst" : "Läst"}
+                        {(() => {
+                          const messageMs = c.created_at ? Date.parse(c.created_at) : NaN;
+                          if (!Number.isFinite(messageMs)) return "Skickat";
+                          return messageMs <= otherPartyLastReadMs ? "Läst" : "Skickat";
+                        })()}
                       </span>
                     )}
                   </div>

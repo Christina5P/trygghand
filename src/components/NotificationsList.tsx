@@ -16,17 +16,15 @@ export const NotificationsList: React.FC = () => {
       </Button>
       <ul className="bg-white border rounded shadow p-2 max-w-md">
         {loading && <li>Laddar...</li>}
-        {notifications.map((n) => (
-          <li key={n.id} className={`flex items-center justify-between py-2 border-b last:border-b-0 ${!n.read_at ? 'font-bold' : 'text-gray-500'}`}>
+        {unread.map((n) => (
+          <li key={n.id} className="flex items-center justify-between py-2 border-b last:border-b-0 font-bold">
             <span>
               {n.type} – <a href={`/${n.ref_type}/${n.ref_id}`} className="underline">Gå till</a>
             </span>
-            {!n.read_at && (
-              <Button size="sm" variant="ghost" onClick={() => markAsRead(n.id)}>Markera som läst</Button>
-            )}
+            <Button size="sm" variant="ghost" onClick={() => markAsRead(n.id)}>Markera som läst</Button>
           </li>
         ))}
-        {notifications.length === 0 && !loading && <li>Inga notiser</li>}
+        {unread.length === 0 && !loading && <li>Inga notiser</li>}
       </ul>
     </div>
   );
