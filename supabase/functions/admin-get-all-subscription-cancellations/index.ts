@@ -18,14 +18,21 @@ function json(status: number, body: unknown): Response {
 }
 
 async function requireAdmin(service: any, userId: string): Promise<boolean> {
+  const { data: roles, error: rolesErr } = await service
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin");
+
+  if (!rolesErr && Array.isArray(roles) && roles.length > 0) return true;
+
   const { data: profile, error: profileErr } = await service
     .from("profiles")
-    .select("is_admin")
+    .select("role, is_admin")
     .eq("id", userId)
     .maybeSingle();
 
-  if (!profileErr && (profile as any)?.is_admin === true) return true;
-
+  if (!profileErr && (((profile as any)?.role === "admin") || ((profile as any)?.is_admin === true))) return true;
   return false;
 }
 
