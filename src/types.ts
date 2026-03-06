@@ -43,6 +43,10 @@ export interface Case {
   scheduled_date?: string | null;
   address?: string | null;
 
+  // Read receipt timestamps
+  admin_last_read_at?: string | null;
+  customer_last_read_at?: string | null;
+
   // JOIN: service_type(*)
   service_type?: ServiceType | null;
 }
@@ -201,6 +205,10 @@ export interface SubscriptionCancellation {
   provider_contact?: string | null; // kontaktperson hos leverantör
   notes?: string | null;
   status: CancellationStatus;
+
+  // Read receipt timestamps
+  admin_last_read_at?: string | null;
+  customer_last_read_at?: string | null;
 
   /**
    * Documents are stored in `subscription_cancellations.documents` (jsonb).

@@ -65,7 +65,10 @@ export function SubscriptionCancellationsView({
   const [providerFilter, setProviderFilter] = useState<string>("all");
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [latestCustomerCommentAt, setLatestCustomerCommentAt] = useState<Record<string, string>>({});
-  const [unreadTick, setUnreadTick] = useState(0);
+  const [latestAdminCommentAt, setLatestAdminCommentAt] = useState<Record<string, string>>({});
+  const [localReadAtByCancellationId, setLocalReadAtByCancellationId] = useState<
+    Record<string, { admin_last_read_at?: string; customer_last_read_at?: string }>
+  >({});
   const [customerOverrideByCancellationId, setCustomerOverrideByCancellationId] = useState<
     Record<string, string | null>
   >({});
@@ -78,37 +81,69 @@ export function SubscriptionCancellationsView({
     return Number.isFinite(ms) ? ms : 0;
   };
 
-  const lastReadAtKey = (cancellationId: string) =>
-    `adminPortal:cancellation:lastReadAt:${user?.id || ""}:${cancellationId}`;
-
-  const markCancellationAsRead = (cancellationId: string) => {
+  const markCancellationAsRead = async (cancellationId: string) => {
     if (!user?.id) return;
     try {
-      window.localStorage.setItem(lastReadAtKey(cancellationId), new Date().toISOString());
-      setUnreadTick((t) => t + 1);
-    } catch {
-      // ignore
+      // Call Edge Function to update DB timestamp
+      await supabase.functions.invoke("mark-cancellation-as-read", {
+        body: { cancellation_id: cancellationId },
+      });
+      // Optimistic local update so unread state flips immediately even before parent refetch.
+      const nowIso = new Date().toISOString();
+      setLocalReadAtByCancellationId((prev) => ({
+        ...prev,
+        [cancellationId]: {
+          ...(prev[cancellationId] ?? {}),
+          ...(isAdmin
+            ? { admin_last_read_at: nowIso }
+            : { customer_last_read_at: nowIso }),
+        },
+      }));
+      // In customer portal, onDataUpdated toggles loading and temporarily unmounts this view,
+      // which closes the detail dialog right after opening. Keep the dialog stable.
+      if (isAdmin) void onDataUpdated();
+    } catch (err) {
+      console.error("Failed to mark cancellation as read:", err);
     }
   };
 
-  const hasUnread = (cancellationId: string) => {
-    void unreadTick;
-    if (!isAdmin) return false;
+  // Calculate unread status from DB timestamps
+  const hasUnread = (cancellation: SubscriptionCancellation) => {
     if (!user?.id) return false;
 
     try {
-      const latestAt = latestCustomerCommentAt[cancellationId];
-      const latestMs = toMs(latestAt);
-      if (!latestMs) return false;
+      // Admin checks if customer has commented since admin last read
+      // Customer checks if admin has commented since customer last read
+      const myLastReadAt = isAdmin
+        ? (localReadAtByCancellationId[cancellation.id]?.admin_last_read_at ?? cancellation.admin_last_read_at)
+        : (localReadAtByCancellationId[cancellation.id]?.customer_last_read_at ?? cancellation.customer_last_read_at);
+      
+      const theirLatestCommentAt = isAdmin
+        ? latestCustomerCommentAt[cancellation.id]
+        : latestAdminCommentAt[cancellation.id];
+      
+      const myLastReadMs = toMs(myLastReadAt);
+      const theirLatestMs = toMs(theirLatestCommentAt);
+      const unread = theirLatestMs > 0 && theirLatestMs > myLastReadMs;
 
-      const lastReadAt = window.localStorage.getItem(lastReadAtKey(cancellationId));
-      const lastReadMs = toMs(lastReadAt);
+      if (selected?.id === cancellation.id) {
+        console.debug("[cancellation unread debug]", {
+          cancellationId: cancellation.id,
+          isAdmin,
+          admin_last_read_at: localReadAtByCancellationId[cancellation.id]?.admin_last_read_at ?? cancellation.admin_last_read_at ?? null,
+          customer_last_read_at: localReadAtByCancellationId[cancellation.id]?.customer_last_read_at ?? cancellation.customer_last_read_at ?? null,
+          latestCustomerCommentAt: latestCustomerCommentAt[cancellation.id] ?? null,
+          latestAdminCommentAt: latestAdminCommentAt[cancellation.id] ?? null,
+          unread,
+        });
+      }
 
-      return latestMs > lastReadMs;
+      return unread;
     } catch {
       return false;
     }
   };
+
 
   const customerMap = useMemo(() => {
     const map: Record<string, Customer> = {};
@@ -309,13 +344,9 @@ export function SubscriptionCancellationsView({
     if (next) setSelected(next);
   }, [effectiveCancellations, selected]);
 
-  // Fetch latest customer comment timestamp per cancellation (for unread)
+  // Fetch latest customer comment timestamp per cancellation
   useEffect(() => {
     const cancellationIds = effectiveCancellations.map((c) => c.id).filter(Boolean);
-    if (!isAdmin || !user?.id) {
-      setLatestCustomerCommentAt({});
-      return;
-    }
     if (cancellationIds.length === 0) {
       setLatestCustomerCommentAt({});
       return;
@@ -327,7 +358,7 @@ export function SubscriptionCancellationsView({
       try {
         const { data, error } = await supabase
           .from("cancellation_comments")
-          .select("cancellation_id, role, created_at")
+          .select("cancellation_id, user_id, is_internal, created_at")
           .in("cancellation_id", cancellationIds)
           .order("created_at", { ascending: false });
 
@@ -336,10 +367,12 @@ export function SubscriptionCancellationsView({
 
         const latestByCancellation: Record<string, string> = {};
         for (const cancellation of effectiveCancellations) {
+          // Find latest comment from customer (user_id matches customer_id)
           const latestCustomer = (data || []).find(
             (row: any) =>
               row?.cancellation_id === cancellation.id &&
-              row?.role === "customer" &&
+              !row?.is_internal &&
+              row?.user_id === cancellation.customer_id &&
               typeof row?.created_at === "string"
           ) as { created_at?: string } | undefined;
 
@@ -355,7 +388,7 @@ export function SubscriptionCancellationsView({
 
     void fetchLatest();
 
-    // Light polling so unread updates when customer writes while admin is on the list
+    // Polling for real-time updates
     const interval = window.setInterval(() => {
       void fetchLatest();
     }, 45_000);
@@ -364,8 +397,61 @@ export function SubscriptionCancellationsView({
       isMounted = false;
       window.clearInterval(interval);
     };
-    // NOTE: unreadTick included so UI re-evaluates immediately after marking read
-  }, [effectiveCancellations, isAdmin, user?.id, unreadTick]);
+  }, [effectiveCancellations]);
+
+  // Fetch latest admin comment timestamp per cancellation
+  useEffect(() => {
+    const cancellationIds = effectiveCancellations.map((c) => c.id).filter(Boolean);
+    if (cancellationIds.length === 0) {
+      setLatestAdminCommentAt({});
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchLatest = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("cancellation_comments")
+          .select("cancellation_id, user_id, is_internal, created_at")
+          .in("cancellation_id", cancellationIds)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        if (!isMounted) return;
+
+        const latestByCancellation: Record<string, string> = {};
+        for (const cancellation of effectiveCancellations) {
+          // Find latest comment from admin (user_id !== customer_id)
+          const latestAdmin = (data || []).find(
+            (row: any) =>
+              row?.cancellation_id === cancellation.id &&
+              row?.user_id !== cancellation.customer_id &&
+              typeof row?.created_at === "string"
+          ) as { created_at?: string } | undefined;
+
+          latestByCancellation[cancellation.id] = latestAdmin?.created_at || "";
+        }
+
+        setLatestAdminCommentAt(latestByCancellation);
+      } catch {
+        if (!isMounted) return;
+        setLatestAdminCommentAt({});
+      }
+    };
+
+    void fetchLatest();
+
+    // Polling for real-time updates
+    const interval = window.setInterval(() => {
+      void fetchLatest();
+    }, 45_000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(interval);
+    };
+  }, [effectiveCancellations]);
 
   const filtered = useMemo(() => {
     return effectiveCancellations.filter((c) => {
@@ -423,9 +509,9 @@ export function SubscriptionCancellationsView({
   const activeFiltered = filtered.filter((c) => !isArchivedCustomer(c.customer_id ?? null));
   const archivedFiltered = filtered.filter((c) => isArchivedCustomer(c.customer_id ?? null));
 
-  const handleOpenCancellation = (item: SubscriptionCancellation) => {
-    markCancellationAsRead(item.id);
+  const handleOpenCancellation = async (item: SubscriptionCancellation) => {
     setSelected(item);
+    await markCancellationAsRead(item.id);
   };
 
   return (
@@ -490,7 +576,7 @@ export function SubscriptionCancellationsView({
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {activeFiltered.map((c) => {
-                  const unread = isAdmin ? hasUnread(c.id) : false;
+                  const unread = hasUnread(c);
                   return (
                     <SubscriptionCancellationCard
                       key={c.id}
@@ -498,7 +584,7 @@ export function SubscriptionCancellationsView({
                       customer={customerMap[c.customer_id]}
                       customerNameOverride={getCustomerName(c.customer_id ?? null)}
                       caseTypeLabel="Uppsägning"
-                      commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
+                      commentCount={Math.max(commentCounts[c.id] ?? c.comment_count ?? 0, unread ? 1 : 0)}
                       canEditStatus={isAdmin}
                       canDelete={isAdmin}
                       isDeleting={deletingId === c.id}
@@ -532,7 +618,7 @@ export function SubscriptionCancellationsView({
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {archivedFiltered.map((c) => {
-                      const unread = isAdmin ? hasUnread(c.id) : false;
+                      const unread = hasUnread(c);
                       return (
                         <SubscriptionCancellationCard
                           key={c.id}
@@ -540,7 +626,7 @@ export function SubscriptionCancellationsView({
                           customer={customerMap[c.customer_id]}
                           customerNameOverride={getCustomerName(c.customer_id ?? null)}
                           caseTypeLabel="Uppsägning"
-                          commentCount={commentCounts[c.id] ?? c.comment_count ?? 0}
+                          commentCount={Math.max(commentCounts[c.id] ?? c.comment_count ?? 0, unread ? 1 : 0)}
                           canEditStatus={isAdmin}
                           canDelete={isAdmin}
                           isDeleting={deletingId === c.id}
@@ -799,7 +885,7 @@ export function SubscriptionCancellationsView({
         customer={selected ? customerMap[selected.customer_id] : undefined}
         customerNameOverride={selected ? getCustomerName(selected.customer_id ?? null) : undefined}
         customers={customers}
-        currentUserId={user?.id}
+        currentUserId={user?.id ?? customer?.id}
         isAdmin={isAdmin}
         onSaved={onDataUpdated}
         onCustomerChanged={(cancellationId, nextCustomerId) => {

@@ -20,6 +20,7 @@ export function CancellationCommentsThread({
   comments,
   onRefresh,
   canComment,
+  otherPartyLastReadAt,
 }: {
   cancellationId: string;
   customerId: string;
@@ -28,6 +29,7 @@ export function CancellationCommentsThread({
   comments: CancellationComment[];
   onRefresh: () => Promise<void>;
   canComment: boolean;
+  otherPartyLastReadAt?: string | null;
 }) {
   const { toast } = useToast();
   void customerId;
@@ -39,26 +41,21 @@ export function CancellationCommentsThread({
     return comments
       .filter((c) => !c.deleted_at)
       .map((c) => {
-        const isCustomer = (c as any)?.role === "customer";
+        // Determine role: if user_id matches customerId, it's a customer comment
+        // Otherwise it's an admin comment (or could use is_internal flag)
+        const isCustomer = c.user_id === customerId;
         return {
           ...c,
           role: isCustomer ? ("customer" as const) : ("admin" as const),
           isMine: !!currentUserId && c.user_id === currentUserId,
         };
       });
-  }, [comments, currentUserId]);
+  }, [comments, currentUserId, customerId]);
 
-  const lastReadAtMs = useMemo(() => {
-    if (!isAdmin || !currentUserId) return 0;
-    try {
-      const key = `adminPortal:cancellation:lastReadAt:${currentUserId}:${cancellationId}`;
-      const value = window.localStorage.getItem(key);
-      const parsed = value ? Date.parse(value) : 0;
-      return Number.isFinite(parsed) ? parsed : 0;
-    } catch {
-      return 0;
-    }
-  }, [cancellationId, currentUserId, isAdmin]);
+  const otherPartyLastReadMs = useMemo(() => {
+    const parsed = otherPartyLastReadAt ? Date.parse(otherPartyLastReadAt) : NaN;
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, [otherPartyLastReadAt]);
 
   const send = async () => {
     if (!canComment) return;
@@ -122,9 +119,13 @@ export function CancellationCommentsThread({
                     {c.role === "admin" ? "Admin" : "Kund"}
                     <span className="opacity-70"> · </span>
                     <span className="opacity-70">{c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd HH:mm") : ""}</span>
-                    {isAdmin && c.role === "customer" && (
+                    {c.isMine && (
                       <span className="ml-2 inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium opacity-100">
-                        {c.created_at && Date.parse(c.created_at) > lastReadAtMs ? "Oläst" : "Läst"}
+                        {(() => {
+                          const messageMs = c.created_at ? Date.parse(c.created_at) : NaN;
+                          if (!Number.isFinite(messageMs)) return "Skickat";
+                          return messageMs <= otherPartyLastReadMs ? "Läst" : "Skickat";
+                        })()}
                       </span>
                     )}
                   </div>

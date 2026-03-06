@@ -58,6 +58,7 @@ export function SubscriptionCancellationDetailDialog({
   const [providerValue, setProviderValue] = useState<ProviderValue>({ kind: "preset", value: "Telia" });
   const [comments, setComments] = useState<CancellationComment[]>([]);
   const [documents, setDocuments] = useState<CancellationDocuments>([]);
+  const [liveReadAt, setLiveReadAt] = useState<{ admin_last_read_at?: string | null; customer_last_read_at?: string | null }>({});
 
   const selectedCustomer = useMemo(() => {
     if (!draft?.customer_id) return customer;
@@ -73,6 +74,9 @@ export function SubscriptionCancellationDetailDialog({
   }, [item, isAdmin, currentUserId]);
 
   const canUploadDocs = canComment;
+  const otherPartyLastReadAt = isAdmin
+    ? (liveReadAt.customer_last_read_at ?? item?.customer_last_read_at)
+    : (liveReadAt.admin_last_read_at ?? item?.admin_last_read_at);
 
   const refreshComments = async () => {
     if (!item) return;
@@ -81,6 +85,35 @@ export function SubscriptionCancellationDetailDialog({
       .select("*")
       .eq("cancellation_id", item.id)
       .order("created_at", { ascending: true });
+    if (isAdmin) {
+      // Admin reads cancellations via Edge Function in this app.
+      // Use the same source here so read timestamps do not depend on direct table RLS.
+      const { data: adminData, error: adminErr } = await supabase.functions.invoke("admin-get-all-subscription-cancellations", {
+        body: {},
+      });
+      if (!adminErr && (adminData as any)?.ok === true) {
+        const rows = ((adminData as any)?.cancellations ?? []) as any[];
+        const row = rows.find((r) => String((r as any)?.id) === item.id);
+        if (row) {
+          setLiveReadAt({
+            admin_last_read_at: (row as any).admin_last_read_at ?? null,
+            customer_last_read_at: (row as any).customer_last_read_at ?? null,
+          });
+        }
+      }
+    } else {
+      const { data: readData } = await supabase
+        .from("subscription_cancellations")
+        .select("admin_last_read_at, customer_last_read_at")
+        .eq("id", item.id)
+        .maybeSingle();
+      if (readData) {
+        setLiveReadAt({
+          admin_last_read_at: (readData as any).admin_last_read_at ?? null,
+          customer_last_read_at: (readData as any).customer_last_read_at ?? null,
+        });
+      }
+    }
     if (!error && data) {
       const next = data as any as CancellationComment[];
       setComments(next);
@@ -96,6 +129,16 @@ export function SubscriptionCancellationDetailDialog({
     setDocuments(((item.documents as any) ?? []) as CancellationDocuments);
     void refreshComments();
   }, [item, open]);
+
+  useEffect(() => {
+    if (!item || !open || !isAdmin) return;
+
+    const interval = window.setInterval(() => {
+      void refreshComments();
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [item?.id, open, isAdmin]);
 
   const isDirty = useMemo(() => {
     if (!item || !draft) return false;
@@ -313,6 +356,7 @@ export function SubscriptionCancellationDetailDialog({
                 comments={comments}
                 onRefresh={refreshComments}
                 canComment={canComment}
+                otherPartyLastReadAt={otherPartyLastReadAt}
               />
             </div>
           </div>
