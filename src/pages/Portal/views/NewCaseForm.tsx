@@ -180,47 +180,33 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
                         }}
                         canComment={true}
                         otherPartyLastReadAt={isAdmin ? caseToEdit.customer_last_read_at : caseToEdit.admin_last_read_at}
+                    />
+
+                    <CaseDocumentsSection
+                        caseId={caseToEdit.id}
+                        documents={caseDocuments}
+                        canUpload={true}
+                        onRefresh={async () => {
+                            await fetchCaseDocuments(caseToEdit.id);
+                        }}
+                    />
+                </div>
+            ) : (
+                <div className="text-sm text-muted-foreground mb-4">
                     Spara ärendet först för att kunna lägga till kommentarer och dokument.
                 </div>
             )}
 
             <h2 className="text-xl font-bold">{caseToEdit ? "Redigera Ärende" : "Skapa Nytt Ärende"}</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Kund</label>
-          <select value={selectedCustomer} onChange={(e) => setSelectedCustomer(e.target.value)} className="mt-1 block w-full border rounded p-2" required>
-            <option value="" disabled>Välj kund...</option> 
-            {customers.map((c: Customer) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Titel</label>
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border rounded px-2 py-1" required />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Beskrivning</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full border rounded px-2 py-1" rows={4} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-sm block mb-1">Skapat (datum)</label>
-            <input type="date" value={createdDate ?? ""} onChange={(e) => setCreatedDate(e.target.value || null)} className="w-full border rounded px-2 py-1" />
-          </div>
-          <div>
-            <label className="text-sm block mb-1">Schemalagt datum/Deadline</label>
-            <input type="date" value={scheduledDate ?? ""} onChange={(e) => setScheduledDate(e.target.value || null)} className="w-full border rounded px-2 py-1" />
-          </div>
-        </div>
-
-        <div>
-          <label className="text-sm block mb-1">Status</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full border rounded px-2 py-1">
-            <option value="pending">Nytt</option>
-            <option value="in_progress">Pågående</option>
+      <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Kund</label>
+          <select value={selectedCustomer} onChange={(e) => setSelectedCustomer(e.target.value)} className="mt-1 block w-full border rounded p-2" required>
+            <option value="" disabled>Välj kund...</option> 
+            {customers.map((c: Customer) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
             <option value="completed">Avslutat</option>
             <option value="cancelled">Avbrutet</option>
           </select>
