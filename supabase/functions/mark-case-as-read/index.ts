@@ -32,12 +32,47 @@ async function isAdmin(service: any, userId: string): Promise<boolean> {
 
   const { data: profile, error: profileErr } = await service
     .from("profiles")
-    .select("role")
+    .select("role, is_admin")
     .eq("id", userId)
     .maybeSingle();
 
-  if (!profileErr && (profile as any)?.role === "admin") return true;
+  if (!profileErr && (((profile as any)?.role === "admin") || ((profile as any)?.is_admin === true))) return true;
   return false;
+}
+
+async function resolveCustomerIdForUser(service: any, user: any): Promise<string | null> {
+  const userId = user?.id as string | undefined;
+  const userEmail = user?.email as string | undefined;
+  const userPhone = user?.phone as string | undefined;
+
+  if (userId) {
+    const { data, error } = await service
+      .from("customers")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!error && data?.id) return String(data.id);
+  }
+
+  if (userEmail) {
+    const { data, error } = await service
+      .from("customers")
+      .select("id")
+      .eq("email", userEmail)
+      .maybeSingle();
+    if (!error && data?.id) return String(data.id);
+  }
+
+  if (userPhone) {
+    const { data, error } = await service
+      .from("customers")
+      .select("id")
+      .eq("phone", userPhone)
+      .maybeSingle();
+    if (!error && data?.id) return String(data.id);
+  }
+
+  return null;
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -60,7 +95,6 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   const caseId = payload?.case_id;
-
   if (!isUuid(caseId)) return json(400, { error: "Invalid case_id" });
 
   const authHeader = req.headers.get("authorization") || "";
@@ -79,7 +113,6 @@ serve(async (req: Request): Promise<Response> => {
 
   const admin = await isAdmin(service, user.id);
 
-  // Verify case exists and user has access
   const { data: caseRow, error: caseErr } = await service
     .from("cases")
     .select("id, customer_id")
@@ -90,13 +123,15 @@ serve(async (req: Request): Promise<Response> => {
   if (!caseRow) return json(404, { error: "Not found" });
 
   const customerId = (caseRow as any).customer_id as string;
-  
-  // Check access: admin can access all, customer can only access their own
-  if (!admin && customerId !== user.id) return json(403, { error: "Forbidden" });
+  const resolvedCustomerId = await resolveCustomerIdForUser(service, user);
+  const isOwnerCustomer = !!resolvedCustomerId && customerId === resolvedCustomerId;
 
-  // Update appropriate timestamp based on user role
+  if (!admin && !isOwnerCustomer) return json(403, { error: "Forbidden" });
+
   const now = new Date().toISOString();
-  const updateField = admin ? "admin_last_read_at" : "customer_last_read_at";
+  // Same precedence rule as mark-cancellation-as-read:
+  // if the user owns this case as customer, write customer_last_read_at even if they also have admin role.
+  const updateField = isOwnerCustomer ? "customer_last_read_at" : "admin_last_read_at";
 
   const { error: updateErr } = await service
     .from("cases")

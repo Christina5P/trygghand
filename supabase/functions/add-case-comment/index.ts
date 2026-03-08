@@ -66,6 +66,41 @@ async function findPrimaryAdminUserId(service: any): Promise<string | null> {
   return null;
 }
 
+async function resolveCustomerIdForUser(service: any, user: any): Promise<string | null> {
+  const userId = user?.id as string | undefined;
+  const userEmail = user?.email as string | undefined;
+  const userPhone = user?.phone as string | undefined;
+
+  if (userId) {
+    const { data, error } = await service
+      .from("customers")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!error && data?.id) return String(data.id);
+  }
+
+  if (userEmail) {
+    const { data, error } = await service
+      .from("customers")
+      .select("id")
+      .eq("email", userEmail)
+      .maybeSingle();
+    if (!error && data?.id) return String(data.id);
+  }
+
+  if (userPhone) {
+    const { data, error } = await service
+      .from("customers")
+      .select("id")
+      .eq("phone", userPhone)
+      .maybeSingle();
+    if (!error && data?.id) return String(data.id);
+  }
+
+  return null;
+}
+
 async function invokeSendPush(params: {
   supabaseUrl: string;
   serviceRoleKey: string;
@@ -146,19 +181,27 @@ serve(async (req: Request): Promise<Response> => {
   if (!caseRow) return json(404, { error: "Not found" });
 
   const ownerId = (caseRow as any).customer_id as string;
-  if (!admin && ownerId !== user.id) return json(403, { error: "Forbidden" });
+  const resolvedCustomerId = await resolveCustomerIdForUser(service, user);
+  const isOwnerCustomer = !!resolvedCustomerId && ownerId === resolvedCustomerId;
+
+  // Access: admin can access all. Non-admin must own the case.
+  if (!admin && !isOwnerCustomer) return json(403, { error: "Forbidden" });
+
+  // Role precedence: if the user owns this case as customer, write customer comment
+  // even if the same auth user also has admin role.
+  const authorType = isOwnerCustomer ? "customer" : "admin";
 
   const { data: insertedComment, error: insErr } = await service.from("case_comments").insert({
     case_id: caseId,
     author_id: user.id,
     customer_id: ownerId,
-    author_type: admin ? "admin" : "customer",
+    author_type: authorType,
     content: message,
   }).select("id").single();
 
   if (insErr) return json(500, { error: "Internal server error" });
 
-  const recipientId = admin ? ownerId : await findPrimaryAdminUserId(service);
+  const recipientId = authorType === "admin" ? ownerId : await findPrimaryAdminUserId(service);
 
   if (recipientId && recipientId !== user.id) {
     await invokeSendPush({

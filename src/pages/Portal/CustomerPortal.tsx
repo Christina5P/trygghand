@@ -296,6 +296,8 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             } catch {
                 // ignore
             }
+            // Write customer_last_read_at to DB so admin can see "Läst" on their own messages.
+            supabase.functions.invoke("mark-case-as-read", { body: { case_id: caseId } }).catch(() => {});
         },
         [lastReadCountKey, caseCommentsCounts, storageUserId]
     );
@@ -1025,6 +1027,8 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                                                             caseId={caseItem.id}
                                                             currentUserId={user?.id}
                                                             isAdmin={false}
+                                                            caseCustomerId={caseItem.customer_id}
+                                                            otherPartyLastReadAt={caseItem.admin_last_read_at ?? null}
                                                             comments={comments}
                                                             onRefresh={async () => {
                                                                 await fetchComments(caseItem.id);

@@ -107,6 +107,8 @@ const CasesView: React.FC<CasesViewProps> = ({
       } catch (err) {
         console.error("Failed to mark case as read:", err);
       }
+      // Write admin_last_read_at to DB so customer can see "Läst" on their own messages.
+      supabase.functions.invoke("mark-case-as-read", { body: { case_id: caseId } }).catch(() => {});
     },
     [user?.id, isAdmin, onDataUpdated]
   );

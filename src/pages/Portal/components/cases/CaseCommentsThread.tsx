@@ -11,8 +11,22 @@ function bubbleClass(kind: "mine" | "other") {
   return "bg-muted text-foreground";
 }
 
-function roleLabel(authorType: string | null | undefined) {
-  return authorType === "admin" ? "Admin" : "Kund";
+function roleLabel(
+  authorType: string | null | undefined,
+  authorId: string | null | undefined,
+  caseCustomerId: string | null | undefined,
+  currentUserId: string | null | undefined,
+  isAdmin: boolean
+) {
+  if (authorType === "admin") return "Admin";
+  if (authorType === "customer") return "Kund";
+  // Fallback: infer role from who is viewing when legacy rows miss author_type.
+  if (authorId && currentUserId) {
+    if (authorId === currentUserId) return isAdmin ? "Admin" : "Kund";
+    return isAdmin ? "Kund" : "Admin";
+  }
+  if (authorId && caseCustomerId && authorId === caseCustomerId) return "Kund";
+  return "Admin";
 }
 
 export function CaseCommentsThread({
@@ -22,6 +36,7 @@ export function CaseCommentsThread({
   comments,
   onRefresh,
   canComment,
+  caseCustomerId,
   otherPartyLastReadAt,
 }: {
   caseId: string;
@@ -30,6 +45,7 @@ export function CaseCommentsThread({
   comments: CaseComment[];
   onRefresh: () => Promise<void>;
   canComment: boolean;
+  caseCustomerId?: string | null;
   otherPartyLastReadAt?: string | null;
 }) {
   const { toast } = useToast();
@@ -41,13 +57,15 @@ export function CaseCommentsThread({
     return comments
       .filter((c) => !(c as any)?.deleted_at)
       .map((c) => {
-        const mine = !!currentUserId && c.author_id === currentUserId;
+        const mine = isAdmin
+          ? c.author_type === "admin" && c.author_id === currentUserId
+          : c.author_type === "customer";
         return {
           ...c,
           mine,
         };
       });
-  }, [comments, currentUserId]);
+  }, [comments, isAdmin, currentUserId]);
 
   const otherPartyLastReadMs = useMemo(() => {
     const parsed = otherPartyLastReadAt ? Date.parse(otherPartyLastReadAt) : NaN;
@@ -112,15 +130,15 @@ export function CaseCommentsThread({
               <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${bubbleClass(c.mine ? "mine" : "other")}`}>
                 <div className="flex items-center justify-between gap-2 text-xs opacity-90 mb-1">
                   <div>
-                    {roleLabel(c.author_type)}
+                    {roleLabel(c.author_type, c.author_id, caseCustomerId, currentUserId, isAdmin)}
                     <span className="opacity-70"> · </span>
                     <span className="opacity-70">{c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd HH:mm") : ""}</span>
                     {c.mine && (
                       <span className="ml-2 inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium opacity-100">
                         {(() => {
                           const messageMs = c.created_at ? Date.parse(c.created_at) : NaN;
-                          if (!Number.isFinite(messageMs)) return "Skickat";
-                          return messageMs <= otherPartyLastReadMs ? "Läst" : "Skickat";
+                          const statusText = !Number.isFinite(messageMs) ? "Skickat" : messageMs <= otherPartyLastReadMs ? "Läst" : "Skickat";
+                          return statusText;
                         })()}
                       </span>
                     )}

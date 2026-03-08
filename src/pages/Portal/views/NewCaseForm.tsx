@@ -53,7 +53,7 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
   caseComments = [], 
   fetchCaseComments 
 }) => {
-  const { customer: authUser } = useAuth(); 
+  const { customer: authUser, user: authUserSession } = useAuth(); 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<string>(defaultCustomerId || customers[0]?.id || "");
@@ -64,7 +64,8 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
   const [message, setMessage] = useState<string | null>(null);
     const [caseDocuments, setCaseDocuments] = useState<CaseDocument[]>([]);
 
-    const isAdmin = !!authUser?.is_admin;
+    // NewCaseForm is only ever rendered in admin context (CasesView, CustomersDialog, AdminPortal)
+    const isAdmin = true;
 
     const fetchCaseDocuments = useCallback(async (caseId: string) => {
         try {
@@ -172,8 +173,10 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
                 <div className="mb-6 space-y-6">
                     <CaseCommentsThread
                         caseId={caseToEdit.id}
-                        currentUserId={authUser?.id}
+                        currentUserId={authUserSession?.id}
                         isAdmin={isAdmin}
+                        caseCustomerId={caseToEdit.customer_id}
+                        otherPartyLastReadAt={isAdmin ? (caseToEdit.customer_last_read_at ?? null) : (caseToEdit.admin_last_read_at ?? null)}
                         comments={caseComments}
                         onRefresh={async () => {
                             if (fetchCaseComments) await fetchCaseComments(caseToEdit.id);
