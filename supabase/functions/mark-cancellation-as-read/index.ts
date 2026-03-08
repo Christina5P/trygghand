@@ -40,9 +40,47 @@ async function isAdmin(service: any, userId: string): Promise<boolean> {
   return false;
 }
 
+async function resolveCustomerIdForUser(service: any, user: any): Promise<string | null> {
+  const userId = user?.id as string | undefined;
+  const userEmail = user?.email as string | undefined;
+  const userPhone = user?.phone as string | undefined;
+
+  if (userId) {
+    const { data, error } = await service
+      .from("customers")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!error && data?.id) return String(data.id);
+  }
+
+  if (userEmail) {
+    const { data, error } = await service
+      .from("customers")
+      .select("id")
+      .eq("email", userEmail)
+      .maybeSingle();
+    if (!error && data?.id) return String(data.id);
+  }
+
+  if (userPhone) {
+    const { data, error } = await service
+      .from("customers")
+      .select("id")
+      .eq("phone", userPhone)
+      .maybeSingle();
+    if (!error && data?.id) return String(data.id);
+  }
+
+  return null;
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
+
+  const hasAuthHeader = !!req.headers.get("authorization");
+  console.log(`[mark-cancellation-as-read] request received. hasAuthHeader=${hasAuthHeader}`);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -78,6 +116,7 @@ serve(async (req: Request): Promise<Response> => {
   });
 
   const admin = await isAdmin(service, user.id);
+  console.log(`[mark-cancellation-as-read] user.id=${user.id}, user.email=${user.email}, isAdmin=${admin}, cancellationId=${cancellationId}`);
 
   // Verify cancellation exists and user has access
   const { data: cancellationRow, error: cancellationErr } = await service
@@ -90,20 +129,30 @@ serve(async (req: Request): Promise<Response> => {
   if (!cancellationRow) return json(404, { error: "Not found" });
 
   const customerId = (cancellationRow as any).customer_id as string;
-  
-  // Check access: admin can access all, customer can only access their own
-  if (!admin && customerId !== user.id) return json(403, { error: "Forbidden" });
+  const resolvedCustomerId = await resolveCustomerIdForUser(service, user);
+  const isOwnerCustomer = !!resolvedCustomerId && customerId === resolvedCustomerId;
 
-  // Update appropriate timestamp based on user role
+  // Access: admin can access all. Non-admin must own the cancellation.
+  if (!admin && !isOwnerCustomer) {
+    console.log(`[mark-cancellation-as-read] Access denied`);
+    return json(403, { error: "Forbidden" });
+  }
+
+  // If the user owns this cancellation, treat read as customer read even if user has admin role.
   const now = new Date().toISOString();
-  const updateField = admin ? "admin_last_read_at" : "customer_last_read_at";
+  const updateField = isOwnerCustomer ? "customer_last_read_at" : (admin ? "admin_last_read_at" : "customer_last_read_at");
+  console.log(`[mark-cancellation-as-read] customerId=${customerId}, resolvedCustomerId=${resolvedCustomerId}, isOwnerCustomer=${isOwnerCustomer}, updating ${updateField} for cancellationId=${cancellationId}`);
 
   const { error: updateErr } = await service
     .from("subscription_cancellations")
     .update({ [updateField]: now })
     .eq("id", cancellationId);
 
-  if (updateErr) return json(500, { error: "Internal server error" });
+  if (updateErr) {
+    console.error(`[mark-cancellation-as-read] Update failed:`, updateErr);
+    return json(500, { error: "Internal server error" });
+  }
+  console.log(`[mark-cancellation-as-read] Successfully updated`);
 
   return json(200, { ok: true });
 });

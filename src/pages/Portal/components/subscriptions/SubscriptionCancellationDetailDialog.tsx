@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, tryRefreshSession } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -91,16 +91,36 @@ export function SubscriptionCancellationDetailDialog({
       const { data: adminData, error: adminErr } = await supabase.functions.invoke("admin-get-all-subscription-cancellations", {
         body: {},
       });
+
+      let nextReadAt: { admin_last_read_at?: string | null; customer_last_read_at?: string | null } | null = null;
+
       if (!adminErr && (adminData as any)?.ok === true) {
         const rows = ((adminData as any)?.cancellations ?? []) as any[];
         const row = rows.find((r) => String((r as any)?.id) === item.id);
         if (row) {
-          setLiveReadAt({
+          nextReadAt = {
             admin_last_read_at: (row as any).admin_last_read_at ?? null,
             customer_last_read_at: (row as any).customer_last_read_at ?? null,
-          });
+          };
         }
       }
+
+      // Fallback when list response is stale/missing for this item.
+      if (!nextReadAt) {
+        const { data: readData } = await supabase
+          .from("subscription_cancellations")
+          .select("admin_last_read_at, customer_last_read_at")
+          .eq("id", item.id)
+          .maybeSingle();
+        if (readData) {
+          nextReadAt = {
+            admin_last_read_at: (readData as any).admin_last_read_at ?? null,
+            customer_last_read_at: (readData as any).customer_last_read_at ?? null,
+          };
+        }
+      }
+
+      if (nextReadAt) setLiveReadAt(nextReadAt);
     } else {
       const { data: readData } = await supabase
         .from("subscription_cancellations")
@@ -129,6 +149,55 @@ export function SubscriptionCancellationDetailDialog({
     setDocuments(((item.documents as any) ?? []) as CancellationDocuments);
     void refreshComments();
   }, [item, open]);
+
+  useEffect(() => {
+    if (!item || !open) return;
+
+    const markAsRead = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          const refreshed = await tryRefreshSession();
+          if (!refreshed) return;
+        }
+
+        const result = await supabase.functions.invoke("mark-cancellation-as-read", {
+          body: { cancellation_id: item.id },
+        });
+        if (result?.error) return;
+
+        if (result?.data?.ok === true) {
+          const nowIso = new Date().toISOString();
+          if (isAdmin) {
+            // Admin: fetch fresh timestamps via Edge Function (RLS blocks direct read)
+            const { data: adminData, error: adminErr } = await supabase.functions.invoke("admin-get-all-subscription-cancellations", {
+              body: {},
+            });
+            if (!adminErr && (adminData as any)?.ok === true) {
+              const rows = ((adminData as any)?.cancellations ?? []) as any[];
+              const row = rows.find((r) => String((r as any)?.id) === item.id);
+              if (row) {
+                setLiveReadAt({
+                  admin_last_read_at: (row as any).admin_last_read_at ?? null,
+                  customer_last_read_at: (row as any).customer_last_read_at ?? null,
+                });
+              }
+            }
+          } else {
+            // Customer: trust DB update, set timestamp locally
+            setLiveReadAt((prev) => ({
+              ...prev,
+              customer_last_read_at: nowIso,
+            }));
+          }
+        }
+      } catch {
+        // Keep UI functional even if mark-as-read fails transiently.
+      }
+    };
+
+    void markAsRead();
+  }, [item?.id, open, isAdmin]);
 
   useEffect(() => {
     if (!item || !open || !isAdmin) return;
