@@ -93,6 +93,13 @@ serve(async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (!fetchErr && cancellation?.customer_id && cancellation.customer_id !== user.id) {
+      await service
+        .from("notifications")
+        .update({ read_at: new Date().toISOString() })
+        .eq("user_id", cancellation.customer_id)
+        .eq("ref_id", cancellationId)
+        .eq("type", "cancellation_status")
+        .is("read_at", null);
       const { error: notifErr } = await service
         .from("notifications")
         .insert([
@@ -105,10 +112,7 @@ serve(async (req: Request): Promise<Response> => {
             payload: { status: String(status) },
           },
         ]);
-
-      if (notifErr) {
-        console.error("Notification insert error", notifErr);
-      }
+      if (notifErr) console.error("Notification insert error", notifErr);
     }
   } catch (e) {
     // logga men stoppa ej flodet

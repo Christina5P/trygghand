@@ -215,6 +215,28 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 
+  // Write in-app notification (archive existing unread first to avoid stacking)
+  if (recipientId) {
+    try {
+      await service.from("notifications")
+        .update({ read_at: new Date().toISOString() })
+        .eq("user_id", recipientId)
+        .eq("ref_id", caseId)
+        .eq("type", "case_message")
+        .is("read_at", null);
+      await service.from("notifications").insert({
+        user_id: recipientId,
+        type: "case_message",
+        ref_id: caseId,
+        ref_type: "case",
+        actor_id: user.id,
+        payload: { message_id: (insertedComment as any)?.id },
+      });
+    } catch (e) {
+      console.error("Notification error", e);
+    }
+  }
+
   // Do not echo free-text back
   return json(200, { ok: true });
 });

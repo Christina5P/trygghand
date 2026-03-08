@@ -94,6 +94,35 @@ serve(async (req: Request): Promise<Response> => {
 
   if (insErr) return json(500, { error: "Internal server error" });
 
+  // Notify customer of admin message (skip for internal notes)
+  if (!isInternal) {
+    try {
+      const { data: cancellation } = await service
+        .from("subscription_cancellations")
+        .select("customer_id")
+        .eq("id", cancellationId)
+        .maybeSingle();
+      const customerId = (cancellation as any)?.customer_id;
+      if (customerId && customerId !== user.id) {
+        await service.from("notifications")
+          .update({ read_at: new Date().toISOString() })
+          .eq("user_id", customerId)
+          .eq("ref_id", cancellationId)
+          .eq("type", "cancellation_message")
+          .is("read_at", null);
+        await service.from("notifications").insert({
+          user_id: customerId,
+          type: "cancellation_message",
+          ref_id: cancellationId,
+          ref_type: "cancellation",
+          actor_id: user.id,
+        });
+      }
+    } catch (e) {
+      console.error("Notification error", e);
+    }
+  }
+
   // Do not echo free-text back
   return json(200, { ok: true });
 });

@@ -123,22 +123,20 @@ serve(async (req: Request): Promise<Response> => {
   if (insErr) return json(req, 500, { error: "Internal server error" });
 
   // Notis: ny uppsägning
-  try {
-    await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+  const notifRecipient = payload.customer_id as string | null | undefined;
+  if (notifRecipient && notifRecipient !== user.id) {
+    try {
+      await service.from("notifications").insert({
+        user_id: notifRecipient,
         type: "cancellation_status",
         ref_id: (created as any)?.id,
         ref_type: "cancellation",
         actor_id: user.id,
-        recipient_id: payload.customer_id,
-        payload: { status: insertPayload.status }
-      })
-    });
-  } catch (e) {
-    // logga men stoppa ej flödet
-    console.error("Notification error", e);
+        payload: { status: insertPayload.status },
+      });
+    } catch (e) {
+      console.error("Notification error", e);
+    }
   }
 
   return json(req, 200, { ok: true, cancellation_id: (created as any)?.id });

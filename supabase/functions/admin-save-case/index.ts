@@ -143,23 +143,23 @@ serve(async (req: Request): Promise<Response> => {
     const { error: updErr } = await service.from("cases").update(updatePayload).eq("id", caseId);
     if (updErr) return json(500, { error: "Internal server error" });
 
-    // Notis: statusändring i ärende
-    try {
-      await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "case_status",
-          ref_id: caseId,
-          ref_type: "case",
-          actor_id: user.id,
-          recipient_id: customerId,
-          payload: { status: updatePayload.status }
-        })
+    // Notis: statusändring i ärende — arkivera tidigare olästa statusnotiser först
+    if (updatePayload.status != null && customerId && customerId !== user.id) {
+      await service
+        .from("notifications")
+        .update({ read_at: new Date().toISOString() })
+        .eq("user_id", customerId)
+        .eq("ref_id", caseId)
+        .eq("type", "case_status")
+        .is("read_at", null);
+      await service.from("notifications").insert({
+        user_id: customerId,
+        type: "case_status",
+        ref_id: caseId,
+        ref_type: "case",
+        actor_id: user.id,
+        payload: { status: updatePayload.status },
       });
-    } catch (e) {
-      // logga men stoppa ej flödet
-      console.error("Notification error", e);
     }
 
     return json(200, { ok: true, case_id: caseId });
@@ -178,22 +178,19 @@ serve(async (req: Request): Promise<Response> => {
   if (insErr) return json(500, { error: "Internal server error" });
 
   // Notis: nytt ärende
-  try {
-    await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+  if (customerId && customerId !== user.id) {
+    try {
+      await service.from("notifications").insert({
+        user_id: customerId,
         type: "case_status",
         ref_id: (created as any)?.id,
         ref_type: "case",
         actor_id: user.id,
-        recipient_id: customerId,
-        payload: { status: insertPayload.status }
-      })
-    });
-  } catch (e) {
-    // logga men stoppa ej flödet
-    console.error("Notification error", e);
+        payload: { status: insertPayload.status },
+      });
+    } catch (e) {
+      console.error("Notification error", e);
+    }
   }
 
   await invokeSendPush({

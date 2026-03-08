@@ -85,6 +85,24 @@ function getUserId(userData: unknown): string | null {
   return typeof user.id === "string" ? user.id : null;
 }
 
+async function findPrimaryAdminUserId(service: SupabaseClientLike): Promise<string | null> {
+  const { data: roleRow, error: roleErr } = await service
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!roleErr && isRecord(roleRow) && typeof roleRow.user_id === "string") return roleRow.user_id;
+
+  const { data: profileRow, error: profileErr } = await service
+    .from("profiles")
+    .select("id")
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!profileErr && isRecord(profileRow) && typeof profileRow.id === "string") return profileRow.id;
+
+  return null;
+}
+
 serve(async (req: Request): Promise<Response> => {
   try {
     if (req.method === "OPTIONS") {
@@ -156,35 +174,27 @@ serve(async (req: Request): Promise<Response> => {
 
     if (insErr) return json(req, 500, { error: "Internal server error" });
 
-    // Send notification to customer if admin commented
-    if (admin) {
-      const { data: cancellationRow, error: cancellationErr } = await service
-        .from("subscription_cancellations")
-        .select("id, customer_id")
-        .eq("id", cancellationId)
-        .maybeSingle();
-
-      if (!cancellationErr && cancellationRow) {
-        const customerId = isRecord(cancellationRow) ? cancellationRow.customer_id : undefined;
-        if (customerId && customerId !== userId) {
-          try {
-            await fetch(`${supabaseUrl}/functions/v1/send-push`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${serviceRoleKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                user_id: customerId,
-                title: "Nytt meddelande",
-                body: "Du har fått ett nytt meddelande i en uppsägning",
-                data: { type: "cancellation_comment", cancellation_id: cancellationId },
-              }),
-            });
-          } catch (e) {
-            console.error("send-push failed", e);
-          }
+    // Notify admin of new customer message
+    if (!admin) {
+      try {
+        const adminId = await findPrimaryAdminUserId(service as unknown as SupabaseClientLike);
+        if (adminId && adminId !== userId) {
+          await (service as any).from("notifications")
+            .update({ read_at: new Date().toISOString() })
+            .eq("user_id", adminId)
+            .eq("ref_id", cancellationId)
+            .eq("type", "cancellation_message")
+            .is("read_at", null);
+          await (service as any).from("notifications").insert({
+            user_id: adminId,
+            type: "cancellation_message",
+            ref_id: cancellationId,
+            ref_type: "cancellation",
+            actor_id: userId,
+          });
         }
+      } catch (e) {
+        console.error("Notification error", e);
       }
     }
 

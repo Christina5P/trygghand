@@ -85,12 +85,41 @@ serve(async (req: Request): Promise<Response> => {
   const ok = await requireAdmin(service, user.id);
   if (!ok) return json(403, { error: "Forbidden" });
 
+  // Fetch customer_id before updating (needed for notification)
+  const { data: caseRow, error: fetchErr } = await service
+    .from("cases")
+    .select("customer_id")
+    .eq("id", caseId)
+    .maybeSingle();
+
+  if (fetchErr) return json(500, { error: "Internal server error" });
+
   const { error: updErr } = await service
     .from("cases")
     .update({ status: String(status), updated_at: new Date().toISOString() })
     .eq("id", caseId);
 
   if (updErr) return json(500, { error: "Internal server error" });
+
+  // Notify customer: archive previous unread case_status notifications first
+  const customerId = (caseRow as any)?.customer_id;
+  if (customerId && customerId !== user.id) {
+    await service
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("user_id", customerId)
+      .eq("ref_id", caseId)
+      .eq("type", "case_status")
+      .is("read_at", null);
+    await service.from("notifications").insert({
+      user_id: customerId,
+      type: "case_status",
+      ref_id: caseId,
+      ref_type: "case",
+      actor_id: user.id,
+      payload: { status: String(status) },
+    });
+  }
 
   return json(200, { ok: true, case_id: caseId, status: String(status) });
 });

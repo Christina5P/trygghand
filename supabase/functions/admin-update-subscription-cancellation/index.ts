@@ -117,29 +117,30 @@ serve(async (req: Request): Promise<Response> => {
 
   if (updErr) return json(req, 500, { error: "Internal server error" });
 
-  // Notis: statusändring i uppsägning (skriv direkt via service role)
+  // Notis: statusändring i uppsägning — arkivera tidigare olästa statusnotiser först
   try {
     const recipientId = payload.customer_id ?? null;
     if (recipientId && recipientId !== user.id) {
+      await service
+        .from("notifications")
+        .update({ read_at: new Date().toISOString() })
+        .eq("user_id", recipientId)
+        .eq("ref_id", cancellationId)
+        .eq("type", "cancellation_status")
+        .is("read_at", null);
       const { error: notifErr } = await service
         .from("notifications")
-        .insert([
-          {
-            user_id: recipientId,
-            type: "cancellation_status",
-            ref_id: cancellationId,
-            ref_type: "cancellation",
-            actor_id: user.id,
-            payload: { status: updatePayload.status },
-          },
-        ]);
-
-      if (notifErr) {
-        console.error("Notification insert error", notifErr);
-      }
+        .insert([{
+          user_id: recipientId,
+          type: "cancellation_status",
+          ref_id: cancellationId,
+          ref_type: "cancellation",
+          actor_id: user.id,
+          payload: { status: updatePayload.status },
+        }]);
+      if (notifErr) console.error("Notification insert error", notifErr);
     }
   } catch (e) {
-    // logga men stoppa ej flödet
     console.error("Notification error", e);
   }
 
