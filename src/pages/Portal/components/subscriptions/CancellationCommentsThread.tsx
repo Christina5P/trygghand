@@ -64,7 +64,8 @@ export function CancellationCommentsThread({
 
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("add-cancellation-comment", {
+      const functionName = isAdmin ? "admin-add-cancellation-comment" : "add-cancellation-comment";
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: { cancellation_id: cancellationId, message },
       });
       if (error) throw error;

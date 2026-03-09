@@ -56,16 +56,11 @@ export function CaseCommentsThread({
   const normalized = useMemo(() => {
     return comments
       .filter((c) => !(c as any)?.deleted_at)
-      .map((c) => {
-        const mine = isAdmin
-          ? c.author_type === "admin" && c.author_id === currentUserId
-          : c.author_type === "customer";
-        return {
-          ...c,
-          mine,
-        };
-      });
-  }, [comments, isAdmin, currentUserId]);
+      .map((c) => ({
+        ...c,
+        mine: !!currentUserId && c.author_id === currentUserId,
+      }));
+  }, [comments, currentUserId]);
 
   const otherPartyLastReadMs = useMemo(() => {
     const parsed = otherPartyLastReadAt ? Date.parse(otherPartyLastReadAt) : NaN;

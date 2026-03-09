@@ -121,17 +121,19 @@ serve(async (req: Request): Promise<Response> => {
   try {
     const recipientId = payload.customer_id ?? null;
     if (recipientId && recipientId !== user.id) {
+      const { data: custAuth } = await service.from("customers").select("user_id").eq("id", recipientId).maybeSingle();
+      const notifUserId: string = (custAuth as any)?.user_id ?? recipientId;
       await service
         .from("notifications")
         .update({ read_at: new Date().toISOString() })
-        .eq("user_id", recipientId)
+        .eq("user_id", notifUserId)
         .eq("ref_id", cancellationId)
         .eq("type", "cancellation_status")
         .is("read_at", null);
       const { error: notifErr } = await service
         .from("notifications")
         .insert([{
-          user_id: recipientId,
+          user_id: notifUserId,
           type: "cancellation_status",
           ref_id: cancellationId,
           ref_type: "cancellation",

@@ -1,12 +1,13 @@
 // src/pages/Portal/views/CasesView.tsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Edit, Upload } from "lucide-react";
-import { CommentBubble } from "@/pages/Portal/components/shared/CommentBubble";
+import { ConversationCard } from "@/pages/Portal/components/shared/ConversationCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
@@ -63,79 +64,56 @@ const CasesView: React.FC<CasesViewProps> = ({
   onUnreadCasesChange,
   onActiveCasesCountChange,
 }) => {
-  const { user, customer } = useAuth();
-  const isAdmin = customer?.is_admin === true;
+  const { user } = useAuth(); // Används för att skicka till NewCaseForm som default adminId
+  const { markNotificationsReadForRef } = useNotifications();
   const [isNewCaseDialogOpen, setIsNewCaseDialogOpen] = useState(false);
   const [editingCase, setEditingCase] = useState<Case | null>(null);
   const [caseComments, setCaseComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [caseCommentsCounts, setCaseCommentsCounts] = useState<Record<string, number>>({});
   const [latestCustomerCommentAt, setLatestCustomerCommentAt] = useState<Record<string, string>>({});
-  const [latestAdminCommentAt, setLatestAdminCommentAt] = useState<Record<string, string>>({});
-  const [localReadAtByCaseId, setLocalReadAtByCaseId] = useState<
-    Record<string, { admin_last_read_at?: string; customer_last_read_at?: string }>
-  >({});
+  const [localReadAtByCaseId, setLocalReadAtByCaseId] = useState<Record<string, { admin_last_read_at?: string; customer_last_read_at?: string }>>({});
   const [archivedCustomerMap, setArchivedCustomerMap] = useState<Record<string, string>>({});
   const [showArchivedCases, setShowArchivedCases] = useState(false);
+  const archivedCasesAutoOpened = useRef(false);
+  // Guard: track which editingCase.id has already had notifications marked read
+  // so that comment-refresh fetches don't re-fire the mark after the first time.
+  const notifMarkedForCaseRef = useRef<string | null>(null);
 
   const toMs = (iso?: string | null) => {
-    const ms = iso ? Date.parse(iso) : NaN;
-    return Number.isFinite(ms) ? ms : 0;
+    const parsed = iso ? Date.parse(iso) : NaN;
+    return Number.isFinite(parsed) ? parsed : 0;
   };
 
   const markCaseAsRead = useCallback(
-    async (caseId: string) => {
+    (caseId: string) => {
       if (!user?.id) return;
-      try {
-        // Call Edge Function to update DB timestamp
-        await supabase.functions.invoke("mark-case-as-read", {
-          body: { case_id: caseId },
-        });
-        // Optimistic local update so unread state flips immediately
-        const nowIso = new Date().toISOString();
-        setLocalReadAtByCaseId((prev) => ({
-          ...prev,
-          [caseId]: {
-            ...(prev[caseId] ?? {}),
-            ...(isAdmin
-              ? { admin_last_read_at: nowIso }
-              : { customer_last_read_at: nowIso }),
-          },
-        }));
-        // Refresh data for admin to get any new updates
-        if (isAdmin) void onDataUpdated();
-      } catch (err) {
-        console.error("Failed to mark case as read:", err);
-      }
+      const nowIso = new Date().toISOString();
+      setLocalReadAtByCaseId((prev) => ({
+        ...prev,
+        [caseId]: {
+          ...(prev[caseId] ?? {}),
+          admin_last_read_at: nowIso,
+        },
+      }));
       // Write admin_last_read_at to DB so customer can see "Läst" on their own messages.
       supabase.functions.invoke("mark-case-as-read", { body: { case_id: caseId } }).catch(() => {});
     },
-    [user?.id, isAdmin, onDataUpdated]
+    [user?.id]
   );
 
   const hasUnread = useCallback(
     (caseItem: Case) => {
       if (!user?.id) return false;
-
       try {
-        // Admin checks if customer has commented since admin last read
-        // Customer checks if admin has commented since customer last read
-        const myLastReadAt = isAdmin
-          ? (localReadAtByCaseId[caseItem.id]?.admin_last_read_at ?? caseItem.admin_last_read_at)
-          : (localReadAtByCaseId[caseItem.id]?.customer_last_read_at ?? caseItem.customer_last_read_at);
-        
-        const theirLatestCommentAt = isAdmin
-          ? latestCustomerCommentAt[caseItem.id]
-          : latestAdminCommentAt[caseItem.id];
-        
-        const myLastReadMs = toMs(myLastReadAt);
-        const theirLatestMs = toMs(theirLatestCommentAt);
-        return theirLatestMs > 0 && theirLatestMs > myLastReadMs;
+        const myLastReadAt = localReadAtByCaseId[caseItem.id]?.admin_last_read_at ?? caseItem.admin_last_read_at;
+        const latestAt = latestCustomerCommentAt[caseItem.id];
+        return toMs(latestAt) > toMs(myLastReadAt);
       } catch {
         return false;
       }
     },
-    [isAdmin, latestCustomerCommentAt, latestAdminCommentAt, localReadAtByCaseId, user?.id, toMs]
+    [latestCustomerCommentAt, localReadAtByCaseId, user?.id]
   );
 
   const unreadCasesCount = React.useMemo(() => {
@@ -203,43 +181,33 @@ const CasesView: React.FC<CasesViewProps> = ({
     }
   }, []);
 
-  const fetchLatestAdminComment = useCallback(async (caseId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("case_comments")
-        .select("created_at")
-        .eq("case_id", caseId)
-        .eq("author_type", "admin")
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (error) throw error;
-      const createdAt = (data as any)?.[0]?.created_at as string | undefined;
-      setLatestAdminCommentAt((prev) => ({
-        ...prev,
-        [caseId]: createdAt || "",
-      }));
-    } catch (err) {
-      console.error("Error fetching latest admin comment:", err);
-      setLatestAdminCommentAt((prev) => ({ ...prev, [caseId]: "" }));
-    }
-  }, []);
-
   const handleOpenNewCaseDialog = () => {
     setEditingCase(null); // Nollställ för nytt ärende
     setCaseComments([]); // Rensa kommentarer
     setIsNewCaseDialogOpen(true);
   };
 
-  const handleEditCase = async (caseItem: Case) => {
+  // Mark notifications as read only after the dialog is open and comments have loaded.
+  // Using a ref prevents re-firing on subsequent comment refreshes.
+  useEffect(() => {
+    if (!editingCase?.id || loadingComments) return;
+    if (notifMarkedForCaseRef.current === editingCase.id) return;
+    notifMarkedForCaseRef.current = editingCase.id;
+    markNotificationsReadForRef(editingCase.id);
+  }, [editingCase?.id, loadingComments, markNotificationsReadForRef]);
+
+  const handleEditCase = (caseItem: Case) => {
     setEditingCase(caseItem);
     setIsNewCaseDialogOpen(true);
-    // Notify parent (AdminPortal) so it can show full case dialog/details
-    onOpenCase?.(caseItem);
+    notifMarkedForCaseRef.current = null; // reset so the new case triggers the effect
     // Ladda kommentarer när ett ärende öppnas för redigering
     if (caseItem.id) {
         fetchCaseComments(caseItem.id);
-        await markCaseAsRead(caseItem.id);
+        markCaseAsRead(caseItem.id);
+        // markNotificationsReadForRef moved to useEffect above (fires after comments load)
     }
+   // Notify parent (AdminPortal) so it can show full case dialog/details
+   onOpenCase?.(caseItem);
   };
 
   const handleCaseFormClose = async () => {
@@ -268,11 +236,10 @@ const CasesView: React.FC<CasesViewProps> = ({
         if (caseItem.id) {
           fetchCaseCommentsCount(caseItem.id);
           fetchLatestCustomerComment(caseItem.id);
-          fetchLatestAdminComment(caseItem.id);
         }
       });
     }
-  }, [cases, fetchCaseCommentsCount, fetchLatestCustomerComment, fetchLatestAdminComment]);
+  }, [cases, fetchCaseCommentsCount, fetchLatestCustomerComment]);
 
   const countCasesSource = casesForCount ?? cases;
 
@@ -326,83 +293,83 @@ const CasesView: React.FC<CasesViewProps> = ({
   const activeCasesCount = countCasesSource.filter((caseItem) => !isArchivedCustomer(caseItem.customer_id ?? null)).length;
 
   useEffect(() => {
+    if (!archivedCasesAutoOpened.current && archivedCases.length > 0) {
+      archivedCasesAutoOpened.current = true;
+      setShowArchivedCases(true);
+    }
+  }, [archivedCases.length]);
+
+  useEffect(() => {
     onActiveCasesCountChange?.(activeCasesCount);
   }, [activeCasesCount, onActiveCasesCountChange]);
 
   const renderCaseCard = (caseItem: Case) => {
     const totalCount = caseCommentsCounts[caseItem.id] || 0;
     const unread = hasUnread(caseItem);
-    const readStatusLabel = unread ? "Oläst" : "Läst";
+
+    const statusSlot = (
+      <div
+        className={`rounded transition-colors ${getStatusColor(caseItem.status)}`}
+        style={{ minWidth: 96, minHeight: 28, display: "flex", alignItems: "center" }}
+      >
+        <Select defaultValue={caseItem.status} onValueChange={(s) => handleStatusChange(caseItem.id, s)}>
+          <SelectTrigger className="min-w-[88px] w-24 sm:w-28 h-7 bg-transparent border-none shadow-none focus:ring-0 focus:outline-none text-[11px] sm:text-xs px-1 leading-none">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map((s) => (
+              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+
+    const actionsSlot = (
+      <Button
+        variant="ghost"
+        size="icon"
+        title="Ta bort ärende"
+        className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200"
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (!window.confirm("Är du säker på att du vill ta bort detta ärende?")) return;
+          try {
+            const userId = user?.id;
+            if (!userId) throw new Error("Ingen användare inloggad");
+            const { error } = await supabase.functions.invoke("admin-soft-delete-case", {
+              body: { case_id: caseItem.id, user_id: userId },
+            });
+            if (error) throw error;
+            await onDataUpdated();
+          } catch (err: any) {
+            alert("Kunde inte ta bort ärendet: " + (err?.message || err));
+          }
+        }}
+      >
+        <span className="sr-only">Ta bort</span>
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+      </Button>
+    );
+
+    const subtitle = [
+      `Kund: ${getCustomerName(caseItem.customer_id ?? null)}`,
+      `Skapat: ${caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}`,
+      caseItem.scheduled_date ? `Schemalagt: ${format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}` : null,
+    ].filter(Boolean).join(" | ");
 
     return (
-      <Card
+      <ConversationCard
         key={caseItem.id}
-        className="relative hover:shadow-lg transition-shadow cursor-pointer"
+        title={caseItem.title ?? ""}
+        subtitle={subtitle}
+        unread={unread}
+        readStatusLabel={unread ? "Oläst" : "Läst"}
+        commentCount={totalCount}
+        statusSlot={statusSlot}
+        actionsSlot={actionsSlot}
         onClick={() => handleEditCase(caseItem)}
-      >
-        <CardHeader className="relative">
-          <CardTitle>{caseItem.title}</CardTitle>
-          <CardDescription>
-            Kund: {getCustomerName(caseItem.customer_id ?? null)} | 
-            Skapat: {caseItem.created_at ? format(new Date(caseItem.created_at), "dd MMM yyyy", { locale: sv }) : "N/A"}
-            {caseItem.scheduled_date && ` | Schemalagt: ${format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}`}
-          </CardDescription>
-          <div className="mt-2">
-            <Badge variant="outline" className={unread ? "border-amber-400 text-amber-700" : "border-emerald-400 text-emerald-700"}>
-              {readStatusLabel}
-            </Badge>
-          </div>
-          <div
-            className="mt-2 flex flex-wrap gap-2 sm:absolute sm:top-2 sm:right-2 sm:mt-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className={`rounded transition-colors ${getStatusColor(caseItem.status)}`}
-              style={{ minWidth: 96, minHeight: 28, display: "flex", alignItems: "center" }}
-            >
-              <Select defaultValue={caseItem.status} onValueChange={(s) => handleStatusChange(caseItem.id, s)}>
-                <SelectTrigger className="min-w-[88px] w-24 sm:w-28 h-7 bg-transparent border-none shadow-none focus:ring-0 focus:outline-none text-[11px] sm:text-xs px-1 leading-none">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              title="Ta bort ärende"
-              className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200"
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (!window.confirm("Är du säker på att du vill ta bort detta ärende?")) return;
-                try {
-                  const userId = user?.id;
-                  if (!userId) throw new Error("Ingen användare inloggad");
-                  const { error } = await supabase.functions.invoke("admin-soft-delete-case", {
-                    body: { case_id: caseItem.id, user_id: userId },
-                  });
-                  if (error) throw error;
-                  await onDataUpdated();
-                } catch (err: any) {
-                  alert("Kunde inte ta bort ärendet: " + (err?.message || err));
-                }
-              }}
-            >
-              <span className="sr-only">Ta bort</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </Button>
-          </div>
-          <CommentBubble
-            className={`absolute bottom-2 right-2 transition-all ${unread ? "ring-2 ring-blue-400 scale-110" : ""}`}
-            count={totalCount}
-            highlight={unread}
-          />
-        </CardHeader>
-      </Card>
+      />
     );
   };
 

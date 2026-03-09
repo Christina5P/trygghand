@@ -145,15 +145,17 @@ serve(async (req: Request): Promise<Response> => {
 
     // Notis: statusändring i ärende — arkivera tidigare olästa statusnotiser först
     if (updatePayload.status != null && customerId && customerId !== user.id) {
+      const { data: custAuth } = await service.from("customers").select("user_id").eq("id", customerId).maybeSingle();
+      const notifUserId: string = (custAuth as any)?.user_id ?? customerId;
       await service
         .from("notifications")
         .update({ read_at: new Date().toISOString() })
-        .eq("user_id", customerId)
+        .eq("user_id", notifUserId)
         .eq("ref_id", caseId)
         .eq("type", "case_status")
         .is("read_at", null);
       await service.from("notifications").insert({
-        user_id: customerId,
+        user_id: notifUserId,
         type: "case_status",
         ref_id: caseId,
         ref_type: "case",
@@ -180,8 +182,10 @@ serve(async (req: Request): Promise<Response> => {
   // Notis: nytt ärende
   if (customerId && customerId !== user.id) {
     try {
+      const { data: custAuth } = await service.from("customers").select("user_id").eq("id", customerId).maybeSingle();
+      const notifUserId: string = (custAuth as any)?.user_id ?? customerId;
       await service.from("notifications").insert({
-        user_id: customerId,
+        user_id: notifUserId,
         type: "case_status",
         ref_id: (created as any)?.id,
         ref_type: "case",

@@ -104,15 +104,17 @@ serve(async (req: Request): Promise<Response> => {
   // Notify customer: archive previous unread case_status notifications first
   const customerId = (caseRow as any)?.customer_id;
   if (customerId && customerId !== user.id) {
+    const { data: custAuth } = await service.from("customers").select("user_id").eq("id", customerId).maybeSingle();
+    const notifUserId: string = (custAuth as any)?.user_id ?? customerId;
     await service
       .from("notifications")
       .update({ read_at: new Date().toISOString() })
-      .eq("user_id", customerId)
+      .eq("user_id", notifUserId)
       .eq("ref_id", caseId)
       .eq("type", "case_status")
       .is("read_at", null);
     await service.from("notifications").insert({
-      user_id: customerId,
+      user_id: notifUserId,
       type: "case_status",
       ref_id: caseId,
       ref_type: "case",

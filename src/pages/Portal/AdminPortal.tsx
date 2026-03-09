@@ -34,6 +34,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminData } from "@/hooks/useAdminData"; 
 import { useCustomerData } from "@/hooks/useCustomerData"
+import { useNotifications } from "@/hooks/useNotifications";
+import { getNotificationDescription } from "@/lib/notifications";
 import Tidio from "@/components/Tidio";
 import CasesView from "./views/CasesView";
 import CustomersDialog from "./dialogs/CustomersDialog";
@@ -142,14 +144,22 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     fetchAll,
     fetchValuations,   
   } = useAdminData();
-  const [unreadCaseCount, setUnreadCaseCount] = useState(0);
+  const { unread: adminUnread, unreadCount: adminUnreadCount } = useNotifications();
   const [activeCasesCount, setActiveCasesCount] = useState<number | null>(null);
-  const hasUnreadMessages = unreadCaseCount > 0;
-  const adminBannerText = useMemo(() => {
-    if (!hasUnreadMessages) return "";
-    if (unreadCaseCount === 1) return "Nytt kundmeddelande i ett ärende.";
-    return `Nya kundmeddelanden i ${unreadCaseCount} ärenden.`;
-  }, [hasUnreadMessages, unreadCaseCount]);
+  const hasUnreadMessages = adminUnreadCount > 0;
+  const adminBannerDescriptions = useMemo(() => {
+    const seen = new Set<string>();
+    const items: string[] = [];
+    for (const n of adminUnread) {
+      const desc = getNotificationDescription(n);
+      if (!seen.has(desc)) {
+        seen.add(desc);
+        items.push(desc);
+      }
+    }
+    return items;
+  }, [adminUnread]);
+  const adminExtraUnread = Math.max(0, adminUnreadCount - adminBannerDescriptions.length);
 
   console.log("Customers in AdminPortal:", customers); // TEMP LOG
 
@@ -558,6 +568,43 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     if (selectedCase?.id) fetchCaseComments(selectedCase.id);
   }, [selectedCase]);
 
+  // Ref so the realtime closure never captures stale cases list
+  const casesByIdRef = useRef<Map<string, CustomerCase>>(new Map());
+  useEffect(() => {
+    const map = new Map<string, CustomerCase>();
+    for (const c of cases) {
+      if (c?.id) map.set(c.id, c);
+    }
+    casesByIdRef.current = map;
+  }, [cases]);
+
+  // Realtime toast when customer posts a case comment
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`admin_case_comments_${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "case_comments" },
+        (payload) => {
+          const row = payload.new as any;
+          // Ignore messages the admin wrote themselves
+          if (row?.author_id === user.id) return;
+          const caseItem = casesByIdRef.current.get(row?.case_id);
+          toast({
+            title: "Nytt meddelande",
+            description: caseItem
+              ? `Nytt meddelande i ärendet: ${caseItem.title}`
+              : "Nytt meddelande i ett ärende",
+          });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, toast]);
+
   // --- ÅTGÄRDSLOGIK ---
 
   const handleOpenCustomerDialog = (customer: Customer) => {
@@ -737,13 +784,20 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
       <div className="min-h-[100dvh] bg-gradient-to-br from-slate-100 via-white to-slate-100 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         {hasUnreadMessages && (
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
-            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+            <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900">
               <div>
-                Du har <span className="font-semibold">{unreadCaseCount}</span> nya meddelanden.
+                Du har <span className="font-semibold">{adminUnreadCount}</span> nya notiser.
               </div>
-              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-blue-900">
-                <li className="leading-snug">{adminBannerText}</li>
-              </ul>
+              {adminBannerDescriptions.length > 0 && (
+                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-orange-900">
+                  {adminBannerDescriptions.map((text, idx) => (
+                    <li key={`${idx}-${text}`} className="leading-snug">{text}</li>
+                  ))}
+                </ul>
+              )}
+              {adminExtraUnread > 0 && (
+                <div className="mt-1 text-xs text-orange-700">+ {adminExtraUnread} till</div>
+              )}
             </div>
           </div>
         )}
@@ -911,7 +965,6 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
               customers={customers}
               onDataUpdated={fetchData}
              onOpenCase={(c) => setSelectedCase(c)}
-              onUnreadCasesChange={setUnreadCaseCount}
               onActiveCasesCountChange={setActiveCasesCount}
             />
           </TabsContent>

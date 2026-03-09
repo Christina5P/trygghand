@@ -17,6 +17,7 @@ import Tidio from "@/components/Tidio"; // Se till att denna komponent finns
 import { CaseCommentsThread } from "./components/cases/CaseCommentsThread";
 import { CaseDocumentsSection, type CaseDocument } from "./components/cases/CaseDocumentsSection";
 import { SubscriptionCancellationsView } from "./views/SubscriptionCancellationsView";
+import { CommentBubble } from "./components/shared/CommentBubble";
 
 import {
   MessageSquare,
@@ -76,7 +77,9 @@ type CustomerPortalProps = {
 
 const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTemplates = [], handleDownloadTemplate }) => {
   const [templatesOpen, setTemplatesOpen] = useState(false);
-        const { unread, unreadCount } = useNotifications();
+        const { unread, unreadCount, markNotificationsReadForRef } = useNotifications();
+        const caseUnreadCount = unread.filter(n => n.type === "case_message").length;
+        const cancellationUnreadCount = unread.filter(n => n.type === "cancellation_message").length;
 
     const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
 
@@ -168,9 +171,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const [caseCommentsCounts, setCaseCommentsCounts] = useState<Record<string, number>>({});
     const [caseDocuments, setCaseDocuments] = useState<CaseDocument[]>([]);
     const [loadingCaseDocuments, setLoadingCaseDocuments] = useState(false);
-
-    // UI-only: olästa meddelanden ("nya sedan senaste öppning")
-    const [unreadTick, setUnreadTick] = useState(0);
+    const [caseLiveReadAtById, setCaseLiveReadAtById] = useState<Record<string, { admin_last_read_at?: string | null; customer_last_read_at?: string | null }>>({});
 
     const casesByIdRef = useRef<Map<string, Case>>(new Map());
     const selectedCaseIdRef = useRef<string | null>(null);
@@ -191,6 +192,8 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const [uploading, setUploading] = useState(false);
     const [gdprRequest, setGdprRequest] = useState<GdprRequestLite | null>(null);
     const [gdprDownloadBusy, setGdprDownloadBusy] = useState(false);
+
+    
     
     useEffect(() => {
         setEditingCustomer(customer);
@@ -262,80 +265,48 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         }
     }, [cases, fetchCaseCommentsCount]);
 
-    const storageUserId = customer?.id ?? user?.id ?? "";
-
-    const lastReadCountKey = useCallback(
-        (caseId: string) => `customerPortal:lastReadCount:${storageUserId}:${caseId}`,
-        [storageUserId]
-    );
-
-    const getUnreadCount = useCallback(
-        (caseId: string) => {
-            void unreadTick;
-            if (!storageUserId) return 0;
-            try {
-                const totalCount = caseCommentsCounts[caseId] || 0;
-                const raw = window.localStorage.getItem(lastReadCountKey(caseId));
-                const lastReadCount = Number.parseInt(raw || "0", 10);
-                if (!Number.isFinite(lastReadCount) || lastReadCount < 0) return totalCount;
-                return Math.max(0, totalCount - lastReadCount);
-            } catch {
-                return 0;
-            }
-        },
-        [unreadTick, lastReadCountKey, caseCommentsCounts, storageUserId]
-    );
-
     const markCaseAsRead = useCallback(
-        (caseId: string, totalOverride?: number) => {
-            if (!storageUserId) return;
-            try {
-                const total = totalOverride ?? (caseCommentsCounts[caseId] || 0);
-                window.localStorage.setItem(lastReadCountKey(caseId), String(total));
-                setUnreadTick((t) => t + 1);
-            } catch {
-                // ignore
-            }
+        (caseId: string) => {
+            const nowIso = new Date().toISOString();
+            setCaseLiveReadAtById((prev) => ({
+                ...prev,
+                [caseId]: {
+                    ...(prev[caseId] ?? {}),
+                    customer_last_read_at: nowIso,
+                },
+            }));
             // Write customer_last_read_at to DB so admin can see "Läst" on their own messages.
             supabase.functions.invoke("mark-case-as-read", { body: { case_id: caseId } }).catch(() => {});
+            // Mark related notifications as read and refresh banner.
+            markNotificationsReadForRef(caseId);
         },
-        [lastReadCountKey, caseCommentsCounts, storageUserId]
+        [markNotificationsReadForRef]
     );
 
+    
     useEffect(() => {
-        if (!cases.length) return;
-        const caseIdFromUrl = new URLSearchParams(window.location.search).get("caseId");
-        if (!caseIdFromUrl) return;
-        const match = cases.find((item) => item.id === caseIdFromUrl);
-        if (!match) return;
-        setSelectedCase(match);
-        markCaseAsRead(match.id);
-    }, [cases, markCaseAsRead]);
+    if (!cases.length) return;
+    const caseIdFromUrl = new URLSearchParams(window.location.search).get("caseId");
+    if (!caseIdFromUrl) return;
+    const match = cases.find((item) => item.id === caseIdFromUrl);
+    if (!match) return;
+    setSelectedCase(match);
+    markCaseAsRead(match.id);
+}, [cases, markCaseAsRead]);
 
-        const unreadCaseMessagesCount = useMemo(() => {
-                if (!cases?.length) return 0;
-                return cases.reduce((acc, caseItem) => acc + getUnreadCount(caseItem.id), 0);
-        }, [cases, getUnreadCount]);
-        const notificationDescriptions = useMemo(
-            () => unread.map((notification) => getNotificationDescription(notification)),
-            [unread]
-        );
-        const messageDescription = useMemo(() => {
-            if (unreadCaseMessagesCount <= 0) return null;
-            if (unreadCaseMessagesCount === 1) return "Nytt meddelande i ett ärende.";
-            return `Nya meddelanden i ${unreadCaseMessagesCount} ärenden.`;
-        }, [unreadCaseMessagesCount]);
-        const bannerDescriptions = useMemo(() => {
+const bannerDescriptions = useMemo(() => {
+            const seen = new Set<string>();
             const items: string[] = [];
-            if (messageDescription) items.push(messageDescription);
-            for (const text of notificationDescriptions) {
-                if (items.length >= 3) break;
-                items.push(text);
+            for (const n of unread) {
+                const desc = getNotificationDescription(n);
+                if (!seen.has(desc)) {
+                    seen.add(desc);
+                    items.push(desc);
+                }
             }
             return items;
-        }, [messageDescription, notificationDescriptions]);
-        const totalUnread = unreadCount + unreadCaseMessagesCount;
-        const extraUnreadCount = Math.max(0, totalUnread - bannerDescriptions.length);
+        }, [unread]);
+        const extraUnreadCount = Math.max(0, unreadCount - bannerDescriptions.length);
 
     useEffect(() => {
         // Realtime notiser för nya kommentarer i kundens ärenden
@@ -360,13 +331,13 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
 
                         // Notifiera inte på egna kommentarer (och markera ej som oläst)
                         if (row?.author_id && currentId && row.author_id === currentId) {
-                            markCaseAsRead(caseId, nextCount);
+                            markCaseAsRead(caseId);
                             return { ...prev, [caseId]: nextCount };
                         }
 
                         // Om kunden redan har ärendet öppet räknas detta som läst direkt.
                         if (selectedCaseIdRef.current === caseId) {
-                            markCaseAsRead(caseId, nextCount);
+                            markCaseAsRead(caseId);
                         }
 
                         return { ...prev, [caseId]: nextCount };
@@ -399,63 +370,6 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         };
     }, [customer?.id, toast, user?.id, markCaseAsRead, fetchCaseCommentsCount]);
 
-    // --- Hämta Uppsägningar ---
-    const fetchCancellations = useCallback(async () => {
-        if (!customer?.id) return;
-        setLoadingCancellations(true);
-        try {
-            const { data, error } = await supabase
-                .from("subscription_cancellations")
-                .select("*, admin_last_read_at, customer_last_read_at")
-                .eq("customer_id", customer.id)
-                .order("created_at", { ascending: false });
-
-            if (error) throw error;
-            setCancellations(data || []);
-        } catch (err) {
-            console.error("Failed to fetch cancellations", err);
-        } finally {
-            setLoadingCancellations(false);
-        }
-    }, [customer?.id]);
-
-    // Realtime för nya kommentarer i kundens uppsägningar
-    useEffect(() => {
-        if (!customer?.id) return;
-
-        const channel = supabase
-            .channel(`cancellation_comments_customer_${customer.id}`)
-            .on(
-                "postgres_changes",
-                { event: "INSERT", schema: "public", table: "cancellation_comments" },
-                (payload) => {
-                    const row = payload.new as any;
-                    const cancellationId = row?.cancellation_id as string | undefined;
-                    if (!cancellationId) return;
-
-                    const currentId = user?.id ?? customer?.id;
-
-                    // Notifiera inte på egna kommentarer
-                    if (row?.user_id && currentId && row.user_id === currentId) {
-                        return;
-                    }
-
-                    toast({
-                        title: "Nytt meddelande",
-                        description: "Nytt meddelande i en uppsägning",
-                    });
-
-                    // Trigger re-fetch av cancellations för att få uppdaterad comment_count
-                    fetchCancellations();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [customer?.id, toast, user?.id, fetchCancellations]);
-
     // --- Hämta Ärenden ---
     const fetchCases = useCallback(async () => {
         if (!customer?.id) return;
@@ -463,7 +377,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         const run = () =>
             supabase
                 .from("cases")
-                .select("*, service_type:service_type_id(name, description), admin_last_read_at, customer_last_read_at")
+                .select("*, service_type:service_type_id(name, description)")
                 .eq("customer_id", customer.id)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: false });
@@ -539,6 +453,20 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             const list = (data as Comment[]) || [];
             setComments(list);
             setCaseCommentsCounts((prev) => ({ ...prev, [caseId]: list.length }));
+
+            const { data: readData, error: readError } = await supabase
+                .from("cases")
+                .select("admin_last_read_at, customer_last_read_at")
+                .eq("id", caseId)
+                .maybeSingle();
+            if (readError) throw readError;
+            setCaseLiveReadAtById((prev) => ({
+                ...prev,
+                [caseId]: {
+                    admin_last_read_at: (readData as any)?.admin_last_read_at ?? null,
+                    customer_last_read_at: (readData as any)?.customer_last_read_at ?? null,
+                },
+            }));
         } catch (err) {
             console.error("Error fetching comments:", err);
             setComments([]);
@@ -588,6 +516,41 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
             setLoadingValuations(false);
         }
     }, [customer?.id, toast]);
+
+    // --- Hämta Uppsägningar ---
+    const fetchCancellations = useCallback(async () => {
+        if (!customer?.id) return;
+        setLoadingCancellations(true);
+        try {
+            const run = () =>
+                supabase
+                    .from("subscription_cancellations")
+                    .select("*")
+                    .eq("customer_id", customer.id)
+                    .order("created_at", { ascending: false });
+
+            let { data, error } = await run();
+            if (error && isUnauthorizedError(error)) {
+                const ok = await handleUnauthorized();
+                if (ok) ({ data, error } = await run());
+            }
+
+            if (error) throw error;
+            const mapped = (data || []).map((c: any) => ({
+                ...c,
+                id: String(c.id),
+                customer_id: c.customer_id != null ? String(c.customer_id) : c.customer_id,
+                subscription_id: c.subscription_id != null ? String(c.subscription_id) : null,
+            }));
+            setCancellations(mapped as SubscriptionCancellation[]);
+        } catch (err) {
+            console.error("Error fetching cancellations:", err);
+            toast({ title: "Fel", description: "Kunde inte hämta uppsägningar", variant: "destructive" });
+            setCancellations([]);
+        } finally {
+            setLoadingCancellations(false);
+        }
+    }, [customer?.id, handleUnauthorized, toast]);
 
     // --- Hämta fullmakter för kund ---
     const fetchDocuments = useCallback(async () => {
@@ -816,28 +779,39 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         }
     };
 
+
+
     // --- Ladda kommentarer när ärende väljs ---
     useEffect(() => {
-        if (selectedCase?.id) {
-            fetchComments(selectedCase.id);
-            fetchCaseDocuments(selectedCase.id);
-        } else {
-            setComments([]);
-            setCaseDocuments([]);
-        }
-    }, [selectedCase?.id, fetchComments, fetchCaseDocuments]);
-    
-    return (
+    if (!selectedCase?.id) {
+        setComments([]);
+        setCaseDocuments([]);
+        return;
+    }
 
+    fetchComments(selectedCase.id);
+    fetchCaseDocuments(selectedCase.id);
+}, [selectedCase?.id, fetchComments, fetchCaseDocuments]);
+        
+    return (
         <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
             <div className="max-w-4xl mx-auto space-y-8">
-                                {totalUnread > 0 && (
-                                        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                                {/* Banner: always rendered so cards below don't shift when notifications clear */}
+                                <div
+                                    aria-live="polite"
+                                    style={{
+                                        visibility: unreadCount > 0 ? 'visible' : 'hidden',
+                                        maxHeight: unreadCount > 0 ? '200px' : '0',
+                                        overflow: 'hidden',
+                                        transition: 'max-height 0.2s ease, visibility 0.2s',
+                                    }}
+                                >
+                                        <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900">
                                                 <div>
-                                                    Du har <span className="font-semibold">{totalUnread}</span> nya uppdateringar.
+                                                    Du har <span className="font-semibold">{unreadCount}</span> nya notiser.
                                                 </div>
                                                 {bannerDescriptions.length > 0 && (
-                                                    <ul className="mt-1 list-disc space-y-0.5 pl-5 text-blue-900">
+                                                    <ul className="mt-1 list-disc space-y-0.5 pl-5 text-orange-900">
                                                         {bannerDescriptions.map((text, idx) => (
                                                             <li key={`${idx}-${text}`} className="leading-snug">
                                                                 {text}
@@ -846,10 +820,10 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                                                     </ul>
                                                 )}
                                                 {extraUnreadCount > 0 && (
-                                                    <div className="mt-1 text-xs text-blue-700">+ {extraUnreadCount} till</div>
+                                                    <div className="mt-1 text-xs text-orange-700">+ {extraUnreadCount} till</div>
                                                 )}
                                         </div>
-                                )}
+                                </div>
                 {/* 1. Portal Stats (Krav: Status på ärenden) */}
                 <Card className="shadow-lg bg-gradient-to-br from-sky-50 to-white">
                     <CardHeader>
@@ -942,13 +916,16 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
 
                 {/* 5. Ärendehantering (Krav: Fällbara kort, ingen Nytt ärende-knapp) */}
                 <CollapsibleCard
-                    defaultOpen
+                    defaultOpen={!loadingCases && cases.length > 0}
                     title={
                         <div className="flex items-center">
                             <Briefcase className="w-5 h-5 mr-2 text-gray-600" />
                             <span className="font-bold text-lg">Mina Ärenden</span>
                         </div>
                     }
+                    rightAction={caseUnreadCount > 0 ? (
+                        <CommentBubble count={caseUnreadCount} highlight ariaLabel="Olästa ärendemeddelanden" />
+                    ) : undefined}
                     className="shadow-lg"
                 >
                     {loadingCases ? (
@@ -961,21 +938,25 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                     ) : (
                         <div className="grid gap-4 mt-4">
                             {cases.map((caseItem) => {
-                                const unread = getUnreadCount(caseItem.id);
+                                const hasCaseUnread = unread.some(n => n.type === "case_message" && n.ref_id === caseItem.id);
                                 const totalCount = caseCommentsCounts[caseItem.id] || 0;
 
-                                return (
-                                    <Card
-                                        key={caseItem.id}
-                                        className={`relative cursor-pointer hover:shadow-md transition-shadow ${selectedCase?.id === caseItem.id ? "border-2 border-trust-blue bg-blue-50" : "border-gray-200"}`}
-                                        onClick={() => {
-                                            const next = selectedCase?.id === caseItem.id ? null : caseItem;
-                                            setSelectedCase(next); // Stäng/öppna
-                                            if (next) {
-                                                markCaseAsRead(caseItem.id);
-                                            }
-                                        }}
-                                    >
+                               return (
+                        <Card
+                            key={caseItem.id}
+                            className={`relative cursor-pointer hover:shadow-md transition-shadow ${
+                                selectedCase?.id === caseItem.id
+                                    ? "border-2 border-trust-blue bg-blue-50"
+                                    : "border-gray-200"
+                            }`}
+                            onClick={() => {
+                                setSelectedCase((prev) => {
+                                    const next = prev?.id === caseItem.id ? null : caseItem;
+                                    if (next) markCaseAsRead(caseItem.id);
+                                    return next;
+                                });
+                            }}
+                        >
                                         <CardContent className="p-4">
                                             <div className="flex justify-between items-start mb-2 gap-3">
                                                 <div className="min-w-0">
@@ -985,7 +966,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                                                 <div className="flex items-center gap-2 shrink-0">
                                                     <div
                                                         className={`flex items-center gap-1 text-sm ${
-                                                            unread > 0
+                                                            hasCaseUnread
                                                                 ? "bg-orange-200 text-orange-900 px-2 py-0.5 rounded-full font-bold animate-pulse"
                                                                 : "text-gray-600"
                                                         }`}
@@ -1028,7 +1009,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                                                             currentUserId={user?.id}
                                                             isAdmin={false}
                                                             caseCustomerId={caseItem.customer_id}
-                                                            otherPartyLastReadAt={caseItem.admin_last_read_at ?? null}
+                                                            otherPartyLastReadAt={caseLiveReadAtById[caseItem.id]?.admin_last_read_at ?? caseItem.admin_last_read_at ?? null}
                                                             comments={comments}
                                                             onRefresh={async () => {
                                                                 await fetchComments(caseItem.id);
@@ -1062,13 +1043,16 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
 
                 {/* Uppsägningar */}
                 <CollapsibleCard
-                    defaultOpen={false}
+                    defaultOpen={!loadingCancellations && cancellations.length > 0}
                     title={
                         <div className="flex items-center">
                             <Briefcase className="w-5 h-5 mr-2 text-gray-600" />
                             <span className="font-bold text-lg">Mina Uppsägningar</span>
                         </div>
                     }
+                    rightAction={cancellationUnreadCount > 0 ? (
+                        <CommentBubble count={cancellationUnreadCount} highlight ariaLabel="Olästa uppsägningsmeddelanden" />
+                    ) : undefined}
                     className="shadow-lg"
                 >
                     {loadingCancellations ? (
@@ -1085,6 +1069,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
                             cancellations={cancellations}
                             onDataUpdated={fetchCancellations}
                             showProviderFilter={false}
+                            onNotificationsRead={markNotificationsReadForRef}
                         />
                     )}
                 </CollapsibleCard>

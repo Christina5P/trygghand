@@ -63,6 +63,7 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
     const [caseDocuments, setCaseDocuments] = useState<CaseDocument[]>([]);
+    const [liveReadAt, setLiveReadAt] = useState<{ admin_last_read_at?: string | null; customer_last_read_at?: string | null }>({});
 
     // NewCaseForm is only ever rendered in admin context (CasesView, CustomersDialog, AdminPortal)
     const isAdmin = true;
@@ -79,6 +80,24 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
         }
     }, []);
 
+    const fetchCaseReadAt = useCallback(async (caseId: string) => {
+        try {
+            const { data, error } = await supabase
+                .from("cases")
+                .select("admin_last_read_at, customer_last_read_at")
+                .eq("id", caseId)
+                .maybeSingle();
+            if (error) throw error;
+            setLiveReadAt({
+                admin_last_read_at: (data as any)?.admin_last_read_at ?? null,
+                customer_last_read_at: (data as any)?.customer_last_read_at ?? null,
+            });
+        } catch (err) {
+            console.error("Error fetching case read timestamps:", err);
+            setLiveReadAt({});
+        }
+    }, []);
+
   useEffect(() => {
     setSelectedCustomer(defaultCustomerId || customers[0]?.id || "");
   }, [defaultCustomerId, customers]);
@@ -92,7 +111,12 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
       setCreatedDate(formatISODateOnly(caseToEdit.created_at ?? null));
       setScheduledDate(formatISODateOnly((caseToEdit as any).scheduled_date ?? null)); // Gissar på scheduled_date
       setStatus(caseToEdit.status ?? "pending");
+            setLiveReadAt({
+                admin_last_read_at: caseToEdit.admin_last_read_at ?? null,
+                customer_last_read_at: caseToEdit.customer_last_read_at ?? null,
+            });
             void fetchCaseDocuments(caseToEdit.id);
+            void fetchCaseReadAt(caseToEdit.id);
     } else {
       setTitle("");
       setDescription("");
@@ -101,9 +125,34 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
       setScheduledDate(null);
       setStatus("pending");
             setCaseDocuments([]);
+            setLiveReadAt({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [caseToEdit, fetchCaseDocuments]);
+    }, [caseToEdit, fetchCaseDocuments, fetchCaseReadAt]);
+
+    useEffect(() => {
+        if (!caseToEdit?.id) return;
+
+        const markAsRead = async () => {
+            try {
+                const { data, error } = await supabase.functions.invoke("mark-case-as-read", {
+                    body: { case_id: caseToEdit.id },
+                });
+                if (error || (data as any)?.ok !== true) return;
+
+                const nowIso = new Date().toISOString();
+                setLiveReadAt((prev) => ({
+                    ...prev,
+                    admin_last_read_at: nowIso,
+                }));
+                await fetchCaseReadAt(caseToEdit.id);
+            } catch {
+                // Keep the thread usable even if read marking fails transiently.
+            }
+        };
+
+        void markAsRead();
+    }, [caseToEdit?.id, fetchCaseReadAt]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,10 +225,11 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
                         currentUserId={authUserSession?.id}
                         isAdmin={isAdmin}
                         caseCustomerId={caseToEdit.customer_id}
-                        otherPartyLastReadAt={isAdmin ? (caseToEdit.customer_last_read_at ?? null) : (caseToEdit.admin_last_read_at ?? null)}
+                        otherPartyLastReadAt={isAdmin ? (liveReadAt.customer_last_read_at ?? caseToEdit.customer_last_read_at ?? null) : (liveReadAt.admin_last_read_at ?? caseToEdit.admin_last_read_at ?? null)}
                         comments={caseComments}
                         onRefresh={async () => {
                             if (fetchCaseComments) await fetchCaseComments(caseToEdit.id);
+                            await fetchCaseReadAt(caseToEdit.id);
                         }}
                         canComment={true}
                         otherPartyLastReadAt={isAdmin ? caseToEdit.customer_last_read_at : caseToEdit.admin_last_read_at}

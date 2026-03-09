@@ -126,8 +126,10 @@ serve(async (req: Request): Promise<Response> => {
   const notifRecipient = payload.customer_id as string | null | undefined;
   if (notifRecipient && notifRecipient !== user.id) {
     try {
+      const { data: custAuth } = await service.from("customers").select("user_id").eq("id", notifRecipient).maybeSingle();
+      const notifUserId: string = (custAuth as any)?.user_id ?? notifRecipient;
       await service.from("notifications").insert({
-        user_id: notifRecipient,
+        user_id: notifUserId,
         type: "cancellation_status",
         ref_id: (created as any)?.id,
         ref_type: "cancellation",

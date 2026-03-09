@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
 import type { CancellationStatus, Customer, Subscription, SubscriptionCancellation } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
@@ -40,6 +41,8 @@ interface Props {
   cancellations: SubscriptionCancellation[];
   onDataUpdated: () => Promise<void>;
   showProviderFilter?: boolean;
+  /** Called after a cancellation is marked read — use to sync the parent portal's notification hook state. */
+  onNotificationsRead?: (refId: string) => void;
 }
 
 export function SubscriptionCancellationsView({
@@ -48,11 +51,13 @@ export function SubscriptionCancellationsView({
   cancellations,
   onDataUpdated,
   showProviderFilter = true,
+  onNotificationsRead,
 }: Props) {
   void subscriptions; // keep prop stable; subscriptions may be used elsewhere later
 
   const { toast } = useToast();
   const { user, customer } = useAuth();
+  const { markNotificationsReadForRef } = useNotifications();
   const isAdmin = customer?.is_admin === true;
 
   const [loading] = useState(false); // left in place (may be set by parent patterns)
@@ -75,6 +80,7 @@ export function SubscriptionCancellationsView({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [archivedCustomerMap, setArchivedCustomerMap] = useState<Record<string, string>>({});
   const [showArchivedCancellations, setShowArchivedCancellations] = useState(false);
+  const archivedCancAutoOpened = useRef(false);
 
   const toMs = (iso?: string | null) => {
     const ms = iso ? Date.parse(iso) : NaN;
@@ -88,6 +94,11 @@ export function SubscriptionCancellationsView({
       await supabase.functions.invoke("mark-cancellation-as-read", {
         body: { cancellation_id: cancellationId },
       });
+      // Mark related notifications as read and refresh banner.
+      void markNotificationsReadForRef(cancellationId);
+      // Also call the parent portal's hook instance so the banner updates immediately
+      // (each useNotifications() call is its own independent state).
+      onNotificationsRead?.(cancellationId);
       // Optimistic local update so unread state flips immediately even before parent refetch.
       const nowIso = new Date().toISOString();
       setLocalReadAtByCancellationId((prev) => ({
@@ -344,7 +355,7 @@ export function SubscriptionCancellationsView({
     if (next) setSelected(next);
   }, [effectiveCancellations, selected]);
 
-  // Fetch latest customer comment timestamp per cancellation
+  // Fetch latest customer comment timestamp per cancellation (also counts visible comments for the card).
   useEffect(() => {
     const cancellationIds = effectiveCancellations.map((c) => c.id).filter(Boolean);
     if (cancellationIds.length === 0) {
@@ -358,7 +369,7 @@ export function SubscriptionCancellationsView({
       try {
         const { data, error } = await supabase
           .from("cancellation_comments")
-          .select("cancellation_id, user_id, is_internal, created_at")
+          .select("cancellation_id, user_id, is_internal, created_at, deleted_at")
           .in("cancellation_id", cancellationIds)
           .order("created_at", { ascending: false });
 
@@ -366,6 +377,7 @@ export function SubscriptionCancellationsView({
         if (!isMounted) return;
 
         const latestByCancellation: Record<string, string> = {};
+        const countsByCancellation: Record<string, number> = {};
         for (const cancellation of effectiveCancellations) {
           // Find latest comment from customer (user_id matches customer_id)
           const latestCustomer = (data || []).find(
@@ -377,9 +389,24 @@ export function SubscriptionCancellationsView({
           ) as { created_at?: string } | undefined;
 
           latestByCancellation[cancellation.id] = latestCustomer?.created_at || "";
+
+          // Count visible (not soft-deleted) comments for the card list.
+          countsByCancellation[cancellation.id] = (data || []).filter(
+            (row: any) => row?.cancellation_id === cancellation.id && !row?.deleted_at
+          ).length;
         }
 
         setLatestCustomerCommentAt(latestByCancellation);
+        // Merge counts so dialog-opened counts (onCommentCountChange) are not overwritten downward.
+        setCommentCounts((prev) => {
+          const next = { ...prev };
+          for (const [id, count] of Object.entries(countsByCancellation)) {
+            // Only update if count is strictly higher than what we already have
+            // (dialog may have a more precise count from its own fetch).
+            if (count > (prev[id] ?? 0)) next[id] = count;
+          }
+          return next;
+        });
       } catch {
         if (!isMounted) return;
         setLatestCustomerCommentAt({});
@@ -508,6 +535,13 @@ export function SubscriptionCancellationsView({
 
   const activeFiltered = filtered.filter((c) => !isArchivedCustomer(c.customer_id ?? null));
   const archivedFiltered = filtered.filter((c) => isArchivedCustomer(c.customer_id ?? null));
+
+  useEffect(() => {
+    if (!archivedCancAutoOpened.current && archivedFiltered.length > 0) {
+      archivedCancAutoOpened.current = true;
+      setShowArchivedCancellations(true);
+    }
+  }, [archivedFiltered.length]);
 
   const handleOpenCancellation = async (item: SubscriptionCancellation) => {
     setSelected(item);
