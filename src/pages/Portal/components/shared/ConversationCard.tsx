@@ -25,12 +25,12 @@ export function ConversationCard({
 
   return (
     <Card
-      className="relative hover:shadow-lg transition-shadow cursor-pointer"
+      className="relative min-h-[152px] hover:shadow-lg transition-shadow cursor-pointer"
       onClick={onClick}
     >
       <CardHeader className="relative pb-3">
         <CardTitle className="text-base truncate pr-2">{title}</CardTitle>
-        <CardDescription className="truncate">{subtitle}</CardDescription>
+        <CardDescription className="min-h-[3.75rem] pr-2 line-clamp-3">{subtitle}</CardDescription>
         <div className="mt-2">
           <span
             className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-medium ${

@@ -2,7 +2,6 @@ import type { CancellationStatus, Customer, SubscriptionCancellation } from "@/t
 import { CancellationStatusSelect } from "./status";
 import { formatYmd } from "./utils";
 import { ConversationCard } from "@/pages/Portal/components/shared/ConversationCard";
-import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 
 export function SubscriptionCancellationCard({
@@ -36,6 +35,7 @@ export function SubscriptionCancellationCard({
 }) {
   const customerName = customerNameOverride || customer?.name || customer?.email || "Okänd";
   const count = commentCount ?? item.comment_count ?? 0;
+  const title = item.custom_service_name || item.service_type || item.provider || caseTypeLabel;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -84,8 +84,12 @@ export function SubscriptionCancellationCard({
 
   return (
     <ConversationCard
-      title={customerName}
-      subtitle={`${caseTypeLabel} · ${item.custom_service_name || item.service_type || "Abonnemang"}`}
+      title={title}
+      subtitle={[
+        `Kund: ${customerName}`,
+        `Skapat: ${formatYmd(item.created_at)}`,
+        item.provider ? `Leverantör: ${item.provider}` : null,
+      ].filter(Boolean).join(" | ")}
       unread={unread}
       readStatusLabel={readStatusLabel}
       commentCount={count}

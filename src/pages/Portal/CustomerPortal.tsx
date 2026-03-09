@@ -69,6 +69,10 @@ const getStatusText = (status: string) => {
     }
 };
 
+const isCurrentCaseStatus = (status: string) => status !== "completed" && status !== "cancelled";
+
+const isCurrentCancellationStatus = (status: string) => status !== "completed" && status !== "cancelled";
+
 type CustomerPortalProps = {
   customer: Customer;
   fullmaktTemplates?: { id: string; name: string; storage_path: string }[];
@@ -417,6 +421,12 @@ const bannerDescriptions = useMemo(() => {
             window.removeEventListener("focus", onFocus);
         };
     }, [fetchLatestGdprRequest]);
+
+    const hasCurrentCases = useMemo(() => cases.some((caseItem) => isCurrentCaseStatus(caseItem.status)), [cases]);
+    const hasCurrentCancellations = useMemo(
+        () => cancellations.some((cancellation) => isCurrentCancellationStatus(cancellation.status)),
+        [cancellations]
+    );
 
     const handleDownloadGdprReport = async () => {
         if (!gdprRequest?.id) return;
@@ -916,7 +926,7 @@ const bannerDescriptions = useMemo(() => {
 
                 {/* 5. Ärendehantering (Krav: Fällbara kort, ingen Nytt ärende-knapp) */}
                 <CollapsibleCard
-                    defaultOpen={!loadingCases && cases.length > 0}
+                    defaultOpen={!loadingCases && hasCurrentCases}
                     title={
                         <div className="flex items-center">
                             <Briefcase className="w-5 h-5 mr-2 text-gray-600" />
@@ -958,12 +968,12 @@ const bannerDescriptions = useMemo(() => {
                             }}
                         >
                                         <CardContent className="p-4">
-                                            <div className="flex justify-between items-start mb-2 gap-3">
-                                                <div className="min-w-0">
+                                            <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                <div className="min-w-0 flex-1">
                                                     <h3 className="font-semibold text-lg truncate">{caseItem.title}</h3>
                                                 </div>
 
-                                                <div className="flex items-center gap-2 shrink-0">
+                                                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                                                     <div
                                                         className={`flex items-center gap-1 text-sm ${
                                                             hasCaseUnread
@@ -982,9 +992,9 @@ const bannerDescriptions = useMemo(() => {
                                             </div>
 
                                             {selectedCase?.id === caseItem.id && (
-                                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                                    <div className="mt-4 overflow-hidden pt-4 border-t border-gray-200">
                                                     {/* Ärendeinformation */}
-                                                    <div className="grid grid-cols-2 gap-y-2 text-sm text-gray-700 mb-4">
+                                                    <div className="mb-4 grid grid-cols-1 gap-y-2 text-sm text-gray-700 sm:grid-cols-2">
                                                         {caseItem.scheduled_date && (
                                                             <p className="flex items-center"><Calendar className="w-4 h-4 mr-2" /> <strong>Schemalagt:</strong> {format(new Date(caseItem.scheduled_date), "dd MMM yyyy", { locale: sv })}</p>
                                                         )}
@@ -992,7 +1002,7 @@ const bannerDescriptions = useMemo(() => {
                                                             <p className="flex items-center"><MapPin className="w-4 h-4 mr-2" /> <strong>Adress:</strong> {caseItem.address}</p>
                                                         )}
 
-                                                        <p className="col-span-2 text-gray-600 mt-2 whitespace-pre-wrap">{caseItem.description}</p>
+                                                        <p className="text-gray-600 mt-2 whitespace-pre-wrap break-words sm:col-span-2">{caseItem.description}</p>
                                                     </div>
 
                                                     {/* Kommentarer */}
@@ -1043,7 +1053,7 @@ const bannerDescriptions = useMemo(() => {
 
                 {/* Uppsägningar */}
                 <CollapsibleCard
-                    defaultOpen={!loadingCancellations && cancellations.length > 0}
+                    defaultOpen={!loadingCancellations && hasCurrentCancellations}
                     title={
                         <div className="flex items-center">
                             <Briefcase className="w-5 h-5 mr-2 text-gray-600" />

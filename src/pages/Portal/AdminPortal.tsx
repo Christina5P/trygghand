@@ -170,6 +170,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   >("cases");
   // Statusfilter för ärenden — använder normalizeStatus + STATUS_DEFINITIONS
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [caseCustomerFilter, setCaseCustomerFilter] = useState<string>("all");
   // Statusfilter för kontaktförfrågningar
   const [contactStatusFilter, setContactStatusFilter] = useState<string>("all");
   const [gdprCreateBusy, setGdprCreateBusy] = useState(false);
@@ -396,10 +397,23 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     return ["all", ...ordered, ...rest];
   }, [cases]);
 
+  const caseCustomerOptions = useMemo(() => {
+    const uniqueIds = Array.from(new Set((cases || []).map((c) => c.customer_id).filter(Boolean)));
+    return uniqueIds
+      .map((id) => ({
+        id,
+        name: customers.find((customer) => customer.id === id)?.name || "Okänd kund",
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "sv"));
+  }, [cases, customers]);
+
   const filteredCases = useMemo(() => {
-    if (statusFilter === "all") return cases;
-    return (cases || []).filter((c) => normalizeStatus(c.status) === statusFilter);
-  }, [cases, statusFilter]);
+    return (cases || []).filter((caseItem) => {
+      const statusMatches = statusFilter === "all" || normalizeStatus(caseItem.status) === statusFilter;
+      const customerMatches = caseCustomerFilter === "all" || caseItem.customer_id === caseCustomerFilter;
+      return statusMatches && customerMatches;
+    });
+  }, [cases, statusFilter, caseCustomerFilter]);
 
   const casesCountLabel = activeCasesCount ?? cases.length;
 
@@ -942,7 +956,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                   <TabsContent value="cases">
             <div className="mb-4 flex items-center justify-between gap-4">
               <div className="text-sm text-gray-600">Filtrera ärenden:</div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v)}>
                   <SelectTrigger className="w-48">
                     <SelectValue />
@@ -952,6 +966,19 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                     {statusOptions.map((s) => (
                       <SelectItem key={s} value={s}>
                         {statusLabel(s)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={caseCustomerFilter} onValueChange={(v) => setCaseCustomerFilter(v)}>
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="Välj kund" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alla kunder</SelectItem>
+                    {caseCustomerOptions.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
