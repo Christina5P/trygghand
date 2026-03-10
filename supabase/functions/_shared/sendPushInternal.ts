@@ -1,18 +1,9 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // @ts-ignore - Remote supabase-js for Deno resolved at deploy/runtime
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 // @ts-ignore - web-push is imported through esm for Deno runtime
 import webpush from "https://esm.sh/web-push@3.6.7";
 
 declare const Deno: { env: { get: (key: string) => string | undefined } };
-
-type SendPushPayload = {
-  userId?: string;
-  type?: "case_update" | "new_message" | "booked_time" | string;
-  caseId?: string;
-  messageId?: string;
-  url?: string;
-};
 
 type PushPreference = {
   user_id: string;
@@ -26,20 +17,27 @@ type PushPreference = {
   timezone: string;
 };
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+export type SendPushInternalParams = {
+  userId: string;
+  type?: "case_update" | "new_message" | "booked_time" | string;
+  caseId?: string;
+  messageId?: string;
+  url?: string;
+};
+
+export type SendPushInternalResult = {
+  ok: true;
+  skipped?: "category_disabled" | "quiet_hours";
+  queued?: true;
+  delivered?: number;
+  deleted?: number;
+  batchedCount?: number;
+} | {
+  ok: false;
+  error: string;
 };
 
 const PUSH_RATE_LIMIT_SECONDS = 20;
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
 
 function isUuid(v: unknown): v is string {
   return (
@@ -132,42 +130,19 @@ function normalizePortalUrl(rawUrl: string | undefined): string {
   return rawUrl;
 }
 
-function extractAuthToken(value: string | null): string {
-  if (!value) return "";
-  return value.startsWith("Bearer ") ? value.slice(7).trim() : value.trim();
-}
-
-serve(async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
-  if (req.method !== "POST") return json(405, { error: "Method not allowed" });
-
+export async function sendPushInternal(params: SendPushInternalParams): Promise<SendPushInternalResult> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
   const vapidPublicKey = Deno.env.get("PUSH_VAPID_PUBLIC_KEY") || Deno.env.get("VAPID_PUBLIC_KEY");
   const vapidPrivateKey = Deno.env.get("PUSH_VAPID_PRIVATE_KEY") || Deno.env.get("VAPID_PRIVATE_KEY");
-  const vapidSubject = Deno.env.get("PUSH_VAPID_SUBJECT") || "mailto:kontakt@trygghand.com";
+  const vapidSubject = Deno.env.get("PUSH_VAPID_SUBJECT") || "https://www.trygghand.com";
 
-  if (!supabaseUrl || !serviceRoleKey) return json(500, { error: "Server configuration missing" });
-  if (!vapidPublicKey || !vapidPrivateKey) return json(500, { error: "Push configuration missing" });
+  if (!supabaseUrl || !serviceRoleKey) return { ok: false, error: "Server configuration missing" };
+  if (!vapidPublicKey || !vapidPrivateKey) return { ok: false, error: "Push configuration missing" };
+  if (!isUuid(params.userId)) return { ok: false, error: "Invalid userId" };
 
-  const authToken = extractAuthToken(req.headers.get("authorization"));
-  const apiKeyToken = extractAuthToken(req.headers.get("apikey"));
-  if (authToken !== serviceRoleKey && apiKeyToken !== serviceRoleKey) {
-    return json(401, { error: "Unauthorized" });
-  }
-
-  let payload: SendPushPayload;
-  try {
-    payload = (await req.json()) as SendPushPayload;
-  } catch {
-    return json(400, { error: "Invalid JSON" });
-  }
-
-  if (!isUuid(payload?.userId)) return json(400, { error: "Invalid userId" });
-
-  const normalizedType = typeof payload.type === "string" ? payload.type : "case_update";
-  const safeUrl = normalizePortalUrl(payload.url);
+  const normalizedType = typeof params.type === "string" ? params.type : "case_update";
+  const safeUrl = normalizePortalUrl(params.url);
 
   const service = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -176,12 +151,12 @@ serve(async (req: Request): Promise<Response> => {
   const { data: prefRow } = await service
     .from("push_notification_preferences")
     .select("*")
-    .eq("user_id", payload.userId)
+    .eq("user_id", params.userId)
     .maybeSingle();
 
   const preferences: PushPreference =
     (prefRow as PushPreference | null) ?? {
-      user_id: payload.userId,
+      user_id: params.userId,
       push_enabled: false,
       case_updates_enabled: false,
       new_messages_enabled: false,
@@ -193,17 +168,17 @@ serve(async (req: Request): Promise<Response> => {
     };
 
   if (!categoryEnabled(preferences, normalizedType)) {
-    return json(200, { ok: true, skipped: "category_disabled" });
+    return { ok: true, skipped: "category_disabled" };
   }
 
   if (isWithinQuietHours(preferences)) {
-    return json(200, { ok: true, skipped: "quiet_hours" });
+    return { ok: true, skipped: "quiet_hours" };
   }
 
   const { data: stateRow } = await service
     .from("push_delivery_state")
     .select("last_sent_at, pending_count")
-    .eq("user_id", payload.userId)
+    .eq("user_id", params.userId)
     .maybeSingle();
 
   const lastSentAt = (stateRow as any)?.last_sent_at ? new Date((stateRow as any).last_sent_at).getTime() : 0;
@@ -214,12 +189,12 @@ serve(async (req: Request): Promise<Response> => {
     await service
       .from("push_delivery_state")
       .upsert({
-        user_id: payload.userId,
+        user_id: params.userId,
         last_sent_at: (stateRow as any)?.last_sent_at ?? null,
         pending_count: pendingCount + 1,
       });
 
-    return json(200, { ok: true, queued: true });
+    return { ok: true, queued: true };
   }
 
   const batchedCount = Math.max(1, pendingCount + 1);
@@ -228,14 +203,14 @@ serve(async (req: Request): Promise<Response> => {
   const { data: subscriptions, error: subErr } = await service
     .from("push_subscriptions")
     .select("id, endpoint, subscription")
-    .eq("user_id", payload.userId);
+    .eq("user_id", params.userId);
 
-  if (subErr) return json(500, { error: "Could not load subscriptions" });
+  if (subErr) return { ok: false, error: "Could not load subscriptions" };
   if (!subscriptions || subscriptions.length === 0) {
     await service
       .from("push_delivery_state")
-      .upsert({ user_id: payload.userId, last_sent_at: new Date().toISOString(), pending_count: 0 });
-    return json(200, { ok: true, delivered: 0 });
+      .upsert({ user_id: params.userId, last_sent_at: new Date().toISOString(), pending_count: 0 });
+    return { ok: true, delivered: 0 };
   }
 
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
@@ -247,8 +222,8 @@ serve(async (req: Request): Promise<Response> => {
     badge: "/favicon-96x96.png",
     url: safeUrl,
     type: normalizedType,
-    caseId: payload.caseId,
-    messageId: payload.messageId,
+    caseId: params.caseId,
+    messageId: params.messageId,
   });
 
   let delivered = 0;
@@ -273,12 +248,12 @@ serve(async (req: Request): Promise<Response> => {
 
   await service
     .from("push_delivery_state")
-    .upsert({ user_id: payload.userId, last_sent_at: new Date().toISOString(), pending_count: 0 });
+    .upsert({ user_id: params.userId, last_sent_at: new Date().toISOString(), pending_count: 0 });
 
-  return json(200, {
+  return {
     ok: true,
     delivered,
     deleted,
     batchedCount,
-  });
-});
+  };
+}

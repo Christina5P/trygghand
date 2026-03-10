@@ -1,10 +1,8 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
 import type { CancellationStatus, Customer, SubscriptionCancellation } from "@/types";
 import { CancellationStatusSelect } from "./status";
 import { formatYmd } from "./utils";
-import { CommentBubble } from "@/pages/Portal/components/shared/CommentBubble";
-import { supabase } from "@/lib/supabase";
+import { ConversationCard } from "@/pages/Portal/components/shared/ConversationCard";
+import { Loader2 } from "lucide-react";
 
 export function SubscriptionCancellationCard({
   item,
@@ -16,7 +14,7 @@ export function SubscriptionCancellationCard({
   canDelete = false,
   isDeleting = false,
   unread = false,
-  readStatusLabel = "Läst",
+  readStatusLabel,
   onOpen,
   onStatusChange,
   onDelete,
@@ -37,8 +35,8 @@ export function SubscriptionCancellationCard({
 }) {
   const customerName = customerNameOverride || customer?.name || customer?.email || "Okänd";
   const count = commentCount ?? item.comment_count ?? 0;
+  const title = item.custom_service_name || item.service_type || item.provider || caseTypeLabel;
 
-  // Helper to get color class for status
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending": return "bg-yellow-100 text-yellow-900";
@@ -50,70 +48,54 @@ export function SubscriptionCancellationCard({
     }
   };
 
-  return (
-    <Card className="relative hover:bg-muted/40 transition cursor-pointer" onClick={onOpen}>
-      <CardHeader className="pb-3 flex justify-between items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <CardTitle className="text-base truncate">{customerName}</CardTitle>
-          <CardDescription className="truncate">
-            {caseTypeLabel} · {item.custom_service_name || item.service_type || "Abonnemang"}
-          </CardDescription>
-          <div className="mt-2">
-            <span className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-medium ${unread ? "border-amber-400 text-amber-700" : "border-emerald-400 text-emerald-700"}`}>
-              {readStatusLabel}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-          <div className={`rounded transition-colors ${getStatusColor(item.status)}`} style={{ minWidth: 110, minHeight: 28, display: 'flex', alignItems: 'center' }}>
-            <CancellationStatusSelect value={item.status} onChange={onStatusChange} disabled={!canEditStatus} 
-              triggerClassName="w-28 h-7 bg-transparent border-none shadow-none focus:ring-0 focus:outline-none text-xs px-1" />
-          </div>
-          {canDelete && (
-            <button
-              type="button"
-              title="Ta bort abonnemang"
-              className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200 rounded disabled:opacity-60"
-              style={{ minWidth: 28, minHeight: 28 }}
-              disabled={isDeleting}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (isDeleting) return;
-                if (!window.confirm("Är du säker på att du vill ta bort detta abonnemang?")) return;
-                onDelete?.();
-              }}
-            >
-              <span className="sr-only">Ta bort</span>
-              {isDeleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              )}
-            </button>
-          )}
-        </div>
-      </CardHeader>
-
-      <CommentBubble
-        className={`absolute bottom-2 right-2 transition-all ${unread ? 'ring-2 ring-blue-400 scale-110' : ''}`}
-        count={count}
-        highlight={unread}
+  const statusSlot = (
+    <div className={`rounded transition-colors ${getStatusColor(item.status)}`} style={{ minWidth: 110, minHeight: 28, display: "flex", alignItems: "center" }}>
+      <CancellationStatusSelect
+        value={item.status}
+        onChange={onStatusChange}
+        disabled={!canEditStatus}
+        triggerClassName="w-28 h-7 bg-transparent border-none shadow-none focus:ring-0 focus:outline-none text-xs px-1"
       />
+    </div>
+  );
 
-      <CardContent className="space-y-1 text-sm">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-muted-foreground">Leverantör</span>
-          <span className="truncate">{item.provider || "-"}</span>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-muted-foreground">Startdatum</span>
-          <span>{formatYmd(item.created_at)}</span>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-muted-foreground">Sista förfallodatum</span>
-          <span>{formatYmd(item.last_due_date)}</span>
-        </div>
-      </CardContent>
-    </Card>
+  const actionsSlot = canDelete ? (
+    <button
+      type="button"
+      title="Ta bort abonnemang"
+      className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 border border-gray-200 rounded disabled:opacity-60"
+      style={{ minWidth: 28, minHeight: 28 }}
+      disabled={isDeleting}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (isDeleting) return;
+        if (!window.confirm("Är du säker på att du vill ta bort detta abonnemang?")) return;
+        onDelete?.();
+      }}
+    >
+      <span className="sr-only">Ta bort</span>
+      {isDeleting ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+      )}
+    </button>
+  ) : null;
+
+  return (
+    <ConversationCard
+      title={title}
+      subtitle={[
+        `Kund: ${customerName}`,
+        `Skapat: ${formatYmd(item.created_at)}`,
+        item.provider ? `Leverantör: ${item.provider}` : null,
+      ].filter(Boolean).join(" | ")}
+      unread={unread}
+      readStatusLabel={readStatusLabel}
+      commentCount={count}
+      statusSlot={statusSlot}
+      actionsSlot={actionsSlot}
+      onClick={onOpen}
+    />
   );
 }

@@ -11,10 +11,26 @@ const CANCELLATION_STATUS_LABELS: Record<string, string> = {
   cancelled: "Avslutad",
 };
 
+const CASE_STATUS_LABELS: Record<string, string> = {
+  pending: "Väntar",
+  in_progress: "Pågår",
+  completed: "Klar",
+  cancelled: "Avbruten",
+};
+
 export const getNotificationDescription = (notification: NotificationLike): string => {
   if (!notification?.type) return "Ny notis.";
 
   switch (notification.type) {
+    case "case_message":
+      return "Nytt meddelande i ett ärende.";
+    case "cancellation_message":
+      return "Nytt meddelande i en uppsägning.";
+    case "case_status": {
+      const status = notification.payload?.status;
+      const label = status ? CASE_STATUS_LABELS[String(status)] : null;
+      return label ? `Ärendestatus uppdaterad till ${label}.` : "Ärendestatus uppdaterad.";
+    }
     case "cancellation_status": {
       const status = notification.payload?.status;
       const label = status ? CANCELLATION_STATUS_LABELS[String(status)] : null;

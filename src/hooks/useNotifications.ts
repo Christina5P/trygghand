@@ -39,14 +39,12 @@ export function useNotifications() {
   }, [userId]);
 
   useEffect(() => {
-    let mounted = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!mounted) return;
-      setUserId(data.user?.id ?? null);
+    // onAuthStateChange fires immediately with the cached session (INITIAL_SESSION event)
+    // without a network round-trip — prevents userId from being null when the first click fires.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
     });
-    return () => {
-      mounted = false;
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -81,12 +79,33 @@ export function useNotifications() {
     fetchNotifications();
   };
 
+  const markNotificationsReadForRef = async (refId: string) => {
+    // Prefer hook state; fall back to session cache in case state hasn't synced yet.
+    const resolvedUserId = userId ?? (await supabase.auth.getSession()).data.session?.user.id ?? null;
+    if (!resolvedUserId) {
+      console.warn('[useNotifications] markNotificationsReadForRef: no authenticated user', { refId });
+      return;
+    }
+    console.log('[useNotifications] markNotificationsReadForRef', { refId, resolvedUserId });
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('user_id', resolvedUserId)
+      .eq('ref_id', refId)
+      .is('read_at', null)
+      .select();
+    console.log('[useNotifications] rows updated', { count: data?.length ?? 0, data, error });
+    // Realtime will trigger a refetch; call manually as fallback.
+    await fetchNotifications();
+  };
+
   return {
     notifications,
     unread,
     unreadCount: unread.length,
     loading,
     markAsRead,
+    markNotificationsReadForRef,
     refetch: fetchNotifications,
   };
 }

@@ -33,7 +33,7 @@ async function isAdmin(service: any, userId: string): Promise<boolean> {
   const { data: profile, error: profileErr } = await service
     .from("profiles")
     .select("role")
-    .eq("id", userId)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (!profileErr && (profile as any)?.role === "admin") return true;
@@ -75,7 +75,7 @@ async function resolveCustomerIdForUser(service: any, user: any): Promise<string
     const { data, error } = await service
       .from("customers")
       .select("id")
-      .eq("id", userId)
+      .eq("user_id", userId)
       .maybeSingle();
     if (!error && data?.id) return String(data.id);
   }
@@ -109,9 +109,11 @@ async function invokeSendPush(params: {
   caseId: string;
   messageId?: string;
   url: string;
-}) {
+}) 
+
+{
   try {
-    await fetch(`${params.supabaseUrl}/functions/v1/send-push`, {
+    const res = await fetch(`${params.supabaseUrl}/functions/v1/send-push`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -124,6 +126,17 @@ async function invokeSendPush(params: {
         messageId: params.messageId,
         url: params.url,
       }),
+    });
+
+    const text = await res.text();
+    console.log("send-push response", {
+      status: res.status,
+      ok: res.ok,
+      body: text,
+      userId: params.userId,
+      type: params.type,
+      caseId: params.caseId,
+      messageId: params.messageId,
     });
   } catch (err) {
     console.error("send-push invoke failed", err);
@@ -213,6 +226,28 @@ serve(async (req: Request): Promise<Response> => {
       messageId: (insertedComment as any)?.id,
       url: `/portal?caseId=${caseId}`,
     });
+  }
+
+  // Write in-app notification (archive existing unread first to avoid stacking)
+  if (recipientId) {
+    try {
+      await service.from("notifications")
+        .update({ read_at: new Date().toISOString() })
+        .eq("user_id", recipientId)
+        .eq("ref_id", caseId)
+        .eq("type", "case_message")
+        .is("read_at", null);
+      await service.from("notifications").insert({
+        user_id: recipientId,
+        type: "case_message",
+        ref_id: caseId,
+        ref_type: "case",
+        actor_id: user.id,
+        payload: { message_id: (insertedComment as any)?.id },
+      });
+    } catch (e) {
+      console.error("Notification error", e);
+    }
   }
 
   // Do not echo free-text back

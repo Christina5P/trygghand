@@ -54,6 +54,82 @@ function isUuid(v: unknown): v is string {
   return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 }
 
+function normalizePhone(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  const cleaned = trimmed.replace(/[\s\-()\.]/g, "");
+  if (!cleaned) return null;
+
+  if (cleaned.startsWith("00")) return `+${cleaned.slice(2)}`;
+  if (cleaned.startsWith("+")) return cleaned;
+  if (cleaned.startsWith("0")) return `+46${cleaned.slice(1)}`;
+  if (cleaned.startsWith("46")) return `+${cleaned}`;
+  return cleaned;
+}
+
+async function findAuthUserIdByEmail(service: any, email: string): Promise<string | null> {
+  const target = email.trim().toLowerCase();
+  if (!target) return null;
+
+  const perPage = 1000;
+  for (let page = 1; page <= 25; page++) {
+    const { data: listData, error: listErr } = await service.auth.admin.listUsers({ page, perPage });
+    if (listErr) break;
+    const users = Array.isArray((listData as any)?.users) ? ((listData as any).users as any[]) : [];
+    const match = users.find((entry) => typeof entry?.email === "string" && entry.email.toLowerCase() === target);
+    if (match?.id) return String(match.id);
+    if (users.length < perPage) break;
+  }
+
+  return null;
+}
+
+async function findAuthUserIdByPhone(service: any, phoneE164: string): Promise<string | null> {
+  const target = phoneE164.trim();
+  if (!target) return null;
+
+  const perPage = 1000;
+  for (let page = 1; page <= 25; page++) {
+    const { data: listData, error: listErr } = await service.auth.admin.listUsers({ page, perPage });
+    if (listErr) break;
+    const users = Array.isArray((listData as any)?.users) ? ((listData as any).users as any[]) : [];
+    const match = users.find((entry) => typeof entry?.phone === "string" && entry.phone === target);
+    if (match?.id) return String(match.id);
+    if (users.length < perPage) break;
+  }
+
+  return null;
+}
+
+async function resolveCustomerAuthUserId(service: any, customerId: string): Promise<string | null> {
+  const { data: customerRow, error } = await service
+    .from("customers")
+    .select("user_id, email, phone")
+    .eq("id", customerId)
+    .maybeSingle();
+
+  if (error || !customerRow) return null;
+
+  const directUserId = typeof (customerRow as any).user_id === "string" ? String((customerRow as any).user_id) : null;
+  if (directUserId) return directUserId;
+
+  const email = typeof (customerRow as any).email === "string" ? String((customerRow as any).email) : "";
+  if (email) {
+    const byEmail = await findAuthUserIdByEmail(service, email);
+    if (byEmail) return byEmail;
+  }
+
+  const phone = normalizePhone((customerRow as any).phone);
+  if (phone) {
+    const byPhone = await findAuthUserIdByPhone(service, phone);
+    if (byPhone) return byPhone;
+  }
+
+  return null;
+}
+
 async function isAdmin(service: SupabaseClientLike, userId: string): Promise<boolean> {
   const { data: roles, error: rolesErr } = await service
     .from("user_roles")
@@ -65,12 +141,12 @@ async function isAdmin(service: SupabaseClientLike, userId: string): Promise<boo
 
   const { data: profile, error: profileErr } = await service
     .from("profiles")
-    .select("role")
+    .select("is_admin")
     .eq("id", userId)
     .maybeSingle();
 
-  const role = isRecord(profile) ? profile.role : undefined;
-  if (!profileErr && role === "admin") return true;
+  const isAdminFlag = isRecord(profile) ? profile.is_admin : undefined;
+  if (!profileErr && isAdminFlag === true) return true;
   return false;
 }
 
@@ -83,6 +159,32 @@ function getUserId(userData: unknown): string | null {
   const user = userData.user;
   if (!isRecord(user)) return null;
   return typeof user.id === "string" ? user.id : null;
+}
+
+async function findAdminUserIds(service: SupabaseClientLike): Promise<string[]> {
+  const adminIds = new Set<string>();
+
+  const { data: roleRows, error: roleErr } = await (service as any)
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", "admin");
+  if (!roleErr && Array.isArray(roleRows)) {
+    for (const row of roleRows) {
+      if (typeof row?.user_id === "string") adminIds.add(String(row.user_id));
+    }
+  }
+
+  const { data: isAdminRows, error: isAdminErr } = await (service as any)
+    .from("profiles")
+    .select("id")
+    .eq("is_admin", true);
+  if (!isAdminErr && Array.isArray(isAdminRows)) {
+    for (const row of isAdminRows) {
+      if (typeof row?.id === "string") adminIds.add(String(row.id));
+    }
+  }
+
+  return Array.from(adminIds);
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -136,6 +238,8 @@ serve(async (req: Request): Promise<Response> => {
 
     if (!admin) {
       // Customer must own the cancellation.
+      // subscription_cancellations.customer_id = customers.id (PK, may be gen_random_uuid).
+      // userId = auth.uid(). We must resolve ownership via customers.user_id, not direct id match.
       const { data: row, error: rowErr } = await service
         .from("subscription_cancellations")
         .select("id, customer_id")
@@ -143,8 +247,13 @@ serve(async (req: Request): Promise<Response> => {
         .maybeSingle();
 
       if (rowErr || !row) return json(req, 404, { error: "Not found" });
-      const customerId = isRecord(row) ? row.customer_id : undefined;
-      if (customerId !== userId) return json(req, 403, { error: "Forbidden" });
+      const customersRowId = isRecord(row) ? row.customer_id : undefined;
+      if (!customersRowId) return json(req, 403, { error: "Forbidden" });
+
+      // Resolve auth.uid() for the customer record
+      const customerAuthUid = await resolveCustomerAuthUserId(service, String(customersRowId));
+
+      if (!customerAuthUid || customerAuthUid !== userId) return json(req, 403, { error: "Forbidden" });
     }
 
     const { error: insErr } = await service.from("cancellation_comments").insert({
@@ -156,35 +265,28 @@ serve(async (req: Request): Promise<Response> => {
 
     if (insErr) return json(req, 500, { error: "Internal server error" });
 
-    // Send notification to customer if admin commented
-    if (admin) {
-      const { data: cancellationRow, error: cancellationErr } = await service
-        .from("subscription_cancellations")
-        .select("id, customer_id")
-        .eq("id", cancellationId)
-        .maybeSingle();
-
-      if (!cancellationErr && cancellationRow) {
-        const customerId = isRecord(cancellationRow) ? cancellationRow.customer_id : undefined;
-        if (customerId && customerId !== userId) {
-          try {
-            await fetch(`${supabaseUrl}/functions/v1/send-push`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${serviceRoleKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                user_id: customerId,
-                title: "Nytt meddelande",
-                body: "Du har fått ett nytt meddelande i en uppsägning",
-                data: { type: "cancellation_comment", cancellation_id: cancellationId },
-              }),
-            });
-          } catch (e) {
-            console.error("send-push failed", e);
-          }
+    // Notify admin of new customer message
+    if (!admin) {
+      try {
+        const adminIds = await findAdminUserIds(service as unknown as SupabaseClientLike);
+        for (const adminId of adminIds) {
+          if (!adminId || adminId === userId) continue;
+          await (service as any).from("notifications")
+            .update({ read_at: new Date().toISOString() })
+            .eq("user_id", adminId)
+            .eq("ref_id", cancellationId)
+            .eq("type", "cancellation_message")
+            .is("read_at", null);
+          await (service as any).from("notifications").insert({
+            user_id: adminId,
+            type: "cancellation_message",
+            ref_id: cancellationId,
+            ref_type: "cancellation",
+            actor_id: userId,
+          });
         }
+      } catch (e) {
+        console.error("Notification error", e);
       }
     }
 

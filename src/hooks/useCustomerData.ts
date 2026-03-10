@@ -39,24 +39,30 @@ export const useCustomerData = () => {
     }
   }, [customer?.id, toast]);
 
-  const fetchComments = useCallback(async (caseId: string) => {
-    if (!caseId) return;
-    setLoadingComments(true);
-    try {
-      const { data, error } = await supabase
-        .from("case_comments")
-        .select("*, author:customers(name)")
-        .eq("case_id", caseId)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      setComments(data as Comment[] ?? []);
-    } catch (err) {
-      console.error("fetchComments error", err);
-      setComments([]);
-    } finally {
-      setLoadingComments(false);
-    }
-  }, []);
+const fetchComments = useCallback(async (caseId: string) => {
+  if (!caseId) return;
+  setLoadingComments(true);
+  try {
+    const { data, error } = await supabase
+      .from("case_comments")
+      .select("*")
+      .eq("case_id", caseId)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    setComments(((data as Comment[]) ?? []).map((c) => ({
+      ...c,
+      author: {
+        name: c.author_type === "customer" ? "Kund" : "Admin",
+      },
+    } as Comment)));
+  } catch (err) {
+    console.error("fetchComments error", err);
+    setComments([]);
+  } finally {
+    setLoadingComments(false);
+  }
+}, []);
 
   const addComment = useCallback(async () => {
     if (!selectedCase?.id || !newComment.trim() || !customer?.id) return;

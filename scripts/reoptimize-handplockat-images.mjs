@@ -138,6 +138,27 @@ async function optimizeUrlIfNeeded(url) {
       if (uploadError) throw uploadError;
     }
 
+    if (writeMode) {
+  const basePath = inputPath.replace(/\.(png|jpg|jpeg|webp)$/i, "");
+
+  const oldPaths = [
+    `${basePath}.jpg`,
+    `${basePath}.jpeg`,
+    `${basePath}.png`,
+  ].filter((path) => path !== outputPath);
+
+  if (oldPaths.length > 0) {
+    const { error: removeError } = await supabase.storage
+      .from(BUCKET)
+      .remove(oldPaths);
+
+    if (removeError) {
+      console.warn(`Failed to remove old files for ${inputPath}`);
+      console.warn(String(removeError));
+    }
+  }
+}
+
     const { data: pubData } = supabase.storage.from(BUCKET).getPublicUrl(outputPath);
     summary.imagesConverted += 1;
     return pubData.publicUrl;
