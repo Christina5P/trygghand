@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export type PushPreferences = {
@@ -69,6 +69,10 @@ function validateVapidPublicKey(raw: unknown): { ok: true; value: string } | { o
 }
 
 async function getCurrentUserId(): Promise<string | null> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const sessionUserId = sessionData.session?.user?.id ?? null;
+  if (sessionUserId) return sessionUserId;
+
   const { data } = await supabase.auth.getUser();
   return data.user?.id ?? null;
 }
@@ -81,6 +85,7 @@ async function ensureServiceWorkerRegistration(): Promise<ServiceWorkerRegistrat
 
 export function usePushNotifications() {
   const hasVapidPublicKey = validateVapidPublicKey(import.meta.env.VITE_PUSH_VAPID_PUBLIC_KEY).ok;
+  const stateVersionRef = useRef(0);
 
   const [state, setState] = useState<HookState>({
     supported:
@@ -128,7 +133,10 @@ export function usePushNotifications() {
   }, []);
 
   const syncSubscriptionState = useCallback(async () => {
+    const syncVersion = stateVersionRef.current;
+
     if (!state.supported) {
+      if (syncVersion !== stateVersionRef.current) return;
       setState((prev) => ({ ...prev, loading: false, permission: "unsupported" }));
       return;
     }
@@ -136,14 +144,25 @@ export function usePushNotifications() {
     try {
       const userId = await getCurrentUserId();
       if (!userId) {
+        if (syncVersion !== stateVersionRef.current) return;
         setState((prev) => ({ ...prev, loading: false, isSubscribed: false }));
         return;
       }
 
       await ensureServiceWorkerRegistration();
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
       const preferences = await ensurePreferenceRow(userId);
+      let subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription && preferences.push_enabled && Notification.permission === "granted") {
+        const vapidValidation = validateVapidPublicKey(import.meta.env.VITE_PUSH_VAPID_PUBLIC_KEY);
+        if (vapidValidation.ok) {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidValidation.value) as unknown as BufferSource,
+          });
+        }
+      }
 
       if (subscription) {
         const json = subscription.toJSON() as Record<string, unknown>;
@@ -159,6 +178,8 @@ export function usePushNotifications() {
         if (upsertError) throw upsertError;
       }
 
+      if (syncVersion !== stateVersionRef.current) return;
+
       setState((prev) => ({
         ...prev,
         loading: false,
@@ -168,6 +189,7 @@ export function usePushNotifications() {
         error: null,
       }));
     } catch (err: any) {
+      if (syncVersion !== stateVersionRef.current) return;
       setState((prev) => ({
         ...prev,
         loading: false,
@@ -180,12 +202,21 @@ export function usePushNotifications() {
     void syncSubscriptionState();
   }, [syncSubscriptionState]);
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      void syncSubscriptionState();
+    });
+
+    return () => subscription.unsubscribe();
+  }, [syncSubscriptionState]);
+
   const subscribe = useCallback(async () => {
     if (!state.supported) {
       setError("Din webbläsare stödjer inte push-notiser.");
       return false;
     }
 
+    stateVersionRef.current += 1;
     setState((prev) => ({ ...prev, saving: true }));
     try {
       const userId = await getCurrentUserId();
@@ -203,12 +234,14 @@ export function usePushNotifications() {
       await ensureServiceWorkerRegistration();
       const registration = await navigator.serviceWorker.ready;
       const existing = await registration.pushManager.getSubscription();
-      const subscription =
-        existing ??
-        (await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidValidation.value) as unknown as BufferSource,
-        }));
+if (existing) {
+  await existing.unsubscribe();
+  await supabase.from("push_subscriptions").delete().eq("endpoint", existing.endpoint);
+}
+const subscription = await registration.pushManager.subscribe({
+  userVisibleOnly: true,
+  applicationServerKey: urlBase64ToUint8Array(vapidValidation.value) as unknown as BufferSource,
+});
 
       const subscriptionJson = subscription.toJSON() as Record<string, unknown>;
       const { error: upsertSubscriptionError } = await supabase.from("push_subscriptions").upsert(
@@ -257,6 +290,7 @@ export function usePushNotifications() {
   const unsubscribe = useCallback(async () => {
     if (!state.supported) return false;
 
+    stateVersionRef.current += 1;
     setState((prev) => ({ ...prev, saving: true }));
     try {
       const userId = await getCurrentUserId();
@@ -303,7 +337,10 @@ export function usePushNotifications() {
     }
   }, [state.preferences, state.supported]);
 
+  
+
   const updatePreferences = useCallback(async (patch: Partial<PushPreferences>) => {
+    stateVersionRef.current += 1;
     setState((prev) => ({ ...prev, saving: true }));
     try {
       const userId = await getCurrentUserId();

@@ -214,6 +214,7 @@ serve(async (req: Request): Promise<Response> => {
     .select("id")
     .single();
 
+
   if (orderErr) return json(500, { error: "Kunde inte skapa order." });
 
   if (orderType === "direct_buy") {

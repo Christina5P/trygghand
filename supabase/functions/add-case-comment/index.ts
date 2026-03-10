@@ -33,7 +33,7 @@ async function isAdmin(service: any, userId: string): Promise<boolean> {
   const { data: profile, error: profileErr } = await service
     .from("profiles")
     .select("role")
-    .eq("id", userId)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (!profileErr && (profile as any)?.role === "admin") return true;
@@ -75,7 +75,7 @@ async function resolveCustomerIdForUser(service: any, user: any): Promise<string
     const { data, error } = await service
       .from("customers")
       .select("id")
-      .eq("id", userId)
+      .eq("user_id", userId)
       .maybeSingle();
     if (!error && data?.id) return String(data.id);
   }
@@ -109,9 +109,11 @@ async function invokeSendPush(params: {
   caseId: string;
   messageId?: string;
   url: string;
-}) {
+}) 
+
+{
   try {
-    await fetch(`${params.supabaseUrl}/functions/v1/send-push`, {
+    const res = await fetch(`${params.supabaseUrl}/functions/v1/send-push`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -124,6 +126,17 @@ async function invokeSendPush(params: {
         messageId: params.messageId,
         url: params.url,
       }),
+    });
+
+    const text = await res.text();
+    console.log("send-push response", {
+      status: res.status,
+      ok: res.ok,
+      body: text,
+      userId: params.userId,
+      type: params.type,
+      caseId: params.caseId,
+      messageId: params.messageId,
     });
   } catch (err) {
     console.error("send-push invoke failed", err);

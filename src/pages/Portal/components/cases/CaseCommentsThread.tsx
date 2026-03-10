@@ -10,22 +10,20 @@ function bubbleClass(kind: "mine" | "other") {
   if (kind === "mine") return "bg-trust-blue text-white ml-auto";
   return "bg-muted text-foreground";
 }
-
 function roleLabel(
   authorType: string | null | undefined,
   authorId: string | null | undefined,
-  caseCustomerId: string | null | undefined,
   currentUserId: string | null | undefined,
   isAdmin: boolean
 ) {
   if (authorType === "admin") return "Admin";
   if (authorType === "customer") return "Kund";
-  // Fallback: infer role from who is viewing when legacy rows miss author_type.
+
   if (authorId && currentUserId) {
     if (authorId === currentUserId) return isAdmin ? "Admin" : "Kund";
     return isAdmin ? "Kund" : "Admin";
   }
-  if (authorId && caseCustomerId && authorId === caseCustomerId) return "Kund";
+
   return "Admin";
 }
 
@@ -68,25 +66,35 @@ export function CaseCommentsThread({
   }, [otherPartyLastReadAt]);
 
   const send = async () => {
-    if (!canComment) return;
-    const message = text.trim();
-    if (!message) return;
+  if (!canComment) return;
+  const message = text.trim();
+  if (!message) return;
 
-    setSending(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("add-case-comment", {
-        body: { case_id: caseId, message },
-      });
-      if (error) throw error;
-      if ((data as any)?.ok !== true) throw new Error((data as any)?.error || "Kunde inte skicka");
-      setText("");
-      await onRefresh();
-    } catch (err: any) {
-      toast({ title: "Kunde inte skicka", description: err?.message || "Något gick fel", variant: "destructive" });
-    } finally {
-      setSending(false);
+  setSending(true);
+  try {
+    const fn = isAdmin ? "admin-add-case-comment" : "add-case-comment";
+
+    const { data, error } = await supabase.functions.invoke(fn, {
+      body: { case_id: caseId, message },
+    });
+
+    if (error) throw error;
+    if ((data as any)?.ok !== true) {
+      throw new Error((data as any)?.error || "Kunde inte skicka");
     }
-  };
+
+    setText("");
+    await onRefresh();
+  } catch (err: any) {
+    toast({
+      title: "Kunde inte skicka",
+      description: err?.message || "Något gick fel",
+      variant: "destructive",
+    });
+  } finally {
+    setSending(false);
+  }
+};
 
   const canDelete = (c: { mine: boolean }) => {
     if (isAdmin) return true;
@@ -125,7 +133,7 @@ export function CaseCommentsThread({
               <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${bubbleClass(c.mine ? "mine" : "other")}`}>
                 <div className="flex items-center justify-between gap-2 text-xs opacity-90 mb-1">
                   <div>
-                    {roleLabel(c.author_type, c.author_id, caseCustomerId, currentUserId, isAdmin)}
+                  
                     <span className="opacity-70"> · </span>
                     <span className="opacity-70">{c.created_at ? format(new Date(c.created_at), "yyyy-MM-dd HH:mm") : ""}</span>
                     {c.mine && (

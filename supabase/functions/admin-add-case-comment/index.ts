@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // @ts-ignore - Remote supabase-js for Deno resolved at deploy/runtime
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { sendPushInternal } from "../_shared/sendPushInternal";
 
 declare const Deno: { env: { get: (key: string) => string | undefined } };
 
@@ -41,33 +42,6 @@ async function requireAdmin(service: any, userId: string): Promise<boolean> {
   return false;
 }
 
-async function invokeSendPush(params: {
-  supabaseUrl: string;
-  serviceRoleKey: string;
-  userId: string;
-  caseId: string;
-  messageId?: string;
-}) {
-  try {
-    await fetch(`${params.supabaseUrl}/functions/v1/send-push`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${params.serviceRoleKey}`,
-      },
-      body: JSON.stringify({
-        userId: params.userId,
-        type: "new_message",
-        caseId: params.caseId,
-        messageId: params.messageId,
-        url: `/portal?caseId=${params.caseId}`,
-      }),
-    });
-  } catch (err) {
-    console.error("send-push invoke failed", err);
-  }
-}
-
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -88,7 +62,12 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   const caseId = payload?.case_id;
-  const comment = typeof payload?.comment === "string" ? payload.comment.trim() : "";
+  const rawComment = typeof payload?.comment === "string"
+    ? payload.comment
+    : typeof payload?.message === "string"
+      ? payload.message
+      : "";
+  const comment = rawComment.trim();
 
   if (!isUuid(caseId)) return json(400, { error: "Invalid case_id" });
   if (!comment) return json(400, { error: "Missing comment" });
@@ -127,22 +106,32 @@ serve(async (req: Request): Promise<Response> => {
   if (insErr) return json(500, { error: "Internal server error" });
 
   const customerId = String((caseRow as any).customer_id || "");
+  const { data: custAuth } = customerId
+    ? await service.from("customers").select("user_id").eq("id", customerId).maybeSingle()
+    : { data: null };
+  const notifUserId: string = (custAuth as any)?.user_id ?? customerId;
+
   if (customerId && customerId !== user.id) {
-    await invokeSendPush({
-      supabaseUrl,
-      serviceRoleKey,
-      userId: customerId,
+    const pushResult = await sendPushInternal({
+      userId: notifUserId,
+      type: "new_message",
       caseId,
       messageId: (insertedComment as any)?.id,
+      url: `/portal?caseId=${caseId}`,
     });
+
+    if (!pushResult.ok || pushResult.skipped || pushResult.delivered === 0) {
+      console.log("send-push result", {
+        pushResult,
+        userId: notifUserId,
+        caseId,
+      });
+    }
   }
 
   // Write in-app notification (archive existing unread first)
   if (customerId && customerId !== user.id) {
     try {
-      // Use customers.user_id (= auth.uid of the customer) so RLS matches on read/update
-      const { data: custAuth } = await service.from("customers").select("user_id").eq("id", customerId).maybeSingle();
-      const notifUserId: string = (custAuth as any)?.user_id ?? customerId;
       await service.from("notifications")
         .update({ read_at: new Date().toISOString() })
         .eq("user_id", notifUserId)

@@ -1,21 +1,10 @@
 export async function setupServiceWorker(): Promise<void> {
   if (!("serviceWorker" in navigator)) return;
 
-  // DEV safety: stale SWs (from older iterations) can break Vite routing/HMR
-  // and result in a white screen, especially on Codespaces/forwarded ports.
+  // DEV: do not unregister service workers here.
+  // Push testing depends on the browser keeping the existing registration
+  // and subscription across reloads.
   if (import.meta.env.DEV) {
-    try {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map((r) => r.unregister()));
-
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((k) => caches.delete(k)));
-      }
-    } catch {
-      // Best-effort only
-    }
-
     return;
   }
 

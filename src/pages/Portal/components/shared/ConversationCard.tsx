@@ -22,6 +22,7 @@ export function ConversationCard({
   onClick: () => void;
 }) {
   const label = readStatusLabel ?? (unread ? "Oläst" : "Läst");
+  const hasMessages = commentCount > 0;
 
   return (
     <Card
@@ -31,15 +32,17 @@ export function ConversationCard({
       <CardHeader className="relative pb-3">
         <CardTitle className="text-base truncate pr-2">{title}</CardTitle>
         <CardDescription className="min-h-[3.75rem] pr-2 line-clamp-3">{subtitle}</CardDescription>
-        <div className="mt-2">
-          <span
-            className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-medium ${
-              unread ? "border-amber-400 text-amber-700" : "border-emerald-400 text-emerald-700"
-            }`}
-          >
-            {label}
-          </span>
-        </div>
+        {hasMessages && (
+          <div className="mt-2">
+            <span
+              className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-medium ${
+                unread ? "border-amber-400 text-amber-700" : "border-emerald-400 text-emerald-700"
+              }`}
+            >
+              {label}
+            </span>
+          </div>
+        )}
         {(statusSlot || actionsSlot) && (
           <div
             className="mt-2 flex flex-wrap gap-2 sm:absolute sm:top-2 sm:right-2 sm:mt-0"
