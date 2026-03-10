@@ -38,7 +38,7 @@ type BucketName = "handplockat-private" | "images";
 
 const toLocalDateValue = (date: Date) => {
   const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 10); // YYYY-MM-DD
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 };
 
 const addDays = (days: number) =>
@@ -51,6 +51,10 @@ const getErrorMessage = (err: unknown, fallback: string) => {
   }
   return fallback;
 };
+
+function basePathWithoutExt(path: string): string {
+  return String(path || "").replace(/\.(png|jpg|jpeg|webp)$/i, "");
+}
 
 function isUuid(v: unknown): v is string {
   return (
@@ -65,7 +69,6 @@ function generateUuid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
-  // fallback (inte krypto-säker, men bättre än att sakna id)
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -93,19 +96,23 @@ const deriveCategory = (payload: any): string => {
           t.includes("tröja") ||
           t.includes("troja")
       )
-    )
+    ) {
       return "Kläder";
-    if (tags.some((t: string) => t.includes("lampa") || t.includes("belys")))
+    }
+    if (tags.some((t: string) => t.includes("lampa") || t.includes("belys"))) {
       return "Belysning";
+    }
     if (
       tags.some(
         (t: string) =>
           t.includes("bord") || t.includes("stol") || t.includes("soffa")
       )
-    )
+    ) {
       return "Möbler";
-    if (tags.some((t: string) => t.includes("textil") || t.includes("matta")))
+    }
+    if (tags.some((t: string) => t.includes("textil") || t.includes("matta"))) {
       return "Textil";
+    }
   }
 
   return "";
@@ -115,8 +122,9 @@ const isClothingItem = (payload: any): boolean => {
   if (
     typeof payload?.kategori === "string" &&
     payload.kategori.toLowerCase().includes("kläd")
-  )
+  ) {
     return true;
+  }
 
   if (Array.isArray(payload?.taggar)) {
     const tags = payload.taggar.map((t: string) => String(t).toLowerCase());
@@ -151,14 +159,9 @@ function getCutoutStoragePath(
     // ignore and fallback
   }
 
-  return `handplockat/${fallbackListingId}/1.png`;
+  return `handplockat/${fallbackListingId}/1.webp`;
 }
 
-/**
- * ✅ Kritisk fix:
- * Vissa flöden råkar få endast filnamn (t.ex. "1769...jpg") utan folder.
- * För valuations ligger de normalt i "valuations/<fil>" i bucket "images".
- */
 function ensureValuationFolder(path: string): string {
   const p = String(path || "").trim().replace(/^\/+/, "");
   if (!p) return p;
@@ -174,7 +177,6 @@ async function tryCreateSignedUrl(
   if (!value) return null;
   if (isHttpUrl(value)) return value;
 
-  // Försök som path först (normalfall)
   const buckets: BucketName[] = ["handplockat-private", "images"];
   for (const bucket of buckets) {
     const { data, error } = await supabase.storage
@@ -183,7 +185,6 @@ async function tryCreateSignedUrl(
     if (!error && data?.signedUrl) return data.signedUrl;
   }
 
-  // ✅ Fallback: om vi bara fått filnamn, prova valuations/<fil> i images-bucket
   if (!value.includes("/")) {
     const vPath = ensureValuationFolder(value);
     const { data, error } = await supabase.storage
@@ -229,8 +230,8 @@ async function optimizeListingImageBlob(
   maxDimension = 1600
 ): Promise<{
   blob: Blob;
-  extension: "webp" | "png";
-  contentType: "image/webp" | "image/png";
+  extension: "webp";
+  contentType: "image/webp";
 }> {
   const image = await createImageBitmap(blob);
   const longestSide = Math.max(image.width, image.height);
@@ -245,27 +246,23 @@ async function optimizeListingImageBlob(
 
   const ctx = canvas.getContext("2d");
   if (!ctx) {
-    return { blob, extension: "png", contentType: "image/png" };
+    throw new Error("Kunde inte skapa canvas för bildoptimering.");
   }
 
   ctx.drawImage(image, 0, 0, width, height);
 
-  const webpBlob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob((next) => resolve(next), "image/webp", 0.82);
-  });
-
-  if (webpBlob) {
-    return { blob: webpBlob, extension: "webp", contentType: "image/webp" };
-  }
-
-  const pngBlob = await new Promise<Blob>((resolve, reject) => {
+  const webpBlob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((next) => {
-      if (!next) return reject(new Error("Kunde inte skapa PNG-bild."));
+      if (!next) return reject(new Error("Kunde inte skapa WebP-bild."));
       resolve(next);
-    }, "image/png");
+    }, "image/webp", 0.82);
   });
 
-  return { blob: pngBlob, extension: "png", contentType: "image/png" };
+  return {
+    blob: webpBlob,
+    extension: "webp",
+    contentType: "image/webp",
+  };
 }
 
 async function removeBgLocalAndUpload(args: {
@@ -289,16 +286,10 @@ async function removeBgLocalAndUpload(args: {
 
   if (!inputUrl) throw new Error("Kunde inte skapa signed URL för originalbilden.");
 
-  // Frilägg gratis i webbläsaren
   const cutoutBlob: Blob = await removeBackground(inputUrl);
-
-  // Valbar rotation
   const rotated = await rotateBlob(cutoutBlob, rotationDeg);
-
-  // Minska filstorlek för snabbare mobilladdning
   const optimized = await optimizeListingImageBlob(rotated);
 
-  // Ladda upp optimerad annonsbild till handplockat-public
   const basePath = (targetPathOverride || `handplockat/${listingId}/${targetIndex}`)
     .replace(/\.(png|jpg|jpeg|webp)$/i, "")
     .replace(/^\/+/, "");
@@ -313,14 +304,47 @@ async function removeBgLocalAndUpload(args: {
 
   if (uploadError) throw uploadError;
 
+  const oldPaths = [
+    `${basePath}.jpg`,
+    `${basePath}.jpeg`,
+    `${basePath}.png`,
+  ].filter((path) => path !== targetPath);
+
+  if (oldPaths.length > 0) {
+    const { error: removeError } = await supabase.storage
+      .from("handplockat-public")
+      .remove(oldPaths);
+
+    if (removeError) {
+      console.warn("Kunde inte rensa gamla public-filer:", removeError.message);
+    }
+  }
+
   const { data: pub } = supabase.storage
     .from("handplockat-public")
     .getPublicUrl(targetPath);
 
-  if (!pub?.publicUrl)
+  if (!pub?.publicUrl) {
     throw new Error("Kunde inte skapa public URL för annonsbilden.");
+  }
 
   return pub.publicUrl;
+}
+
+async function countOriginalFiles(listingId: string): Promise<number> {
+  const folder = `handplockat-original/${listingId}`;
+
+  const { data, error } = await supabase.storage
+    .from("handplockat-private")
+    .list(folder, {
+      limit: 100,
+      offset: 0,
+    });
+
+  if (error) throw error;
+
+  return (data ?? []).filter((file) => file.name && !file.name.startsWith("."))
+    .length;
 }
 
 export default function HandplockatCreate() {
@@ -567,7 +591,7 @@ export default function HandplockatCreate() {
       const parsed = new URL(raw);
       return fromSupabaseObjectPath(parsed.pathname);
     } catch {
-      // ignore parse failures and fall through
+      // ignore parse failures
     }
 
     return null;
@@ -578,7 +602,6 @@ export default function HandplockatCreate() {
       .map((item) => toStoragePath(item))
       .filter((item): item is string => Boolean(item));
 
-    // Behåll folder om den finns, men om det bara blev filnamn -> gör det robust
     return Array.from(new Set(normalized.map((p) => p.trim()).filter(Boolean)));
   };
 
@@ -607,7 +630,6 @@ export default function HandplockatCreate() {
     );
 
     if (fromArrays.length > 0) {
-      // ✅ Extra robust: om någon råkar vara "bara filnamn", prefixa valuations/
       return fromArrays.map((p) => (p.includes("/") ? p : ensureValuationFolder(p)));
     }
 
@@ -641,7 +663,6 @@ export default function HandplockatCreate() {
     return `${objectLabel ?? "Värdering"} ${created ? `(${created})` : ""}`.trim();
   };
 
-  // ✅ Ny robust ensure: id måste vara UUID, annars skapas ett nytt.
   const ensureListingId = () => {
     const current = typeof listingId === "string" ? listingId.trim() : "";
     if (isUuid(current)) return current;
@@ -797,19 +818,36 @@ export default function HandplockatCreate() {
     try {
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((result) => {
-          if (!result) return reject(new Error("Kunde inte skapa PNG från canvas."));
+          if (!result) return reject(new Error("Kunde inte skapa WebP från canvas."));
           resolve(result);
-        }, "image/png");
+        }, "image/webp", 0.82);
       });
 
       const id = ensureListingId();
-      const path = getCutoutStoragePath(imageCutout.trim(), id);
+      const rawPath = getCutoutStoragePath(imageCutout.trim(), id);
+      const path = `${basePathWithoutExt(rawPath)}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from("handplockat-public")
-        .upload(path, blob, { upsert: true, contentType: "image/png" });
+        .upload(path, blob, { upsert: true, contentType: "image/webp" });
 
       if (uploadError) throw uploadError;
+
+      const oldPaths = [
+        `${basePathWithoutExt(path)}.jpg`,
+        `${basePathWithoutExt(path)}.jpeg`,
+        `${basePathWithoutExt(path)}.png`,
+      ].filter((candidate) => candidate !== path);
+
+      if (oldPaths.length > 0) {
+        const { error: removeError } = await supabase.storage
+          .from("handplockat-public")
+          .remove(oldPaths);
+
+        if (removeError) {
+          console.warn("Kunde inte rensa gamla redigerade filer:", removeError.message);
+        }
+      }
 
       const { data } = supabase.storage.from("handplockat-public").getPublicUrl(path);
       const freshUrl = `${data.publicUrl}?t=${Date.now()}`;
@@ -911,9 +949,11 @@ export default function HandplockatCreate() {
     else if (
       typeof obj.varde_min_sek === "number" &&
       typeof obj.varde_max_sek === "number"
-    )
+    ) {
       medelpris = Math.round((obj.varde_min_sek + obj.varde_max_sek) / 2);
-    else if (typeof obj.varde_sek === "number") medelpris = obj.varde_sek;
+    } else if (typeof obj.varde_sek === "number") {
+      medelpris = obj.varde_sek;
+    }
 
     const suggestedPrice = typeof medelpris === "number" ? String(medelpris) : "";
     const suggestedCategory = deriveCategory(obj);
@@ -929,31 +969,40 @@ export default function HandplockatCreate() {
 
     setSource("valuation");
     if (suggestedTitle && shouldFill(touched, "title", title)) setTitle(suggestedTitle);
-    if (suggestedDescription && shouldFill(touched, "description", description))
+    if (suggestedDescription && shouldFill(touched, "description", description)) {
       setDescription(suggestedDescription);
-    if (suggestedPrice && shouldFill(touched, "priceSek", priceSek)) setPriceSek(suggestedPrice);
-    if (suggestedCategory && shouldFill(touched, "category", category))
+    }
+    if (suggestedPrice && shouldFill(touched, "priceSek", priceSek)) {
+      setPriceSek(suggestedPrice);
+    }
+    if (suggestedCategory && shouldFill(touched, "category", category)) {
       setCategory(suggestedCategory);
+    }
 
     if (!touched.itemType && clothing) setItemType("clothing");
-    if (clothing && suggestedSize && shouldFill(touched, "size", sizeValue))
+    if (clothing && suggestedSize && shouldFill(touched, "size", sizeValue)) {
       setSizeValue(suggestedSize);
+    }
 
     if (!clothing && dims && typeof dims === "object") {
       const length = dims.length ?? dims?.length_mm ?? dims?.length_cm;
       const width = dims.width ?? dims?.width_mm ?? dims?.width_cm;
       const height = dims.height ?? dims?.height_mm ?? dims?.height_cm;
 
-      if (length && shouldFill(touched, "dimensionLength", dimensionLength))
+      if (length && shouldFill(touched, "dimensionLength", dimensionLength)) {
         setDimensionLength(String(length));
-      if (width && shouldFill(touched, "dimensionWidth", dimensionWidth))
+      }
+      if (width && shouldFill(touched, "dimensionWidth", dimensionWidth)) {
         setDimensionWidth(String(width));
-      if (height && shouldFill(touched, "dimensionHeight", dimensionHeight))
+      }
+      if (height && shouldFill(touched, "dimensionHeight", dimensionHeight)) {
         setDimensionHeight(String(height));
+      }
     }
 
-    if (shouldFill(touched, "pickupDeadlineAt", pickupDeadlineAt))
+    if (shouldFill(touched, "pickupDeadlineAt", pickupDeadlineAt)) {
       setPickupDeadlineAt(toLocalDateValue(addDays(7)));
+    }
   };
 
   const handleLoadValuation = () => {
@@ -1018,9 +1067,7 @@ export default function HandplockatCreate() {
     const safeFile = await stripExif(file);
     const ext = (safeFile.name.split(".").pop() || "bin").toLowerCase();
 
-    // ✅ använd vår generator (faller tillbaka om crypto saknas)
     const fileId = generateUuid();
-
     const filename = `${fileId}.${ext}`;
     const path = `${folder}/${filename}`;
 
@@ -1042,9 +1089,20 @@ export default function HandplockatCreate() {
 
     const id = ensureListingId();
     setUploadError(null);
-    setUploadingOriginal(true);
 
     try {
+      const existingCount = await countOriginalFiles(id);
+      const incomingCount = files.length;
+
+      if (existingCount + incomingCount > 3) {
+        setUploadError(
+          `Du kan ha max 3 originalbilder per objekt. Det finns redan ${existingCount} bild(er) uppladdade.`
+        );
+        return;
+      }
+
+      setUploadingOriginal(true);
+
       const uploads = await Promise.all(
         Array.from(files).map((file) =>
           uploadFileToBucket(file, "handplockat-private", `handplockat-original/${id}`)
@@ -1089,7 +1147,6 @@ export default function HandplockatCreate() {
     setImportingImages(true);
 
     try {
-      // ✅ Skicka exakt storage paths (och gör dem robusta)
       const safePaths = valuationImagePaths
         .filter(Boolean)
         .map((p) => (p.includes("/") ? p : ensureValuationFolder(p)));
@@ -1156,7 +1213,7 @@ export default function HandplockatCreate() {
       const publicUrls: string[] = [];
       const firstTargetPath = imageCutout.trim()
         ? getCutoutStoragePath(imageCutout.trim(), id)
-        : `handplockat/${id}/1.png`;
+        : `handplockat/${id}/1.webp`;
 
       for (let index = 0; index < originals.length; index += 1) {
         const publicUrl = await removeBgLocalAndUpload({
@@ -1186,7 +1243,7 @@ export default function HandplockatCreate() {
     event.preventDefault();
     setError(null);
 
-    const finalId = ensureListingId(); // ✅ alltid uuid här
+    const finalId = ensureListingId();
     const isDraft = status === "draft";
     const rawPrice = Number(priceSek);
     const finalPrice =
@@ -1195,14 +1252,16 @@ export default function HandplockatCreate() {
     if (!isDraft) {
       if (!title.trim()) return setError("Rubrik saknas.");
       if (!description.trim()) return setError("Beskrivning saknas.");
-      if (Number.isNaN(finalPrice) || finalPrice <= 0)
+      if (Number.isNaN(finalPrice) || finalPrice <= 0) {
         return setError("Pris måste vara ett giltigt tal.");
+      }
     } else if (Number.isNaN(finalPrice) || finalPrice < 0) {
       return setError("Pris måste vara 0 eller högre för utkast.");
     }
 
-    if (!user?.id)
+    if (!user?.id) {
       return setError("Kunde inte hitta användar-id (logga in igen).");
+    }
 
     const safeTitle = title.trim() || "Utkast";
     const safeDescription = description.trim();
@@ -1306,7 +1365,6 @@ export default function HandplockatCreate() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* VÄRDERING */}
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Utgå från värdering (valfritt)</h2>
               <p className="text-sm text-muted-foreground">
@@ -1387,7 +1445,6 @@ export default function HandplockatCreate() {
               )}
             </div>
 
-            {/* GRUNDUPPGIFTER */}
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Grunduppgifter</h2>
 
@@ -1569,7 +1626,6 @@ export default function HandplockatCreate() {
               </div>
             </div>
 
-            {/* UPPHÄMTNING */}
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Upphämtning</h2>
 
@@ -1609,7 +1665,6 @@ export default function HandplockatCreate() {
               </div>
             </div>
 
-            {/* BILDER */}
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Bilder</h2>
               <p className="text-xs text-muted-foreground">
@@ -1899,7 +1954,6 @@ export default function HandplockatCreate() {
               )}
             </div>
 
-            {/* EXTRA INFO */}
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Extra information (valfritt)</h2>
               <textarea
@@ -1912,7 +1966,6 @@ export default function HandplockatCreate() {
 
             {error && <p className="text-destructive text-sm">{error}</p>}
 
-            {/* SPARA */}
             <div className="rounded-3xl border border-border bg-card p-6">
               <h2 className="text-lg font-semibold">Spara</h2>
 
