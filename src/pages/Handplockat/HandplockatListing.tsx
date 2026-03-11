@@ -223,9 +223,21 @@ export default function HandplockatListing() {
       "@type": "Offer",
       priceCurrency: "SEK",
       price: listing.price_sek,
+      priceValidUntil: new Date(Date.now() + 365*24*60*60*1000).toISOString().split("T")[0], // 1 year from now
       availability: listing.status === "available" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       url: `https://www.trygghand.com/handplockat/${listing.id}`,
+      itemCondition: "https://schema.org/UsedCondition",
+    seller: {
+      "@type": "Organization",
+      name: "Trygg Hand",
+      url: "https://www.trygghand.com"
     },
+    hasMerchantReturnPolicy: {
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: "SE",
+      returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted"
+    }
+  }
   };
 
   // ✅ Fixar TS-felet: string | null | undefined -> string | undefined

@@ -28,6 +28,31 @@ const STATUS_COLORS: Record<string, string> = {
   completed: "bg-emerald-100 text-emerald-800",
 };
 
+type SortDirection = "asc" | "desc";
+
+type ListingSortKey =
+  | "title"
+  | "price"
+  | "status"
+  | "area"
+  | "updated";
+
+type InterestSortKey =
+  | "category"
+  | "wish"
+  | "budget"
+  | "area"
+  | "contact"
+  | "created";
+
+type OrderSortKey =
+  | "object"
+  | "buyer"
+  | "type"
+  | "status"
+  | "emailStatus"
+  | "created";
+
 function formatSek(val: number) {
   return new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(val) + " kr";
 }
@@ -59,6 +84,53 @@ function maskPhone(value: string | null | undefined): string {
   return `${clean.slice(0, 3)}***${clean.slice(-2)}`;
 }
 
+function getTimeValue(value: string | null | undefined): number {
+  if (!value) return 0;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function compareText(a: string | null | undefined, b: string | null | undefined) {
+  return String(a || "").localeCompare(String(b || ""), "sv-SE", { sensitivity: "base" });
+}
+
+function compareNumber(a: number | null | undefined, b: number | null | undefined) {
+  return (a ?? 0) - (b ?? 0);
+}
+
+function sortResult(result: number, direction: SortDirection) {
+  return direction === "asc" ? result : -result;
+}
+
+function SortableHeader({
+  label,
+  active,
+  direction,
+  onClick,
+  className = "",
+}: {
+  label: string;
+  active: boolean;
+  direction: SortDirection;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <th className={`p-3 ${className}`}>
+      <button
+        type="button"
+        onClick={onClick}
+        className="inline-flex items-center gap-1 font-semibold hover:underline"
+      >
+        <span>{label}</span>
+        <span className="text-xs text-muted-foreground">
+          {active ? (direction === "asc" ? "▲" : "▼") : "↕"}
+        </span>
+      </button>
+    </th>
+  );
+}
+
 export default function AdminHandplockatDashboard() {
   const { loading, error, kpi, listings, orders, purchaseInterests, reload } = useHandplockatAdminData();
   const { customer } = useAuth();
@@ -77,9 +149,7 @@ export default function AdminHandplockatDashboard() {
     area: string;
     wish: string;
   }>({ category: "", budgetSek: "", area: "", wish: "" });
-  const [listingSort, setListingSort] = useState<
-    "default" | "title-asc" | "title-desc" | "status-asc" | "status-desc"
-  >("default");
+
   const [showPersonalData, setShowPersonalData] = useState(false);
   const [hideSold, setHideSold] = useState(false);
   const [showArchivedSold, setShowArchivedSold] = useState(false);
@@ -94,6 +164,21 @@ export default function AdminHandplockatDashboard() {
     }
   });
 
+  const [listingSort, setListingSort] = useState<{
+    key: ListingSortKey;
+    direction: SortDirection;
+  }>({ key: "updated", direction: "desc" });
+
+  const [interestSort, setInterestSort] = useState<{
+    key: InterestSortKey;
+    direction: SortDirection;
+  }>({ key: "created", direction: "desc" });
+
+  const [orderSort, setOrderSort] = useState<{
+    key: OrderSortKey;
+    direction: SortDirection;
+  }>({ key: "created", direction: "desc" });
+
   useEffect(() => {
     try {
       localStorage.setItem("handplockat_admin_archived_sold_ids", JSON.stringify(archivedSoldIds));
@@ -102,14 +187,40 @@ export default function AdminHandplockatDashboard() {
     }
   }, [archivedSoldIds]);
 
+  function toggleListingSort(key: ListingSortKey) {
+    setListingSort((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: key === "updated" ? "desc" : "asc" }
+    );
+  }
+
+  function toggleInterestSort(key: InterestSortKey) {
+    setInterestSort((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: key === "created" ? "desc" : "asc" }
+    );
+  }
+
+  function toggleOrderSort(key: OrderSortKey) {
+    setOrderSort((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: key === "created" ? "desc" : "asc" }
+    );
+  }
+
   async function handleStatusChange(id: string, newStatus: string) {
     setStatusUpdating(id);
     const { error } = await supabase
       .from("handplockat_listings")
       .update({ status: newStatus })
       .eq("id", id);
+
     if (error) alert("Kunde inte uppdatera status: " + error.message);
     else reload();
+
     setStatusUpdating(null);
   }
 
@@ -119,8 +230,10 @@ export default function AdminHandplockatDashboard() {
       .from("handplockat_orders")
       .update({ status: newStatus })
       .eq("id", id);
+
     if (error) alert("Kunde inte uppdatera orderstatus: " + error.message);
     else reload();
+
     setOrderStatusUpdating(null);
   }
 
@@ -130,11 +243,13 @@ export default function AdminHandplockatDashboard() {
 
     setInterestDeletingId(id);
     const { error } = await supabase.from("contact_requests").delete().eq("id", id);
+
     if (error) {
       alert("Kunde inte ta bort köpförfrågan: " + error.message);
     } else {
       reload();
     }
+
     setInterestDeletingId(null);
   }
 
@@ -150,6 +265,7 @@ export default function AdminHandplockatDashboard() {
 
   async function savePurchaseInterest(item: any) {
     setInterestSaving(true);
+
     const imagePath = parseField(item.message, "Bild (intern path)");
     const imageFile = parseField(item.message, "Bildefil");
 
@@ -176,6 +292,7 @@ export default function AdminHandplockatDashboard() {
       setEditingInterestId(null);
       reload();
     }
+
     setInterestSaving(false);
   }
 
@@ -187,6 +304,7 @@ export default function AdminHandplockatDashboard() {
 
   const visibleListings = useMemo(() => {
     let next = [...listings];
+
     const statusRank: Record<string, number> = {
       draft: 1,
       available: 2,
@@ -202,39 +320,150 @@ export default function AdminHandplockatDashboard() {
       next = next.filter((l) => !(l.status === "sold" && archivedSoldIds.includes(String(l.id))));
     }
 
-    if (listingSort !== "default") {
-      next.sort((a, b) => {
-        const av = String(a?.title || "");
-        const bv = String(b?.title || "");
-        const as = statusRank[String(a?.status || "")] ?? 99;
-        const bs = statusRank[String(b?.status || "")] ?? 99;
+    next.sort((a, b) => {
+      let result = 0;
 
-        if (listingSort === "title-asc") return av.localeCompare(bv, "sv-SE");
-        if (listingSort === "title-desc") return bv.localeCompare(av, "sv-SE");
-        if (listingSort === "status-asc") return as !== bs ? as - bs : av.localeCompare(bv, "sv-SE");
-        return as !== bs ? bs - as : av.localeCompare(bv, "sv-SE");
-      });
-    }
+      if (listingSort.key === "title") {
+        result = compareText(a?.title, b?.title);
+      } else if (listingSort.key === "price") {
+        result = compareNumber(a?.price_sek, b?.price_sek);
+      } else if (listingSort.key === "status") {
+        const aRank = statusRank[String(a?.status || "")] ?? 99;
+        const bRank = statusRank[String(b?.status || "")] ?? 99;
+        result = aRank - bRank || compareText(a?.title, b?.title);
+      } else if (listingSort.key === "area") {
+        result = compareText(a?.pickup_area, b?.pickup_area) || compareText(a?.title, b?.title);
+      } else if (listingSort.key === "updated") {
+        const aTime = getTimeValue(a?.updated_at || a?.created_at);
+        const bTime = getTimeValue(b?.updated_at || b?.created_at);
+        result = aTime - bTime || compareText(a?.title, b?.title);
+      }
+
+      return sortResult(result, listingSort.direction);
+    });
 
     return next;
   }, [listings, hideSold, showArchivedSold, archivedSoldIds, listingSort]);
 
+  const visiblePurchaseInterests = useMemo(() => {
+    const next = [...purchaseInterests];
+
+    next.sort((a: any, b: any) => {
+      const aCategory = parseField(a?.message, "Kategori") || "";
+      const bCategory = parseField(b?.message, "Kategori") || "";
+      const aWish = parseField(a?.message, "Önskemål") || "";
+      const bWish = parseField(b?.message, "Önskemål") || "";
+      const aBudget = Number(parseField(a?.message, "Budget (SEK)") || 0);
+      const bBudget = Number(parseField(b?.message, "Budget (SEK)") || 0);
+      const aArea = parseField(a?.message, "Område") || "";
+      const bArea = parseField(b?.message, "Område") || "";
+      const aContact =
+        String(a?.name || "").trim() ||
+        `${String(a?.firstname || "").trim()} ${String(a?.lastname || "").trim()}`.trim() ||
+        "";
+      const bContact =
+        String(b?.name || "").trim() ||
+        `${String(b?.firstname || "").trim()} ${String(b?.lastname || "").trim()}`.trim() ||
+        "";
+      const aCreated = getTimeValue(a?.created_at);
+      const bCreated = getTimeValue(b?.created_at);
+
+      let result = 0;
+
+      if (interestSort.key === "category") {
+        result = compareText(aCategory, bCategory);
+      } else if (interestSort.key === "wish") {
+        result = compareText(aWish, bWish);
+      } else if (interestSort.key === "budget") {
+        result = compareNumber(aBudget, bBudget);
+      } else if (interestSort.key === "area") {
+        result = compareText(aArea, bArea);
+      } else if (interestSort.key === "contact") {
+        result = compareText(aContact, bContact);
+      } else if (interestSort.key === "created") {
+        result = aCreated - bCreated;
+      }
+
+      return sortResult(result, interestSort.direction);
+    });
+
+    return next;
+  }, [purchaseInterests, interestSort]);
+
+  const visibleOrders = useMemo(() => {
+    const next = [...orders];
+
+    const statusRank: Record<string, number> = {
+      pending: 1,
+      reserved: 2,
+      cancelled: 3,
+      completed: 4,
+    };
+
+    next.sort((a: any, b: any) => {
+      const aObject = a?.listing?.title ?? a?.listing_id ?? "";
+      const bObject = b?.listing?.title ?? b?.listing_id ?? "";
+
+      const aBuyer = a?.buyer_name ?? "";
+      const bBuyer = b?.buyer_name ?? "";
+
+      const aTypeLabel = a?.order_type === "price_offer" ? "Prisförslag" : "Direktköp";
+      const bTypeLabel = b?.order_type === "price_offer" ? "Prisförslag" : "Direktköp";
+
+      const aStatus = statusRank[String(a?.status || "")] ?? 99;
+      const bStatus = statusRank[String(b?.status || "")] ?? 99;
+
+      const aEmailScore =
+        (a?.admin_email_sent_at ? 1 : 0) +
+        (a?.buyer_email_sent_at ? 1 : 0) -
+        (a?.email_last_error ? 2 : 0);
+      const bEmailScore =
+        (b?.admin_email_sent_at ? 1 : 0) +
+        (b?.buyer_email_sent_at ? 1 : 0) -
+        (b?.email_last_error ? 2 : 0);
+
+      const aCreated = getTimeValue(a?.created_at);
+      const bCreated = getTimeValue(b?.created_at);
+
+      let result = 0;
+
+      if (orderSort.key === "object") {
+        result = compareText(aObject, bObject);
+      } else if (orderSort.key === "buyer") {
+        result = compareText(aBuyer, bBuyer);
+      } else if (orderSort.key === "type") {
+        result = compareText(aTypeLabel, bTypeLabel);
+      } else if (orderSort.key === "status") {
+        result = aStatus - bStatus || compareText(aBuyer, bBuyer);
+      } else if (orderSort.key === "emailStatus") {
+        result = compareNumber(aEmailScore, bEmailScore);
+      } else if (orderSort.key === "created") {
+        result = aCreated - bCreated;
+      }
+
+      return sortResult(result, orderSort.direction);
+    });
+
+    return next;
+  }, [orders, orderSort]);
+
   async function handleDelete(id: string) {
     setDeletingId(id);
+
     const { error } = await supabase
       .from("handplockat_listings")
       .delete()
       .eq("id", id);
+
     if (error) alert("Kunde inte ta bort: " + error.message);
     else reload();
+
     setDeletingId(null);
     setConfirmDelete(null);
   }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold">Handplockat Admin</h1>
         <div className="flex gap-3">
@@ -260,14 +489,16 @@ export default function AdminHandplockatDashboard() {
 
       {!loading && !error && (
         <>
-          {/* KPI-kort */}
           <div className="grid gap-4 grid-cols-2 lg:grid-cols-5 mb-10">
             {[
               { label: "Utkast", value: kpi?.draft },
               { label: "Tillgängliga", value: kpi?.available },
               { label: "Reserverade", value: kpi?.reserved },
               { label: "Sålda", value: kpi?.sold },
-              { label: "Sålt värde (30 dagar)", value: kpi?.sold_sum_30d ? formatSek(kpi.sold_sum_30d) : "0 kr" },
+              {
+                label: "Sålt värde (30 dagar)",
+                value: kpi?.sold_sum_30d ? formatSek(kpi.sold_sum_30d) : "0 kr",
+              },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-xl bg-card p-5 shadow border">
                 <div className="text-sm text-muted-foreground mb-1">{label}</div>
@@ -276,32 +507,10 @@ export default function AdminHandplockatDashboard() {
             ))}
           </div>
 
-          {/* Listings tabell */}
           <div className="mb-12">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h2 className="text-xl font-semibold">Objekt ({visibleListings.length})</h2>
               <div className="flex flex-wrap items-center gap-2">
-                <select
-                  value={listingSort}
-                  onChange={(e) =>
-                    setListingSort(
-                      e.target.value as
-                        | "default"
-                        | "title-asc"
-                        | "title-desc"
-                        | "status-asc"
-                        | "status-desc"
-                    )
-                  }
-                  className="text-sm border rounded px-2 py-1"
-                >
-                  <option value="default">Sortering: Senast först</option>
-                  <option value="title-asc">Rubrik A–Ö</option>
-                  <option value="title-desc">Rubrik Ö–A</option>
-                  <option value="status-asc">Status: Utkast → Såld</option>
-                  <option value="status-desc">Status: Såld → Utkast</option>
-                </select>
-
                 <button
                   onClick={() => setHideSold((v) => !v)}
                   className="text-sm border rounded px-3 py-1 hover:bg-muted"
@@ -317,16 +526,42 @@ export default function AdminHandplockatDashboard() {
                 </button>
               </div>
             </div>
+
             <div className="overflow-x-auto rounded-lg border shadow-sm">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="bg-muted text-left">
                     <th className="p-3">Bild</th>
-                    <th className="p-3">Titel</th>
-                    <th className="p-3">Pris</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3">Område</th>
-                    <th className="p-3">Uppdaterad</th>
+                    <SortableHeader
+                      label="Titel"
+                      active={listingSort.key === "title"}
+                      direction={listingSort.direction}
+                      onClick={() => toggleListingSort("title")}
+                    />
+                    <SortableHeader
+                      label="Pris"
+                      active={listingSort.key === "price"}
+                      direction={listingSort.direction}
+                      onClick={() => toggleListingSort("price")}
+                    />
+                    <SortableHeader
+                      label="Status"
+                      active={listingSort.key === "status"}
+                      direction={listingSort.direction}
+                      onClick={() => toggleListingSort("status")}
+                    />
+                    <SortableHeader
+                      label="Område"
+                      active={listingSort.key === "area"}
+                      direction={listingSort.direction}
+                      onClick={() => toggleListingSort("area")}
+                    />
+                    <SortableHeader
+                      label="Uppdaterad"
+                      active={listingSort.key === "updated"}
+                      direction={listingSort.direction}
+                      onClick={() => toggleListingSort("updated")}
+                    />
                     <th className="p-3">Åtgärder</th>
                   </tr>
                 </thead>
@@ -338,6 +573,7 @@ export default function AdminHandplockatDashboard() {
                       </td>
                     </tr>
                   )}
+
                   {visibleListings.map((l) => (
                     <tr key={l.id} className="border-t hover:bg-muted/40 transition">
                       <td className="p-3">
@@ -349,6 +585,7 @@ export default function AdminHandplockatDashboard() {
                           </div>
                         )}
                       </td>
+
                       <td className="p-3 font-medium max-w-[160px]">
                         <button
                           className="text-left hover:underline text-blue-700"
@@ -357,9 +594,11 @@ export default function AdminHandplockatDashboard() {
                           {l.title}
                         </button>
                       </td>
+
                       <td className="p-3 whitespace-nowrap">
                         {l.price_sek ? formatSek(l.price_sek) : "-"}
                       </td>
+
                       <td className="p-3">
                         <select
                           value={l.status}
@@ -368,18 +607,29 @@ export default function AdminHandplockatDashboard() {
                           className={`text-xs font-semibold px-2 py-1 rounded border cursor-pointer ${STATUS_COLORS[l.status] ?? "bg-gray-100"}`}
                         >
                           {Object.entries(LISTING_STATUS_LABELS).map(([val, label]) => (
-                            <option key={val} value={val}>{label}</option>
+                            <option key={val} value={val}>
+                              {label}
+                            </option>
                           ))}
                         </select>
                       </td>
+
                       <td className="p-3 text-muted-foreground">{l.pickup_area ?? "-"}</td>
+
                       <td className="p-3 text-muted-foreground whitespace-nowrap">
                         {l.updated_at
-                          ? new Date(l.updated_at).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" })
+                          ? new Date(l.updated_at).toLocaleString("sv-SE", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })
                           : l.created_at
-                          ? new Date(l.created_at).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" })
+                          ? new Date(l.created_at).toLocaleString("sv-SE", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })
                           : "-"}
                       </td>
+
                       <td className="p-3">
                         <div className="flex gap-2">
                           <button
@@ -388,6 +638,7 @@ export default function AdminHandplockatDashboard() {
                           >
                             Redigera
                           </button>
+
                           <button
                             onClick={() => setConfirmDelete({ id: l.id, title: l.title })}
                             disabled={deletingId === l.id}
@@ -395,6 +646,7 @@ export default function AdminHandplockatDashboard() {
                           >
                             {deletingId === l.id ? "..." : "Ta bort"}
                           </button>
+
                           {l.status === "sold" && (
                             <button
                               onClick={() => toggleArchiveSold(String(l.id))}
@@ -412,30 +664,63 @@ export default function AdminHandplockatDashboard() {
             </div>
           </div>
 
-          {/* Orders tabell */}
           <div className="mb-12">
-            <h2 className="text-xl font-semibold mb-4">Köpförfrågningar ({purchaseInterests.length})</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              Köpförfrågningar ({visiblePurchaseInterests.length})
+            </h2>
+
             <div className="overflow-x-auto rounded-lg border shadow-sm">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="bg-muted text-left">
-                    <th className="p-3">Kategori</th>
-                    <th className="p-3">Önskemål</th>
-                    <th className="p-3">Budget</th>
-                    <th className="p-3">Område</th>
-                    <th className="p-3">Kontakt</th>
-                    <th className="p-3">Skapad</th>
+                    <SortableHeader
+                      label="Kategori"
+                      active={interestSort.key === "category"}
+                      direction={interestSort.direction}
+                      onClick={() => toggleInterestSort("category")}
+                    />
+                    <SortableHeader
+                      label="Önskemål"
+                      active={interestSort.key === "wish"}
+                      direction={interestSort.direction}
+                      onClick={() => toggleInterestSort("wish")}
+                    />
+                    <SortableHeader
+                      label="Budget"
+                      active={interestSort.key === "budget"}
+                      direction={interestSort.direction}
+                      onClick={() => toggleInterestSort("budget")}
+                    />
+                    <SortableHeader
+                      label="Område"
+                      active={interestSort.key === "area"}
+                      direction={interestSort.direction}
+                      onClick={() => toggleInterestSort("area")}
+                    />
+                    <SortableHeader
+                      label="Kontakt"
+                      active={interestSort.key === "contact"}
+                      direction={interestSort.direction}
+                      onClick={() => toggleInterestSort("contact")}
+                    />
+                    <SortableHeader
+                      label="Skapad"
+                      active={interestSort.key === "created"}
+                      direction={interestSort.direction}
+                      onClick={() => toggleInterestSort("created")}
+                    />
                   </tr>
                 </thead>
                 <tbody>
-                  {purchaseInterests.length === 0 && (
+                  {visiblePurchaseInterests.length === 0 && (
                     <tr>
                       <td colSpan={6} className="p-6 text-center text-muted-foreground">
                         Inga köpförfrågningar ännu
                       </td>
                     </tr>
                   )}
-                  {purchaseInterests.map((item) => {
+
+                  {visiblePurchaseInterests.map((item: any) => {
                     const category = parseField(item.message, "Kategori") || "-";
                     const wish = parseField(item.message, "Önskemål") || "-";
                     const budget = parseField(item.message, "Budget (SEK)") || "-";
@@ -452,7 +737,9 @@ export default function AdminHandplockatDashboard() {
                           {isEditing ? (
                             <input
                               value={interestDraft.category}
-                              onChange={(e) => setInterestDraft((prev) => ({ ...prev, category: e.target.value }))}
+                              onChange={(e) =>
+                                setInterestDraft((prev) => ({ ...prev, category: e.target.value }))
+                              }
                               className="w-full rounded border px-2 py-1 text-sm"
                               placeholder="Kategori"
                             />
@@ -460,11 +747,14 @@ export default function AdminHandplockatDashboard() {
                             category
                           )}
                         </td>
+
                         <td className="p-3 max-w-[340px] text-muted-foreground whitespace-pre-line">
                           {isEditing ? (
                             <textarea
                               value={interestDraft.wish}
-                              onChange={(e) => setInterestDraft((prev) => ({ ...prev, wish: e.target.value }))}
+                              onChange={(e) =>
+                                setInterestDraft((prev) => ({ ...prev, wish: e.target.value }))
+                              }
                               className="w-full rounded border px-2 py-1 text-sm min-h-[70px]"
                               placeholder="Önskemål"
                             />
@@ -472,21 +762,31 @@ export default function AdminHandplockatDashboard() {
                             wish
                           )}
                         </td>
+
                         <td className="p-3 whitespace-nowrap">
                           {isEditing ? (
                             <input
                               value={interestDraft.budgetSek}
-                              onChange={(e) => setInterestDraft((prev) => ({ ...prev, budgetSek: e.target.value }))}
+                              onChange={(e) =>
+                                setInterestDraft((prev) => ({ ...prev, budgetSek: e.target.value }))
+                              }
                               className="w-full rounded border px-2 py-1 text-sm"
                               placeholder="Budget"
                             />
-                          ) : budget !== "-" ? `${budget} kr` : "-"}
+                          ) : budget !== "-" ? (
+                            `${budget} kr`
+                          ) : (
+                            "-"
+                          )}
                         </td>
+
                         <td className="p-3">
                           {isEditing ? (
                             <input
                               value={interestDraft.area}
-                              onChange={(e) => setInterestDraft((prev) => ({ ...prev, area: e.target.value }))}
+                              onChange={(e) =>
+                                setInterestDraft((prev) => ({ ...prev, area: e.target.value }))
+                              }
                               className="w-full rounded border px-2 py-1 text-sm"
                               placeholder="Område"
                             />
@@ -494,6 +794,7 @@ export default function AdminHandplockatDashboard() {
                             area
                           )}
                         </td>
+
                         <td className="p-3">
                           <div>{fullName}</div>
                           <div className="text-xs text-muted-foreground">
@@ -503,10 +804,15 @@ export default function AdminHandplockatDashboard() {
                             {showPersonalData && customer?.is_admin ? (item.phone || "-") : maskPhone(item.phone)}
                           </div>
                         </td>
+
                         <td className="p-3 text-muted-foreground whitespace-nowrap">
                           {item.created_at
-                            ? new Date(item.created_at).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" })
+                            ? new Date(item.created_at).toLocaleString("sv-SE", {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })
                             : "-"}
+
                           <div className="mt-2 flex gap-2">
                             {isEditing ? (
                               <>
@@ -551,10 +857,9 @@ export default function AdminHandplockatDashboard() {
             </div>
           </div>
 
-          {/* Orders tabell */}
           <div>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h2 className="text-xl font-semibold">Orders ({orders.length})</h2>
+              <h2 className="text-xl font-semibold">Orders ({visibleOrders.length})</h2>
               <button
                 onClick={() => setShowPersonalData((v) => !v)}
                 className="text-sm border rounded px-3 py-1 hover:bg-muted"
@@ -562,26 +867,53 @@ export default function AdminHandplockatDashboard() {
                 {showPersonalData ? "Dölj personuppgifter" : "Visa personuppgifter"}
               </button>
             </div>
+
             <div className="overflow-x-auto rounded-lg border shadow-sm">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="bg-muted text-left">
-                    <th className="p-3">Objekt</th>
-                    <th className="p-3">Köpare</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3">E-post status</th>
-                    <th className="p-3">Skapad</th>
+                    <SortableHeader
+                      label="Objekt"
+                      active={orderSort.key === "object"}
+                      direction={orderSort.direction}
+                      onClick={() => toggleOrderSort("object")}
+                    />
+                    <SortableHeader
+                      label="Köpare"
+                      active={orderSort.key === "buyer"}
+                      direction={orderSort.direction}
+                      onClick={() => toggleOrderSort("buyer")}
+                    />
+                    <SortableHeader
+                      label="Status"
+                      active={orderSort.key === "status"}
+                      direction={orderSort.direction}
+                      onClick={() => toggleOrderSort("status")}
+                    />
+                    <SortableHeader
+                      label="E-post status"
+                      active={orderSort.key === "emailStatus"}
+                      direction={orderSort.direction}
+                      onClick={() => toggleOrderSort("emailStatus")}
+                    />
+                    <SortableHeader
+                      label="Skapad"
+                      active={orderSort.key === "created"}
+                      direction={orderSort.direction}
+                      onClick={() => toggleOrderSort("created")}
+                    />
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.length === 0 && (
+                  {visibleOrders.length === 0 && (
                     <tr>
                       <td colSpan={5} className="p-6 text-center text-muted-foreground">
                         Inga orders ännu
                       </td>
                     </tr>
                   )}
-                  {orders.map((o) => (
+
+                  {visibleOrders.map((o: any) => (
                     <tr key={o.id} className="border-t hover:bg-muted/40 transition">
                       <td className="p-3 font-medium">
                         <button
@@ -591,6 +923,7 @@ export default function AdminHandplockatDashboard() {
                           {o.listing?.title ?? o.listing_id}
                         </button>
                       </td>
+
                       <td className="p-3">
                         <div>{o.buyer_name ?? "-"}</div>
                         <div className="text-xs text-muted-foreground">
@@ -606,6 +939,7 @@ export default function AdminHandplockatDashboard() {
                           {showPersonalData && customer?.is_admin ? (o.buyer_phone || "-") : maskPhone(o.buyer_phone)}
                         </div>
                       </td>
+
                       <td className="p-3">
                         <select
                           value={o.status}
@@ -614,10 +948,13 @@ export default function AdminHandplockatDashboard() {
                           className={`text-xs font-semibold px-2 py-1 rounded border cursor-pointer ${STATUS_COLORS[o.status] ?? "bg-gray-100"}`}
                         >
                           {Object.entries(ORDER_STATUS_LABELS).map(([val, label]) => (
-                            <option key={val} value={val}>{label}</option>
+                            <option key={val} value={val}>
+                              {label}
+                            </option>
                           ))}
                         </select>
                       </td>
+
                       <td className="p-3 text-xs space-y-0.5">
                         <div className={o.admin_email_sent_at ? "text-green-700" : "text-muted-foreground"}>
                           {o.admin_email_sent_at ? "✓ Adminmail skickad" : "– Adminmail ej skickad"}
@@ -629,9 +966,13 @@ export default function AdminHandplockatDashboard() {
                           <div className="text-red-600">⚠ {o.email_last_error}</div>
                         )}
                       </td>
+
                       <td className="p-3 text-muted-foreground whitespace-nowrap">
                         {o.created_at
-                          ? new Date(o.created_at).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" })
+                          ? new Date(o.created_at).toLocaleString("sv-SE", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })
                           : "-"}
                       </td>
                     </tr>
@@ -643,7 +984,6 @@ export default function AdminHandplockatDashboard() {
         </>
       )}
 
-      {/* Bekräftelsedialog för radering */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
