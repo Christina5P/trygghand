@@ -355,7 +355,7 @@ content: (
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-foreground mb-4">Frågor och Tips</h1>
             <p className="text-xl text-foreground">
-              Allt du behöver veta om dödsbohantering, skatter och praktiska tips
+            Det du behöver veta om dödsbohantering, skatter och praktiska tips
             </p>
           </div>
 

@@ -217,12 +217,12 @@ export default function HandplockatListing() {
     "@type": "Product",
     name: listing.title,
     description: listing.description,
-    image: cutoutImages,
+    image: cutoutImages.filter(Boolean),
     url: `https://www.trygghand.com/handplockat/${listing.id}`,
     offers: {
       "@type": "Offer",
       priceCurrency: "SEK",
-      price: listing.price_sek,
+      price: String(listing.price_sek),
       priceValidUntil: new Date(Date.now() + 365*24*60*60*1000).toISOString().split("T")[0], // 1 year from now
       availability: listing.status === "available" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       url: `https://www.trygghand.com/handplockat/${listing.id}`,
@@ -268,9 +268,11 @@ export default function HandplockatListing() {
                       <img
                         src={imageSrc}
                         alt={listing.title}
+                        width={1200}
+                        height={900}
                         className="h-full w-full object-contain p-6"
-                        loading="eager"
-                        fetchPriority="auto"
+                        loading="lazy"
+                        fetchPriority="high"
                         decoding="async"
                       />
                     ) : (
@@ -289,6 +291,8 @@ export default function HandplockatListing() {
                           <img
                             src={url}
                             alt={listing.title}
+                            width={300}
+                            height={300}
                             className="h-full w-full object-contain"
                             loading="lazy"
                             decoding="async"
