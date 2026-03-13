@@ -8,6 +8,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+function sanitize(text?: string) {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export const handler: Handler = async () => {
 
   const { data, error } = await supabase
@@ -22,39 +32,47 @@ export const handler: Handler = async () => {
     };
   }
 
-  const items = data?.map(item => `
-  <item>
+  const items = data?.map(item => {
 
-    <g:id>${item.id}</g:id>
+    const title = sanitize(item.title);
+    const description = sanitize(item.description || item.title);
+    const image = item.image_cutout || `${SITE}/og.jpg`;
+    const price = item.price_sek ?? 0;
 
-    <title><![CDATA[${item.title}]]></title>
+    return `
+<item>
 
-    <description><![CDATA[${item.description || item.title}]]></description>
+<g:id>handplockat-${item.id}</g:id>
 
-    <link>${SITE}/handplockat/${item.id}</link>
+<title><![CDATA[${title}]]></title>
 
-    <g:image_link>${item.image_cutout}</g:image_link>
+<description><![CDATA[${description}]]></description>
 
-    <g:availability>in stock</g:availability>
+<link>${SITE}/handplockat/${item.id}</link>
 
-    <g:price>${item.price_sek} SEK</g:price>
+<g:image_link>${image}</g:image_link>
 
-    <g:condition>used</g:condition>
+<g:availability>in stock</g:availability>
 
-    <g:brand>Handplockat</g:brand>
+<g:price>${price} SEK</g:price>
 
-    <g:identifier_exists>false</g:identifier_exists>
+<g:condition>used</g:condition>
 
-    <g:adult>false</g:adult>
+<g:brand>Handplockat</g:brand>
 
-    <g:shipping>
-      <g:country>SE</g:country>
-      <g:service>Standard</g:service>
-      <g:price>0 SEK</g:price>
-    </g:shipping>
+<g:identifier_exists>false</g:identifier_exists>
 
-  </item>
-  `).join("") ?? "";
+<g:adult>false</g:adult>
+
+<g:shipping>
+<g:country>SE</g:country>
+<g:service>Standard</g:service>
+<g:price>0 SEK</g:price>
+</g:shipping>
+
+</item>`;
+    
+  }).join("") ?? "";
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
@@ -74,7 +92,8 @@ ${items}
   return {
     statusCode: 200,
     headers: {
-      "Content-Type": "application/xml"
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, max-age=3600"
     },
     body: xml
   };
