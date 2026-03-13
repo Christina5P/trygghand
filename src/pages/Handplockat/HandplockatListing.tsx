@@ -247,38 +247,48 @@ export default function HandplockatListing() {
   const ogImage = cutoutImages[0] ?? undefined;
 
   const productJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: listing.title,
-    description: listing.description,
-    sku: listing.id,
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: listing.title,
+  description: listing.description,
+  sku: listing.id,
+  url: canonicalUrl,
+  category: listing.category || undefined,
+
+  image: cutoutImages?.length ? cutoutImages : [ogImage],
+
+  brand: {
+    "@type": "Brand",
+    name: "Handplockat"
+  },
+
+  seller: {
+    "@type": "Organization",
+    name: "Trygg Hand",
+    url: SITE_URL
+  },
+
+  itemCondition: "https://schema.org/UsedCondition",
+
+  offers: {
+    "@type": "Offer",
     url: canonicalUrl,
-    category: listing.category || undefined,
-    image: cutoutImages.length > 0 ? cutoutImages : undefined,
+    priceCurrency: "SEK",
+    price: String(listing.price_sek),
+
+    priceValidUntil: "2026-12-31",
+
+    availability: getAvailability(listing.status),
+
     itemCondition: "https://schema.org/UsedCondition",
-    brand: {
-      "@type": "Brand",
-      name: "Handplockat",
-    },
+
     seller: {
       "@type": "Organization",
       name: "Trygg Hand",
-      url: SITE_URL,
-    },
-    offers: {
-      "@type": "Offer",
-      url: canonicalUrl,
-      priceCurrency: "SEK",
-      price: String(listing.price_sek),
-      availability: getAvailability(listing.status),
-      itemCondition: "https://schema.org/UsedCondition",
-      seller: {
-        "@type": "Organization",
-        name: "Trygg Hand",
-        url: SITE_URL,
-      },
-    },
-  };
+      url: SITE_URL
+    }
+  }
+};
 
   return (
     <div className="min-h-[100svh] bg-background">

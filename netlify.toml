@@ -34,6 +34,11 @@
   status = 200
   force = true
 
+[[redirects]]
+from = "/google-feed.xml"
+to = "/.netlify/functions/google-product-feed"
+status = 200
+
 # Ensure static assets aren't swallowed by SPA fallback
 [[redirects]]
   from = "/sitemap.xml"
