@@ -6,5 +6,4 @@ Disallow: /portal
 
 # Tipsa Google och Bing om var din sitemap ligger
 Sitemap: https://www.trygghand.com/sitemap.xml
-Sitemap: https://www.trygghand.com/google-feed.xml
 Sitemap: https://www.trygghand.com/sitemap-handplockat.xml
