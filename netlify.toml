@@ -36,7 +36,7 @@
 
 [[redirects]]
 from = "/google-feed.xml"
-to = "/.netlify/functions/google-product-feed"
+to = "/.netlify/functions/google-feed"
 status = 200
 force = true
 
@@ -51,6 +51,11 @@ force = true
   from = "/robots.txt"
   to = "/robots.txt"
   status = 200
+
+  [[redirects]]
+from = "/sitemap-handplockat.xml"
+to = "/.netlify/functions/sitemap-handplockat"
+status = 200
 
 [[redirects]]
   from = "/handplockat-og.jpg"

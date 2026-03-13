@@ -2,7 +2,8 @@ import { useEffect } from "react";
 
 export default function Tidio() {
   useEffect(() => {
-    const key = import.meta.env.VITE_TIDIO_KEY ?? "vxtqmisxoxoilyri3a2arswtxddqr416"; // fallback key if needed
+    const key = import.meta.env.VITE_
+    _KEY ?? "vxtqmisxoxoilyri3a2arswtxddqr416"; // fallback key if needed
     if (!key) return;
 
     // Avoid double-loading
