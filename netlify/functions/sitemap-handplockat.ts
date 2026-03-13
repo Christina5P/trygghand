@@ -33,12 +33,12 @@ export const handler: Handler = async () => {
     };
   }
 
-  const items = (data || []).map((item) => {
+  const items = (data || []).map(item => {
 
     const title = clean(item.title);
     const description = clean(item.description || item.title);
     const image = item.image_cutout || `${SITE}/og.jpg`;
-    const price = item.price_sek || 0;
+    const price = item.price_sek ?? 0;
 
     return `<item>
 <g:id>handplockat-${item.id}</g:id>
@@ -51,13 +51,12 @@ export const handler: Handler = async () => {
 <g:condition>used</g:condition>
 <g:brand>Handplockat</g:brand>
 <g:identifier_exists>false</g:identifier_exists>
-<g:adult>false</g:adult>
 </item>`;
-    
+
   }).join("");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
 <channel>
 <title>Handplockat – Trygg Hand</title>
 <link>${SITE}/handplockat</link>
@@ -69,7 +68,7 @@ ${items}
   return {
     statusCode: 200,
     headers: {
-      "Content-Type": "application/xml"
+      "Content-Type": "application/xml; charset=utf-8"
     },
     body: xml
   };
