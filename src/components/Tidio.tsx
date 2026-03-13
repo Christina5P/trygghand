@@ -2,9 +2,10 @@ import { useEffect } from "react";
 
 export default function Tidio() {
   useEffect(() => {
-    const key = import.meta.env.VITE_
-    _KEY ?? "vxtqmisxoxoilyri3a2arswtxddqr416"; // fallback key if needed
+    const key = import.meta.env.VITE_TIDIO_KEY ?? "vxtqmisxoxoilyri3a2arswtxddqr416";
     if (!key) return;
+    if (window.location.pathname.startsWith("/admin")) return;
+    if (window.location.pathname.startsWith("/portal")) return;
 
     // Avoid double-loading
     if (document.getElementById("tidio-script")) return;
