@@ -1,7 +1,9 @@
-import { Handler } from "@netlify/functions";
+import { Handler, HandlerResponse } from "@netlify/functions";
 import { createClient } from "@supabase/supabase-js";
 
 const SITE = "https://www.trygghand.com";
+// Din specifika butikskod från Google Business Profile
+const STORE_CODE = "04579428471105795723";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -10,18 +12,23 @@ const supabase = createClient(
 
 function clean(text?: string) {
   if (!text) return "";
-  // Vi behåller en enkel rensning men förlitar oss på CDATA för säkerhet
   return text
     .replace(/\r?\n|\r/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-export const handler: Handler = async () => {
+export const handler: Handler = async (): Promise<HandlerResponse> => {
   const { data, error } = await supabase
     .from("handplockat_listings_public")
     .select("id,title,description,image_cutout,price_sek")
     .eq("status", "available");
+
+  const responseHeaders = {
+    "Content-Type": "application/xml; charset=utf-8",
+    "Access-Control-Allow-Origin": "*",
+    "X-Content-Type-Options": "nosniff"
+  };
 
   if (error) {
     return {
@@ -43,11 +50,18 @@ export const handler: Handler = async () => {
       <description><![CDATA[${description}]]></description>
       <link>${SITE}/handplockat/${item.id}</link>
       <g:image_link>${image}</g:image_link>
-      <g:availability>in stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>${price} SEK</g:price>
       <g:condition>used</g:condition>
       <g:brand>Handplockat</g:brand>
       <g:identifier_exists>false</g:identifier_exists>
+      
+      <g:store_code>${STORE_CODE}</g:store_code>
+      
+      <g:pickup_method>buy</g:pickup_method>
+      <g:pickup_sla>same day</g:pickup_sla>
+      
+      <g:inventory_link>${SITE}/handplockat/${item.id}</g:inventory_link>
     </item>`;
   }).join("\n");
 
@@ -56,19 +70,14 @@ export const handler: Handler = async () => {
   <channel>
     <title>Handplockat – Trygg Hand</title>
     <link>${SITE}/handplockat</link>
-    <description>Handplockade second hand-fynd i Sundsvall</description>
+    <description>Handplockade second hand-fynd i Sundsvall förmedlade av Trygg Hand</description>
 ${items}
   </channel>
 </rss>`;
 
   return {
     statusCode: 200,
-    headers: {
-      // Viktigt: Se till att detta är exakt application/xml
-      "Content-Type": "application/xml; charset=utf-8",
-      "Access-Control-Allow-Origin": "*", // Underlättar för Googles sökrobotar
-      "X-Content-Type-Options": "nosniff"
-    },
+    headers: responseHeaders,
     body: xml
   };
 };
