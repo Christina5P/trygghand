@@ -51,16 +51,14 @@ export const handler: Handler = async (): Promise<HandlerResponse> => {
       <link>${SITE}/handplockat/${item.id}</link>
       <g:image_link>${image}</g:image_link>
       <g:availability>in_stock</g:availability>
-      <g:price>${price} SEK</g:price>
+      <g:quantity>1</g:quantity> <g:price>${price} SEK</g:price>
       <g:condition>used</g:condition>
       <g:brand>Handplockat</g:brand>
       <g:identifier_exists>false</g:identifier_exists>
-      
       <g:store_code>${STORE_CODE}</g:store_code>
-      
       <g:pickup_method>buy</g:pickup_method>
       <g:pickup_sla>same day</g:pickup_sla>
-      
+          
       <g:inventory_link>${SITE}/handplockat/${item.id}</g:inventory_link>
     </item>`;
   }).join("\n");
