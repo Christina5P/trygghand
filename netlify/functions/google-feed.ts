@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const SITE = "https://www.trygghand.com";
 // Din specifika butikskod från Google Business Profile
-const STORE_CODE = "04579428471105795723";
+const STORE_CODE = "5743236966";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
