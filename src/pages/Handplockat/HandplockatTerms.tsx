@@ -13,10 +13,10 @@ const HandplockatTerms: React.FC = () => {
   return (
     <div className="min-h-screen bg-soft-gray py-12 px-4 sm:px-6 lg:px-8">
       <Seo
-        title="Användarvillkor | Handplockat"
-        description="Läs användarvillkoren för Handplockat."
+        title="Användarvillkor & Fraktpolicy | Handplockat"
+        description="Läs användarvillkoren och fraktpolicyn för Handplockat – din second hand-butik i Sundsvall."
         canonical="https://www.trygghand.com/handplockat-terms"
-        robots="noindex, follow"
+        robots="index, follow" // Ändrat till index så Google lättare kan verifiera sidan
       />
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
@@ -30,20 +30,30 @@ const HandplockatTerms: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl font-bold text-center text-foreground">
-              Användarvillkor – Handplockat
+              Användarvillkor & Leveranspolicy
             </CardTitle>
             <p className="text-center text-foreground/70 mt-2">
-              En förmedlingstjänst driven av Trygg Hand
+              Handplockat – En tjänst av Trygg Hand Sverige AB
             </p>
           </CardHeader>
           <CardContent className="prose prose-lg max-w-none">
-            <p>
-              Dessa villkor beskriver vad Handplockat är, hur tjänsten fungerar och vilka regler som gäller.
-              Villkoren är uppdelade i två delar: Del 1 gäller alla användare av plattformen.
-              Del 2 gäller dig som säljare och väljer att använda Trygg Hands förmedlingstjänst som tillägg.
-            </p>
+            
+            {/* --- NY SEKTION FÖR GOOGLE VERIFIERING --- */}
+            <section className="mb-10 p-6 bg-blue-50 border border-blue-100 rounded-lg">
+              <h2 className="text-2xl font-bold text-blue-900 mb-4">17. Frakt- och hämtningsvillkor (Viktigt)</h2>
+              <p className="text-blue-900 font-medium">
+                För att säkerställa en trygg handel på Handplockat gäller följande för samtliga varor som visas:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-blue-900">
+                <li><strong>Fraktkostnad:</strong> 0 kr. Vi erbjuder för närvarande endast lokal hämtning. Inga dolda avgifter tillkommer vid utlämning.</li>
+                <li><strong>Leveranstid (Hämtning):</strong> Din vara är normalt redo för hämtning inom <strong>24 timmar</strong> efter lagd beställning/bokning.</li>
+                <li><strong>Hämtningsplats:</strong> Varorna hämtas på vår fysiska adress i Sundsvall (Alnö) efter bekräftelse. Exakt tidpunkt stäms av personligen via SMS eller e-post direkt efter ditt köp.</li>
+                <li><strong>Visningsexemplar:</strong> Samtliga varor säljs som begagnade visningsexemplar i befintligt skick.</li>
+              </ul>
+            </section>
+            {/* --- SLUT PÅ NY SEKTION --- */}
 
-            <h2 className="text-2xl font-semibold text-foreground mb-4">DEL 1 – PLATTFORMEN (gäller alla användare)</h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">DEL 1 – PLATTFORMEN</h2>
 
             <section className="mb-8">
               <h3 className="text-xl font-semibold text-foreground mb-4">1. Om Handplockat</h3>
@@ -225,9 +235,6 @@ const HandplockatTerms: React.FC = () => {
               </p>
             </section>
 
-            <p className="text-center text-foreground/70 italic mt-6">
-              Dessa villkor gäller från och med det datum du som användare godkänner dem vid registrering eller annonsering på Handplockat.
-            </p>
           </CardContent>
         </Card>
       </div>

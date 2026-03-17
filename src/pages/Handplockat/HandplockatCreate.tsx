@@ -12,10 +12,10 @@ import {
   normalizeUrlList,
   parseJsonInput,
 } from "@/lib/handplockat";
-import { stripExif } from "@/integrations/supabaseUpload";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { HandplockatSource, HandplockatStatus, Valuation } from "@/types";
 import { removeBackground } from "@imgly/background-removal";
+
 
 const COMPANY_SMS = "+46761169554";
 const CONTACT_EMAIL = "kontakt@trygghand.com";
@@ -1060,25 +1060,24 @@ export default function HandplockatCreate() {
   }, [valuationImagePaths]);
 
   const uploadFileToBucket = async (
-    file: File,
-    bucket: "handplockat-private",
-    folder: string
-  ) => {
-    const safeFile = await stripExif(file);
-    const ext = (safeFile.name.split(".").pop() || "bin").toLowerCase();
+  file: File,
+  bucket: "handplockat-private",
+  folder: string
+) => {
+  const ext = (file.name.split(".").pop() || "bin").toLowerCase();
 
-    const fileId = generateUuid();
-    const filename = `${fileId}.${ext}`;
-    const path = `${folder}/${filename}`;
+  const fileId = generateUuid();
+  const filename = `${fileId}.${ext}`;
+  const path = `${folder}/${filename}`;
 
-    const { error: uploadErr } = await supabase.storage
-      .from(bucket)
-      .upload(path, safeFile, { upsert: false });
+  const { error: uploadErr } = await supabase.storage
+    .from(bucket)
+    .upload(path, file, { upsert: false });
 
-    if (uploadErr) throw uploadErr;
+  if (uploadErr) throw uploadErr;
 
-    return { path };
-  };
+  return { path };
+};
 
   const handleOriginalUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;

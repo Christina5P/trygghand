@@ -1,23 +1,20 @@
 import { supabase } from "@/lib/supabase";
 import { buildCustomerPath, insertCustomerFile } from "@/lib/customerFiles";
+import imageCompression from "browser-image-compression";
 
 /**
- * Kontrollerar att Supabase-klienten är korrekt konfigurerad.
- * Kastar ett fel om nycklarna saknas.
+ * Kontrollera Supabase
  */
 function checkSupabaseIsConfigured(): void {
   if (!supabase) {
-    throw new Error("Supabase is not configured. Check your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.");
+    throw new Error(
+      "Supabase is not configured. Check your VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+    );
   }
 }
 
-// --- 2. Uppladdningsfunktion (Effektiv och Parallell) ---
-
 /**
- * Laddar upp flera bildfiler till 'images' storage bucket parallellt.
- * Den här funktionen är asynkron (Promise.all) för optimal prestanda.
- * @param files Arrayen av File-objekt att ladda upp.
- * @returns Ett Promise som löser till en array av publika bild-URL:er.
+ * 🔥 CENTRAL UPLOAD PIPELINE (ENDA stället där bilder processas)
  */
 export async function uploadImages(
   files: File[],
@@ -25,39 +22,60 @@ export async function uploadImages(
   options?: { customerId?: string; returnType?: "path" | "signedUrl" }
 ): Promise<string[]> {
   checkSupabaseIsConfigured();
-  
-  const uploadBucket = "images"; // Använder bucket-namnet från din aktiva kod
+
+  const uploadBucket = "images";
   const customerId = options?.customerId;
   const returnType = options?.returnType ?? "path";
 
   if (!customerId) throw new Error("Missing customer_id for upload");
 
   const uploadTasks = files.map(async (file) => {
-    const safeFile = await stripExif(file);
-    const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+    // 🔥 1. Ta bort EXIF
+    const stripped = await stripExif(file);
+
+    // 🔥 2. Komprimera (DETTA LÖSER DIN MOBIL-PROBLEM)
+    const compressed = await imageCompression(stripped, {
+      maxSizeMB: 0.4, // 🔥 viktig
+      maxWidthOrHeight: 1600,
+      useWebWorker: true,
+    });
+
+    const ext = "jpg";
     const fileId = crypto.randomUUID();
     const filename = `${fileId}.${ext}`;
     const path = buildCustomerPath(customerId, [folder], filename);
 
-    const result = await supabase.storage.from(uploadBucket).upload(path, safeFile, { upsert: false });
-    if (result.error) {
-      console.error("Error uploading image:", result.error.message);
-      throw new Error(`Kunde inte ladda upp en bild: ${result.error.message}`);
+    const { error } = await supabase.storage
+      .from(uploadBucket)
+      .upload(path, compressed, {
+        upsert: false,
+        contentType: compressed.type, // 🔥 viktig
+      });
+
+    if (error) {
+      console.error("Error uploading image:", error.message);
+      throw new Error(`Kunde inte ladda upp en bild: ${error.message}`);
     }
 
+    // Spara metadata
     await insertCustomerFile({
       customerId,
       bucket: uploadBucket,
       path,
-      fileType: safeFile.type || null,
-      size: safeFile.size,
+      fileType: compressed.type || null,
+      size: compressed.size,
     });
 
+    // Returnera signed URL om behövs
     if (returnType === "signedUrl") {
-      const { data, error } = await supabase.storage.from(uploadBucket).createSignedUrl(path, 600);
+      const { data, error } = await supabase.storage
+        .from(uploadBucket)
+        .createSignedUrl(path, 600);
+
       if (error || !data?.signedUrl) {
         throw new Error("Kunde inte skapa signerad URL");
       }
+
       return data.signedUrl;
     }
 
@@ -67,33 +85,37 @@ export async function uploadImages(
   return Promise.all(uploadTasks);
 }
 
+/**
+ * Tar bort EXIF (rotation + metadata)
+ */
 export async function stripExif(file: File): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
 
   try {
     const bitmap = await createImageBitmap(file);
     const canvas = document.createElement("canvas");
+
     canvas.width = Math.max(1, bitmap.width);
     canvas.height = Math.max(1, bitmap.height);
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
+
     ctx.drawImage(bitmap, 0, 0);
 
     const blob: Blob = await new Promise((resolve, reject) => {
-      const type = file.type === "image/png" ? "image/png" : "image/jpeg";
-      const quality = type === "image/jpeg" ? 0.9 : undefined;
+      const type = "image/jpeg"; // 🔥 alltid jpeg (mindre än png)
       canvas.toBlob(
         (b) => (b ? resolve(b) : reject(new Error("Kunde inte skapa bildblob"))),
         type,
-        quality
+        0.9
       );
     });
 
     const baseName = file.name.replace(/\.[^/.]+$/, "");
-    const ext = file.type === "image/png" ? "png" : "jpg";
-    return new File([blob], `${baseName}-noexif.${ext}`, {
-      type: blob.type,
+
+    return new File([blob], `${baseName}-clean.jpg`, {
+      type: "image/jpeg",
       lastModified: file.lastModified,
     });
   } catch (err) {
@@ -103,25 +125,21 @@ export async function stripExif(file: File): Promise<File> {
 }
 
 /**
- * Minimal/safe implementation for the upload integration.
- * Replace the body with real Supabase client calls when ready.
+ * (Behåll om du använder den någonstans)
  */
-
 export type UploadResult = {
   url: string;
   key?: string;
 };
 
-export async function uploadToSupabase(file: File, options?: { bucket?: string }): Promise<UploadResult> {
-  // TODO: replace with real supabase client code
-  // This is a safe stub so TypeScript can resolve the import and types.
-  if (!file) throw new Error('No file provided');
-  // Return a fake URL for local dev/testing
+export async function uploadToSupabase(
+  file: File,
+  options?: { bucket?: string }
+): Promise<UploadResult> {
+  if (!file) throw new Error("No file provided");
+
   return Promise.resolve({
     url: `https://example.invalid/uploads/${encodeURIComponent(file.name)}`,
     key: file.name,
   });
 }
-
-// Exporterar klienten för andra funktioner om nödvändigt
-// supabase-klienten kommer från '@/lib/supabase'
