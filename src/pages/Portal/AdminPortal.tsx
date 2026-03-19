@@ -1308,7 +1308,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
               <NewCaseForm
                   customers={customers}
                   defaultCustomerId={newCaseCustomerId}
-                  onCancel={() => { setIsNewCaseModalOpen(false); setNewCaseCustomerId(undefined); }}
+                  onCancel={() => setIsNewCaseModalOpen(false)} // <-- ändra här!
                   onCaseSaved={fetchData}
               />
           )}

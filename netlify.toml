@@ -63,6 +63,11 @@ status = 200
   status = 200
 
 [[redirects]]
+  from = "/trygghand-og.jpg"
+  to = "/trygghand-og.jpg"
+  status = 200
+  
+[[redirects]]
   from = "/og.jpg"
   to = "/og.jpg"
   status = 200
