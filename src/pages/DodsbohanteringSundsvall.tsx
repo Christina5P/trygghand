@@ -42,9 +42,9 @@ const DodsbohanteringSundsvall = () => {
   return (
     <div className="min-h-screen bg-background">
       <Seo
-        title="Dödsbohantering i Sundsvall – helhetskoordinator | Trygg Hand"
-        description="Få professionell hjälp med dödsbohantering i Sundsvall. Vi hjälper anhöriga med tömning, städ och samordning för en trygg och smidig process."
-        canonical="https://www.trygghand.com/services/dodsbohantering-sundsvall"
+        title="Dödsbo i Sundsvall – hjälp med tömning, städning & försäljning"
+        description="Behöver du hjälp med dödsbo i Sundsvall? Trygg Hand tar hand om hela processen – från sortering och tömning av bohag till flyttstädning."
+        canonical="https://www.trygghand.com/dodsbo-sundsvall"
       />
       
       <div className="container mx-auto px-4 py-8">

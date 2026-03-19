@@ -109,7 +109,7 @@ content: (
       content: (
         <div className="space-y-4">
           <p className="text-foreground">
-            Många kallar det 'dödstädning', men vi ser det som Omtänksam Överlämning eller Framtidsorganisering.
+            Många kallar det 'döstädning', men vi ser det som Omtänksam Överlämning eller Framtidsorganisering.
           </p>
           <div className="space-y-3">
             <h4 className="font-semibold">Fördelar med Framtidsorganisering:</h4>

@@ -40,8 +40,8 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <Seo
-        title="Trygg Hand | Din Flyttkoordinator i Sundsvall – Äldreflytt & Dödsbo"
-        description="Vi erbjuder servicepaket med fasta priser eller individuella tjänster med offert för seniorförändring och dödsbohantering i Sundsvall – samordning, städ, uppsägningar och digital översikt."
+        title="Flyttkoordinator i Sundsvall – Äldreflytt & Dödsbo | Trygg Hand"
+        description="Trygg Hand hjälper dig med äldreflytt och dödsbo i Sundsvall. Vi samordnar allt från planering och sortering till flytt, städning och försäljning."
         canonical="https://www.trygghand.com/"
       />
       <Header />

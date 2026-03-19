@@ -50,17 +50,16 @@ export const PRICES = {
     },
     // STANDARDPAKET DÖDSBO
     standard: { 
-      basePrice: 30500, // Total Ex Moms
-      //rutGrundandeDel: 26500, // Hämtat från din kalkyl: 26 500 kr
-      ejRutDel: 30500, // Hämtat från din kalkyl: 7 750 kr
+      basePrice: 27600, // Total Ex Moms
+      ejRutDel: 27600, 
       baseSqm: 50, 
       pricePerSqm: 150, // Städning/Tömning per extra kvm (Ej RUT)
     },
     // PREMIUMPAKET DÖDSBO
     premium: { 
-      basePrice: 56750, // Total Ex Moms
+      basePrice: 42600, // Total Ex Moms
       //rutGrundandeDel: 48000, // Hämtat från din kalkyl: 48 000 kr
-      ejRutDel: 56750, // Hämtat från din kalkyl: 12 500 kr
+      ejRutDel: 42600, // Hämtat från din kalkyl: 12 500 kr
       baseSqm: 50, 
       pricePerSqm: 150, 
     },

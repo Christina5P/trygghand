@@ -20,7 +20,7 @@ export default function Seo({
   description,
   canonical,
   ogUrl,
-  robots,
+  robots = "index, follow",
   ogImage,
   jsonLd,
 }: SeoProps) {

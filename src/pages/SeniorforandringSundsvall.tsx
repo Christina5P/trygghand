@@ -34,9 +34,9 @@ function Seniorforandring() {
   return (
     <div className="min-h-screen bg-background">
       <Seo
-        title="Seniorförändring i Sundsvall – äldreflytt med helhetsstöd | Trygg Hand"
-        description="Trygg seniorförändring i Sundsvall. Helhetskoordinator vid äldreflytt: planering, sortering, flyttsamordning och anhörigstöd – steg för steg." 
-        canonical="https://www.trygghand.com/services/seniorforandring"
+        title="Äldreflytt i Sundsvall – trygg hjälp från start till mål"
+        description="Vi hjälper dig med äldreflytt i Sundsvall. Trygg Hand samordnar packning, flytt, städning och allt runt omkring – med personlig och trygg service."
+        canonical="https://www.trygghand.com/aldreflytt-sundsvall"
       />
       
       <div className="container mx-auto px-4 py-8">

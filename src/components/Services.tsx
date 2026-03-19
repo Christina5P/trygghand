@@ -123,7 +123,7 @@ const dodsboPackages = [
       "Identifiera och kontakta samtliga banker och samla in utdrag och frysa banktjänster,", 
       "Beställa intyg på värdet av eventuella fonder, aktier, pensioner och försäkringar per dödsdagen.",
       "Samla in pantbrev och andra fastighetsdokument för att underlätta försäljning eller överlåtelse.",
-      "Fullständig sortering, värdering och försäljning av bohag", 
+      "Fullständig sortering, värdering och hjälp till försäljning av bohag", 
       "Magasinering & Extratransport (1 månad)", 
     ],
     allIncluded: true,

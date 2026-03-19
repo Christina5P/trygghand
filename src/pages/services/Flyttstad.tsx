@@ -31,9 +31,9 @@ const Flyttstad = () => {
   return (
     <div className="min-h-screen bg-background">
       <Seo
-        title="Flyttstädning i Sundsvall – Vi fixar städningen åt dig"
-        description="Professionell städning i Sundsvall."
-        canonical="https://www.trygghand.com/services/flyttstad"
+        title="Flyttstäd i Sundsvall – noggrant och tryggt vid dödsbo & flytt"
+        description="Boka flyttstäd i Sundsvall via Trygg Hand. Vi erbjuder noggrann städning vid flytt och dödsbo – samordnat med hela flytten om du vill."
+        canonical="https://www.trygghand.com/flyttstad-sundsvall"
       />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
