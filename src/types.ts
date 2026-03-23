@@ -11,8 +11,9 @@ export interface Customer {
   personal_number?: string;
   active?: boolean;
   is_admin?: boolean;
-  is_customer?: boolean; // NYTT: true om användaren är aktiv kund
-}export type CustomerMap = Record<string, Customer>;
+  is_customer?: boolean;
+}
+export type CustomerMap = Record<string, Customer>;
 
 
 // --------------------------------------------------------
@@ -35,31 +36,20 @@ export interface Case {
   title: string | null;
   description: string | null;
   status: "pending" | "in_progress" | "completed" | "cancelled";
-
   customer_id: string;
-
   created_at?: string;
   updated_at?: string;
   scheduled_date?: string | null;
   address?: string | null;
-
-  // Read receipt timestamps
   admin_last_read_at?: string | null;
   customer_last_read_at?: string | null;
-
-  // JOIN: service_type(*)
   service_type?: ServiceType | null;
 }
 
-/**
- * CustomerCase används för adminportalen när du JOIN:ar customers + service types.
- * Den utökar egentligen bara Case.
- */
 export interface CustomerCase extends Case {
   scheduled_date?: string | null;
   deadline?: string | null;
   address?: string | null;
-  // andra fält som komponenterna använder
 }
 
 
@@ -77,37 +67,24 @@ export interface FullmaktDocument {
 }
 
 
-
 // --------------------------------------------------------
 // CASE COMMENTS
 // --------------------------------------------------------
 export interface Comment {
-    // 🛑 KRITISK ÄNDRING 1: Supabase UUID är sträng
-    id: string; 
-    
-    // UUID (strängar)
-    case_id: string; 
-    author_id: string | null; 
-    customer_id: string | null;
-    created_at?: string;
-
-    // Textfält
-     author_type?: "admin" | "customer" | string | null;
-    content: string | null; 
-
-    // Soft delete
-    deleted_at?: string | null;
-    deleted_by?: string | null;
-
-    // Relation (från SELECT *, author:customers(name))
-    author: {
-        name: string | null;
-    } | null;
+  id: string;
+  case_id: string;
+  author_id: string | null;
+  customer_id: string | null;
+  created_at?: string;
+  author_type?: "admin" | "customer" | string | null;
+  content: string | null;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+  author: { name: string | null } | null;
 }
 
 export interface AdminCase extends Case {
   service_type?: ServiceType | null;
-
   scheduled_date?: string | null;
   deadline?: string | null;
   address?: string | null;
@@ -143,6 +120,12 @@ export interface HandplockatListing {
   title: string;
   description: string;
   category?: string | null;
+  /** DB column: clothingtype (lowercase) – Dam/Herr/Barn */
+  clothingtype?: string | null;
+  /** DB column: size – t.ex. M, 38, 29/34 */
+  size?: string | null;
+  /** DB column: brand – t.ex. Nudie, H&M */
+  brand?: string | null;
   dimensions_mm?: {
     length?: number | null;
     width?: number | null;
@@ -150,7 +133,6 @@ export interface HandplockatListing {
   } | null;
   price_sek: number;
   owner_id: string;
-  //cta_typ: HandplockatCtaType;
   bid_start_sek?: number | null;
   current_bid_sek?: number | null;
   bid_count?: number | null;
@@ -170,6 +152,7 @@ export interface HandplockatListing {
   images_cutout?: string[] | null;
   published_at?: string | null;
   created_at?: string;
+  updated_at?: string;
 }
 
 // --------------------------------------------------------
@@ -202,20 +185,11 @@ export interface SubscriptionCancellation {
   custom_service_name?: string | null;
   notice_period?: string | null;
   last_due_date?: string | null;
-  provider_contact?: string | null; // kontaktperson hos leverantör
+  provider_contact?: string | null;
   notes?: string | null;
   status: CancellationStatus;
-
-  // Read receipt timestamps
   admin_last_read_at?: string | null;
   customer_last_read_at?: string | null;
-
-  /**
-   * Documents are stored in `subscription_cancellations.documents` (jsonb).
-   * Backward compatible:
-   * - older rows may be string paths
-   * - newer rows may store objects with metadata
-   */
   documents?: Array<
     | string
     | {
@@ -244,7 +218,6 @@ export interface CancellationComment {
   created_at?: string;
   deleted_at?: string | null;
   deleted_by?: string | null;
-  // author relation (auth.users) är inte joinad här; presenteras enkelt via user_id
 }
 
 
@@ -252,13 +225,12 @@ export interface CancellationComment {
 // CONTACT REQUESTS
 // --------------------------------------------------------
 
-
 export interface ContactRequest {
   id: string;
-  name?: string; // Kan vara kombinerat namn eller tomt
-  firstname?: string; // Från kontaktformuläret
-  lastname?: string; // Från kontaktformuläret
-  email?: string; // Nu optional
+  name?: string;
+  firstname?: string;
+  lastname?: string;
+  email?: string;
   phone?: string;
   message?: string;
   status?: "new" | "contacted" | "closed" | "converted";
@@ -269,5 +241,5 @@ export interface ContactRequest {
   postal_code?: string;
   service_type?: string;
   admin_notes?: string | null;
-  customer_id?: string | null; // Länkar till kund om konverterad
+  customer_id?: string | null;
 }

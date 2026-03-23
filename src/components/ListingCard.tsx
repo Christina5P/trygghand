@@ -12,14 +12,13 @@ interface ListingCardProps {
 const ListingCard = ({ listing, eager = false }: ListingCardProps) => {
   const [loaded, setLoaded] = useState(false);
 
-  const imageSrc =
-    listing.image_cutout || listing.images_cutout?.[0] || "";
-
+  const imageSrc = listing.image_cutout || listing.images_cutout?.[0] || "";
   const priceLabel = formatSek(listing.price_sek);
+  const brandLabel = listing.brand?.trim() || listing.description?.match(/Märke:\s*(.+)/i)?.[1]?.trim() || null;
 
   return (
     <Link
-      to={`/handplockat/${listing.id}`}
+      to={`/handplockat/annons/${listing.id}`}
       className="group block bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
     >
       {/* IMAGE */}
@@ -39,8 +38,6 @@ const ListingCard = ({ listing, eager = false }: ListingCardProps) => {
                 loaded ? "opacity-100" : "opacity-0"
               } group-hover:scale-105`}
             />
-
-            {/* 🔥 Skeleton */}
             {!loaded && (
               <div className="absolute inset-0 bg-gray-200 animate-pulse" />
             )}
@@ -59,15 +56,28 @@ const ListingCard = ({ listing, eager = false }: ListingCardProps) => {
         </h3>
 
         <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-primary">
-            {priceLabel}
-          </span>
+          <span className="text-lg font-bold text-primary">{priceLabel}</span>
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">
           {listing.skick && (
             <Badge variant="secondary" className="text-xs font-normal">
               {listing.skick}
+            </Badge>
+          )}
+          {listing.clothingtype && (
+            <Badge variant="secondary" className="text-xs font-normal">
+              {listing.clothingtype}
+            </Badge>
+          )}
+          {brandLabel && (
+            <Badge variant="secondary" className="text-xs font-normal">
+              {brandLabel}
+            </Badge>
+          )}
+          {listing.category && (
+            <Badge variant="outline" className="text-xs font-normal">
+              {listing.category}
             </Badge>
           )}
         </div>

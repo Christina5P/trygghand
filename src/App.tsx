@@ -27,7 +27,7 @@ import { getCookieConsent, acceptStatisticsCookies } from "@/utils/cookies";
 import ResetPassword from "@/components/ResetPassword";
 import About from "@/components/About";
 
-// ENDAST FÖR DEBUG – ta bort sen
+// DEBUG
 // @ts-ignore
 window.supabase = supabase;
 
@@ -42,27 +42,17 @@ const ClearCookies = React.lazy(() => import("@/pages/ClearCookies"));
 const Privacy = React.lazy(() => import("@/pages/Privacy"));
 const Terms = React.lazy(() => import("@/pages/Terms"));
 
-const DodsbohanteringSundsvall = React.lazy(
-  () => import("@/pages/DodsbohanteringSundsvall")
-);
-const SeniorforandringSundsvall = React.lazy(
-  () => import("@/pages/SeniorforandringSundsvall")
-);
-const ChecklistaVidDodsfallSundsvall = React.lazy(
-  () => import("@/pages/ChecklistaVidDodsfallSundsvall")
-);
-const VadIngarIDodsbohantering = React.lazy(
-  () => import("@/pages/VadIngarIDodsbohantering")
-);
+const DodsbohanteringSundsvall = React.lazy(() => import("@/pages/DodsbohanteringSundsvall"));
+const SeniorforandringSundsvall = React.lazy(() => import("@/pages/SeniorforandringSundsvall"));
+const ChecklistaVidDodsfallSundsvall = React.lazy(() => import("@/pages/ChecklistaVidDodsfallSundsvall"));
+const VadIngarIDodsbohantering = React.lazy(() => import("@/pages/VadIngarIDodsbohantering"));
 
 const FragorTips = React.lazy(() => import("@/components/FragorTips"));
 
 const Portal = React.lazy(() => import("@/pages/Portal/Portal"));
 const AdminPortal = React.lazy(() => import("@/pages/Portal/AdminPortal"));
 
-const AuthPostbackTunnel = React.lazy(
-  () => import("@/pages/AuthPostbackTunnel")
-);
+const AuthPostbackTunnel = React.lazy(() => import("@/pages/AuthPostbackTunnel"));
 
 // Services
 const Services = React.lazy(() => import("@/pages/services"));
@@ -72,32 +62,17 @@ const Flytt = React.lazy(() => import("@/pages/services/Flytt"));
 const TomningBohag = React.lazy(() => import("@/pages/services/TomningBohag"));
 const Vardering = React.lazy(() => import("@/pages/services/Vardering-ai"));
 const Magasinering = React.lazy(() => import("@/pages/services/Magasinering"));
-const RadgivningPlanering = React.lazy(
-  () => import("@/pages/services/RadgivningPlanering")
-);
+const RadgivningPlanering = React.lazy(() => import("@/pages/services/RadgivningPlanering"));
 const Juridikguide = React.lazy(() => import("@/pages/services/Juridikguide"));
 
 // Handplockat
-const HandplockatIndex = React.lazy(
-  () => import("@/pages/Handplockat/HandplockatIndex")
-);
-const HandplockatListing = React.lazy(
-  () => import("@/pages/Handplockat/HandplockatListing")
-);
-const HandplockatCreate = React.lazy(
-  () => import("@/pages/Handplockat/HandplockatCreate")
-);
-const HandplockatEdit = React.lazy(
-  () => import("@/pages/Handplockat/HandplockatEdit")
-);
-const HandplockatLayout = React.lazy(
-  () => import("@/components/HandplockatLayout")
-);
+const HandplockatIndex = React.lazy(() => import("@/pages/Handplockat/HandplockatIndex"));
+const HandplockatListing = React.lazy(() => import("@/pages/Handplockat/HandplockatListing"));
+const HandplockatCreate = React.lazy(() => import("@/pages/Handplockat/HandplockatCreate"));
+const HandplockatEdit = React.lazy(() => import("@/pages/Handplockat/HandplockatEdit"));
+const HandplockatLayout = React.lazy(() => import("@/components/HandplockatLayout"));
 
-const HandplockatTerms = React.lazy(
-  () => import("@/pages/Handplockat/HandplockatTerms")
-);
-// Admin Handplockat
+const HandplockatTerms = React.lazy(() => import("@/pages/Handplockat/HandplockatTerms"));
 const AdminHandplockat = React.lazy(() => import("@/pages/AdminHandplockat"));
 
 // --------------------
@@ -127,6 +102,7 @@ function App() {
 
             <Suspense fallback={<div className="p-6 text-center">Laddar…</div>}>
               <Routes>
+
                 {/* Auth */}
                 <Route path="/auth/postback/tunnel" element={<AuthPostbackTunnel />} />
 
@@ -157,37 +133,33 @@ function App() {
                 <Route path="/portal" element={<Portal />} />
                 <Route path="/adminportal" element={<AdminPortal />} />
 
-                {/* ===================== */}
-                {/* HANDPLOCKAT – ADMIN   */}
-                {/* ===================== */}
-                {/* OBS: Admin-routes MÅSTE ligga FÖRE den publika /handplockat-routen */}
-                <Route element={<CustomerRoute />}>
-                  <Route path="/admin/handplockat" element={<AdminHandplockat />} />
-                  <Route path="/admin/handplockat/skapa" element={<HandplockatCreate />} />
-                  <Route path="/admin/handplockat/:id/redigera" element={<HandplockatEdit />} />
+                {/* 🔥 ADMIN – LIGGER FÖRST (VIKTIGT) */}
+              <Route element={<CustomerRoute />}>
+                <Route path="/admin/handplockat">
+                  <Route index element={<AdminHandplockat />} />
+                  <Route path="skapa" element={<HandplockatCreate />} />
+                  <Route path=":id/redigera" element={<HandplockatEdit />} />
                 </Route>
+              </Route>
 
-                {/* ===================== */}
-                {/* HANDPLOCKAT – PORTAL  */}
-                {/* ===================== */}
+                {/* 🔥 PORTAL */}
                 <Route element={<CustomerRoute />}>
                   <Route path="/portal/handplockat" element={<HandplockatIndex />} />
                   <Route path="/portal/handplockat/skapa" element={<HandplockatCreate />} />
                   <Route path="/portal/handplockat/:id/redigera" element={<HandplockatEdit />} />
                 </Route>
 
-                {/* ===================== */}
-                {/* HANDPLOCKAT – PUBLIK  */}
-                {/* ===================== */}
-                {/* Gammal alias */}
-                <Route
-                  path="/handplockat/admindashboard"
-                  element={<Navigate to="/admin/handplockat" replace />}
-                />
+                {/* 🔥 PUBLIK – FIXAD */}
                 <Route path="/handplockat" element={<HandplockatLayout />}>
                   <Route index element={<HandplockatIndex />} />
-                  <Route path=":id" element={<HandplockatListing />} />
+                  <Route path="annons/:id" element={<HandplockatListing />} />
                 </Route>
+
+                {/* Alias (valfri) */}
+                <Route
+                  path="/handplockat/:id"
+                  element={<Navigate to="/handplockat" replace />}
+                />
 
                 {/* Policy */}
                 <Route path="/fragor-tips" element={<FragorTips />} />
@@ -196,13 +168,10 @@ function App() {
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/handplockat-terms" element={<HandplockatTerms />} />
-                <Route
-                  path="/handplockatTerms"
-                  element={<Navigate to="/handplockat-terms" replace />}
-                />
 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
+
               </Routes>
             </Suspense>
           </BrowserRouter>

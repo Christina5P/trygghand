@@ -5,248 +5,346 @@ import {
   createHandplockatOrder,
   fetchHandplockatListingById,
   formatSek,
+  updateHandplockatListing,
 } from "@/lib/handplockat";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import type { HandplockatListing as HandplockatListingType } from "@/types";
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck, Smartphone } from "lucide-react";
+import { ShieldCheck, Smartphone, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const CONTACT_EMAIL = "kontakt@trygghand.com";
-const SITE_URL = "https://www.trygghand.com";
-
-/* ---------------- IMAGE COMPONENTS ---------------- */
-
-function ImageWithLoader({ src, alt }: { src: string; alt: string }) {
-  const [loaded, setLoaded] = useState(false);
-
-  return (
-    <div className="relative w-full h-full">
-      <img
-        src={src}
-        alt={alt}
-        loading="eager"
-        decoding="async"
-        onLoad={() => setLoaded(true)}
-        className={`w-full h-full object-contain transition duration-300 ${
-          loaded ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      {!loaded && <div className="absolute inset-0 bg-gray-200 animate-pulse" />}
-    </div>
-  );
-}
-
-function Thumb({
-  src,
-  alt,
-  onClick,
-}: {
-  src: string;
-  alt: string;
-  onClick: () => void;
-}) {
-  const [loaded, setLoaded] = useState(false);
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="aspect-square overflow-hidden rounded-xl border border-border bg-secondary/60 relative"
-    >
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        decoding="async"
-        onLoad={() => setLoaded(true)}
-        className={`h-full w-full object-contain transition ${
-          loaded ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      {!loaded && <div className="absolute inset-0 bg-gray-200 animate-pulse" />}
-    </button>
-  );
-}
-
-/* ---------------- HELPERS ---------------- */
-
-function safeParseJson(value: HandplockatListingType["valuation_json"]) {
-  if (!value) return null;
-  if (typeof value === "string") {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
-    }
-  }
-  return value as Record<string, any>;
-}
-
-function getAvailability(status: string | null | undefined) {
-  return status === "available"
-    ? "https://schema.org/InStock"
-    : "https://schema.org/OutOfStock";
-}
-
-function getStatusLabel(status: string | null | undefined) {
-  switch (status) {
-    case "available":
-      return "Tillgänglig";
-    case "reserved":
-      return "Reserverad";
-    case "sold":
-      return "Såld";
-    default:
-      return status || "Okänd status";
-  }
-}
-
-/* ---------------- COMPONENT ---------------- */
 
 export default function HandplockatListing() {
   const { id: listingId } = useParams();
+  const { user, customer, loading: authLoading } = useAuth();
+
   const [listing, setListing] = useState<HandplockatListingType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeImageSrc, setActiveImageSrc] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const { customer, loading: authLoading } = useAuth();
+  const [orderMode, setOrderMode] = useState<"direct_buy" | "price_offer">("direct_buy");
+  const [showOrderForm, setShowOrderForm] = useState(false);
+
+  const [orderName, setOrderName] = useState("");
+  const [orderPhone, setOrderPhone] = useState("");
+  const [orderEmail, setOrderEmail] = useState("");
+  const [offeredPriceSek, setOfferedPriceSek] = useState("");
+
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  useEffect(() => {
-    if (!listingId) {
-      setError("Saknar annons-id.");
-      setLoading(false);
-      return;
-    }
-
-    if (!isSupabaseConfigured) {
-      setError("Supabase är inte konfigurerat.");
-      setLoading(false);
-      return;
-    }
+    if (!listingId) { setError("Saknar annons-id."); setLoading(false); return; }
+    if (!isSupabaseConfigured) { setError("Supabase är inte konfigurerat."); setLoading(false); return; }
 
     fetchHandplockatListingById(listingId)
       .then(setListing)
-      .catch(() => setError("Kunde inte hämta annonsen."))
+      .catch(() => setError("Kunde inte hämta annons"))
       .finally(() => setLoading(false));
   }, [listingId]);
 
-  const valuation = useMemo(
-    () => safeParseJson(listing?.valuation_json),
-    [listing]
-  );
-
-  const cutoutImages = useMemo(() => {
+  // All images – prefer images_cutout array, fall back to single image_cutout
+  const images = useMemo(() => {
     if (!listing) return [];
-    if (listing.images_cutout?.length) return listing.images_cutout;
-    return listing.image_cutout ? [listing.image_cutout] : [];
+    return listing.images_cutout?.length
+      ? listing.images_cutout
+      : listing.image_cutout
+      ? [listing.image_cutout]
+      : [];
   }, [listing]);
 
-  useEffect(() => {
-    setActiveImageSrc(cutoutImages[0] || "");
-  }, [cutoutImages]);
+  // Reset to first image when listing changes
+  useEffect(() => { setActiveIndex(0); }, [images]);
+
+  const activeImage = images[activeIndex] || "";
+
+  const prev = () => setActiveIndex((i) => (i - 1 + images.length) % images.length);
+  const next = () => setActiveIndex((i) => (i + 1) % images.length);
+
+  const canEdit =
+    !!user?.id &&
+    (user.id === listing?.owner_id || customer?.is_admin);
+
+  const dimensionLabel = listing?.dimensions_mm
+    ? [
+        listing.dimensions_mm.length && `L ${listing.dimensions_mm.length} mm`,
+        listing.dimensions_mm.width && `B ${listing.dimensions_mm.width} mm`,
+        listing.dimensions_mm.height && `H ${listing.dimensions_mm.height} mm`,
+      ]
+        .filter(Boolean)
+        .join(" × ")
+    : null;
+
+  // Extrahera storlek och märke ur description (sparas som "Storlek: M" / "Märke: Nike")
+  // Read size/brand from dedicated DB columns (fallback to description for old rows)
+  const sizeLabel = (listing as any)?.size?.trim() || listing?.description?.match(/Storlek:\s*(.+)/i)?.[1]?.replace(/^Storlek:\s*/i,"").trim() || null;
+  const brandLabel = (listing as any)?.brand?.trim() || listing?.description?.match(/Märke:\s*(.+)/i)?.[1]?.trim() || null;
+  const clothingTypeLabel = listing?.clothingtype ?? null;
+
+  const priceLabel = formatSek(listing?.price_sek || 0);
+
+  const handleCreateOrder = async () => {
+    setOrderError(null);
+    setOrderSuccess(null);
+    if (!listing) return;
+    if (!orderPhone.trim()) { setOrderError("Telefonnummer krävs"); return; }
+    const parsedOffer = Number(offeredPriceSek);
+    if (orderMode === "price_offer") {
+      if (!offeredPriceSek.trim() || Number.isNaN(parsedOffer) || parsedOffer <= 0) {
+        setOrderError("Ange ett giltigt prisförslag.");
+        return;
+      }
+    }
+    try {
+      setOrderLoading(true);
+      await createHandplockatOrder({
+        listingId: listing.id,
+        buyerName: orderName.trim() || undefined,
+        buyerPhone: orderPhone.trim(),
+        buyerEmail: orderEmail.trim() || undefined,
+        orderType: orderMode,
+        offeredPriceSek: orderMode === "price_offer" ? parsedOffer : undefined,
+      });
+      if (orderMode === "direct_buy") {
+        const updated = await updateHandplockatListing({ id: listing.id, status: "reserved" });
+        setListing(updated);
+      }
+      setOrderSuccess(
+        orderMode === "direct_buy"
+          ? "Tack! Vi har tagit emot din reservation."
+          : "Tack! Vi har tagit emot ditt prisförslag."
+      );
+      setOrderName(""); setOrderPhone(""); setOrderEmail(""); setOfferedPriceSek("");
+      setShowOrderForm(false);
+    } catch {
+      setOrderError("Kunde inte skicka.");
+    } finally {
+      setOrderLoading(false);
+    }
+  };
 
   if (loading) return <div className="p-10">Laddar…</div>;
   if (error || !listing) return <div className="p-10">{error}</div>;
 
-  const canonicalUrl = `${SITE_URL}/handplockat/${listing.id}`;
-  const imageSrc = activeImageSrc;
-
-  const productJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: listing.title,
-    description: listing.description,
-    image: cutoutImages,
-    offers: {
-      "@type": "Offer",
-      price: String(listing.price_sek),
-      priceCurrency: "SEK",
-      availability: getAvailability(listing.status),
-    },
-  };
-
   return (
-    <div className="min-h-[100svh] bg-background">
-      <Seo
-        title={listing.title}
-        description={listing.description}
-        canonical={canonicalUrl}
-        ogImage={cutoutImages[0]}
-        jsonLd={productJsonLd}
-      />
+    <div className="min-h-screen bg-background">
+      <Seo title={listing.title} description={listing.description} />
 
       <main className="container mx-auto px-4 py-10">
-        <Link to="/handplockat">← Tillbaka</Link>
+        <Link to="/handplockat" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          ← Tillbaka
+        </Link>
 
         <div className="grid lg:grid-cols-2 gap-8 mt-6">
-          {/* IMAGE */}
-          <div>
-            <div className="aspect-[4/3] rounded-2xl overflow-hidden">
-              {imageSrc ? (
-                <ImageWithLoader src={imageSrc} alt={listing.title} />
+
+          {/* ── IMAGE GALLERY ── */}
+          <div className="space-y-3">
+
+            {/* Main image */}
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted">
+              {activeImage ? (
+                <img
+                  src={activeImage}
+                  alt={listing.title}
+                  className="w-full h-full object-contain"
+                />
               ) : (
-                <div>Ingen bild</div>
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  Ingen bild
+                </div>
+              )}
+
+              {/* Prev / Next arrows – only shown when more than 1 image */}
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={prev}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 transition"
+                    aria-label="Föregående bild"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={next}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 transition"
+                    aria-label="Nästa bild"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+
+                  {/* Dot indicators */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {images.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveIndex(i)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          i === activeIndex ? "bg-white scale-125" : "bg-white/50"
+                        }`}
+                        aria-label={`Bild ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
-            {cutoutImages.length > 1 && (
-              <div className="grid grid-cols-4 gap-2 mt-3">
-                {cutoutImages.map((url) => (
-                  <Thumb
+            {/* Thumbnails – only shown when more than 1 image */}
+            {images.length > 1 && (
+              <div className="flex gap-2 flex-wrap">
+                {images.map((url, i) => (
+                  <button
                     key={url}
-                    src={url}
-                    alt={listing.title}
-                    onClick={() => setActiveImageSrc(url)}
-                  />
+                    onClick={() => setActiveIndex(i)}
+                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${
+                      i === activeIndex
+                        ? "border-primary opacity-100"
+                        : "border-border opacity-60 hover:opacity-100"
+                    }`}
+                    aria-label={`Välj bild ${i + 1}`}
+                  >
+                    <img src={url} alt={`Bild ${i + 1}`} className="w-full h-full object-contain" />
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* INFO */}
-          <div className="space-y-4">
-            <Badge>{getStatusLabel(listing.status)}</Badge>
+          {/* ── INFO ── */}
+          <div className="space-y-3 text-sm">
+
+            <div className="flex flex-wrap gap-2">
+              <Badge className="bg-blue-600 text-white">
+                {listing.skick || "Okänt skick"}
+              </Badge>
+              {listing.clothingtype && (
+                <Badge variant="secondary">
+                  {listing.clothingtype}
+                </Badge>
+              )}
+              {listing.category && (
+                <Badge variant="outline">
+                  {listing.category}
+                </Badge>
+              )}
+            </div>
 
             <h1 className="text-2xl font-bold">{listing.title}</h1>
 
-            <p className="text-muted-foreground">{listing.description}</p>
+            {canEdit && (
+              <Link to={`/admin/handplockat/${listing.id}/redigera`}>
+                <button className="mt-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-semibold shadow hover:opacity-90 transition">
+                  Redigera annons
+                </button>
+              </Link>
+            )}
 
-            <div className="text-2xl font-bold text-primary">
-              {formatSek(listing.price_sek)}
+            <div className="text-base text-gray-900 font-medium">
+              {listing.description
+                .split("\n")
+                .filter((l) => !/^(Storlek|Märke):/i.test(l.trim()))
+                .map((line, i) => (
+                  <span key={i}>{line}<br /></span>
+                ))}
             </div>
 
-            <div className="text-sm text-muted-foreground">
-              Upphämtning: {listing.pickup_area}
+            {dimensionLabel && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Mått</span>
+                <span>{dimensionLabel}</span>
+              </div>
+            )}
+
+            {clothingTypeLabel && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Typ</span>
+                <span>{clothingTypeLabel}</span>
+              </div>
+            )}
+
+            {sizeLabel && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Storlek</span>
+                <span>{sizeLabel}</span>
+              </div>
+            )}
+
+            {brandLabel && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Märke</span>
+                <span>{brandLabel}</span>
+              </div>
+            )}
+
+            {(listing.pickup_area || listing.pickup_window) && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Upphämtning</span>
+                <span>
+                  {listing.pickup_area}
+                  {listing.pickup_window && ` – ${listing.pickup_window}`}
+                </span>
+              </div>
+            )}
+
+            {listing.pickup_deadline_at && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Hämtas senast</span>
+                <span>{new Date(listing.pickup_deadline_at).toLocaleDateString("sv-SE")}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Betalning</span>
+              <span>{listing.payment_method || "Swish"}</span>
             </div>
 
-            <div className="text-sm text-muted-foreground">
-              Kontakt: {CONTACT_EMAIL}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Kontakt</span>
+              <span>{CONTACT_EMAIL}</span>
             </div>
 
-            <div className="flex gap-2 pt-4">
-              <button className="bg-primary text-white px-4 py-2 rounded-xl">
+            <div className="text-2xl font-bold text-primary">{priceLabel}</div>
+
+            <div className="flex rounded-xl border overflow-hidden">
+              <button
+                onClick={() => { setOrderMode("direct_buy"); setShowOrderForm(true); }}
+                className={`flex-1 py-2 ${orderMode === "direct_buy" ? "bg-primary text-white" : "bg-transparent"}`}
+              >
                 Köp
               </button>
-              <button className="border px-4 py-2 rounded-xl">
+              <button
+                onClick={() => { setOrderMode("price_offer"); setShowOrderForm(true); }}
+                className={`flex-1 py-2 ${orderMode === "price_offer" ? "bg-primary text-white" : "bg-transparent"}`}
+              >
                 Prisförslag
               </button>
             </div>
 
-            <div className="pt-6 text-xs text-muted-foreground flex gap-4">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4" /> Trygg handel
+            {showOrderForm && (
+              <div className="space-y-2 border p-4 rounded-xl">
+                {orderMode === "price_offer" && (
+                  <input value={offeredPriceSek} onChange={(e) => setOfferedPriceSek(e.target.value)} placeholder="Ditt prisförslag (kr)" className="w-full border px-3 py-2 rounded" />
+                )}
+                <input value={orderName} onChange={(e) => setOrderName(e.target.value)} placeholder="Namn" className="w-full border px-3 py-2 rounded" />
+                <input value={orderPhone} onChange={(e) => setOrderPhone(e.target.value)} placeholder="Telefon" className="w-full border px-3 py-2 rounded" />
+                <input value={orderEmail} onChange={(e) => setOrderEmail(e.target.value)} placeholder="E-post" className="w-full border px-3 py-2 rounded" />
+                {orderError && <p className="text-red-500 text-sm">{orderError}</p>}
+                {orderSuccess && <p className="text-green-600 text-sm">{orderSuccess}</p>}
+                <button onClick={handleCreateOrder} disabled={orderLoading} className="w-full bg-primary text-white py-2 rounded disabled:opacity-60">
+                  {orderLoading ? "Skickar…" : orderMode === "direct_buy" ? "Bekräfta köp" : "Skicka förslag"}
+                </button>
               </div>
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-4 h-4" /> Enkel kontakt
-              </div>
+            )}
+
+            <div className="text-xs flex gap-4 pt-4">
+              <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Trygg handel</div>
+              <div className="flex items-center gap-2"><Smartphone className="w-4 h-4" /> Enkel kontakt</div>
             </div>
+
           </div>
         </div>
       </main>
