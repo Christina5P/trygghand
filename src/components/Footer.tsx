@@ -48,6 +48,7 @@ const Footer = ({ handplockatLogo }: { handplockatLogo?: boolean }) => {
               <li><Link to="/services/vardering" className="hover:underline">Värdering</Link></li>
               <li><Link to="/services/Forsaljning" className="hover:underline">Försäljning</Link></li>
               <li><Link to="/services/Magasinering" className="hover:underline">Magasinering</Link></li>
+              <li><Link to="/second-hand-sundsvall" className="hover:underline">Second hand</Link></li>
             </ul>
           </div>
 

@@ -26,6 +26,7 @@ import { getCookieConsent, acceptStatisticsCookies } from "@/utils/cookies";
 // Components
 import ResetPassword from "@/components/ResetPassword";
 import About from "@/components/About";
+import SecondHandSundsvall from "@/pages/SecondHandSundsvall";
 
 // DEBUG
 // @ts-ignore
@@ -153,6 +154,7 @@ function App() {
                 <Route path="/handplockat" element={<HandplockatLayout />}>
                   <Route index element={<HandplockatIndex />} />
                   <Route path="annons/:id" element={<HandplockatListing />} />
+                  <Route path="/second-hand-sundsvall" element={<SecondHandSundsvall />} />
                 </Route>
 
                 {/* Alias (valfri) */}

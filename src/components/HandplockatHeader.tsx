@@ -32,6 +32,12 @@ export default function HandplockatHeader() {
 
         {/* Desktop meny */}
         <nav className="hidden md:flex flex-1 items-center justify-center gap-8">
+          <Link
+            to="/second-hand-sundsvall"
+            className="font-semibold text-lg md:text-xl tracking-tight truncate hover:underline underline-offset-4 transition-colors"
+          >
+            Om second hand
+          </Link>
           <a
             href="#listings"
             className="font-semibold text-lg md:text-xl tracking-tight truncate hover:underline underline-offset-4 transition-colors"
@@ -64,6 +70,13 @@ export default function HandplockatHeader() {
         {/* Mobil meny */}
         {menuOpen && (
           <div className="w-full flex flex-col items-center gap-4 mt-3 md:hidden animate-fade-in">
+            <Link
+              to="/second-hand-sundsvall"
+              className="text-muted-foreground text-base font-medium hover:underline underline-offset-4 transition-colors"
+              onClick={() => setMenuOpen(false)}
+            >
+              Om second hand
+            </Link>
             <a
               href="#listings"
               className="text-muted-foreground text-base font-medium hover:underline underline-offset-4 transition-colors"

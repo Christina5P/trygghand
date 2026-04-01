@@ -369,6 +369,12 @@ function ServicesGrid() {
           </div>
           <p className="text-lg font-semibold text-foreground">Magasinering</p>
         </Link>
+        <Link to="/second-hand-sundsvall" className="text-center space-y-3 block hover:scale-105 transition-transform">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Heart className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-lg font-semibold text-foreground">Second hand</p>
+        </Link>
       </div>
     </div>
   );

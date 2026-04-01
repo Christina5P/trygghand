@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/accordion";
 
 const DEFAULT_DESCRIPTION =
-  "Upptäck handplockade second hand och loppis fynd i Sundsvall. Möbler och inredning från riktiga hem – hållbart, lokalt och unikt.";
+  "Second hand i Sundsvall med handplockade möbler och inredning från riktiga hem. Lokalt, hållbart och personligt via Trygg Hand.";
 
 function ListingSkeleton() {
   return (
@@ -81,41 +81,65 @@ export default function HandplockatIndex() {
       />
 
       <main className="pb-16">
+
         {/* HERO */}
         <section className="relative overflow-hidden">
-  <img
-    src="/handplockat.webp"
-    alt="Second hand i Sundsvall – Handplockat"
-    className="absolute inset-0 w-full h-full object-cover"
-    fetchPriority="high"
-  />
+          <img
+            src="/handplockat.webp"
+            alt="Second hand i Sundsvall – Handplockat"
+            className="absolute inset-0 w-full h-full object-cover"
+            fetchPriority="high"
+          />
+          <div className="absolute inset-0 bg-black/40" />
 
-  {/* 🔥 MÖRK OVERLAY */}
-  <div className="absolute inset-0 bg-black/40" />
+          <div className="relative container mx-auto px-4 py-20 text-white">
+            <h1 className="text-4xl mb-4 drop-shadow-md">
+              Second hand i Sundsvall – handplockade möbler & fynd
+            </h1>
 
-  <div className="relative container mx-auto px-4 py-20 text-white">
-    <h1 className="text-4xl mb-4 drop-shadow-md">
-      Second hand i Sundsvall – handplockade fynd
-    </h1>
+            <p className="max-w-xl text-white/90 mb-6 drop-shadow-sm">
+              Upptäck unika möbler och inredning från riktiga hem i Sundsvall.
+              Handplockat erbjuder ett mer personligt alternativ till traditionell second hand.
+            </p>
 
-    <p className="max-w-xl text-white/90 mb-6 drop-shadow-sm">
-      Möbler och föremål från riktiga hem. Hållbart, lokalt och personligt.
-    </p>
+            <a
+              href="#listings"
+              className="bg-primary text-white px-6 py-3 rounded-lg inline-flex gap-2 shadow-lg"
+            >
+              Hitta fynd <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+        </section>
 
-    <a
-      href="#listings"
-      className="bg-primary text-white px-6 py-3 rounded-lg inline-flex gap-2 shadow-lg"
-    >
-      Hitta fynd <ArrowRight className="w-4 h-4" />
-    </a>
-  </div>
-</section>
+        {/* 🔥 SEO TEXT (VIKTIGAST) */}
+        <section className="container mx-auto px-4 pt-10 max-w-3xl">
+          <h2 className="text-2xl font-semibold mb-4">
+            Second hand i Sundsvall – möbler, inredning & återbruk
+          </h2>
+
+          <p className="text-muted-foreground mb-4">
+            Handplockat är en lokal second hand-tjänst i Sundsvall där möbler och föremål
+            får nytt liv istället för att slängas. Utbudet kommer från riktiga hem i samband
+            med äldreflytt, dödsbo och bostadsförändringar.
+          </p>
+
+          <p className="text-muted-foreground mb-4">
+            Här hittar du noggrant utvalda möbler, vintage och inredning – ett mer hållbart
+            och personligt alternativ till traditionella second hand-butiker.
+          </p>
+
+          <p className="text-muted-foreground">
+            Letar du efter hjälp med flytt eller dödsbo? Läs mer om våra tjänster{" "}
+            <Link to="/" className="text-primary underline">
+              här
+            </Link>.
+          </p>
+        </section>
 
         {/* LIST */}
         <section id="listings" className="container mx-auto px-4 py-12">
-          {/* liten subtil rad */}
           <div className="text-center text-sm text-muted-foreground mb-6">
-            Nya fynd läggs upp löpande i Sundsvall
+            Nya second hand-fynd i Sundsvall läggs upp löpande
           </div>
 
           {canCreate && (
@@ -172,49 +196,41 @@ export default function HandplockatIndex() {
           </div>
         </section>
 
-        {/* ACCORDION – diskret SEO */}
-       <section className="container mx-auto px-4 pb-16">
-        <div className="max-w-2xl"></div>
+        {/* SEO ACCORDION */}
+        <section className="container mx-auto px-4 pb-16">
           <div className="w-full md:w-3/4 lg:w-2/3">
             <Accordion type="single" collapsible>
               <AccordionItem value="seo-info">
                 <AccordionTrigger>
-                  <span className="text-lg font-semibold text-primary flex items-center gap-2">
-                  
-                    Läs mer om Handplockat
+                  <span className="text-lg font-semibold text-primary">
+                    Läs mer om second hand i Sundsvall
                   </span>
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="bg-white border border-border rounded-2xl shadow-sm p-6 mt-3 space-y-4 text-sm text-muted-foreground">
-                    <h2 className="font-semibold text-lg">Second hand och återbruk i Sundsvall</h2>
                     <p>
                       Handplockat erbjuder second hand i Sundsvall med fokus på kvalitet,
-                      hållbarhet och omtanke.
-                      Föremålen kommer från hem där vi hjälpt till vid äldreflytt eller tömning.
+                      hållbarhet och lokalt återbruk. Våra produkter kommer från hem där vi
+                      hjälpt till vid flytt eller dödsbo.
                     </p>
-                    <br/>  
-                    <h2 className="font-semibold text-lg">Möbler och inredning från riktiga hem</h2>
-                    <p> Här hittar du möbler, inredning och unika föremål som får ett nytt liv istället
-                    för att gå till spillo.
-                    Ett lokalt och mer personligt alternativ till traditionell loppis.</p>
-                    <br/>
+
                     <ul className="list-disc pl-5">
-                      <li>Möbler och mindre inredning</li>
-                      <li>Vintage och äldre föremål</li>
-                      <li>Brukssaker i gott skick</li>
+                      <li>Möbler och inredning</li>
+                      <li>Vintage och unika fynd</li>
+                      <li>Hållbara alternativ till nyköp</li>
                     </ul>
-                    <br/>
+
                     <p>
-                      Utbudet uppdateras löpande beroende på aktuella uppdrag i Sundsvall.
+                      Genom att handla second hand bidrar du till minskat avfall och ett mer
+                      hållbart samhälle.
                     </p>
                   </div>
-               
-                  
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
           </div>
         </section>
+
       </main>
     </div>
   );
