@@ -115,7 +115,7 @@ export default function HandplockatListing() {
       }
       setOrderSuccess(
         orderMode === "direct_buy"
-          ? "Tack! Vi har tagit emot din reservation."
+          ? "Tack! Vi har tagit emot din beställning och återkommer för bekräftelse."
           : "Tack! Vi har tagit emot ditt prisförslag."
       );
       setOrderName(""); setOrderPhone(""); setOrderEmail(""); setOfferedPriceSek("");
@@ -314,7 +314,7 @@ export default function HandplockatListing() {
                 onClick={() => { setOrderMode("direct_buy"); setShowOrderForm(true); }}
                 className={`flex-1 py-2 ${orderMode === "direct_buy" ? "bg-primary text-white" : "bg-transparent"}`}
               >
-                Köp
+                Boka direkt
               </button>
               <button
                 onClick={() => { setOrderMode("price_offer"); setShowOrderForm(true); }}
@@ -335,15 +335,14 @@ export default function HandplockatListing() {
                 {orderError && <p className="text-red-500 text-sm">{orderError}</p>}
                 {orderSuccess && <p className="text-green-600 text-sm">{orderSuccess}</p>}
                 <button onClick={handleCreateOrder} disabled={orderLoading} className="w-full bg-primary text-white py-2 rounded disabled:opacity-60">
-                  {orderLoading ? "Skickar…" : orderMode === "direct_buy" ? "Bekräfta köp" : "Skicka förslag"}
+                  {orderLoading ? "Skickar…" : orderMode === "direct_buy" ? "Slutför förfrågan" : "Skicka förslag"}
                 </button>
               </div>
             )}
 
-            <div className="text-xs flex gap-4 pt-4">
-              <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Trygg handel</div>
-              <div className="flex items-center gap-2"><Smartphone className="w-4 h-4" /> Enkel kontakt</div>
-            </div>
+                  <div className="text-xs text-muted-foreground mt-2">
+          Ingen betalning sker direkt – vi bekräftar din beställning först.
+        </div>
 
           </div>
         </div>

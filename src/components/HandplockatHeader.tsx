@@ -34,22 +34,32 @@ export default function HandplockatHeader() {
         <nav className="hidden md:flex flex-1 items-center justify-center gap-8">
           <a
             href="#listings"
-            className="text-muted-foreground text-base font-medium hover:underline underline-offset-4 transition-colors"
+            className="font-semibold text-lg md:text-xl tracking-tight truncate hover:underline underline-offset-4 transition-colors"
           >
             Alla fynd
           </a>
         </nav>
 
-        <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground justify-end">
-          <span>Handplockat är</span>
-          <Link
-            to="/"
-            className="underline underline-offset-4 hover:text-primary font-semibold text-foreground"
-          >
-            Trygg Hands
-          </Link>
-          <span>marknadsplats för privatpersoner</span>
-        </div>
+        <div className="hidden md:flex flex-col items-end text-sm text-muted-foreground gap-1">
+  <span>
+    Handplockat är en del av{" "}
+    <Link
+      to="/"
+      className="underline underline-offset-4 hover:text-primary font-semibold text-foreground"
+    >
+      Trygg Hand
+    </Link>{" "}
+    (org.nr 559564-3445).
+  </span>
+
+  <span>
+    Här säljer vi utvalda föremål från hem vi hjälper till att avveckla.
+  </span>
+
+  <span>
+    Alla köp hanteras av Trygg Hand.
+  </span>
+</div>
 
         {/* Mobil meny */}
         {menuOpen && (
@@ -70,7 +80,9 @@ export default function HandplockatHeader() {
               >
                 Trygg Hand
               </Link>
-              <span>marknadsplats för privatpersoner</span>
+              <span>Handplockat är en del av Trygg Hand (org.nr 559564-3445).
+              Här säljer vi utvalda föremål från hem vi hjälper till att avveckla.
+              Alla köp hanteras av Trygg Hand.</span>
             </div>
           </div>
         )}

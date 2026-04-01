@@ -90,6 +90,7 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
     "web-push": "^3.6.7",
+    "xmldom": "^0.6.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

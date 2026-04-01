@@ -40,7 +40,10 @@ export const handler: Handler = async (): Promise<HandlerResponse> => {
 
   const items = (data || []).map(item => {
     const title = clean(item.title);
-    const description = clean(item.description || item.title);
+    const description = clean(
+  (item.description || item.title) +
+  " Ingen betalning sker direkt. Vi bekräftar tillgänglighet innan köp."
+  );
     const image = item.image_cutout || `${SITE}/og.jpg`;
     const price = item.price_sek ?? 0;
 
@@ -48,7 +51,7 @@ export const handler: Handler = async (): Promise<HandlerResponse> => {
       <g:id>handplockat-${item.id}</g:id>
       <title><![CDATA[${title}]]></title>
       <description><![CDATA[${description}]]></description>
-      <link>${SITE}/handplockat/${item.id}</link>
+      <link>${SITE}/handplockat/annons/${item.id}</link>
       <g:image_link>${image}</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:quantity>1</g:quantity> <g:price>${price} SEK</g:price>
@@ -56,8 +59,6 @@ export const handler: Handler = async (): Promise<HandlerResponse> => {
       <g:brand>Handplockat</g:brand>
       <g:identifier_exists>false</g:identifier_exists>
       <g:store_code>${STORE_CODE}</g:store_code>
-      <g:pickup_method>buy</g:pickup_method>
-      <g:pickup_sla>same day</g:pickup_sla>
           
       <g:inventory_link>${SITE}/handplockat/${item.id}</g:inventory_link>
     </item>`;
