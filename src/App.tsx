@@ -152,10 +152,11 @@ function App() {
 
                 {/* 🔥 PUBLIK – FIXAD */}
                 <Route path="/handplockat" element={<HandplockatLayout />}>
-                  <Route index element={<HandplockatIndex />} />
-                  <Route path="annons/:id" element={<HandplockatListing />} />
-                  <Route path="/second-hand-sundsvall" element={<SecondHandSundsvall />} />
-                </Route>
+                <Route index element={<HandplockatIndex />} />
+                <Route path="annons/:id" element={<HandplockatListing />} />
+              </Route>
+
+              <Route path="/second-hand-sundsvall" element={<SecondHandSundsvall />} />
 
                 {/* Alias (valfri) */}
                 <Route
