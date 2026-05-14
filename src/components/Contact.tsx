@@ -25,6 +25,17 @@ const Contact = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const scriptId = 'elfsight-platform-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://elfsightcdn.com/platform.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const form = formRef.current;
@@ -215,38 +226,12 @@ const Contact = () => {
               </div>
             </div>
 
-            <Card className="bg-trust-green-light border-trust-green/20">
-              <CardContent className="p-6">
-                <h4 className="font-semibold text-trust-green mb-2">Kostnadsfri konsultation</h4>
-                <p className="text-sm text-foreground">
-                  Vi erbjuder alltid en kostnadsfri initial konsultation där vi går igenom 
-                  din situation och föreslår den bästa lösningen för just dina behov. 
-                  Ingen förpliktelse - bara professionell rådgivning.
-                </p>
 
-                {/* Google Calendar Appointment Scheduling begin */}
-                
-                    <div className="w-full overflow-hidden rounded-md">
-                    <div className="text-foreground  p-4 rounded-lg shadow-md mb-4">
-                    <iframe
-  src="https://calendar.google.com/calendar/appointments/schedules/AcZssZ1UAZQAx03XE6hyOig-HfYTIaEGIHD2r0nJijTEhzeuviQxvsSF0TOx1sL8lwreiQyfbTzV_Zxx?gv=true/&hl=sv"
-  className="w-full overflow-hidden rounded-md"
-  style={{ 
-    border: 0,
-    height: "800px",   // 👉 fasta höjden löser scroll-problemet
-    backgroundColor: "white"
-  }}
-  aria-label="Google Calendar booking"
-  loading="lazy"
-/>
-
-                  </div>
-                </div>
-                {/* Google Calendar Appointment Scheduling end */}
-
-              </CardContent>
-            </Card>
           </div>
+        </div>
+
+        <div className="mt-12">
+          <div className="elfsight-app-65e1657c-111c-4e3b-97cf-25768519dbe0" data-elfsight-app-lazy />
         </div>
       </div>
     </section>

@@ -107,7 +107,7 @@ const Terms: React.FC = () => {
               <p className="mb-4">Våra bedömningar av värde är uppskattningar baserade på erfarenhet. Vi garanterar inte vad saker faktiskt säljs för – marknaden avgör priset.</p>
 
               <p className="font-semibold mb-2">Transparens:</p>
-              <p>Du får information och kvitton som visar vad som sålts och för vilket pris.</p>
+              <p>Du får information som visar vad som sålts och för vilket pris.</p>
             </section>
 
             <section className="mb-8">
@@ -116,8 +116,8 @@ const Terms: React.FC = () => {
               <p className="mb-4">Priset framgår av din uppdragsbekräftelse (fast pris, timpris eller kombination). Alla priser inkluderar moms.<br /><br /> I uppdraget ingår resor upp till 2 mil enkel väg från Trygg Hands verksamhetsort samt upp till tre (3) arbetsbesök per uppdrag, om inget annat avtalats.
               <br />
               Vid behov av ytterligare arbetsbesök utöver detta debiteras en kostnad om 395 kr inklusive moms per extra resa.
-              Antalet resor planeras i dialog med kunden i syfte att genomföra uppdraget på ett effektivt och omsorgsfullt sätt.</p>
-
+              </p>
+              
               <p className="font-semibold mb-2">Delbetalning:</p>
               <p className="mb-4">
               40 % av det avtalade priset faktureras vid uppdragets påbörjande. 
