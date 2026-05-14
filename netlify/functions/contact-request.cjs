@@ -1,5 +1,81 @@
 const { createClient } = require("@supabase/supabase-js");
 
+async function sendAdminNotification(contactData) {
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  const brevoSenderEmail = process.env.BREVO_SENDER_EMAIL || "no-reply@trygghand.se";
+  const brevoSenderName = process.env.BREVO_SENDER_NAME || "Trygghand";
+  const adminEmail = "kontakt@trygghand.com";
+
+  if (!brevoApiKey) {
+    console.warn("[contact-request] BREVO_API_KEY not configured, skipping email notification");
+    return;
+  }
+
+  const { firstname, lastname, email, phone, message } = contactData;
+  const displayName = `${firstname}${lastname ? " " + lastname : ""}`;
+  
+  const emailBody = `
+Ny kontaktförfrågan från Trygghand-webbplatsen
+
+Namn: ${displayName}
+Telefon: ${phone}
+Email: ${email || "(inte angiven)"}
+
+Meddelande:
+${message}
+
+---
+Logga in i adminpanelen för att hantera denna förfrågan:
+${process.env.APP_LOGIN_URL || "https://trygghand.se"}
+  `.trim();
+
+  try {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": brevoApiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: {
+          name: brevoSenderName,
+          email: brevoSenderEmail,
+        },
+        to: [
+          {
+            email: adminEmail,
+            name: "Trygghand Admin",
+          },
+        ],
+        subject: `Ny kontaktförfrågan: ${displayName}`,
+        htmlContent: `
+          <p><strong>Ny kontaktförfrågan från Trygghand-webbplatsen</strong></p>
+          <p><strong>Namn:</strong> ${displayName}</p>
+          <p><strong>Telefon:</strong> ${phone}</p>
+          <p><strong>Email:</strong> ${email || "(inte angiven)"}</p>
+          <p><strong>Meddelande:</strong></p>
+          <p>${message.replace(/\n/g, "<br />")}</p>
+          <hr />
+          <p><a href="${process.env.APP_LOGIN_URL || "https://trygghand.se"}">Logga in i adminpanelen</a></p>
+        `,
+        textContent: emailBody,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("[contact-request] Failed to send admin notification:", {
+        status: response.status,
+        error: errorData,
+      });
+    } else {
+      console.log("[contact-request] Admin notification sent successfully");
+    }
+  } catch (err) {
+    console.error("[contact-request] Error sending admin notification:", err);
+  }
+}
+
 function getJwtRole(jwt) {
   try {
     if (typeof jwt !== "string") return null;
@@ -160,6 +236,9 @@ exports.handler = async (event) => {
       console.error("[contact-request] Supabase insert error", error);
       return json(500, { error: "Failed to save contact request" });
     }
+
+    // Send admin notification email
+    await sendAdminNotification(payload);
 
     return json(200, { ok: true, data });
   } catch (err) {

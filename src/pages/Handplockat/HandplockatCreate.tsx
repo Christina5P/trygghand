@@ -246,7 +246,7 @@ export default function HandplockatCreate() {
   const [skick, setSkick] = useState("");
   const [pickupArea, setPickupArea] = useState("Alnö");
   const [pickupWindow, setPickupWindow] = useState("Enligt överenskommelse");
-  const [pickupDeadlineAt, setPickupDeadlineAt] = useState(toLocalDateValue(addDays(7)));
+  const [pickupDeadlineAt, setPickupDeadlineAt] = useState(toLocalDateValue(addDays(30)));
 
   const [valuationJsonRaw, setValuationJsonRaw] = useState("");
   const [extraInfo, setExtraInfo] = useState("Ta med bärhjälp");
@@ -281,6 +281,7 @@ export default function HandplockatCreate() {
   const [annonsbildKlar, setAnnonsbildKlar] = useState(false);
   const [rotationDeg, setRotationDeg] = useState<0 | 90 | 180 | 270>(0);
   const [generatedAnnonsbilder, setGeneratedAnnonsbilder] = useState<string[]>([]);
+  const [keepOriginalImage, setKeepOriginalImage] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -633,7 +634,7 @@ export default function HandplockatCreate() {
       if (width && shouldFill(touched, "dimensionWidth", dimensionWidth)) setDimensionWidth(String(width));
       if (height && shouldFill(touched, "dimensionHeight", dimensionHeight)) setDimensionHeight(String(height));
     }
-    if (shouldFill(touched, "pickupDeadlineAt", pickupDeadlineAt)) setPickupDeadlineAt(toLocalDateValue(addDays(7)));
+    if (shouldFill(touched, "pickupDeadlineAt", pickupDeadlineAt)) setPickupDeadlineAt(toLocalDateValue(addDays(30)));
   };
 
   const handleLoadValuation = () => {
@@ -761,15 +762,44 @@ export default function HandplockatCreate() {
     if (originals.length === 0) { setGenerateImagesError("Importera eller ladda upp minst en originalbild först."); return; }
     setGenerateImagesError(null); setGeneratingAnnonsbild(true); setAnnonsbildKlar(false); setStepGenerated(false); setGeneratedAnnonsbilder([]);
     try {
-      const publicUrls: string[] = [];
-      const firstTargetPath = imageCutout.trim() ? getCutoutStoragePath(imageCutout.trim(), id) : `handplockat/${id}/1.webp`;
-      for (let index = 0; index < originals.length; index += 1) {
-        const publicUrl = await removeBgLocalAndUpload({ listingId: id, sourcePathOrUrl: originals[index], rotationDeg, targetIndex: index + 1, targetPathOverride: index === 0 ? firstTargetPath : undefined });
-        publicUrls.push(publicUrl);
+      if (keepOriginalImage) {
+        // Använd originalbilden direkt utan bearbetning
+        const publicUrls: string[] = [];
+        for (let index = 0; index < originals.length; index += 1) {
+          const originalUrl = originals[index];
+          const inputUrl = isHttpUrl(originalUrl) ? originalUrl : await tryCreateSignedUrl(originalUrl, 600);
+          if (!inputUrl) throw new Error("Kunde inte skapa signed URL för originalbilden.");
+          
+          // Kopiera originalbilden till public storage
+          const response = await fetch(inputUrl);
+          if (!response.ok) throw new Error("Kunde inte hämta originalbilden.");
+          const blob = await response.blob();
+          
+          const targetPath = `handplockat/${id}/${index + 1}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from("handplockat-public")
+            .upload(targetPath, blob, { upsert: true, contentType: blob.type });
+          if (uploadError) throw uploadError;
+          
+          const { data: pub } = supabase.storage.from("handplockat-public").getPublicUrl(targetPath);
+          if (!pub?.publicUrl) throw new Error("Kunde inte skapa public URL för annonsbilden.");
+          publicUrls.push(pub.publicUrl);
+        }
+        setGeneratedAnnonsbilder(publicUrls);
+        setImageCutout(publicUrls[0] || "");
+        setAnnonsbildKlar(true); setStepGenerated(true);
+      } else {
+        // Bearbeta bilden (ta bort bakgrund, rotera, optimera)
+        const publicUrls: string[] = [];
+        const firstTargetPath = imageCutout.trim() ? getCutoutStoragePath(imageCutout.trim(), id) : `handplockat/${id}/1.webp`;
+        for (let index = 0; index < originals.length; index += 1) {
+          const publicUrl = await removeBgLocalAndUpload({ listingId: id, sourcePathOrUrl: originals[index], rotationDeg, targetIndex: index + 1, targetPathOverride: index === 0 ? firstTargetPath : undefined });
+          publicUrls.push(publicUrl);
+        }
+        setGeneratedAnnonsbilder(publicUrls);
+        setImageCutout(publicUrls[0] || "");
+        setAnnonsbildKlar(true); setStepGenerated(true);
       }
-      setGeneratedAnnonsbilder(publicUrls);
-      setImageCutout(publicUrls[0] || "");
-      setAnnonsbildKlar(true); setStepGenerated(true);
     } catch (err) {
       setGenerateImagesError(getErrorMessage(err, "Kunde inte skapa annonsbild."));
       setAnnonsbildKlar(false); setStepGenerated(false);
@@ -1107,14 +1137,28 @@ export default function HandplockatCreate() {
               <div className="mt-4 space-y-2">
                 <div className="text-sm font-medium">Skapa annonsbild</div>
                 <p className="text-xs text-muted-foreground">Vi tar bort bakgrunden och anpassar bilden för Handplockat.</p>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="keep-original"
+                    checked={keepOriginalImage}
+                    onChange={(e) => setKeepOriginalImage(e.target.checked)}
+                    className="rounded border border-input"
+                  />
+                  <label htmlFor="keep-original" className="text-sm">
+                    Behåll originalbild (ingen bearbetning)
+                  </label>
+                </div>
+                
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button type="button" variant="outline" onClick={() => setRotationDeg((d) => (((d + 90) % 360) as 0 | 90 | 180 | 270))}>
+                  <Button type="button" variant="outline" onClick={() => setRotationDeg((d) => (((d + 90) % 360) as 0 | 90 | 180 | 270))} disabled={keepOriginalImage}>
                     Rotera 90°
                   </Button>
                   <span className="text-xs text-muted-foreground">Rotation: {rotationDeg}°</span>
                 </div>
                 <Button type="button" variant={annonsbildKlar ? "default" : "outline"} onClick={handleGenerateAnnonsbild} disabled={generatingAnnonsbild || normalizeUrlList(imagesOriginalRaw).length === 0}>
-                  {generatingAnnonsbild ? "Skapar annonsbilder…" : "Skapa annonsbilder"}
+                  {generatingAnnonsbild ? "Skapar annonsbilder…" : keepOriginalImage ? "Använd originalbilder" : "Skapa annonsbilder"}
                 </Button>
                 {stepGenerated && <div className="text-sm font-medium text-green-600">Annonsbild klar ✓</div>}
                 {generateImagesError && <p className="text-xs text-destructive">{generateImagesError}</p>}

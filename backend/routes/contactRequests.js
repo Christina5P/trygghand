@@ -3,6 +3,82 @@ import { createClient } from "@supabase/supabase-js";
 
 const router = express.Router();
 
+async function sendAdminNotification(contactData) {
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  const brevoSenderEmail = process.env.BREVO_SENDER_EMAIL || "no-reply@trygghand.se";
+  const brevoSenderName = process.env.BREVO_SENDER_NAME || "Trygghand";
+  const adminEmail = "kontakt@trygghand.com";
+
+  if (!brevoApiKey) {
+    console.warn("[contactRequests] BREVO_API_KEY not configured, skipping email notification");
+    return;
+  }
+
+  const { firstname, lastname, email, phone, message } = contactData;
+  const displayName = `${firstname}${lastname ? " " + lastname : ""}`;
+  
+  const emailBody = `
+Ny kontaktförfrågan från Trygghand-webbplatsen
+
+Namn: ${displayName}
+Telefon: ${phone}
+Email: ${email || "(inte angiven)"}
+
+Meddelande:
+${message}
+
+---
+Logga in i adminpanelen för att hantera denna förfrågan:
+${process.env.APP_LOGIN_URL || "https://trygghand.se"}
+  `.trim();
+
+  try {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": brevoApiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: {
+          name: brevoSenderName,
+          email: brevoSenderEmail,
+        },
+        to: [
+          {
+            email: adminEmail,
+            name: "Trygghand Admin",
+          },
+        ],
+        subject: `Ny kontaktförfrågan: ${displayName}`,
+        htmlContent: `
+          <p><strong>Ny kontaktförfrågan från Trygghand-webbplatsen</strong></p>
+          <p><strong>Namn:</strong> ${displayName}</p>
+          <p><strong>Telefon:</strong> ${phone}</p>
+          <p><strong>Email:</strong> ${email || "(inte angiven)"}</p>
+          <p><strong>Meddelande:</strong></p>
+          <p>${message.replace(/\n/g, "<br />")}</p>
+          <hr />
+          <p><a href="${process.env.APP_LOGIN_URL || "https://trygghand.se"}">Logga in i adminpanelen</a></p>
+        `,
+        textContent: emailBody,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("[contactRequests] Failed to send admin notification:", {
+        status: response.status,
+        error: errorData,
+      });
+    } else {
+      console.log("[contactRequests] Admin notification sent successfully");
+    }
+  } catch (err) {
+    console.error("[contactRequests] Error sending admin notification:", err);
+  }
+}
+
 function getJwtRole(jwt) {
   try {
     if (typeof jwt !== "string") return null;
@@ -101,6 +177,9 @@ router.post("/contact-request", async (req, res) => {
       }
       return res.status(500).json({ error: error.message });
     }
+
+    // Send admin notification email
+    await sendAdminNotification(payload);
 
     return res.status(200).json({ ok: true, data });
   } catch (err) {

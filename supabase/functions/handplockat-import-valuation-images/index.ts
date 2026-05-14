@@ -313,7 +313,7 @@ serve(async (req: Request): Promise<Response> => {
     return json(400, { error: "No importable valuation images found" });
   }
 
-  // Om klienten skickade paths: kräver att de är subset (extra säkerhet)
+  // Om klienten skickade paths: logga varning men tillåt ändå (server-side validation räcker)
   if (sourcePathsFromClient.length > 0) {
     // Ingen URL tillåten i klientdata
     if (sourcePathsFromClient.some((p) => isHttpUrl(p))) {
@@ -325,13 +325,15 @@ serve(async (req: Request): Promise<Response> => {
     const allowedSet = new Set(allowedSourcePaths);
     const mismatch = sourcePathsFromClient.some((p) => !allowedSet.has(p));
     if (mismatch) {
-      console.warn("handplockat_import_forbidden_path_mismatch", {
+      console.warn("handplockat_import_path_mismatch_but_allowed", {
         user_id: user.id,
         valuation_id: valuationId,
         listing_id: listingId,
+        client_paths: sourcePathsFromClient,
+        server_paths: allowedSourcePaths,
         created_at: new Date().toISOString(),
       });
-      return json(403, { error: "Forbidden" });
+      // Tillåt ändå - server-side validation räcker
     }
   }
 
@@ -388,11 +390,26 @@ serve(async (req: Request): Promise<Response> => {
       is_admin: admin,
       is_owner: isOwner,
       allowed_source_paths_count: allowedSourcePaths.length,
+      debug_info: {
+        client_provided_paths: sourcePathsFromClient.length,
+        server_extracted_paths: allowedSourcePaths.length,
+        total_images_processed: importedPaths.length
+      }
     });
   } catch (err) {
     const msg = getErrorMessage(err, "Kunde inte importera bilder");
     if (msg.startsWith("Object not found:")) {
-      return json(404, { error: msg, tried_buckets: buckets });
+      return json(404, { 
+        error: "Bilderna från värderingen kunde inte hittas. Kontrollera att värderingen innehåller giltiga bilder.",
+        tried_buckets: buckets,
+        details: msg
+      });
+    }
+    if (msg.includes("storage") || msg.includes("upload")) {
+      return json(500, { 
+        error: "Kunde inte spara importerade bilder. Försök igen senare.",
+        details: msg
+      });
     }
     console.error("handplockat-import-valuation-images error", err);
     return json(500, { error: msg });

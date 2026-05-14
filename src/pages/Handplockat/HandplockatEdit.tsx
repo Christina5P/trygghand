@@ -239,6 +239,7 @@ export default function HandplockatEdit() {
   const [imagesOriginalRaw, setImagesOriginalRaw] = useState("");
   const [imageCutout, setImageCutout] = useState("");
   const [rotationDeg, setRotationDeg] = useState<0 | 90 | 180 | 270>(0);
+  const [keepOriginalImage, setKeepOriginalImage] = useState(false);
 
   const [uploadingOriginal, setUploadingOriginal] = useState(false);
   const [uploadingAnnonsbild, setUploadingAnnonsbild] = useState(false);
@@ -668,22 +669,50 @@ export default function HandplockatEdit() {
     setUploadingAnnonsbild(true);
     setGeneratedAnnonsbilder([]);
     try {
-      const publicUrls: string[] = [];
-      const firstTargetPath = imageCutout.trim()
-        ? getCutoutStoragePath(imageCutout.trim(), id)
-        : `handplockat/${id}/1.webp`;
-      for (let index = 0; index < originals.length; index++) {
-        const publicUrl = await removeBgLocalAndUpload({
-          listingId: id,
-          sourcePathOrUrl: originals[index],
-          rotationDeg,
-          targetIndex: index + 1,
-          targetPathOverride: index === 0 ? firstTargetPath : undefined,
-        });
-        publicUrls.push(publicUrl);
+      if (keepOriginalImage) {
+        // Använd originalbilden direkt utan bearbetning
+        const publicUrls: string[] = [];
+        for (let index = 0; index < originals.length; index++) {
+          const originalUrl = originals[index];
+          const inputUrl = isHttpUrl(originalUrl) ? originalUrl : await tryCreateSignedUrl(originalUrl, 600);
+          if (!inputUrl) throw new Error("Kunde inte skapa signed URL för originalbilden.");
+          
+          // Kopiera originalbilden till public storage
+          const response = await fetch(inputUrl);
+          if (!response.ok) throw new Error("Kunde inte hämta originalbilden.");
+          const blob = await response.blob();
+          
+          const targetPath = `handplockat/${id}/${index + 1}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from("handplockat-public")
+            .upload(targetPath, blob, { upsert: true, contentType: blob.type });
+          if (uploadError) throw uploadError;
+          
+          const { data: pub } = supabase.storage.from("handplockat-public").getPublicUrl(targetPath);
+          if (!pub?.publicUrl) throw new Error("Kunde inte skapa public URL för annonsbilden.");
+          publicUrls.push(pub.publicUrl);
+        }
+        setGeneratedAnnonsbilder(publicUrls);
+        setImageCutout(publicUrls[0] || "");
+      } else {
+        // Bearbeta bilden (ta bort bakgrund, rotera, optimera)
+        const publicUrls: string[] = [];
+        const firstTargetPath = imageCutout.trim()
+          ? getCutoutStoragePath(imageCutout.trim(), id)
+          : `handplockat/${id}/1.webp`;
+        for (let index = 0; index < originals.length; index++) {
+          const publicUrl = await removeBgLocalAndUpload({
+            listingId: id,
+            sourcePathOrUrl: originals[index],
+            rotationDeg,
+            targetIndex: index + 1,
+            targetPathOverride: index === 0 ? firstTargetPath : undefined,
+          });
+          publicUrls.push(publicUrl);
+        }
+        setGeneratedAnnonsbilder(publicUrls);
+        setImageCutout(publicUrls[0] || "");
       }
-      setGeneratedAnnonsbilder(publicUrls);
-      setImageCutout(publicUrls[0] || "");
     } catch (err) {
       setUploadError(getErrorMessage(err, "Kunde inte skapa annonsbild."));
     } finally {
@@ -1053,15 +1082,29 @@ export default function HandplockatEdit() {
               <div className="space-y-2">
                 <div className="text-sm font-medium">Skapa annonsbild</div>
                 <p className="text-xs text-muted-foreground">Bakgrunden tas bort lokalt i webbläsaren – ingen edge function.</p>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="keep-original-edit"
+                    checked={keepOriginalImage}
+                    onChange={(e) => setKeepOriginalImage(e.target.checked)}
+                    className="rounded border border-input"
+                  />
+                  <label htmlFor="keep-original-edit" className="text-sm">
+                    Behåll originalbild (ingen bearbetning)
+                  </label>
+                </div>
+                
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button type="button" variant="outline" onClick={() => setRotationDeg((d) => (((d + 90) % 360) as 0 | 90 | 180 | 270))}>
+                  <Button type="button" variant="outline" onClick={() => setRotationDeg((d) => (((d + 90) % 360) as 0 | 90 | 180 | 270))} disabled={keepOriginalImage}>
                     Rotera 90°
                   </Button>
                   <span className="text-xs text-muted-foreground">Rotation: {rotationDeg}°</span>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Button type="button" variant="outline" onClick={handleGenerateAnnonsbild} disabled={uploadingAnnonsbild || originals.length === 0}>
-                    {uploadingAnnonsbild ? "Skapar annonsbilder…" : "Skapa annonsbilder"}
+                    {uploadingAnnonsbild ? "Skapar annonsbilder…" : keepOriginalImage ? "Använd originalbilder" : "Skapa annonsbilder"}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => setImageCutout("")} disabled={!imageCutout}>
                     Ta bort annonsbild

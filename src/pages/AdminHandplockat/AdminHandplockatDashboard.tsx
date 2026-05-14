@@ -35,6 +35,7 @@ type ListingSortKey =
   | "price"
   | "status"
   | "area"
+  | "pickupDeadline"
   | "updated";
 
 type InterestSortKey =
@@ -140,6 +141,8 @@ export default function AdminHandplockatDashboard() {
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
   const [orderStatusUpdating, setOrderStatusUpdating] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null);
+  const [pickupDeadlineEditing, setPickupDeadlineEditing] = useState<string | null>(null);
+  const [pickupDeadlineValue, setPickupDeadlineValue] = useState("");
   const [interestDeletingId, setInterestDeletingId] = useState<string | null>(null);
   const [editingInterestId, setEditingInterestId] = useState<string | null>(null);
   const [interestSaving, setInterestSaving] = useState(false);
@@ -222,6 +225,30 @@ export default function AdminHandplockatDashboard() {
     else reload();
 
     setStatusUpdating(null);
+  }
+
+  function startPickupDeadlineEdit(id: string, currentValue: string | null) {
+    setPickupDeadlineEditing(id);
+    setPickupDeadlineValue(currentValue ? new Date(currentValue).toISOString().slice(0, 10) : "");
+  }
+
+  async function savePickupDeadlineEdit(id: string) {
+    const value = pickupDeadlineValue.trim();
+    const { error } = await supabase
+      .from("handplockat_listings")
+      .update({ pickup_deadline_at: value || null })
+      .eq("id", id);
+
+    if (error) alert("Kunde inte uppdatera hämtdatum: " + error.message);
+    else reload();
+
+    setPickupDeadlineEditing(null);
+    setPickupDeadlineValue("");
+  }
+
+  function cancelPickupDeadlineEdit() {
+    setPickupDeadlineEditing(null);
+    setPickupDeadlineValue("");
   }
 
   async function handleOrderStatusChange(id: string, newStatus: string) {
@@ -333,6 +360,10 @@ export default function AdminHandplockatDashboard() {
         result = aRank - bRank || compareText(a?.title, b?.title);
       } else if (listingSort.key === "area") {
         result = compareText(a?.pickup_area, b?.pickup_area) || compareText(a?.title, b?.title);
+      } else if (listingSort.key === "pickupDeadline") {
+        const aTime = getTimeValue(a?.pickup_deadline_at);
+        const bTime = getTimeValue(b?.pickup_deadline_at);
+        result = aTime - bTime || compareText(a?.title, b?.title);
       } else if (listingSort.key === "updated") {
         const aTime = getTimeValue(a?.updated_at || a?.created_at);
         const bTime = getTimeValue(b?.updated_at || b?.created_at);
@@ -557,6 +588,12 @@ export default function AdminHandplockatDashboard() {
                       onClick={() => toggleListingSort("area")}
                     />
                     <SortableHeader
+                      label="Hämta senast"
+                      active={listingSort.key === "pickupDeadline"}
+                      direction={listingSort.direction}
+                      onClick={() => toggleListingSort("pickupDeadline")}
+                    />
+                    <SortableHeader
                       label="Uppdaterad"
                       active={listingSort.key === "updated"}
                       direction={listingSort.direction}
@@ -568,7 +605,7 @@ export default function AdminHandplockatDashboard() {
                 <tbody>
                   {visibleListings.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                      <td colSpan={8} className="p-6 text-center text-muted-foreground">
                         Inga annonser ännu
                       </td>
                     </tr>
@@ -615,6 +652,58 @@ export default function AdminHandplockatDashboard() {
                       </td>
 
                       <td className="p-3 text-muted-foreground">{l.pickup_area ?? "-"}</td>
+
+                      <td className="p-3 text-muted-foreground whitespace-nowrap">
+                        {pickupDeadlineEditing === l.id ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="date"
+                              value={pickupDeadlineValue}
+                              onChange={(e) => setPickupDeadlineValue(e.target.value)}
+                              className="text-xs border rounded px-2 py-1"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => savePickupDeadlineEdit(l.id)}
+                              className="text-green-600 hover:text-green-800 text-xs"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={cancelPickupDeadlineEdit}
+                              className="text-red-600 hover:text-red-800 text-xs"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => startPickupDeadlineEdit(l.id, l.pickup_deadline_at)}
+                              className="text-blue-600 hover:text-blue-800 underline text-xs"
+                            >
+                              {l.pickup_deadline_at
+                                ? new Date(l.pickup_deadline_at).toLocaleDateString("sv-SE")
+                                : "Sätt datum"}
+                            </button>
+                            {!l.pickup_deadline_at && (
+                              <button
+                                onClick={() => {
+                                  const oneMonthFromNow = new Date();
+                                  oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+                                  const dateStr = oneMonthFromNow.toISOString().slice(0, 10);
+                                  setPickupDeadlineEditing(l.id);
+                                  setPickupDeadlineValue(dateStr);
+                                }}
+                                className="text-green-600 hover:text-green-800 text-xs ml-1"
+                                title="Sätt till 1 månad fram"
+                              >
+                                +1M
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
 
                       <td className="p-3 text-muted-foreground whitespace-nowrap">
                         {l.updated_at
