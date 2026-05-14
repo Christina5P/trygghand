@@ -21,6 +21,8 @@ import {
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { HandplockatSource, HandplockatStatus, Valuation } from "@/types";
 import { removeBackground } from "@imgly/background-removal";
+import InstagramPostPreview from "@/components/InstagramPostPreview";
+import { downloadCanvasAsImage, copyCanvasToClipboard, shareCanvasAsImage, formatPrice } from "@/utils/instagramExport";
 
 const COMPANY_SMS = "+46761169554";
 const CONTACT_EMAIL = "kontakt@trygghand.com";
@@ -297,6 +299,9 @@ export default function HandplockatCreate() {
 
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [aiSuggestError, setAiSuggestError] = useState<string | null>(null);
+
+  const [instagramPreviewOpen, setInstagramPreviewOpen] = useState(false);
+  const [instagramExporting, setInstagramExporting] = useState(false);
 
   const [touched, setTouched] = useState<Record<TouchedField, boolean>>({
     title: false,
@@ -900,6 +905,46 @@ export default function HandplockatCreate() {
     }
   };
 
+  const handleInstagramExport = (canvas: HTMLCanvasElement) => {
+    setInstagramExporting(true);
+    try {
+      const filename = `handplockat-${title.slice(0, 20).replace(/\s+/g, "-")}-${new Date().getTime()}.png`;
+      downloadCanvasAsImage(canvas, filename);
+      
+      // Also offer to copy to clipboard
+      setTimeout(() => {
+        const shouldCopy = window.confirm("Bild laddad ner! Vill du också kopiera bilden till urklipp så du kan klistra in den direkt?");
+        if (shouldCopy) {
+          copyCanvasToClipboard(canvas);
+        }
+      }, 500);
+    } catch (err) {
+      console.error("Fel vid Instagram-export:", err);
+      setError("Kunde inte exportera Instagram-bild.");
+    } finally {
+      setInstagramExporting(false);
+    }
+  };
+
+  const handleInstagramShare = async (canvas: HTMLCanvasElement) => {
+    setInstagramExporting(true);
+    setError(null);
+    try {
+      const filename = `handplockat-${title.slice(0, 20).replace(/\s+/g, "-")}-${new Date().getTime()}.png`;
+      const didShare = await shareCanvasAsImage(canvas, filename, title || "Handplockat-annons");
+      if (!didShare) {
+        downloadCanvasAsImage(canvas, filename);
+        alert("Dela direkt stöds inte på denna enhet. Bilden har laddats ner istället.");
+      }
+    } catch (err) {
+      console.error("Fel vid Instagram-delning:", err);
+      setError("Kunde inte dela Instagram-bilden. Den har laddats ner istället.");
+      downloadCanvasAsImage(canvas, `handplockat-${title.slice(0, 20).replace(/\s+/g, "-")}-${new Date().getTime()}.png`);
+    } finally {
+      setInstagramExporting(false);
+    }
+  };
+
   /* ── UI ── */
   return (
     <div className="min-h-[100svh] bg-background">
@@ -1239,6 +1284,48 @@ export default function HandplockatCreate() {
             <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
               <h2 className="text-lg font-semibold">Extra information (valfritt)</h2>
               <textarea value={extraInfo} onChange={(e) => setExtraInfo(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm min-h-[80px]" placeholder="T.ex. tungt att bära, finns på bottenplan, osv." />
+            </div>
+
+            {/* ── Instagram Export ── */}
+            <div className="rounded-3xl border border-border bg-card p-6 space-y-4">
+              <h2 className="text-lg font-semibold">📸 Dela på Instagram (valfritt)</h2>
+              <p className="text-sm text-muted-foreground">Skapa en vacker Instagram-bild av din annons för att marknadsföra den.</p>
+              
+              {!instagramPreviewOpen ? (
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={() => setInstagramPreviewOpen(true)}
+                  disabled={!title || !priceSek}
+                  className="w-full"
+                >
+                  Generera Instagram-bild
+                </Button>
+              ) : (
+                <div className="space-y-4 max-h-[1600px] overflow-y-auto">
+                  {title && priceSek && (
+                    <InstagramPostPreview
+                      title={title}
+                      price={formatPrice(priceSek)}
+                      category={category || "Okänd kategori"}
+                      condition={skick || "Okänt skick"}
+                      description={description.slice(0, 150) || "Ingen beskrivning"}
+                      imageSrc={imageCutout?.trim() || originalPreviewUrls[0] || undefined}
+                      onExport={handleInstagramExport}
+                      onShare={handleInstagramShare}
+                    />
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setInstagramPreviewOpen(false)}
+                    className="w-full"
+                    disabled={instagramExporting}
+                  >
+                    Stäng förhandsgranskning
+                  </Button>
+                </div>
+              )}
             </div>
 
             {error && <p className="text-destructive text-sm">{error}</p>}
