@@ -93,7 +93,7 @@ export default function HandplockatHeader() {
               >
                 Trygg Hand
               </Link>
-              <span>Handplockat är en del av Trygg Hand (org.nr 559564-3445).
+              <span>Handplockat är en del av Trygg Hand.
               Här säljer vi utvalda föremål från hem vi hjälper till att avveckla.
               Alla köp hanteras av Trygg Hand.</span>
             </div>
