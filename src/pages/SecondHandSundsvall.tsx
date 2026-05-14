@@ -58,6 +58,22 @@ export default function SecondHandSundsvall() {
           <li>Lokala fynd från Sundsvall</li>
         </ul>
 
+        {/* H2 - KLÄDER */}
+        <h2 className="text-2xl font-semibold mb-4 mt-10">
+          Kläder & Accessoarer i Second Hand
+        </h2>
+
+        <p className="text-muted-foreground mb-6">
+          Vi erbjuder också ett noggrant urval av kläder och accessoarer i god skick.
+          Dessa kommer ofta från samma hem som möblerna – vilket gör att varje plagg
+          har sitt eget lilla kapitel.
+        </p>
+
+        <p className="text-muted-foreground mb-10">
+          Genom att köpa second hand-kläder sparar du inte bara pengar, utan bidrar även
+          till ett mer hållbart konsumtionsmönster.
+        </p>
+
         {/* H2 */}
         <h2 className="text-2xl font-semibold mb-4">
           Ett mer hållbart alternativ till second hand-butiker
@@ -66,7 +82,7 @@ export default function SecondHandSundsvall() {
         <p className="text-muted-foreground mb-6">
           Till skillnad från stora second hand-kedjor är Handplockat mer personligt
           och lokalt. Vi arbetar nära varje uppdrag och erbjuder ett kuraterat
-          urval istället för massproduktion.
+          urval.
         </p>
 
         {/* H2 */}

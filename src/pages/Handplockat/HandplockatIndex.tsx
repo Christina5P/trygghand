@@ -65,6 +65,19 @@ export default function HandplockatIndex() {
     return ["Alla", ...cats];
   }, [visibleListings]);
 
+  const clothingCategories = useMemo(() => {
+    return categoryFilters.filter(
+      (c) => c.toLowerCase().includes("kläd") || c.toLowerCase().includes("klä") || c.toLowerCase().includes("tröja") || c.toLowerCase().includes("byxor") || c.toLowerCase().includes("skor") || c.toLowerCase().includes("jacka")
+    );
+  }, [categoryFilters]);
+
+  const otherCategories = useMemo(() => {
+    return categoryFilters.filter(
+      (c) =>
+        !clothingCategories.includes(c) && c !== "Alla"
+    );
+  }, [categoryFilters, clothingCategories]);
+
   const filteredListings = useMemo(() => {
     if (selectedCategory === "Alla") return visibleListings;
     return visibleListings.filter((l) => l.category === selectedCategory);
@@ -151,19 +164,82 @@ export default function HandplockatIndex() {
           )}
 
           {/* FILTER */}
-          <div className="mb-6 flex flex-wrap gap-2">
-            {categoryFilters.map((c) => (
+          <div className="mb-10 rounded-3xl border border-border bg-slate-50/80 p-6 shadow-sm">
+            <div className="text-center mb-6">
               <button
-                key={c}
-                onClick={() => setSelectedCategory(c)}
-                className={`px-3 py-1 rounded-full border ${
-                  selectedCategory === c ? "bg-primary text-white" : ""
+                onClick={() => setSelectedCategory("Alla")}
+                className={`mx-auto inline-flex items-center justify-center px-8 py-3 rounded-full border text-base md:text-lg font-semibold transition-colors ${
+                  selectedCategory === "Alla"
+                    ? "bg-primary text-white border-primary"
+                    : "border-border bg-white text-foreground hover:border-primary hover:text-primary"
                 }`}
               >
-                {c}
+                Alla fynd
               </button>
-            ))}
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="space-y-3">
+                <h3 className="text-xs md:text-sm font-semibold text-foreground uppercase tracking-wider">
+                  Möbler & Inredning
+                </h3>
+                <div className="rounded-3xl border border-border bg-white/80 p-4 shadow-sm grid gap-3">
+                  {otherCategories.length > 0 ? (
+                    otherCategories.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setSelectedCategory(c)}
+                        className={`w-full text-left px-4 py-3 rounded-2xl border text-sm transition-colors ${
+                          selectedCategory === c
+                            ? "bg-primary text-white border-primary"
+                            : "border-border bg-slate-50 hover:border-primary hover:text-primary"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Inga andra kategorier tillgängliga just nu.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-xs md:text-sm font-semibold text-foreground uppercase tracking-wider">
+                  Kläder & Skor
+                </h3>
+                <div className="rounded-3xl border border-border bg-white/80 p-4 shadow-sm grid gap-3">
+                  {clothingCategories.length > 0 ? (
+                    clothingCategories.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setSelectedCategory(c)}
+                        className={`w-full text-left px-4 py-3 rounded-2xl border text-sm transition-colors ${
+                          selectedCategory === c
+                            ? "bg-primary text-white border-primary"
+                            : "border-border bg-slate-50 hover:border-primary hover:text-primary"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Inga kläder eller skor hittade just nu.</p>
+                  )}
+                
+                </div>
+              </div>
+         
+
+          {/* FORM */}
+        <div className="space-y-3 text-xs md:text-sm font-semibold">
+               
+            <HandplockatInterestForm />
           </div>
+             </div>
+          </div>
+        </section>
+        
 
           {/* LOADING */}
           {loading && (
@@ -190,11 +266,6 @@ export default function HandplockatIndex() {
             </div>
           )}
 
-          {/* FORM */}
-          <div className="mt-10">
-            <HandplockatInterestForm />
-          </div>
-        </section>
 
         {/* SEO ACCORDION */}
         <section className="container mx-auto px-4 pb-16">

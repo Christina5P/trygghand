@@ -89,7 +89,8 @@ const deriveCategory = (payload: any): string => {
   if (typeof payload?.kategori === "string") return payload.kategori;
   if (Array.isArray(payload?.taggar)) {
     const tags = payload.taggar.map((t: string) => String(t).toLowerCase());
-    if (tags.some((t: string) => t.includes("kläder") || t.includes("klader") || t.includes("byxa") || t.includes("tröja") || t.includes("troja"))) return "Kläder & Skor";
+    if (tags.some((t: string) => t.includes("kläder") || t.includes("klader") || t.includes("byxa") || t.includes("tröja") || t.includes("troja"))) return "Kläder";
+    if (tags.some((t: string) => t.includes("sko") || t.includes("skor"))) return "Skor";
     if (tags.some((t: string) => t.includes("lampa") || t.includes("belys"))) return "Belysning";
     if (tags.some((t: string) => t.includes("bord") || t.includes("stol") || t.includes("soffa"))) return "Möbler";
     if (tags.some((t: string) => t.includes("textil") || t.includes("matta"))) return "Textil";
@@ -826,11 +827,7 @@ export default function HandplockatCreate() {
         description: [
         cleanDescription,
         extraInfo.trim(),
-        "—",
-        "Så fungerar köpet:",
-        "• Reserveras via formulär – ingen betalning sker direkt",
-        "• Bekräftelse skickas från Trygg Hand",
-        "• Betalning sker via Swish vid överenskommelse",
+       
       ].filter(Boolean).join("\n\n"),
         price_sek: finalPrice,
         bid_start_sek: null,
@@ -965,7 +962,8 @@ export default function HandplockatCreate() {
                   <select value={category} onChange={(e) => { setCategory(e.target.value); setTouched((prev) => ({ ...prev, category: true })); }} className="w-full rounded-xl border border-input px-3 py-2 text-sm">
                     <option value="">Välj kategori…</option>
                     <option value="Möbler">Möbler</option>
-                    <option value="Kläder & Skor">Kläder & Skor</option>
+                    <option value="Kläder">Kläder</option>
+                    <option value="Skor">Skor</option>
                     <option value="Belysning">Belysning</option>
                     <option value="Textil">Textil</option>
                     <option value="Kök">Kök</option>

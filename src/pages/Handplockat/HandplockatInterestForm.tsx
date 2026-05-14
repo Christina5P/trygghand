@@ -109,113 +109,117 @@ export default function HandplockatInterestForm() {
   };
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-card p-4 md:p-5 mt-8 max-w-3xl">
+    <div className="rounded-2xl border border-border/70 bg-card p-4 md:p-5 mt-8 w-full">
       <h3 className="text-lg font-semibold text-foreground">Hittar du inte rätt föremål?</h3>
       <p className="text-sm text-muted-foreground mt-1">
         Lämna ett köpintresse så matchar vi dig mot nya annonser i Handplockat.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-        <div className="grid gap-4 md:grid-cols-2">
-          <Input
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            placeholder="Förnamn *"
-            required
+      <form onSubmit={handleSubmit} className="mt-4 grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+        <div className="space-y-3">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Förnamn *"
+              required
+              disabled={isLoading}
+            />
+            <Input
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Efternamn"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Telefonnummer *"
+              type="tel"
+              required
+              disabled={isLoading}
+            />
+            <Input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="E-post (valfritt)"
+              type="email"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <Input
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Kategori (t.ex. Möbler)"
+              disabled={isLoading}
+            />
+            <Input
+              value={budgetSek}
+              onChange={(e) => setBudgetSek(e.target.value)}
+              placeholder="Budget (SEK)"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              disabled={isLoading}
+            />
+            <Input
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+              placeholder="Område"
+              disabled={isLoading}
+            />
+          </div>
+
+          <Textarea
+            value={interestText}
+            onChange={(e) => setInterestText(e.target.value)}
+            placeholder="Beskriv vad du letar efter (modell, storlek, skick, stil...)"
+            className="min-h-[90px]"
             disabled={isLoading}
           />
-          <Input
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            placeholder="Efternamn"
-            disabled={isLoading}
-          />
+
+          {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
+          {successMessage && <p className="text-sm text-trust-green">{successMessage}</p>}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Telefonnummer *"
-            type="tel"
-            required
-            disabled={isLoading}
-          />
-          <Input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="E-post (valfritt)"
-            type="email"
-            disabled={isLoading}
-          />
-        </div>
+        <aside className="space-y-4 rounded-3xl border border-border bg-white/80 p-4 shadow-sm flex flex-col">
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground">Bild (valfritt, max 5 MB)</label>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setInterestImage(e.target.files?.[0] ?? null)}
+              disabled={isLoading}
+            />
+            {interestImage && (
+              <p className="text-xs text-muted-foreground">Vald fil: {interestImage.name}</p>
+            )}
+          </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <Input
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="Kategori (t.ex. Möbler)"
-            disabled={isLoading}
-          />
-          <Input
-            value={budgetSek}
-            onChange={(e) => setBudgetSek(e.target.value)}
-            placeholder="Budget (SEK)"
-            type="number"
-            inputMode="numeric"
-            min="0"
-            disabled={isLoading}
-          />
-          <Input
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-            placeholder="Område"
-            disabled={isLoading}
-          />
-        </div>
+          <label className="flex items-start gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={gdprConsent}
+              onChange={(e) => setGdprConsent(e.target.checked)}
+              className="mt-1 h-4 w-4"
+              disabled={isLoading}
+              required
+            />
+            <span>
+              Jag godkänner att mina personuppgifter behandlas enligt GDPR. Läs mer i vår
+              <a href="/privacy" className="underline ml-1">integritetspolicy</a>.
+            </span>
+          </label>
 
-        <Textarea
-          value={interestText}
-          onChange={(e) => setInterestText(e.target.value)}
-          placeholder="Beskriv vad du letar efter (modell, storlek, skick, stil...)"
-          className="min-h-[90px]"
-          disabled={isLoading}
-        />
-
-        <div className="space-y-2">
-          <label className="text-sm text-muted-foreground">Bild (valfritt, max 5 MB)</label>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setInterestImage(e.target.files?.[0] ?? null)}
-            disabled={isLoading}
-          />
-          {interestImage && (
-            <p className="text-xs text-muted-foreground">Vald fil: {interestImage.name}</p>
-          )}
-        </div>
-
-        <label className="flex items-start gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={gdprConsent}
-            onChange={(e) => setGdprConsent(e.target.checked)}
-            className="mt-1 h-4 w-4"
-            disabled={isLoading}
-            required
-          />
-          <span>
-            Jag godkänner att mina personuppgifter behandlas för att hantera mitt köpintresse enligt GDPR. Läs mer i vår
-            <a href="/privacy" className="underline ml-1">integritetspolicy</a>.
-          </span>
-        </label>
-
-        {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
-        {successMessage && <p className="text-sm text-trust-green">{successMessage}</p>}
-
-        <Button type="submit" size="sm" className="w-full sm:w-auto" disabled={isLoading}>
-          {isLoading ? "Skickar..." : "Skicka köpintresse"}
-        </Button>
+          <Button type="submit" size="sm" className="w-full mt-auto" disabled={isLoading}>
+            {isLoading ? "Skickar..." : "Skicka köpintresse"}
+          </Button>
+        </aside>
       </form>
     </div>
   );

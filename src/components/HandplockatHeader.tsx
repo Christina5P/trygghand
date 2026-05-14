@@ -10,13 +10,23 @@ export default function HandplockatHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
         {/* Logo och titel */}
         <div className="flex items-center gap-3 min-w-0">
-          <HouseHandsLogo
-            variant="handplockat"
-            className="h-12 w-auto md:h-16"
-          />
-          <span className="font-semibold text-lg md:text-xl tracking-tight truncate">
-            Handplockat Sundsvall
-          </span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <HouseHandsLogo
+                variant="handplockat"
+                className="h-12 w-auto md:h-16"
+              />
+              <span className="font-semibold text-lg md:text-xl tracking-tight truncate">
+                Handplockat Sundsvall
+              </span>
+            </div>
+            <Link
+              to="/"
+              className="text-xs md:text-sm text-muted-foreground hover:text-primary font-medium flex items-center gap-1 transition-colors"
+            >
+              ← Tillbaka till Trygg Hand
+            </Link>
+          </div>
         </div>
 
         {/* Hamburger meny för mobil */}

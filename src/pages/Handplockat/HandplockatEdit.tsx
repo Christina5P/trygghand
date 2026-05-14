@@ -904,7 +904,8 @@ export default function HandplockatEdit() {
                   <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border border-input px-3 py-2 text-sm">
                     <option value="">Välj kategori…</option>
                     <option value="Möbler">Möbler</option>
-                    <option value="Kläder & Skor">Kläder & Skor</option>
+                    <option value="Kläder">Kläder</option>
+                    <option value="Skor">Skor</option>
                     <option value="Belysning">Belysning</option>
                     <option value="Textil">Textil</option>
                     <option value="Kök">Kök</option>
