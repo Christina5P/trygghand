@@ -103,11 +103,11 @@ begin
       on storage.objects for select
       using (
         bucket_id = 'key-receipts'
-        and name ~ '^key-receipts/[0-9a-fA-F-]{36}/signature\\.png$'
+        and name ~ '^customers/[0-9a-fA-F-]{36}/key-receipts/[0-9a-fA-F-]{36}/signature\\.png$'
         and exists (
           select 1
           from public.key_receipts kr
-          where kr.id = split_part(name,'/',2)::uuid
+          where kr.id = split_part(name,'/',4)::uuid
             and kr.customer_id = auth.uid()
         )
       );
@@ -122,11 +122,11 @@ begin
       on storage.objects for insert
       with check (
         bucket_id = 'key-receipts'
-        and name ~ '^key-receipts/[0-9a-fA-F-]{36}/signature\\.png$'
+        and name ~ '^customers/[0-9a-fA-F-]{36}/key-receipts/[0-9a-fA-F-]{36}/signature\\.png$'
         and exists (
           select 1
           from public.key_receipts kr
-          where kr.id = split_part(name,'/',2)::uuid
+          where kr.id = split_part(name,'/',4)::uuid
             and kr.customer_id = auth.uid()
         )
       );

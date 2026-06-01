@@ -1,5 +1,5 @@
 // src/hooks/useNotifications.ts
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export interface Notification {
@@ -38,6 +38,12 @@ export function useNotifications() {
     setLoading(false);
   }, [userId]);
 
+  // Keep ref to latest fetchNotifications to avoid stale closure in subscription
+  const fetchNotificationsRef = useRef(fetchNotifications);
+  useEffect(() => {
+    fetchNotificationsRef.current = fetchNotifications;
+  }, [fetchNotifications]);
+
   useEffect(() => {
     // onAuthStateChange fires immediately with the cached session (INITIAL_SESSION event)
     // without a network round-trip — prevents userId from being null when the first click fires.
@@ -47,27 +53,40 @@ export function useNotifications() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Only call once on mount and when userId changes
   useEffect(() => {
     fetchNotifications();
-  }, [fetchNotifications]);
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
-    const channel = supabase
-      .channel(`notifications_${userId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-        () => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
+    
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    
+    const setupSubscription = async () => {
+      channel = supabase
+        .channel(`notifications_${userId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+          () => {
+            fetchNotificationsRef.current();
+          }
+        );
+      
+      await channel.subscribe();
+    };
+    
+    setupSubscription().catch(err => {
+      console.error('[useNotifications] subscription setup failed:', err);
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        channel.unsubscribe();
+      }
     };
-  }, [userId, fetchNotifications]);
+  }, [userId]);
 
   const unread = notifications.filter(n => !n.read_at);
 
@@ -76,7 +95,7 @@ export function useNotifications() {
       .from('notifications')
       .update({ read_at: new Date().toISOString() })
       .eq('id', id);
-    fetchNotifications();
+    await fetchNotificationsRef.current();
   };
 
   const markNotificationsReadForRef = async (refId: string) => {
@@ -96,7 +115,7 @@ export function useNotifications() {
       .select();
     console.log('[useNotifications] rows updated', { count: data?.length ?? 0, data, error });
     // Realtime will trigger a refetch; call manually as fallback.
-    await fetchNotifications();
+    await fetchNotificationsRef.current();
   };
 
   return {

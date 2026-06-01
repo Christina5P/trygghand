@@ -592,32 +592,51 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     casesByIdRef.current = map;
   }, [cases]);
 
+  // Keep ref to latest toast function to avoid stale closure
+  const toastRef = useRef(toast);
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
+
   // Realtime toast when customer posts a case comment
   useEffect(() => {
     if (!user?.id) return;
-    const channel = supabase
-      .channel(`admin_case_comments_${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "case_comments" },
-        (payload) => {
-          const row = payload.new as any;
-          // Ignore messages the admin wrote themselves
-          if (row?.author_id === user.id) return;
-          const caseItem = casesByIdRef.current.get(row?.case_id);
-          toast({
-            title: "Nytt meddelande",
-            description: caseItem
-              ? `Nytt meddelande i ärendet: ${caseItem.title}`
-              : "Nytt meddelande i ett ärende",
-          });
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
+    
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    
+    const setupSubscription = async () => {
+      channel = supabase
+        .channel(`admin_case_comments_${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "case_comments" },
+          (payload) => {
+            const row = payload.new as any;
+            // Ignore messages the admin wrote themselves
+            if (row?.author_id === user.id) return;
+            const caseItem = casesByIdRef.current.get(row?.case_id);
+            toastRef.current({
+              title: "Nytt meddelande",
+              description: caseItem
+                ? `Nytt meddelande i ärendet: ${caseItem.title}`
+                : "Nytt meddelande i ett ärende",
+            });
+          }
+        );
+      
+      await channel.subscribe();
     };
-  }, [user?.id, toast]);
+    
+    setupSubscription().catch(err => {
+      console.error('[AdminPortal] case comments subscription setup failed:', err);
+    });
+    
+    return () => {
+      if (channel) {
+        channel.unsubscribe();
+      }
+    };
+  }, [user?.id]);
 
   // --- ÅTGÄRDSLOGIK ---
 

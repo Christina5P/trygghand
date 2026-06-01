@@ -144,6 +144,12 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
     const { user } = useAuth(); // Används för auth.uid() vid kommentarer
     const { toast } = useToast();
 
+    // Keep ref to latest toast function to avoid stale closure
+    const toastRef = useRef(toast);
+    useEffect(() => {
+        toastRef.current = toast;
+    }, [toast]);
+
     const handleUnauthorized = useCallback(async () => {
         // Try to refresh once; if it fails, force a clean re-login.
         const refreshed = await tryRefreshSession();
@@ -287,6 +293,17 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({ customer, fullmaktTempl
         [markNotificationsReadForRef]
     );
 
+    // Keep refs to avoid stale closures in subscription effect
+    const markCaseAsReadRef = useRef(markCaseAsRead);
+    useEffect(() => {
+        markCaseAsReadRef.current = markCaseAsRead;
+    }, [markCaseAsRead]);
+
+    const fetchCaseCommentsCountRef = useRef(fetchCaseCommentsCount);
+    useEffect(() => {
+        fetchCaseCommentsCountRef.current = fetchCaseCommentsCount;
+    }, [fetchCaseCommentsCount]);
+
     
     useEffect(() => {
     if (!cases.length) return;
@@ -316,63 +333,74 @@ const bannerDescriptions = useMemo(() => {
         // Realtime notiser för nya kommentarer i kundens ärenden
         if (!customer?.id) return;
 
-        const channel = supabase
-            .channel(`case_comments_customer_${customer.id}`)
-            .on(
-                "postgres_changes",
-                { event: "INSERT", schema: "public", table: "case_comments" },
-                (payload) => {
-                    const row = payload.new as any;
-                    const caseId = row?.case_id as string | undefined;
-                    if (!caseId) return;
+        let channel: ReturnType<typeof supabase.channel> | null = null;
 
-                    const caseItem = casesByIdRef.current.get(caseId);
+        const setupSubscription = async () => {
+            channel = supabase
+                .channel(`case_comments_customer_${customer.id}`)
+                .on(
+                    "postgres_changes",
+                    { event: "INSERT", schema: "public", table: "case_comments" },
+                    (payload) => {
+                        const row = payload.new as any;
+                        const caseId = row?.case_id as string | undefined;
+                        if (!caseId) return;
 
-                    const currentId = user?.id ?? customer?.id;
+                        const caseItem = casesByIdRef.current.get(caseId);
 
-                    setCaseCommentsCounts((prev) => {
-                        const nextCount = (prev[caseId] ?? 0) + 1;
+                        const currentId = user?.id ?? customer?.id;
 
-                        // Notifiera inte på egna kommentarer (och markera ej som oläst)
-                        if (row?.author_id && currentId && row.author_id === currentId) {
-                            markCaseAsRead(caseId);
+                        setCaseCommentsCounts((prev) => {
+                            const nextCount = (prev[caseId] ?? 0) + 1;
+
+                            // Notifiera inte på egna kommentarer (och markera ej som oläst)
+                            if (row?.author_id && currentId && row.author_id === currentId) {
+                                markCaseAsReadRef.current(caseId);
+                                return { ...prev, [caseId]: nextCount };
+                            }
+
+                            // Om kunden redan har ärendet öppet räknas detta som läst direkt.
+                            if (selectedCaseIdRef.current === caseId) {
+                                markCaseAsReadRef.current(caseId);
+                            }
+
                             return { ...prev, [caseId]: nextCount };
-                        }
+                        });
 
-                        // Om kunden redan har ärendet öppet räknas detta som läst direkt.
-                        if (selectedCaseIdRef.current === caseId) {
-                            markCaseAsRead(caseId);
-                        }
-
-                        return { ...prev, [caseId]: nextCount };
-                    });
-
-                    toast({
-                        title: "Nytt meddelande",
-                        description: caseItem
-                            ? `Nytt meddelande i ärendet: ${caseItem.title}`
-                            : "Nytt meddelande i ett ärende",
-                    });
-                }
-            )
-            .on(
-                "postgres_changes",
-                { event: "UPDATE", schema: "public", table: "case_comments" },
-                (payload) => {
-                    const row = payload.new as any;
-                    const caseId = row?.case_id as string | undefined;
-                    if (!caseId) return;
-                    if (row?.deleted_at) {
-                        fetchCaseCommentsCount(caseId);
+                        toastRef.current({
+                            title: "Nytt meddelande",
+                            description: caseItem
+                                ? `Nytt meddelande i ärendet: ${caseItem.title}`
+                                : "Nytt meddelande i ett ärende",
+                        });
                     }
-                }
-            )
-            .subscribe();
+                )
+                .on(
+                    "postgres_changes",
+                    { event: "UPDATE", schema: "public", table: "case_comments" },
+                    (payload) => {
+                        const row = payload.new as any;
+                        const caseId = row?.case_id as string | undefined;
+                        if (!caseId) return;
+                        if (row?.deleted_at) {
+                            fetchCaseCommentsCountRef.current(caseId);
+                        }
+                    }
+                );
+
+            await channel.subscribe();
+        };
+
+        setupSubscription().catch(err => {
+            console.error('[CustomerPortal] case comments subscription setup failed:', err);
+        });
 
         return () => {
-            supabase.removeChannel(channel);
+            if (channel) {
+                channel.unsubscribe();
+            }
         };
-    }, [customer?.id, toast, user?.id, markCaseAsRead, fetchCaseCommentsCount]);
+    }, [customer?.id, user?.id]);
 
     // --- Hämta Ärenden ---
     const fetchCases = useCallback(async () => {

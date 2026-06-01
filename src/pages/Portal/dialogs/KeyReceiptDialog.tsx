@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { buildCustomerPath, insertCustomerFile } from "@/lib/customerFiles";
+import { uploadKeyReceiptSignature } from "@/lib/keyReceipts";
 
 export type KeyReceiptDialogProps = {
   mode: "admin" | "customer";
@@ -547,21 +548,8 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
     try {
       const storageCustomerId = await resolveStorageCustomerId();
       if (!storageCustomerId) throw new Error("Saknar kund-ID för nyckelkvittens");
-      const path = buildCustomerPath(storageCustomerId, ["key-receipts", latestUnsigned.id], "signature.png");
-      const { error } = await supabase.storage.from("key-receipts").upload(path, blob, {
-        contentType: "image/png",
-        upsert: false,
-      });
-
-      if (error) throw error;
-
-      await insertCustomerFile({
-        customerId: storageCustomerId,
-        bucket: "key-receipts",
-        path,
-        fileType: "image/png",
-        size: blob.size,
-      });
+      
+      await uploadKeyReceiptSignature(latestUnsigned.id, storageCustomerId, blob);
 
       setCustomerInfo("Nycklar mottagna och kvitterade av kund");
       await fetchCustomerReceipts();

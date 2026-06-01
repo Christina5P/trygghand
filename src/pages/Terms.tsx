@@ -90,32 +90,67 @@ const Terms: React.FC = () => {
               </p>
             </section>
 
-            <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-4">5. Försäljning av bohag</h2>
-              <p className="font-semibold mb-2">Så går det till:</p>
-              <ul className="list-disc pl-6 mb-4">
-                <li>Trygg Hand kan ta hand om försäljning (via auktion, andrahandsbutiker, privatköpare etc.)</li>
-                <li>Vi tar emot betalning från köpare</li>
-                <li>Vi drar av vårt arvode och eventuella kostnader</li>
-                <li>Resterande belopp betalas ut till dig enligt överenskommelse</li>
-              </ul>
+            ```tsx
+<section className="mb-8">
+  <h2 className="text-2xl font-semibold text-foreground mb-4">
+    5. Försäljning av bohag
+  </h2>
 
-              <p className="font-semibold mb-2">Vårt arvode:</p>
-              <p className="mb-4">Vi tar 25% arvode på försäljningspriset för att täcka vårt arbete med värdering, fotografering, annonsering, visning och försäljning.</p>
+  <p className="font-semibold mb-2">Så går det till:</p>
 
-              <p className="font-semibold mb-2">Värdering är ingen garanti:</p>
-              <p className="mb-4">Våra bedömningar av värde är uppskattningar baserade på erfarenhet. Vi garanterar inte vad saker faktiskt säljs för – marknaden avgör priset.</p>
+  <p className="mb-4">
+    Efter särskild överenskommelse kan Trygg Hand hjälpa till med försäljning
+    av bohag, möbler och lösöre genom exempelvis auktioner,
+    andrahandsbutiker, digitala marknadsplatser eller andra
+    försäljningskanaler.
+  </p>
 
-              <p className="font-semibold mb-2">Transparens:</p>
-              <p>Du får information som visar vad som sålts och för vilket pris.</p>
-            </section>
+  <p className="mb-4">
+    Försäljningens omfattning, upplägg och ersättningsmodell avtalas från fall
+    till fall beroende på uppdragets karaktär.
+  </p>
+
+  <p className="font-semibold mb-2">Arvode:</p>
+
+  <p className="mb-4">
+    Om Trygg Hand ansvarar för försäljningen utgår normalt ett arvode om 30 %
+    av försäljningspriset efter avdrag för eventuella avgifter, provisioner
+    eller kostnader som tas ut av externa försäljningskanaler, auktionshus
+    eller motsvarande aktörer, om inget annat avtalats.
+  </p>
+
+  <p className="mb-4">
+    Arvodet ska ses som ersättning för bland annat sortering, urval,
+    värdering, fotografering, annonsering, kommunikation med spekulanter,
+    försäljningsadministration, utlämning och övrigt arbete som kan vara
+    nödvändigt för att genomföra försäljningen.
+  </p>
+
+  <p className="font-semibold mb-2">Värdering är ingen garanti:</p>
+
+  <p className="mb-4">
+    Våra bedömningar av värde är uppskattningar baserade på erfarenhet,
+    marknadsläge och tillgänglig information vid värderingstillfället.
+  </p>
+
+  <p className="mb-4">
+    Vi lämnar ingen garanti för slutligt försäljningspris då detta bestäms av
+    efterfrågan och marknadens förutsättningar vid försäljningstillfället.
+  </p>
+
+  <p>
+    Försäljning av egendom från dödsbo förutsätter att erforderliga samtycken
+    och behörigheter finns från dödsbodelägare eller annan behörig företrädare.
+  </p>
+</section>
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-foreground mb-4">6. Pris och betalning</h2>
               <p className="font-semibold mb-2">Prissättning:</p>
-              <p className="mb-4">Priset framgår av din uppdragsbekräftelse (fast pris, timpris eller kombination). Alla priser inkluderar moms.<br /><br /> I uppdraget ingår resor upp till 2 mil enkel väg från Trygg Hands verksamhetsort samt upp till tre (3) arbetsbesök per uppdrag, om inget annat avtalats.
+              <p className="mb-4">Priset framgår av din uppdragsbekräftelse (fast pris, timpris eller kombination). Alla priser inkluderar moms.<br /><br />
+               I uppdraget ingår resor upp till 2 mil enkel väg från Trygg Hands verksamhetsort samt upp till tre (3) arbetsbesök per uppdrag, om inget annat avtalats.
               <br />
-              Vid behov av ytterligare arbetsbesök utöver detta debiteras en kostnad om 395 kr inklusive moms per extra resa.
+              Ytterligare arbetsbesök utöver detta debiteras en kostnad om 395 kr inklusive moms per extra resa.
               </p>
               
               <p className="font-semibold mb-2">Delbetalning:</p>
