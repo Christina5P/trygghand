@@ -90,7 +90,6 @@ const Terms: React.FC = () => {
               </p>
             </section>
 
-            ```tsx
 <section className="mb-8">
   <h2 className="text-2xl font-semibold text-foreground mb-4">
     5. Försäljning av bohag

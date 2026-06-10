@@ -65,11 +65,10 @@ const Flyttstad = () => {
               <div>
                 <h3 className="font-semibold text-foreground mb-3">Samtliga rum</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Fönsterputsning, bakom element och utsida samt målade ytor, rengöring av fönsterbänkar och fönsterkarmars insida, golvlister,
+                  Fönsterputsning, element samt målade ytor, rengöring av fönsterbänkar och fönsterkarmars insida, golvlister,
                   elkontakter, belysningsknappar, dörrar och dörrkarmar.
                   Rengöring av golv och trösklar samt garderober, in- och utvändigt samt ovanpå.
-                  Väggar och tak dammas.
-                </p>
+              </p>
               </div>
 
               <div>
@@ -80,15 +79,15 @@ const Flyttstad = () => {
                   Rengöring av kakelväggar/klinkers och fogar.
                   Rengöring av alla synliga rör samt putsning av speglar.
                   Rengöring av badrumsskåp samt övriga förvaringsutrymmen.
-                  Rengöring av golvbrunnar och ventiler.
+                  Rengöring av golvbrunn och ventiler.
                 </p>
               </div>
 
               <div>
                 <h3 className="font-semibold text-foreground mb-3">Kök</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Rengöring av fast belysning och av kyl och frys in- och utvändigt samt under och bakom. 
-                  Rengöring av spis, ugn in- och utvändigt, tillhörande plåtar och galler. 
+                  Rengöring av kyl och frys in- och utvändigt samt under och bakom. 
+                  Rengöring av spis, ugn in- och utvändigt. 
                   Rengöring av diskmaskin, in- och utvändigt.
                   Av- och avtorkning av skåp, även under överskåp, lådor och arbetsbänkar.
                   Avtorkning av köksfläkt, rengöring av filter och ventiler.
@@ -113,10 +112,12 @@ const Flyttstad = () => {
               <ul className="space-y-3">
                 {[
                   "Se till att frysen är avstängd och avfrostad och glöm inte att tömma kylen inför rengöring.",
-                  "Dra ut alla vitvaror som går, som kyl, frys, spis samt tvättmaskin och torktumlare, så att vi kan rengöra bakom.",
-                  "Rensning av vattenlås under handfat och diskho ingår inte i flyttstädningen (vi ser helst att ni gör det själva).",
-                  "Vi behöver också veta vid bokningen om ni har persienner och vill att vi rengör dem, annars behöver det vara gjort innan vi kommer ut och städar.",
-                  "Se till att bostaden är tömd på möbler och lösa föremål.",
+                  "Dra ut alla vitvaror som går, som kyl, frys, spis samt tvättmaskin och torktumlare, så att vi kan rengöra bakom.Vi lyfter inte undan dessa.",
+                  "Rensning av vattenlås under handfat och diskho ingår inte i flyttstädningen.",
+                  "Front på badkar skall vara bortmonterad av kunden innan städning, annars ingår inte rengöring av fronten och städning under, samt brunn.",
+                  "Vi tar ej ansvar för fläckar på väggar och tak, dessa dammtorkas bara för att inte riskera skador på ytskiktet.",
+                   "Vi behöver också veta vid bokningen om ni har persienner och vill att vi rengör dem, annars behöver det vara gjort innan vi kommer ut och städar.",
+                   "Se till att bostaden är tömd på möbler och lösa föremål.",
                   "Tänk också på att biytor som t.ex. förråd, garage och balkonger inte ingår i flyttstädningen. Självklart hjälper vi gärna till med det också, men då behöver vi veta det i samband med bokningen."
                 ].map((item, index) => (
                   <li key={index} className="flex items-start">
