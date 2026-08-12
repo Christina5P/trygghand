@@ -42,9 +42,24 @@ const Index = () => {
     <div className="min-h-screen">
       <Seo
         title="Flyttkoordinator i Sundsvall – Äldreflytt & Dödsbo | Trygg Hand"
-        description="Trygg Hand hjälper dig med äldreflytt och dödsbo i Sundsvall. Vi samordnar allt från planering och sortering till flytt, städning och försäljning."
+        description="Trygg Hand hjälper dig med äldreflytt och dödsbo i Sundsvall. Vi samordnar allt från planering och sortering till flytt, städning och försäljning. Vi erbjuder specialiserad flyttstädning på äldreboenden i Sundsvall."
         canonical="https://www.trygghand.com/"
       />
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "name": "Trygg Hand",
+          "description": "Flyttstädning av äldreboenden i Sundsvall",
+          "areaServed": {
+            "@type": "Place",
+            "name": "Sundsvall",
+            "additionalType": "https://en.wikipedia.org/wiki/Sundsvall"
+          },
+          "serviceType": "Städning",
+          "priceRange": "3500 SEK"
+        })}
+      </script>
       <Header />
       <main>
         {/* Banner Kampanj - Äldreboende */}
@@ -57,14 +72,14 @@ const Index = () => {
                   backgroundImage: 'url(/stad_aldreboende.png)',
                   minHeight: '256px',
                 }}>
-                  <div className="absolute inset-0 bg-black/20" />
+                  <div className="absolute inset-0 bg-white/20" />
                 </div>
                 {/* Text & Knapp */}
-                <div className="p-6 md:p-8 flex flex-col justify-center items-start gap-5 bg-gradient-to-br from-white to-blue-50/30">
+                <div className="p-6 md:p-8 flex flex-col justify-center items-start gap-5 bg-gradient-to-br from-white to-blue-100/40">
                   <div>
-                    <h3 className="text-xs md:text-sm font-bold text-cyan-600 mb-2 tracking-widest uppercase"> Kampanj</h3>
-                    <h2 className="text-xl md:text-2xl font-bold text-foreground mb-3">Vi flyttstädar din anhörigs äldreboende.</h2>
-                    <p className="text-sm text-muted-foreground leading-relaxed">Fast pris 3 500 kr inkl. moms för normalstort rum i Sundsvallsområdet.</p>
+                    <h3 className="text-sm md:text-base font-bold text-cyan-700 mb-2 tracking-widest uppercase"> Kampanj</h3>
+                    <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">Vi flyttstädar din anhörigs äldreboende.</h2>
+                    <p className="text-base md:text-lg text-gray-700 leading-relaxed font-medium">Fast pris 3 500 kr inkl. moms för normalstort rum i Sundsvallsområdet.</p>
                   </div>
                   <Link
                     to="/#kontakt-form"
@@ -86,6 +101,10 @@ const Index = () => {
         </div>
         <About />
         <Contact />
+        {/* SEO: Äldreboenden i Sundsvall - Dolt för besökare men crawlbart för Google */}
+        <div className="hidden" aria-hidden="true">
+          Vi erbjuder flyttstädning på äldreboenden: Alnösol, Attmarhem, Granlunda, Havssundet, Heffnersgården, Hellbergsgården, Knutshemmet, Kristinelund, Lindgården, Ljustagården, Norra Kajen, Rutsgården, Skogsbrynet, Skottsundsbacken, Solgården, Solhaga, Thulegården, Tingsta, Tunastrand
+        </div>
       </main>
       <Footer />
     </div>
