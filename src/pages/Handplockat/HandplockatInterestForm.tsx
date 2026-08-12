@@ -108,7 +108,7 @@ export default function HandplockatInterestForm() {
     }
   };
 return (
-  <div className="mt-8 rounded-3xl border border-border bg-slate-50/80 p-6 shadow-sm">
+  <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 shadow-sm sm:p-6">
     
     <div className="mb-6 flex items-start justify-between gap-4">
       <div>
@@ -127,7 +127,7 @@ return (
       onSubmit={handleSubmit}
       className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"
     >
-      <div className="space-y-4 rounded-3xl border border-border bg-white p-5 shadow-sm">
+      <div className="space-y-4 rounded-lg border border-border bg-white p-4 sm:p-5">
         
         <div className="grid gap-4 md:grid-cols-2">
           <Input
@@ -207,7 +207,7 @@ return (
         )}
       </div>
 
-      <aside className="space-y-5 rounded-3xl border border-border bg-white p-5 shadow-sm">
+      <aside className="space-y-5 rounded-lg border border-border bg-white p-4 sm:p-5">
         
         <div className="rounded-2xl bg-slate-50 p-4 border border-border">
           <h4 className="font-medium text-foreground">

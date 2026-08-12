@@ -8,7 +8,7 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import type { HandplockatListing } from "@/types";
 import ListingCard from "@/components/ListingCard";
 import HandplockatInterestForm from "./HandplockatInterestForm";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, SlidersHorizontal } from "lucide-react";
 import {
   Accordion,
   AccordionItem,
@@ -164,87 +164,63 @@ export default function HandplockatIndex() {
           )}
 
           {/* FILTER */}
-          <Accordion type="single" collapsible defaultValue="filters" className="mb-10">
+          <Accordion type="single" collapsible className="mb-6">
             <AccordionItem value="filters">
-              <AccordionTrigger className="rounded-3xl border border-border bg-slate-50/80 px-6 py-4 shadow-sm hover:no-underline">
-                <span className="text-lg font-semibold">Filtrera fynd</span>
+              <AccordionTrigger className="rounded-lg border border-border bg-card px-4 py-3 text-sm hover:no-underline">
+                <span className="flex items-center gap-2 font-medium">
+                  <SlidersHorizontal className="h-4 w-4 text-primary" />
+                  Filtrera fynd
+                  {selectedCategory !== "Alla" && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                      {selectedCategory}
+                    </span>
+                  )}
+                </span>
               </AccordionTrigger>
-              <AccordionContent className="pt-4">
-                <div className="rounded-3xl border border-border bg-slate-50/80 p-6 shadow-sm">
-                  <div className="text-center mb-6">
+              <AccordionContent className="pt-3">
+                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setSelectedCategory("Alla")}
-                      className={`mx-auto inline-flex items-center justify-center px-8 py-3 rounded-full border text-base md:text-lg font-semibold transition-colors ${
+                      className={`inline-flex min-h-10 items-center justify-center rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                         selectedCategory === "Alla"
                           ? "bg-primary text-white border-primary"
-                          : "border-border bg-white text-foreground hover:border-primary hover:text-primary"
+                          : "border-border bg-background text-foreground hover:border-primary hover:text-primary"
                       }`}
                     >
                       Alla fynd
                     </button>
                   </div>
 
-                  <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-                    <div className="space-y-3">
-                      <h3 className="text-xs md:text-sm font-semibold text-foreground uppercase tracking-wider">
-                        Möbler & Inredning
-                      </h3>
-                      <div className="rounded-3xl border border-border bg-white/80 p-4 shadow-sm grid gap-3">
-                        {otherCategories.length > 0 ? (
-                          otherCategories.map((c) => (
-                            <button
-                              key={c}
-                              onClick={() => setSelectedCategory(c)}
-                              className={`w-full text-left px-4 py-3 rounded-2xl border text-sm transition-colors ${
-                                selectedCategory === c
-                                  ? "bg-primary text-white border-primary"
-                                  : "border-border bg-slate-50 hover:border-primary hover:text-primary"
-                              }`}
-                            >
-                              {c}
-                            </button>
-                          ))
-                        ) : (
-                          <p className="text-sm text-muted-foreground">Inga andra kategorier tillgängliga just nu.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h3 className="text-xs md:text-sm font-semibold text-foreground uppercase tracking-wider">
-                        Kläder & Skor
-                      </h3>
-                      <div className="rounded-3xl border border-border bg-white/80 p-4 shadow-sm grid gap-3">
-                        {clothingCategories.length > 0 ? (
-                          clothingCategories.map((c) => (
-                            <button
-                              key={c}
-                              onClick={() => setSelectedCategory(c)}
-                              className={`w-full text-left px-4 py-3 rounded-2xl border text-sm transition-colors ${
-                                selectedCategory === c
-                                  ? "bg-primary text-white border-primary"
-                                  : "border-border bg-slate-50 hover:border-primary hover:text-primary"
-                              }`}
-                            >
-                              {c}
-                            </button>
-                          ))
-                        ) : (
-                          <p className="text-sm text-muted-foreground">Inga kläder eller skor hittade just nu.</p>
-                        )}
-                      
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* FORM */}
-                  <div className="space-y-3 text-xs md:text-sm font-semibold">
-                    <HandplockatInterestForm />
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {[...otherCategories, ...clothingCategories].map((category) => (
+                      <button
+                        key={category}
+                        onClick={() => setSelectedCategory(category)}
+                        className={`min-h-10 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                          selectedCategory === category
+                            ? "border-primary bg-primary text-white"
+                            : "border-border bg-background text-foreground hover:border-primary hover:text-primary"
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+
+          <a
+            href="#interest-request"
+            className="flex min-h-12 items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-primary/10"
+          >
+            <span>Hittar du inte rätt föremål?</span>
+            <span className="inline-flex items-center gap-1 text-primary">
+              Berätta vad du söker <ArrowRight className="h-4 w-4" />
+            </span>
+          </a>
         </section>
         
 
@@ -262,15 +238,27 @@ export default function HandplockatIndex() {
 
           {/* LISTINGS */}
           {!loading && !error && (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredListings.map((listing, index) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  eager={index < 4}
-                />
-              ))}
-            </div>
+            <>
+              {filteredListings.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {filteredListings.map((listing, index) => (
+                    <ListingCard
+                      key={listing.id}
+                      listing={listing}
+                      eager={index < 4}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                  Inga fynd i den här kategorin just nu.
+                </p>
+              )}
+
+              <div id="interest-request" className="mt-10 scroll-mt-4 border-t border-border pt-8">
+                <HandplockatInterestForm />
+              </div>
+            </>
           )}
 
 
