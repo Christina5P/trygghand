@@ -263,15 +263,15 @@ export const FullmaktManagement: React.FC<FullmaktManagementProps> = ({
             popup = window.open("about:blank", "_blank", "noopener,noreferrer");
             const res = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
             if (!res.ok) throw new Error(`templates-download failed (${res.status})`);
-            const data = (await res.json()) as any;
-            const url = data?.signedUrl || data?.signed_url;
-            if (!url) throw new Error("Ingen signerad URL genererades");
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
 
             if (popup && !popup.closed) {
                 popup.location.href = url;
             } else {
                 window.open(url, "_blank", "noopener,noreferrer");
             }
+            setTimeout(() => URL.revokeObjectURL(url), 60_000);
         } catch (error) {
             try {
                 if (popup && !popup.closed) popup.close();

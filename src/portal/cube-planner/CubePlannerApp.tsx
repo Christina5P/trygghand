@@ -1,27 +1,35 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Truck } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, ChevronDown, Truck } from "lucide-react";
 
-import { movingItems } from "./data/items";
+import { movingItems, truckCapacities } from "./data/items";
 import { ItemCard } from "./components/ItemCard";
 import { CategoryTabs } from "./components/CategoryTabs";
 import { Summary } from "./components/Summary";
+import { getCubePlansForAdmin, getMyCubePlans, saveCubePlan, type CubePlan, type CubePlanPayload } from "@/lib/cubePlans";
+
+interface SelectedItemData {
+  quantity: number;
+  customDimensions?: { length: number; width: number; height: number };
+  customWeightKg?: number;
+}
 
 export default function CubePlannerApp() {
-  const { user, customer, loading } = useAuth();
+  const { user, loading } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-
-  interface SelectedItemData {
-    quantity: number;
-    customDimensions?: { length: number; width: number; height: number };
-    customWeightKg?: number;
-  }
 
   const [selectedItems, setSelectedItems] = useState<Map<string, SelectedItemData>>(new Map());
   const [activeCategory, setActiveCategory] = useState("all");
   const [selectedTruckIndex, setSelectedTruckIndex] = useState(1);
+  const [savedPlans, setSavedPlans] = useState<CubePlan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
+  const isAdminView = location.pathname.startsWith("/portal/admin/");
 
   const filteredItems = useMemo(() => {
     if (activeCategory === "all") return movingItems;
@@ -37,10 +45,140 @@ export default function CubePlannerApp() {
     }
   }, [user, loading, navigate]);
 
+  const loadSavedPlans = async () => {
+    if (!user) return;
+    setLoadingPlans(true);
+    try {
+      setSavedPlans(isAdminView ? await getCubePlansForAdmin() : await getMyCubePlans());
+    } catch (error) {
+      console.error("Could not load saved cube plans", error);
+      toast({
+        title: "Kunde inte hämta sparade planer",
+        description: "Försök igen om en stund.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadSavedPlans();
+  }, [user?.id, isAdminView]);
+
+  const createPlanPayload = (): CubePlanPayload | null => {
+    const items = Array.from(selectedItems.entries()).flatMap(([itemId, selection]) => {
+      const item = movingItems.find((candidate) => candidate.id === itemId);
+      if (!item || selection.quantity <= 0) return [];
+
+      const dimensions = selection.customDimensions ?? item.dimensions;
+      const volumeM3 = dimensions
+        ? (dimensions.length * dimensions.width * dimensions.height) / 1000000
+        : item.volume;
+      const weightKg = selection.customWeightKg ?? item.weightKg;
+
+      return [{
+        item_id: item.id,
+        name: item.name,
+        quantity: selection.quantity,
+        volume_m3: volumeM3,
+        weight_kg: weightKg,
+        ...(selection.customDimensions ? { dimensions_cm: selection.customDimensions } : {}),
+      }];
+    });
+
+    if (items.length === 0) return null;
+
+    const truck = truckCapacities[selectedTruckIndex];
+    return {
+      items,
+      total_volume_m3: items.reduce((total, item) => total + item.volume_m3 * item.quantity, 0),
+      total_weight_kg: items.reduce((total, item) => total + item.weight_kg * item.quantity, 0),
+      total_items: items.reduce((total, item) => total + item.quantity, 0),
+      truck_name: truck.name,
+      truck_capacity_m3: truck.volume,
+    };
+  };
+
+  const handleSavePlan = async () => {
+    const plan = createPlanPayload();
+    if (!plan) return;
+
+    setSavingPlan(true);
+    try {
+      await saveCubePlan(plan);
+      toast({
+        title: "Flyttplanen är skickad",
+        description: "Resultatet är sparat och tillgängligt för admin.",
+      });
+      await loadSavedPlans();
+    } catch (error) {
+      console.error("Could not save cube plan", error);
+      toast({
+        title: "Kunde inte spara flyttplanen",
+        description: error instanceof Error ? error.message : "Försök igen om en stund.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingPlan(false);
+    }
+  };
+
   if (loading) return null;
 
   // Always return to customer portal to avoid admin login confusion.
   const backLink = "/portal";
+
+  const savedPlansSection = (
+    <section className={isAdminView ? "mb-6" : "mt-8 border-t pt-6"}>
+      <h2 className="text-lg font-semibold text-foreground">
+        {isAdminView ? "Inskickade flyttplaner" : "Mina sparade flyttplaner"}
+      </h2>
+      {loadingPlans ? (
+        <p className="mt-3 text-sm text-muted-foreground">Hämtar planer...</p>
+      ) : savedPlans.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          {isAdminView ? "Inga flyttplaner har skickats in ännu." : "Du har inte sparat någon flyttplan ännu."}
+        </p>
+      ) : (
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          {savedPlans.map((plan) => (
+            <article
+              key={plan.id}
+              className="overflow-hidden rounded-lg border border-amber-300 bg-amber-50 text-sm shadow-sm"
+            >
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-amber-100/70"
+                onClick={() => setExpandedPlanId((current) => current === plan.id ? null : plan.id)}
+                aria-expanded={expandedPlanId === plan.id}
+              >
+                <span className="min-w-0">
+                  <span className="block font-semibold text-amber-950">
+                    {isAdminView ? plan.customer?.name || plan.customer?.email || "Okänd kund" : "Sparad flyttplan"}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-amber-900/80">
+                    {new Date(plan.created_at).toLocaleString("sv-SE", { dateStyle: "medium", timeStyle: "short" })}
+                  </span>
+                </span>
+                <ChevronDown className={`h-5 w-5 shrink-0 text-amber-800 transition-transform ${expandedPlanId === plan.id ? "rotate-180" : ""}`} />
+              </button>
+              {expandedPlanId === plan.id && (
+                <div className="border-t border-amber-200 px-4 py-3">
+                  <dl className="grid grid-cols-3 gap-2">
+                    <div><dt className="text-muted-foreground">Volym</dt><dd className="font-semibold">{Number(plan.total_volume_m3).toFixed(1)} m3</dd></div>
+                    <div><dt className="text-muted-foreground">Vikt</dt><dd className="font-semibold">{Number(plan.total_weight_kg).toFixed(0)} kg</dd></div>
+                    <div><dt className="text-muted-foreground">Föremål</dt><dd className="font-semibold">{plan.total_items}</dd></div>
+                  </dl>
+                  <p className="mt-3 text-muted-foreground">Fordon: {plan.truck_name} ({Number(plan.truck_capacity_m3).toFixed(0)} m3)</p>
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 
   return (
     <div className="cube-planner">
@@ -72,6 +210,8 @@ export default function CubePlannerApp() {
         </header>
 
         <main className="container mx-auto px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+          {isAdminView && savedPlansSection}
+
           <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-8">
             <div className="space-y-6">
               <CategoryTabs activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
@@ -143,6 +283,8 @@ export default function CubePlannerApp() {
                     return next;
                   })
                 }
+                onSave={handleSavePlan}
+                saving={savingPlan}
               />
             </aside>
           </div>
@@ -161,8 +303,12 @@ export default function CubePlannerApp() {
                   return next;
                 })
               }
+              onSave={handleSavePlan}
+              saving={savingPlan}
             />
           </div>
+
+          {!isAdminView && savedPlansSection}
         </main>
 
         <footer className="bg-card border-t mt-12 py-6">

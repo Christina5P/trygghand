@@ -1,6 +1,6 @@
 import { MovingItem } from '../data/items';
 import { TruckMeter } from './TruckMeter';
-import { Package, Trash2, X } from 'lucide-react';
+import { Loader2, Package, Save, Trash2, X } from 'lucide-react';
 
 interface SelectedItemData {
   quantity: number;
@@ -15,6 +15,8 @@ interface SummaryProps {
   onTruckChange: (index: number) => void;
   onClear: () => void;
   onRemoveItem: (id: string) => void;
+  onSave: () => void;
+  saving: boolean;
 }
 
 export function Summary({ 
@@ -23,7 +25,9 @@ export function Summary({
   selectedTruckIndex, 
   onTruckChange,
   onClear,
-  onRemoveItem
+  onRemoveItem,
+  onSave,
+  saving,
 }: SummaryProps) {
   const totalVolume = Array.from(selectedItems.entries()).reduce((sum, [id, data]) => {
     const item = items.find(i => i.id === id);
@@ -108,6 +112,16 @@ export function Summary({
         selectedTruckIndex={selectedTruckIndex}
         onTruckChange={onTruckChange}
       />
+
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={totalItems === 0 || saving}
+        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+        Spara och skicka till admin
+      </button>
 
       {selectedList.length > 0 && (
         <div className="space-y-2">

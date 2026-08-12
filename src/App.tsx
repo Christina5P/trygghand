@@ -52,6 +52,7 @@ const FragorTips = React.lazy(() => import("@/components/FragorTips"));
 
 const Portal = React.lazy(() => import("@/pages/Portal/Portal"));
 const AdminPortal = React.lazy(() => import("@/pages/Portal/AdminPortal"));
+const CubePlannerCustomer = React.lazy(() => import("@/pages/CubePlannerCustomer"));
 
 const AuthPostbackTunnel = React.lazy(() => import("@/pages/AuthPostbackTunnel"));
 
@@ -132,7 +133,9 @@ function App() {
 
                 {/* Portal */}
                 <Route path="/portal" element={<Portal />} />
+                <Route path="/portal/cube-planner" element={<CubePlannerCustomer />} />
                 <Route path="/adminportal" element={<AdminPortal />} />
+                <Route path="/portal/admin/cube-planner" element={<CubePlannerCustomer />} />
 
                 {/* 🔥 ADMIN – LIGGER FÖRST (VIKTIGT) */}
               <Route element={<CustomerRoute />}>

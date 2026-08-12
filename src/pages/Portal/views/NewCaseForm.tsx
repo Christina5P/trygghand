@@ -54,6 +54,9 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
   const [selectedCustomer, setSelectedCustomer] = useState<string>(
     defaultCustomerId || customers[0]?.id || ""
   );
+  const selectedCustomerData = customers.find((customer) => customer.id === selectedCustomer) as
+    | (Customer & { address?: string | null })
+    | undefined;
   const [createdDate, setCreatedDate] = useState<string | null>(null);
   const [scheduledDate, setScheduledDate] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("pending");
@@ -197,6 +200,9 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
           customer_id: custId,
           title: title.trim(),
           description: description.trim() || null,
+          ...(selectedCustomerData?.address !== undefined
+            ? { address: selectedCustomerData.address ?? null }
+            : {}),
           status: safeStatus,
           created_at: created_at_iso ?? null,
           scheduled_date: scheduled_date_iso ?? null,

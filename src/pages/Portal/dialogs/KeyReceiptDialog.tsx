@@ -6,10 +6,12 @@ import { uploadKeyReceiptSignature } from "@/lib/keyReceipts";
 export type KeyReceiptDialogProps = {
   mode: "admin" | "customer";
   customerId?: string | null; // endast för admin (null = admin-only kvittens)
+  onReceiptCreated?: () => Promise<void> | void;
 };
 
 type KeyReceipt = {
   id: string;
+  customer_id?: string | null;
   key_count: number;
   description: string | null;
   signed_at: string;
@@ -98,10 +100,12 @@ function SignaturePad({
   disabled,
   output,
   onSave,
+  saveLabel,
 }: {
   disabled: boolean;
   output: "blob" | "dataUrl";
   onSave: (value: Blob | string) => Promise<void> | void;
+  saveLabel: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
@@ -176,12 +180,22 @@ function SignaturePad({
         onPointerUp={end}
         onPointerLeave={end}
       />
-      <div>
-        <button type="button" onClick={clear} disabled={disabled}>
-          Rensa
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <button
+          type="button"
+          onClick={clear}
+          disabled={disabled}
+          className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Rensa signatur
         </button>
-        <button type="button" onClick={save} disabled={disabled}>
-          Signera & spara
+        <button
+          type="button"
+          onClick={save}
+          disabled={disabled}
+          className="inline-flex min-h-10 items-center justify-center rounded-md bg-trust-blue px-4 py-2 text-sm font-medium text-white hover:bg-trust-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saveLabel}
         </button>
       </div>
     </div>
@@ -189,7 +203,7 @@ function SignaturePad({
 }
 
 export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
-  const { mode, customerId } = props;
+  const { mode, customerId, onReceiptCreated } = props;
 
   // -----------------
   // Admin state
@@ -290,6 +304,7 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
       const list: KeyReceipt[] = Array.isArray(data)
         ? (data as any[]).map((r) => ({
             id: String((r as any).id),
+            customer_id: (r as any).customer_id ?? null,
             key_count: Number((r as any).key_count),
             description: (r as any).description ?? null,
             signed_at: String((r as any).signed_at ?? ""),
@@ -300,9 +315,12 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
       const unsigned: KeyReceipt[] = [];
       const signed: KeyReceipt[] = [];
       const storageCustomerId = await resolveStorageCustomerId();
-      if (!storageCustomerId) throw new Error("Saknar kund-ID för nyckelkvittens");
 
       for (const receipt of list) {
+        if (!storageCustomerId) {
+          unsigned.push(receipt);
+          continue;
+        }
         const path = buildCustomerPath(storageCustomerId, ["key-receipts", receipt.id], "signature.png");
         const { error: dlErr } = await supabase.storage.from("key-receipts").download(path);
         if (dlErr) {
@@ -312,7 +330,7 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
         }
       }
 
-      setCustomerReceipts(unsigned.slice(0, 1));
+      setCustomerReceipts(unsigned);
       setCustomerSignedReceipts(signed);
       if (unsigned.length === 0 && signed.length === 0) {
         setCustomerInfo("Ingen nyckelkvittens hittades.");
@@ -497,29 +515,41 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
 
       const id = (data as any)?.id ? String((data as any).id) : null;
       setAdminReceiptId(id);
-      setAdminStatus("Nyckelkvittens signerad av Trygg Hand");
       await fetchAdminReceipts();
+      await onReceiptCreated?.();
 
       if (customerId) {
         try {
           const { data: userData } = await supabase.auth.getUser();
           const actorId = userData?.user?.id;
-          if (actorId) {
-            await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                type: "key_receipt",
-                ref_id: id ?? "",
-                ref_type: "key_receipt",
-                actor_id: actorId,
-                recipient_id: customerId,
-              }),
-            });
-          }
+          if (!actorId || !id) throw new Error("Saknar uppgifter för att skapa kundnotis.");
+
+          const { data: customer, error: customerError } = await supabase
+            .from("customers")
+            .select("user_id")
+            .eq("id", customerId)
+            .maybeSingle();
+          if (customerError) throw customerError;
+
+          const response = await fetch("https://trygghand.netlify.app/.netlify/functions/create-notification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "key_receipt",
+              ref_id: id,
+              ref_type: "key_receipt",
+              actor_id: actorId,
+              recipient_id: customer?.user_id ?? customerId,
+            }),
+          });
+          if (!response.ok) throw new Error(await response.text());
+          setAdminStatus("Nyckelkvittensen skapades och kunden har notifierats.");
         } catch (e) {
           console.error("create-notification failed", e);
+          setAdminStatus("Nyckelkvittensen skapades, men kundnotisen kunde inte skickas.");
         }
+      } else {
+        setAdminStatus("Nyckelkvittens signerad av Trygg Hand.");
       }
     } catch (e) {
       console.error("admin_create_key_receipt failed", e);
@@ -549,7 +579,12 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
       const storageCustomerId = await resolveStorageCustomerId();
       if (!storageCustomerId) throw new Error("Saknar kund-ID för nyckelkvittens");
       
-      await uploadKeyReceiptSignature(latestUnsigned.id, storageCustomerId, blob);
+      await uploadKeyReceiptSignature(
+        latestUnsigned.id,
+        storageCustomerId,
+        blob,
+        latestUnsigned.customer_id
+      );
 
       setCustomerInfo("Nycklar mottagna och kvitterade av kund");
       await fetchCustomerReceipts();
@@ -686,9 +721,19 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
                   : "Signera återlämningen och bekräfta att nycklarna är mottagna."}
               </div>
               {mode === "admin" ? (
-                <SignaturePad disabled={false} output="dataUrl" onSave={handleAdminSaveSignature} />
+                <SignaturePad
+                  disabled={false}
+                  output="dataUrl"
+                  onSave={handleAdminSaveSignature}
+                  saveLabel="Spara Trygg Hands signatur"
+                />
               ) : (
-                <SignaturePad disabled={signing} output="blob" onSave={(v) => handleCustomerSaveSignature(v as Blob)} />
+                <SignaturePad
+                  disabled={signing}
+                  output="blob"
+                  onSave={(v) => handleCustomerSaveSignature(v as Blob)}
+                  saveLabel="Signera och spara kvittensen"
+                />
               )}
               {mode === "admin" && parsedMeta?.admin_signature_data_url ? (
                 <div className="pt-2">
@@ -779,7 +824,15 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
 
           <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
             <div className="text-sm font-medium text-slate-900 mb-2">Signera mottagande</div>
-            <SignaturePad disabled={false} output="dataUrl" onSave={handleAdminSaveSignature} />
+            <p className="mb-3 text-sm text-slate-600">
+              Spara först Trygg Hands signatur och skapa sedan kvittensen.
+            </p>
+            <SignaturePad
+              disabled={false}
+              output="dataUrl"
+              onSave={handleAdminSaveSignature}
+              saveLabel="Spara Trygg Hands signatur"
+            />
             {adminSignatureDataUrl ? (
               <div className="mt-2 text-sm text-slate-700">Signatur registrerad.</div>
             ) : (
@@ -792,7 +845,7 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
             className="inline-flex items-center justify-center rounded bg-trust-blue px-4 py-2 text-sm font-medium text-white hover:bg-trust-blue/90"
             onClick={handleAdminCreate}
           >
-            Skapa & signera nyckelkvittens
+            {customerId ? "Skapa nyckelkvittens och skicka till kund" : "Skapa nyckelkvittens"}
           </button>
 
           {subjectCustomerLoading ? <div className="text-sm text-slate-600">Hämtar kunduppgifter…</div> : null}
@@ -832,7 +885,15 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
       {customerError ? <div className="text-sm text-red-700">{customerError}</div> : null}
       {customerInfo ? <div className="text-sm text-slate-700">{customerInfo}</div> : null}
 
-      {!customerLoading && latestUnsigned ? renderReceipt(latestUnsigned, { showSignaturePad: true }) : null}
+      {!customerLoading && customerReceipts.length > 0 ? (
+        <div className="space-y-4">
+          {customerReceipts.map((receipt) => (
+            <div key={receipt.id}>
+              {renderReceipt(receipt, { showSignaturePad: receipt.id === latestUnsigned?.id })}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {!customerLoading && customerSignedReceipts.length > 0 ? (
         <div className="space-y-4">

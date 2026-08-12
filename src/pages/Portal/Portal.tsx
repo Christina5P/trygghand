@@ -129,10 +129,10 @@ const Portal = () => {
 
       const res = await fetch(`/api/templates/download?path=${encodeURIComponent(storagePath)}`);
       if (!res.ok) throw new Error(`templates-download failed (${res.status})`);
-      const data = (await res.json()) as any;
-      const url = data?.signedUrl || data?.signed_url;
-      if (!url) throw new Error("Kunde inte generera länk");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (err) {
       console.error("Kunde inte hämta mall:", err);
       // Handle specific storage errors

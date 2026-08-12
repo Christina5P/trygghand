@@ -467,6 +467,7 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
     if (customer?.id) {
       await fetchCustomerCases(customer.id); 
     }
+    await onCustomerUpdated();
   };
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

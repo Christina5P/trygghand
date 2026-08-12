@@ -96,6 +96,8 @@ serve(async (req: Request): Promise<Response> => {
   const customerId = payload?.customer_id;
   const title = typeof payload?.title === "string" ? payload.title.trim() : "";
   const description = payload?.description == null ? null : String(payload.description);
+  const hasAddress = Object.prototype.hasOwnProperty.call(payload ?? {}, "address");
+  const address = payload?.address == null ? null : String(payload.address);
   const status = payload?.status;
   const createdAt = payload?.created_at;
   const scheduledDate = payload?.scheduled_date;
@@ -136,6 +138,7 @@ serve(async (req: Request): Promise<Response> => {
       description: description ? String(description) : null,
       updated_at: nowIso,
     };
+    if (hasAddress) updatePayload.address = address;
     if (status != null) updatePayload.status = String(status);
     if (createdAt != null) updatePayload.created_at = String(createdAt);
     if (scheduledDate != null) updatePayload.scheduled_date = String(scheduledDate);
@@ -171,6 +174,7 @@ serve(async (req: Request): Promise<Response> => {
     customer_id: customerId,
     title,
     description: description ? String(description) : null,
+    address,
     status: status != null ? String(status) : "pending",
   };
   if (createdAt != null) insertPayload.created_at = String(createdAt);

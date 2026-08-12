@@ -38,6 +38,8 @@ export const getNotificationDescription = (notification: NotificationLike): stri
     }
     case "key_receipt":
       return "Nyckelkvittens \u00e4r redo att signeras.";
+    case "cube_plan":
+      return "En kund har skickat in en flyttplan.";
     default:
       return "Ny notis.";
   }

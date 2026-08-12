@@ -166,8 +166,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // MODAL STATE
   const [mainTab, setMainTab] = useState<
-    "cases" | "subscriptions" | "valuations" | "customers" | "contact_requests" | "key_receipts" | "customer_management" | "new" | "saved"
-  >("cases");
+    "" | "cases" | "subscriptions" | "valuations" | "customers" | "contact_requests" | "key_receipts" | "customer_management" | "new" | "saved" | "settings"
+  >("");
   // Statusfilter för ärenden — använder normalizeStatus + STATUS_DEFINITIONS
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [caseCustomerFilter, setCaseCustomerFilter] = useState<string>("all");
@@ -544,12 +544,37 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // Admin: customer selection for key receipts
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("__none__");
+  const [keyReceiptCount, setKeyReceiptCount] = useState(0);
 
   const selectedCustomerIdForKeyReceipt = useMemo(() => {
     if (selectedCustomerId === "__none__") return null;
     if (selectedCustomerId === "__admin_only__") return null;
     return selectedCustomerId;
   }, [selectedCustomerId]);
+
+  const refreshKeyReceiptCount = useCallback(async () => {
+    if (selectedCustomerId === "__none__") {
+      setKeyReceiptCount(0);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc("admin_get_key_receipts");
+      if (error) throw error;
+      const receiptCustomerId = selectedCustomerId === "__admin_only__" ? null : selectedCustomerId;
+      const count = Array.isArray(data)
+        ? data.filter((receipt: any) => (receipt?.customer_id ?? null) === receiptCustomerId).length
+        : 0;
+      setKeyReceiptCount(count);
+    } catch (error) {
+      console.error("Could not load key receipt count", error);
+      setKeyReceiptCount(0);
+    }
+  }, [selectedCustomerId]);
+
+  useEffect(() => {
+    void refreshKeyReceiptCount();
+  }, [refreshKeyReceiptCount]);
 
   // ID för kund som används när ett nytt ärende skapas från kunddialogen
   const [newCaseCustomerId, setNewCaseCustomerId] = useState<string | undefined>(undefined);
@@ -940,12 +965,19 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                         <SelectItem value="subscriptions">Uppsägningar ({cancellations.length})</SelectItem>
                         <SelectItem value="valuations">Värderingar ({valuations.length})</SelectItem>
                         <SelectItem value="customers">Kunder ({customers.length})</SelectItem>
-              <SelectItem value="key_receipts">Nyckelkvittens</SelectItem>
+              <SelectItem value="key_receipts">Nyckelkvittens ({keyReceiptCount})</SelectItem>
                         <SelectItem value="settings">Inställningar</SelectItem>
                         <SelectItem value="contact_requests">Kontakt ({activeContactCount})</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                  {mainTab && (
+                    <div className="flex justify-end">
+                      <Button type="button" variant="outline" size="sm" onClick={() => setMainTab("")}>
+                        Fäll ihop vald vy
+                      </Button>
+                    </div>
+                  )}
 
                   {/* Desktop/tablet: tabbar */}
           <TabsList className="hidden md:flex min-w-[900px] w-auto bg-slate-200/80 shadow-sm rounded-lg p-1 flex-wrap gap-1 border border-slate-200 overflow-x-auto">
@@ -962,7 +994,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                       Kunder ({customers.length})
                     </TabsTrigger>
           <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="key_receipts">
-            Nyckelkvittens
+            Nyckelkvittens ({keyReceiptCount})
           </TabsTrigger>
                     <TabsTrigger className="flex-1 basis-0 min-w-0 text-center px-2 py-2 text-sm lg:text-base overflow-hidden whitespace-nowrap text-ellipsis" value="contact_requests">
                       Kontakt ({activeContactCount})
@@ -1222,7 +1254,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
           <TabsContent value="key_receipts">
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-2xl font-bold text-trust-blue">Nyckelkvittens</CardTitle>
+                <CardTitle className="text-2xl font-bold text-trust-blue">Nyckelkvittens ({keyReceiptCount})</CardTitle>
                 <CardDescription>Skapa nyckelkvittens för vald kund (eller admin-only).</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1250,6 +1282,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                   <KeyReceiptDialog
                     mode="admin"
                     customerId={selectedCustomerIdForKeyReceipt}
+                    onReceiptCreated={refreshKeyReceiptCount}
                   />
                 )}
               </CardContent>

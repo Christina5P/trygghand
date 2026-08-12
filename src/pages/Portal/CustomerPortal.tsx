@@ -863,24 +863,27 @@ const bannerDescriptions = useMemo(() => {
                                         </div>
                                 </div>
                 {/* 1. Portal Stats (Krav: Status på ärenden) */}
-                <Card className="shadow-lg bg-gradient-to-br from-sky-50 to-white">
-                    <CardHeader>
-                        <CardTitle className="text-2xl font-bold text-trust-blue">Din Översikt</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4">
+                <CollapsibleCard
+                    defaultOpen={true}
+                    title={<span className="text-lg font-bold text-trust-blue">Din Översikt</span>}
+                    className="shadow-lg bg-gradient-to-br from-sky-50 to-white"
+                >
+                    <div className="p-1">
                         <PortalStats />
-                    </CardContent>
-                </Card>
+                    </div>
+                </CollapsibleCard>
 
                 {/* 2. Värderingshantering (Krav: Verktyget ska ligga ovanför ärenden) */}
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-2xl font-bold text-trust-blue">Mina Värderingar</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <CollapsibleCard
+                    defaultOpen={false}
+                    title={<span className="text-lg font-bold text-trust-blue">Mina Värderingar</span>}
+                    rightAction={valuations.length > 0 ? <Badge variant="secondary">{valuations.length}</Badge> : undefined}
+                    className="shadow-lg"
+                >
+                    <div>
                         <ValuationManager valuations={valuations} onDataUpdated={fetchValuations} customerId={customer.id} />
-                    </CardContent>
-                </Card>
+                    </div>
+                </CollapsibleCard>
 
                                {/* 4. Mina Fullmakter (NY SEKTION för kunden) */}
               {/* Knapp före tips-texten */}
@@ -936,12 +939,14 @@ const bannerDescriptions = useMemo(() => {
                                                     </DialogContent>
                                                 </Dialog>
                  <CollapsibleCard
+                     defaultOpen={false}
                      title={
                          <div className="flex items-center">
                              <FileText className="w-5 h-5 mr-2 text-gray-600" />
                              <span className="font-bold text-lg">Fullmakter</span>
                          </div>
                      }
+                     rightAction={documents.length > 0 ? <Badge variant="secondary">{documents.length}</Badge> : undefined}
                      className="shadow-lg"
                  >
                      <div className="pt-2">
@@ -954,7 +959,7 @@ const bannerDescriptions = useMemo(() => {
 
                 {/* 5. Ärendehantering (Krav: Fällbara kort, ingen Nytt ärende-knapp) */}
                 <CollapsibleCard
-                    defaultOpen={!loadingCases && hasCurrentCases}
+                    defaultOpen={false}
                     title={
                         <div className="flex items-center">
                             <Briefcase className="w-5 h-5 mr-2 text-gray-600" />
@@ -963,7 +968,7 @@ const bannerDescriptions = useMemo(() => {
                     }
                     rightAction={caseUnreadCount > 0 ? (
                         <CommentBubble count={caseUnreadCount} highlight ariaLabel="Olästa ärendemeddelanden" />
-                    ) : undefined}
+                    ) : cases.length > 0 ? <Badge variant="secondary">{cases.length}</Badge> : undefined}
                     className="shadow-lg"
                 >
                     {loadingCases ? (
@@ -1081,7 +1086,7 @@ const bannerDescriptions = useMemo(() => {
 
                 {/* Uppsägningar */}
                 <CollapsibleCard
-                    defaultOpen={!loadingCancellations && hasCurrentCancellations}
+                    defaultOpen={false}
                     title={
                         <div className="flex items-center">
                             <Briefcase className="w-5 h-5 mr-2 text-gray-600" />
@@ -1090,7 +1095,7 @@ const bannerDescriptions = useMemo(() => {
                     }
                     rightAction={cancellationUnreadCount > 0 ? (
                         <CommentBubble count={cancellationUnreadCount} highlight ariaLabel="Olästa uppsägningsmeddelanden" />
-                    ) : undefined}
+                    ) : cancellations.length > 0 ? <Badge variant="secondary">{cancellations.length}</Badge> : undefined}
                     className="shadow-lg"
                 >
                     {loadingCancellations ? (
