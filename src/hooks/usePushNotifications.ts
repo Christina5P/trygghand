@@ -6,6 +6,7 @@ export type PushPreferences = {
   case_updates_enabled: boolean;
   new_messages_enabled: boolean;
   booked_times_enabled: boolean;
+  contact_requests_enabled: boolean;
   quiet_hours_enabled: boolean;
   quiet_hours_start: string;
   quiet_hours_end: string;
@@ -27,6 +28,7 @@ const DEFAULT_PREFERENCES: PushPreferences = {
   case_updates_enabled: false,
   new_messages_enabled: false,
   booked_times_enabled: false,
+  contact_requests_enabled: false,
   quiet_hours_enabled: false,
   quiet_hours_start: "22:00",
   quiet_hours_end: "07:00",

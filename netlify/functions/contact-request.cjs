@@ -1,33 +1,18 @@
 const { createClient } = require("@supabase/supabase-js");
 
-async function sendAdminNotification(contactData) {
+async function sendAdminEmailNotification() {
   const brevoApiKey = process.env.BREVO_API_KEY;
   const brevoSenderEmail = process.env.BREVO_SENDER_EMAIL || "no-reply@trygghand.se";
   const brevoSenderName = process.env.BREVO_SENDER_NAME || "Trygghand";
-  const adminEmail = "kontakt@trygghand.com";
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "kontakt@trygghand.com";
 
   if (!brevoApiKey) {
     console.warn("[contact-request] BREVO_API_KEY not configured, skipping email notification");
     return;
   }
 
-  const { firstname, lastname, email, phone, message } = contactData;
-  const displayName = `${firstname}${lastname ? " " + lastname : ""}`;
-  
-  const emailBody = `
-Ny kontaktförfrågan från Trygghand-webbplatsen
-
-Namn: ${displayName}
-Telefon: ${phone}
-Email: ${email || "(inte angiven)"}
-
-Meddelande:
-${message}
-
----
-Logga in i adminpanelen för att hantera denna förfrågan:
-${process.env.APP_LOGIN_URL || "https://trygghand.se"}
-  `.trim();
+  const adminUrl = process.env.ADMIN_PORTAL_URL || "https://trygghand.se/adminportal";
+  const emailBody = "En ny kontaktförfrågan har inkommit.\n\nLogga in i adminportalen för att läsa och hantera förfrågan.";
 
   try {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -47,16 +32,10 @@ ${process.env.APP_LOGIN_URL || "https://trygghand.se"}
             name: "Trygghand Admin",
           },
         ],
-        subject: `Ny kontaktförfrågan: ${displayName}`,
+        subject: "Ny kontaktförfrågan – Trygg Hand",
         htmlContent: `
-          <p><strong>Ny kontaktförfrågan från Trygghand-webbplatsen</strong></p>
-          <p><strong>Namn:</strong> ${displayName}</p>
-          <p><strong>Telefon:</strong> ${phone}</p>
-          <p><strong>Email:</strong> ${email || "(inte angiven)"}</p>
-          <p><strong>Meddelande:</strong></p>
-          <p>${message.replace(/\n/g, "<br />")}</p>
-          <hr />
-          <p><a href="${process.env.APP_LOGIN_URL || "https://trygghand.se"}">Logga in i adminpanelen</a></p>
+          <p>En ny kontaktförfrågan har inkommit.</p>
+          <p><a href="${adminUrl}">Logga in i adminportalen för att läsa och hantera förfrågan.</a></p>
         `,
         textContent: emailBody,
       }),
@@ -69,10 +48,54 @@ ${process.env.APP_LOGIN_URL || "https://trygghand.se"}
         error: errorData,
       });
     } else {
-      console.log("[contact-request] Admin notification sent successfully");
+      console.log("[contact-request] Admin email notification sent");
     }
   } catch (err) {
     console.error("[contact-request] Error sending admin notification:", err);
+  }
+}
+
+async function sendAdminPushNotifications(supabase, supabaseUrl, serviceRoleKey) {
+  try {
+    const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }] = await Promise.all([
+      supabase.from("profiles").select("id, is_admin, role").or("is_admin.eq.true,role.eq.admin"),
+      supabase.from("user_roles").select("user_id").eq("role", "admin"),
+    ]);
+
+    if (profilesError) throw profilesError;
+    if (rolesError) throw rolesError;
+
+    const adminIds = new Set([
+      ...(profiles || []).map((profile) => profile.id),
+      ...(roles || []).map((role) => role.user_id),
+    ].filter(Boolean));
+
+    const results = await Promise.allSettled(
+      Array.from(adminIds).map(async (userId) => {
+        const response = await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${serviceRoleKey}`,
+            apikey: serviceRoleKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId,
+            type: "contact_request",
+            url: "/adminportal",
+          }),
+        });
+
+        if (!response.ok) throw new Error(`Push endpoint returned ${response.status}`);
+      })
+    );
+
+    const failures = results.filter((result) => result.status === "rejected").length;
+    if (failures > 0) console.error("[contact-request] Some admin push notifications failed", { failures });
+  } catch (error) {
+    console.error("[contact-request] Admin push notification failed", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 }
 
@@ -237,8 +260,11 @@ exports.handler = async (event) => {
       return json(500, { error: "Failed to save contact request" });
     }
 
-    // Send admin notification email
-    await sendAdminNotification(payload);
+    // Notifications are best-effort and run only after the contact request is stored.
+    await Promise.allSettled([
+      sendAdminEmailNotification(),
+      sendAdminPushNotifications(supabase, supabaseUrl, serviceRoleKey),
+    ]);
 
     return json(200, { ok: true, data });
   } catch (err) {

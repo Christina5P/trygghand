@@ -11,6 +11,7 @@ type PushPreference = {
   case_updates_enabled: boolean;
   new_messages_enabled: boolean;
   booked_times_enabled: boolean;
+  contact_requests_enabled: boolean;
   quiet_hours_enabled: boolean;
   quiet_hours_start: string;
   quiet_hours_end: string;
@@ -101,6 +102,13 @@ function getSafePushCopy(type: string, batchedCount: number) {
     };
   }
 
+  if (type === "contact_request") {
+    return {
+      title: "Ny kontaktförfrågan",
+      body: "En ny kontaktförfrågan har inkommit till Trygg Hand.",
+    };
+  }
+
   return {
     title: "Ny uppdatering",
     body: "Du har en uppdatering i kundportalen.",
@@ -111,6 +119,7 @@ function categoryEnabled(pref: PushPreference, type: string): boolean {
   if (!pref.push_enabled) return false;
   if (type === "new_message") return pref.new_messages_enabled;
   if (type === "booked_time") return pref.booked_times_enabled;
+  if (type === "contact_request") return pref.contact_requests_enabled;
   return pref.case_updates_enabled;
 }
 
@@ -126,7 +135,7 @@ function maskEndpoint(endpoint: string): string {
 
 function normalizePortalUrl(rawUrl: string | undefined): string {
   if (!rawUrl || typeof rawUrl !== "string") return "/portal";
-  if (!rawUrl.startsWith("/portal")) return "/portal";
+  if (!rawUrl.startsWith("/portal") && !rawUrl.startsWith("/adminportal")) return "/portal";
   return rawUrl;
 }
 
@@ -161,6 +170,7 @@ export async function sendPushInternal(params: SendPushInternalParams): Promise<
       case_updates_enabled: false,
       new_messages_enabled: false,
       booked_times_enabled: false,
+      contact_requests_enabled: false,
       quiet_hours_enabled: false,
       quiet_hours_start: "22:00",
       quiet_hours_end: "07:00",

@@ -137,7 +137,7 @@ self.addEventListener('push', (event) => {
       payload = {
         ...payload,
         ...parsed,
-        url: typeof parsed.url === 'string' && parsed.url.startsWith('/portal') ? parsed.url : '/portal',
+        url: typeof parsed.url === 'string' && (parsed.url.startsWith('/portal') || parsed.url.startsWith('/adminportal')) ? parsed.url : '/portal',
       };
     }
   } catch {
