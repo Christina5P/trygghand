@@ -129,9 +129,72 @@ function getServiceClient() {
   };
 }
 
+async function invokeContactRequestPush(supabase, supabaseUrl, serviceRoleKey) {
+  console.log("[contactRequests] contact request push invocation starting");
+
+  try {
+    const { data: adminRows, error: adminError } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+
+    if (adminError) {
+      console.error("[contactRequests] contact request push invocation failed", {
+        error: adminError.message,
+      });
+      return;
+    }
+
+    const adminUserIds = [...new Set((adminRows || []).map((row) => row?.user_id).filter(Boolean))];
+
+    for (const userId of adminUserIds) {
+      try {
+        const response = await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceRoleKey}`,
+          },
+          body: JSON.stringify({
+            userId,
+            type: "contact_request",
+            url: "/portal",
+          }),
+        });
+
+        const responseText = await response.text().catch(() => "");
+
+        if (!response.ok) {
+          console.error("[contactRequests] contact request push invocation failed", {
+            status: response.status,
+            body: responseText.slice(0, 500),
+          });
+          continue;
+        }
+
+        console.log("[contactRequests] contact request push invocation succeeded");
+      } catch (err) {
+        console.error("[contactRequests] contact request push invocation failed", {
+          error: err && (err.message || String(err)),
+        });
+      }
+    }
+
+    console.log("[contactRequests] contact request push invocation succeeded");
+  } catch (err) {
+    console.error("[contactRequests] contact request push invocation failed", {
+      error: err && (err.message || String(err)),
+    });
+  }
+}
+
 router.post("/contact-request", async (req, res) => {
   try {
     const { client: supabase, diagnostics } = getServiceClient();
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const serviceRoleKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
     if (!supabase) {
       console.error("[contactRequests] Missing env vars for service client", diagnostics);
       return res.status(500).json({
@@ -178,8 +241,12 @@ router.post("/contact-request", async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
+    console.log("[contactRequests] contact request saved");
+
     // Send admin notification email
     await sendAdminNotification(payload);
+
+    void invokeContactRequestPush(supabase, supabaseUrl, serviceRoleKey);
 
     return res.status(200).json({ ok: true, data });
   } catch (err) {

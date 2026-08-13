@@ -57,18 +57,15 @@ async function sendAdminEmailNotification() {
 
 async function sendAdminPushNotifications(supabase, supabaseUrl, serviceRoleKey) {
   try {
-    const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }] = await Promise.all([
-      supabase.from("profiles").select("id, is_admin, role").or("is_admin.eq.true,role.eq.admin"),
-      supabase.from("user_roles").select("user_id").eq("role", "admin"),
-    ]);
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("is_admin", true);
 
     if (profilesError) throw profilesError;
-    if (rolesError) throw rolesError;
 
-    const adminIds = new Set([
-      ...(profiles || []).map((profile) => profile.id),
-      ...(roles || []).map((role) => role.user_id),
-    ].filter(Boolean));
+    const adminIds = new Set((profiles || []).map((profile) => profile.id).filter(Boolean));
+    console.log("[contact-request] admin users found", { count: adminIds.size });
 
     const results = await Promise.allSettled(
       Array.from(adminIds).map(async (userId) => {
@@ -132,7 +129,8 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
   const serviceRoleKeyParts = typeof serviceRoleKey === "string" ? serviceRoleKey.split(".").length : 0;
   const serviceRoleKeyRole = getJwtRole(serviceRoleKey);
@@ -260,11 +258,23 @@ exports.handler = async (event) => {
       return json(500, { error: "Failed to save contact request" });
     }
 
+    console.log("[contact-request] contact request saved");
+
     // Notifications are best-effort and run only after the contact request is stored.
-    await Promise.allSettled([
+    console.log("[contact-request] contact request push invocation starting");
+    const notificationResults = await Promise.allSettled([
       sendAdminEmailNotification(),
       sendAdminPushNotifications(supabase, supabaseUrl, serviceRoleKey),
     ]);
+
+    const pushResult = notificationResults[1];
+    if (pushResult?.status === "fulfilled") {
+      console.log("[contact-request] contact request push invocation succeeded");
+    } else {
+      console.error("[contact-request] contact request push invocation failed", {
+        error: pushResult?.reason instanceof Error ? pushResult.reason.message : "Unknown error",
+      });
+    }
 
     return json(200, { ok: true, data });
   } catch (err) {

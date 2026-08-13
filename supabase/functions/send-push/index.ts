@@ -19,7 +19,6 @@ type PushPreference = {
   push_enabled: boolean;
   case_updates_enabled: boolean;
   new_messages_enabled: boolean;
-  booked_times_enabled: boolean;
   contact_requests_enabled: boolean;
   quiet_hours_enabled: boolean;
   quiet_hours_start: string;
@@ -34,6 +33,7 @@ const corsHeaders = {
 };
 
 const PUSH_RATE_LIMIT_SECONDS = 20;
+const PUSH_SEND_TIMEOUT_MS = 10_000;
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -97,13 +97,6 @@ function getSafePushCopy(type: string, batchedCount: number) {
     };
   }
 
-  if (type === "booked_time") {
-    return {
-      title: "Ny bokad tid",
-      body: "Du har en uppdatering om bokad tid i kundportalen.",
-    };
-  }
-
   if (type === "contact_request") {
     return {
       title: "Ny kontaktförfrågan",
@@ -120,7 +113,6 @@ function getSafePushCopy(type: string, batchedCount: number) {
 function categoryEnabled(pref: PushPreference, type: string): boolean {
   if (!pref.push_enabled) return false;
   if (type === "new_message") return pref.new_messages_enabled;
-  if (type === "booked_time") return pref.booked_times_enabled;
   if (type === "contact_request") return pref.contact_requests_enabled;
   return pref.case_updates_enabled;
 }
@@ -141,14 +133,12 @@ function normalizePortalUrl(rawUrl: string | undefined): string {
   return rawUrl;
 }
 
-function extractAuthToken(value: string | null): string {
-  if (!value) return "";
-  return value.startsWith("Bearer ") ? value.slice(7).trim() : value.trim();
-}
-
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
+
+  const requestStartedAt = Date.now();
+  console.log("send-push request started");
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -159,12 +149,6 @@ serve(async (req: Request): Promise<Response> => {
 
   if (!supabaseUrl || !serviceRoleKey) return json(500, { error: "Server configuration missing" });
   if (!vapidPublicKey || !vapidPrivateKey) return json(500, { error: "Push configuration missing" });
-
-  const authToken = extractAuthToken(req.headers.get("authorization"));
-  const apiKeyToken = extractAuthToken(req.headers.get("apikey"));
-  if (authToken !== serviceRoleKey && apiKeyToken !== serviceRoleKey) {
-    return json(401, { error: "Unauthorized" });
-  }
 
   let payload: SendPushPayload;
   try {
@@ -182,11 +166,18 @@ serve(async (req: Request): Promise<Response> => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: prefRow } = await service
+  const preferencesStartedAt = Date.now();
+  console.log("send-push preferences query starting");
+  const { data: prefRow, error: prefErr } = await service
     .from("push_notification_preferences")
     .select("*")
     .eq("user_id", payload.userId)
     .maybeSingle();
+
+  console.log("send-push preferences query finished", {
+    durationMs: Date.now() - preferencesStartedAt,
+    hasError: Boolean(prefErr),
+  });
 
   const preferences: PushPreference =
     (prefRow as PushPreference | null) ?? {
@@ -194,7 +185,6 @@ serve(async (req: Request): Promise<Response> => {
       push_enabled: false,
       case_updates_enabled: false,
       new_messages_enabled: false,
-      booked_times_enabled: false,
       contact_requests_enabled: false,
       quiet_hours_enabled: false,
       quiet_hours_start: "22:00",
@@ -235,10 +225,15 @@ serve(async (req: Request): Promise<Response> => {
   const batchedCount = Math.max(1, pendingCount + 1);
   const copy = getSafePushCopy(normalizedType, batchedCount);
 
+  const subscriptionsStartedAt = Date.now();
   const { data: subscriptions, error: subErr } = await service
     .from("push_subscriptions")
     .select("id, endpoint, subscription")
     .eq("user_id", payload.userId);
+  console.log("send-push subscriptions fetched", {
+    durationMs: Date.now() - subscriptionsStartedAt,
+    subscriptionsFound: subscriptions?.length ?? 0,
+  });
 
   if (subErr) return json(500, { error: "Could not load subscriptions" });
   if (!subscriptions || subscriptions.length === 0) {
@@ -263,27 +258,57 @@ serve(async (req: Request): Promise<Response> => {
 
   let delivered = 0;
   let deleted = 0;
-
-  for (const row of subscriptions as Array<{ id: string; endpoint: string; subscription: Record<string, unknown> }>) {
-    try {
-      await webpush.sendNotification(row.subscription as any, pushPayload);
-      delivered += 1;
-    } catch (err: any) {
-      const statusCode = Number(err?.statusCode || err?.status || 0);
-      if (statusCode === 404 || statusCode === 410) {
-        deleted += 1;
-        await service.from("push_subscriptions").delete().eq("id", row.id);
+  const sendStartedAt = Date.now();
+  const sendResults = await Promise.allSettled(
+    (subscriptions as Array<{ id: string; endpoint: string; subscription: Record<string, unknown> }>).map(async (row) => {
+      const startedAt = Date.now();
+      try {
+        await webpush.sendNotification(row.subscription as any, pushPayload, {
+          timeout: PUSH_SEND_TIMEOUT_MS,
+        });
+        const durationMs = Date.now() - startedAt;
+        console.log("send-push send succeeded", { durationMs });
+        delivered += 1;
+        return { row, statusCode: 0 };
+      } catch (err: any) {
+        const durationMs = Date.now() - startedAt;
+        const statusCode = Number(err?.statusCode || err?.status || 0);
+        console.error("send-push send failed", { durationMs, statusCode });
+        return { row, statusCode };
       }
-      console.error("Push send failed", {
-        statusCode,
-        endpoint: maskEndpoint(row.endpoint),
-      });
-    }
-  }
+    }),
+  );
+  console.log("send-push sends completed", {
+    durationMs: Date.now() - sendStartedAt,
+    sendsAttempted: sendResults.length,
+  });
+
+  const cleanupStartedAt = Date.now();
+  const staleRows = sendResults
+    .filter(
+      (
+        result,
+      ): result is PromiseFulfilledResult<{
+        row: { id: string; endpoint: string; subscription: Record<string, unknown> };
+        statusCode: number;
+      }> =>
+        result.status === "fulfilled" && [404, 410].includes(result.value.statusCode),
+    )
+    .map((result) => result.value.row);
+  await Promise.all(staleRows.map(async (row) => {
+    await service.from("push_subscriptions").delete().eq("id", row.id);
+    deleted += 1;
+  }));
+  console.log("send-push cleanup completed", {
+    durationMs: Date.now() - cleanupStartedAt,
+    staleSubscriptions: staleRows.length,
+  });
 
   await service
     .from("push_delivery_state")
     .upsert({ user_id: payload.userId, last_sent_at: new Date().toISOString(), pending_count: 0 });
+
+  console.log("send-push completed", { totalDurationMs: Date.now() - requestStartedAt });
 
   return json(200, {
     ok: true,

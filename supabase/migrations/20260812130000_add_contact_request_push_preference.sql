@@ -1,8 +1,11 @@
 begin;
 
--- A distinct opt-in category for contact-request push notifications.
+-- Replace the unused booked-time category with contact-request notifications.
 alter table public.push_notification_preferences
   add column if not exists contact_requests_enabled boolean not null default false;
+
+alter table public.push_notification_preferences
+  drop column if exists booked_times_enabled;
 
 -- Subscription endpoints and keys are only readable by their owner.
 -- Server-side service-role access bypasses RLS for notification delivery.

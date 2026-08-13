@@ -10,7 +10,6 @@ type PushPreference = {
   push_enabled: boolean;
   case_updates_enabled: boolean;
   new_messages_enabled: boolean;
-  booked_times_enabled: boolean;
   contact_requests_enabled: boolean;
   quiet_hours_enabled: boolean;
   quiet_hours_start: string;
@@ -95,13 +94,6 @@ function getSafePushCopy(type: string, batchedCount: number) {
     };
   }
 
-  if (type === "booked_time") {
-    return {
-      title: "Ny bokad tid",
-      body: "Du har en uppdatering om bokad tid i kundportalen.",
-    };
-  }
-
   if (type === "contact_request") {
     return {
       title: "Ny kontaktförfrågan",
@@ -118,7 +110,6 @@ function getSafePushCopy(type: string, batchedCount: number) {
 function categoryEnabled(pref: PushPreference, type: string): boolean {
   if (!pref.push_enabled) return false;
   if (type === "new_message") return pref.new_messages_enabled;
-  if (type === "booked_time") return pref.booked_times_enabled;
   if (type === "contact_request") return pref.contact_requests_enabled;
   return pref.case_updates_enabled;
 }
@@ -169,7 +160,6 @@ export async function sendPushInternal(params: SendPushInternalParams): Promise<
       push_enabled: false,
       case_updates_enabled: false,
       new_messages_enabled: false,
-      booked_times_enabled: false,
       contact_requests_enabled: false,
       quiet_hours_enabled: false,
       quiet_hours_start: "22:00",

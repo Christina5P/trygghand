@@ -89,18 +89,6 @@ export function PushNotificationToggle({ className }: Props) {
               </div>
 
               <div className="flex items-center justify-between">
-                <Label htmlFor="pref-booked-times" className="text-sm">Bokad tid</Label>
-                <Switch
-                  id="pref-booked-times"
-                  checked={preferences.booked_times_enabled}
-                  disabled={disabled}
-                  onCheckedChange={(next) => {
-                    void updatePreferences({ booked_times_enabled: next });
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
                 <Label htmlFor="pref-contact-requests" className="text-sm">Nya kontaktförfrågningar</Label>
                 <Switch
                   id="pref-contact-requests"
