@@ -133,6 +133,26 @@ function normalizePortalUrl(rawUrl: string | undefined): string {
   return rawUrl;
 }
 
+function getPushProvider(endpoint: string): string {
+  try {
+    const hostname = new URL(endpoint).hostname;
+    if (hostname === "fcm.googleapis.com" || hostname.endsWith(".fcm.googleapis.com")) {
+      return "Google FCM";
+    }
+    if (hostname === "web.push.apple.com") return "Apple";
+  } catch {
+    return "Unknown";
+  }
+  return "Unknown";
+}
+
+function getPushErrorHeader(headers: unknown, name: string): string | null {
+  if (!headers || typeof headers !== "object") return null;
+  const headerMap = headers as Record<string, unknown>;
+  const value = headerMap[name] ?? headerMap[name.toLowerCase()] ?? headerMap[name.toUpperCase()];
+  return typeof value === "string" ? value : value == null ? null : String(value);
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -273,7 +293,14 @@ serve(async (req: Request): Promise<Response> => {
       } catch (err: any) {
         const durationMs = Date.now() - startedAt;
         const statusCode = Number(err?.statusCode || err?.status || 0);
-        console.error("send-push send failed", { durationMs, statusCode });
+        console.error("send-push send failed", {
+          durationMs,
+          statusCode,
+          provider: getPushProvider(row.endpoint),
+          subscriptionId: row.id,
+          body: typeof err?.body === "string" ? err.body : err?.body ? JSON.stringify(err.body) : err?.message || "",
+          contentType: getPushErrorHeader(err?.headers, "content-type"),
+        });
         return { row, statusCode };
       }
     }),

@@ -88,11 +88,17 @@ async function sendAdminPushNotifications(supabase, supabaseUrl, serviceRoleKey)
     );
 
     const failures = results.filter((result) => result.status === "rejected").length;
-    if (failures > 0) console.error("[contact-request] Some admin push notifications failed", { failures });
+    if (failures > 0) {
+      console.error("[contact-request] Some admin push notifications failed", { failures });
+      return false;
+    }
+
+    return true;
   } catch (error) {
     console.error("[contact-request] Admin push notification failed", {
       message: error instanceof Error ? error.message : "Unknown error",
     });
+    return false;
   }
 }
 
@@ -268,7 +274,7 @@ exports.handler = async (event) => {
     ]);
 
     const pushResult = notificationResults[1];
-    if (pushResult?.status === "fulfilled") {
+    if (pushResult?.status === "fulfilled" && pushResult.value === true) {
       console.log("[contact-request] contact request push invocation succeeded");
     } else {
       console.error("[contact-request] contact request push invocation failed", {
