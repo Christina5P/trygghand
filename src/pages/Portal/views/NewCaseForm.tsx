@@ -57,6 +57,7 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
   const selectedCustomerData = customers.find((customer) => customer.id === selectedCustomer) as
     | (Customer & { address?: string | null })
     | undefined;
+  const firstCustomerId = customers[0]?.id ?? "";
   const [createdDate, setCreatedDate] = useState<string | null>(null);
   const [scheduledDate, setScheduledDate] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("pending");
@@ -109,15 +110,15 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
   }, []);
 
   useEffect(() => {
-    setSelectedCustomer(defaultCustomerId || customers[0]?.id || "");
-  }, [defaultCustomerId, customers]);
+    setSelectedCustomer(defaultCustomerId || firstCustomerId);
+  }, [defaultCustomerId, firstCustomerId]);
 
   useEffect(() => {
     if (caseToEdit) {
       setTitle(caseToEdit.title ?? "");
       setDescription(caseToEdit.description ?? "");
       setSelectedCustomer(
-        caseToEdit.customer_id ?? defaultCustomerId ?? customers[0]?.id ?? ""
+        caseToEdit.customer_id ?? defaultCustomerId ?? firstCustomerId
       );
       setCreatedDate(formatISODateOnly(caseToEdit.created_at ?? null));
       setScheduledDate(formatISODateOnly((caseToEdit as any).scheduled_date ?? null));
@@ -131,14 +132,14 @@ const NewCaseForm: React.FC<NewCaseFormProps> = ({
     } else {
       setTitle("");
       setDescription("");
-      setSelectedCustomer(defaultCustomerId ?? customers[0]?.id ?? "");
+      setSelectedCustomer(defaultCustomerId ?? firstCustomerId);
       setCreatedDate(null);
       setScheduledDate(null);
       setStatus("pending");
       setCaseDocuments([]);
       setLiveReadAt({});
     }
-  }, [caseToEdit, defaultCustomerId, customers, fetchCaseDocuments, fetchCaseReadAt]);
+  }, [caseToEdit, defaultCustomerId, firstCustomerId, fetchCaseDocuments, fetchCaseReadAt]);
 
   useEffect(() => {
     if (!caseToEdit?.id) return;
