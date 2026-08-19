@@ -144,6 +144,7 @@ export default function AdminHandplockatDashboard() {
   const [pickupDeadlineEditing, setPickupDeadlineEditing] = useState<string | null>(null);
   const [pickupDeadlineValue, setPickupDeadlineValue] = useState("");
   const [interestDeletingId, setInterestDeletingId] = useState<string | null>(null);
+  const [interestStatusUpdatingId, setInterestStatusUpdatingId] = useState<string | null>(null);
   const [editingInterestId, setEditingInterestId] = useState<string | null>(null);
   const [interestSaving, setInterestSaving] = useState(false);
   const [interestDraft, setInterestDraft] = useState<{
@@ -278,6 +279,22 @@ export default function AdminHandplockatDashboard() {
     }
 
     setInterestDeletingId(null);
+  }
+
+  async function handleMarkPurchaseInterestContacted(id: string) {
+    setInterestStatusUpdatingId(id);
+    const { error } = await supabase
+      .from("contact_requests")
+      .update({ status: "contacted", updated_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) {
+      alert("Kunde inte markera köpförfrågan som kontaktad: " + error.message);
+    } else {
+      reload();
+    }
+
+    setInterestStatusUpdatingId(null);
   }
 
   function startEditPurchaseInterest(item: any) {
@@ -499,6 +516,12 @@ export default function AdminHandplockatDashboard() {
         <h1 className="text-2xl font-bold">Handplockat Admin</h1>
         <div className="flex gap-3">
           <button
+            onClick={() => navigate("/adminportal")}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold px-5 py-2 rounded-lg transition"
+          >
+            Tillbaka till adminportalen
+          </button>
+          <button
             onClick={() => navigate("/admin/handplockat/skapa")}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg transition"
           >
@@ -538,7 +561,8 @@ export default function AdminHandplockatDashboard() {
             ))}
           </div>
 
-          <div className="mb-12">
+          <div className="flex flex-col">
+          <div className="mb-12 order-2">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h2 className="text-xl font-semibold">Objekt ({visibleListings.length})</h2>
               <div className="flex flex-wrap items-center gap-2">
@@ -753,7 +777,7 @@ export default function AdminHandplockatDashboard() {
             </div>
           </div>
 
-          <div className="mb-12">
+          <div className="mb-12 order-1">
             <h2 className="text-xl font-semibold mb-4">
               Köpförfrågningar ({visiblePurchaseInterests.length})
             </h2>
@@ -934,6 +958,13 @@ export default function AdminHandplockatDashboard() {
                                 >
                                   {interestDeletingId === String(item.id) ? "Tar bort..." : "Ta bort"}
                                 </button>
+                                <button
+                                  onClick={() => handleMarkPurchaseInterestContacted(String(item.id))}
+                                  disabled={interestStatusUpdatingId === String(item.id)}
+                                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold px-2 py-1 rounded"
+                                >
+                                  {interestStatusUpdatingId === String(item.id) ? "Sparar..." : "Kontaktad"}
+                                </button>
                               </>
                             )}
                           </div>
@@ -946,7 +977,7 @@ export default function AdminHandplockatDashboard() {
             </div>
           </div>
 
-          <div>
+          <div className="order-3">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h2 className="text-xl font-semibold">Orders ({visibleOrders.length})</h2>
               <button
@@ -1069,6 +1100,7 @@ export default function AdminHandplockatDashboard() {
                 </tbody>
               </table>
             </div>
+          </div>
           </div>
         </>
       )}

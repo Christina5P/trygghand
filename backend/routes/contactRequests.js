@@ -221,6 +221,9 @@ router.post("/contact-request", async (req, res) => {
       phone,
       message: message || "",
       gdpr_consent: gdpr_consent || false,
+      source: "trygghand",
+      consent_at: new Date().toISOString(),
+      privacy_notice_version: "contact-v1",
     };
 
     const { data, error } = await supabase

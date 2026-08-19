@@ -175,6 +175,7 @@ exports.handler = async (event) => {
   const phone = ((body?.phone ?? "") + "").trim();
   const message = ((body?.message ?? "") + "").trim();
   const gdpr_consent = !!body?.gdpr_consent;
+  const isHandplockat = message.includes("[Köpintresse Handplockat]") || Boolean(body?.interest_image_base64);
   const interestImageBase64 = typeof body?.interest_image_base64 === "string" ? body.interest_image_base64.trim() : "";
   const interestImageName = typeof body?.interest_image_name === "string" ? body.interest_image_name.trim() : "";
   const interestImageType = typeof body?.interest_image_type === "string" ? body.interest_image_type.trim() : "";
@@ -246,6 +247,9 @@ exports.handler = async (event) => {
         interestImageName ? `Bildefil: ${interestImageName}` : "",
       ].filter(Boolean).join("\n"),
       gdpr_consent,
+      source: isHandplockat ? "handplockat" : "trygghand",
+      consent_at: new Date().toISOString(),
+      privacy_notice_version: "contact-v1",
     };
 
     const { data, error } = await supabase

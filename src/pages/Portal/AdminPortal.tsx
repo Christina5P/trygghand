@@ -185,6 +185,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   const [gdprDeleteBusyId, setGdprDeleteBusyId] = useState<string | null>(null);
   const [gdprDownloadBusyId, setGdprDownloadBusyId] = useState<string | null>(null);
   const [isGdprSectionOpen, setIsGdprSectionOpen] = useState(false);
+  const [showArchivedCustomers, setShowArchivedCustomers] = useState(false);
 
   const checkIsAdmin = useCallback(async () => {
     if (!user?.id) return false;
@@ -399,11 +400,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   }, [cases]);
 
   const caseCustomerOptions = useMemo(() => {
-    const uniqueIds = Array.from(new Set((cases || []).map((c) => c.customer_id).filter(Boolean)));
+    const uniqueIds = Array.from(new Set((cases || []).map((c) => c.customer_id).filter(Boolean)))
+      .filter((id) => customers.some((customer) => String(customer.id) === String(id)));
     return uniqueIds
       .map((id) => ({
         id,
-        name: customers.find((customer) => customer.id === id)?.name || "Okänd kund",
+        name: customers.find((customer) => String(customer.id) === String(id))?.name || "Okänd kund",
       }))
       .sort((a, b) => a.name.localeCompare(b.name, "sv"));
   }, [cases, customers]);
@@ -551,6 +553,29 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
   // Admin: customer selection for key receipts
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("__none__");
   const [keyReceiptCount, setKeyReceiptCount] = useState(0);
+  const [archivedCustomersForKeys, setArchivedCustomersForKeys] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    const fetchArchivedCustomersForKeys = async () => {
+      const { data, error } = await supabase
+        .from("archived_customers")
+        .select("id, name")
+        .order("name", { ascending: true });
+
+      if (error) {
+        console.error("Could not load archived customers for key receipts", error);
+        return;
+      }
+
+      setArchivedCustomersForKeys(
+        (data ?? [])
+          .filter((row: any) => row?.id)
+          .map((row: any) => ({ id: String(row.id), name: String(row.name || "Arkiverad kund") }))
+      );
+    };
+
+    void fetchArchivedCustomersForKeys();
+  }, []);
 
   const selectedCustomerIdForKeyReceipt = useMemo(() => {
     if (selectedCustomerId === "__none__") return null;
@@ -719,17 +744,16 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
     if (contactStatusFilter === "all") {
       return contactRequests.filter((c) => c.status !== "converted").length;
     }
-    return contactRequests.filter((c) => c.status === contactStatusFilter).length;
+    return contactRequests.filter(
+      (c) => c.status !== "converted" && c.status === contactStatusFilter
+    ).length;
   }, [contactRequests, contactStatusFilter]);
 
    const contactRequestList = useMemo(() => {
     // Filtrera kontakter baserat på valt filter
-    let filtered = contactRequests;
+    let filtered = contactRequests.filter((c) => c.status !== "converted");
     if (contactStatusFilter !== "all") {
-      filtered = contactRequests.filter((c) => c.status === contactStatusFilter);
-    } else {
-      // För "all" exkludera converted
-      filtered = contactRequests.filter((c) => c.status !== "converted");
+      filtered = filtered.filter((c) => c.status === contactStatusFilter);
     }
     return filtered
       .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
@@ -756,7 +780,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
         );
       });
-}, [contactRequests]);
+}, [contactRequests, contactStatusFilter]);
 
 // Funktion för att konvertera kontaktförfrågan till en kund
 const handleConvertContactToCustomer = useCallback(async (contact: ContactRequest) => {
@@ -1251,8 +1275,20 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 
               {/* Arkiverade kunder */}
               <div className="border-t pt-8">
-                <h3 className="text-lg font-semibold mb-4">Arkiverade Kunder</h3>
-                <ArchivedCustomersList onDataUpdated={fetchData} onOpenCustomer={handleOpenCustomerDialog} />
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h3 className="text-lg font-semibold">Arkiverade Kunder</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowArchivedCustomers((v) => !v)}
+                  >
+                    {showArchivedCustomers ? "Fäll ihop" : "Visa"}
+                  </Button>
+                </div>
+                {showArchivedCustomers && (
+                  <ArchivedCustomersList onDataUpdated={fetchData} onOpenCustomer={handleOpenCustomerDialog} />
+                )}
               </div>
             </div>
           </TabsContent>
@@ -1277,6 +1313,16 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                       {(customers || []).map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name || (c as any).email || c.id}
+                        </SelectItem>
+                      ))}
+                      {archivedCustomersForKeys.length > 0 && (
+                        <SelectItem value="__archived_customers_label__" disabled>
+                          Arkiverade kunder
+                        </SelectItem>
+                      )}
+                      {archivedCustomersForKeys.map((c) => (
+                        <SelectItem key={`archived-${c.id}`} value={c.id}>
+                          {c.name} (Arkiverad)
                         </SelectItem>
                       ))}
                     </SelectContent>

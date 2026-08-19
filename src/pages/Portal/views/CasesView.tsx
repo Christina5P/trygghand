@@ -75,7 +75,6 @@ const CasesView: React.FC<CasesViewProps> = ({
   const [localReadAtByCaseId, setLocalReadAtByCaseId] = useState<Record<string, { admin_last_read_at?: string; customer_last_read_at?: string }>>({});
   const [archivedCustomerMap, setArchivedCustomerMap] = useState<Record<string, string>>({});
   const [showArchivedCases, setShowArchivedCases] = useState(false);
-  const archivedCasesAutoOpened = useRef(false);
   // Guard: track which editingCase.id has already had notifications marked read
   // so that comment-refresh fetches don't re-fire the mark after the first time.
   const notifMarkedForCaseRef = useRef<string | null>(null);
@@ -279,25 +278,18 @@ const CasesView: React.FC<CasesViewProps> = ({
 
   const getCustomerName = (customerId: string | null) => {
     if (!customerId) return "Okänd";
-    const activeName = customers.find((c) => c.id === customerId)?.name;
-    return activeName || archivedCustomerMap[customerId] || "Okänd";
+    const activeName = customers.find((c) => String(c.id) === String(customerId))?.name;
+    return activeName || archivedCustomerMap[customerId] || "Arkiverad kund";
   };
 
   const isArchivedCustomer = (customerId: string | null) => {
     if (!customerId) return false;
-    return Boolean(archivedCustomerMap[customerId]);
+    return !customers.some((customer) => String(customer.id) === String(customerId));
   };
 
   const activeCases = cases.filter((caseItem) => !isArchivedCustomer(caseItem.customer_id ?? null));
   const archivedCases = cases.filter((caseItem) => isArchivedCustomer(caseItem.customer_id ?? null));
   const activeCasesCount = countCasesSource.filter((caseItem) => !isArchivedCustomer(caseItem.customer_id ?? null)).length;
-
-  useEffect(() => {
-    if (!archivedCasesAutoOpened.current && archivedCases.length > 0) {
-      archivedCasesAutoOpened.current = true;
-      setShowArchivedCases(true);
-    }
-  }, [archivedCases.length]);
 
   useEffect(() => {
     onActiveCasesCountChange?.(activeCasesCount);

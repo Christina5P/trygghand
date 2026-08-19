@@ -453,6 +453,7 @@ export default function KeyReceiptDialog(props: KeyReceiptDialogProps) {
       const list: KeyReceipt[] = Array.isArray(data)
         ? (data as any[]).map((r) => ({
             id: String((r as any).id),
+          customer_id: (r as any).customer_id ?? null,
             key_count: Number((r as any).key_count),
             description: (r as any).description ?? null,
             signed_at: String((r as any).signed_at ?? ""),

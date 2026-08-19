@@ -42,7 +42,8 @@ exports.handler = async (event) => {
 
     const { data, error } = await supabase
       .from("contact_requests")
-      .select("id, message, created_at")
+      .select("id, message, created_at, source")
+      .eq("source", "handplockat")
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -53,10 +54,9 @@ exports.handler = async (event) => {
 
     const cutoff = new Date(Date.now() - PUBLIC_RETENTION_DAYS * 24 * 60 * 60 * 1000);
     const filtered = (data || []).filter((row) => {
-      const isHandplockatInterest = String(row?.message || "").includes("[Köpintresse Handplockat]");
       const createdAt = row?.created_at ? new Date(row.created_at) : null;
       const withinRetention = createdAt ? createdAt >= cutoff : false;
-      return isHandplockatInterest && withinRetention;
+      return withinRetention;
     });
 
     const interests = [];

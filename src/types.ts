@@ -227,6 +227,7 @@ export interface CancellationComment {
 
 export interface ContactRequest {
   id: string;
+  source?: "trygghand" | "handplockat" | "unknown";
   name?: string;
   firstname?: string;
   lastname?: string;
@@ -242,4 +243,8 @@ export interface ContactRequest {
   service_type?: string;
   admin_notes?: string | null;
   customer_id?: string | null;
+  gdpr_consent?: boolean;
+  consent_at?: string | null;
+  privacy_notice_version?: string | null;
+  retention_until?: string | null;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -80,7 +80,6 @@ export function SubscriptionCancellationsView({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [archivedCustomerMap, setArchivedCustomerMap] = useState<Record<string, string>>({});
   const [showArchivedCancellations, setShowArchivedCancellations] = useState(false);
-  const archivedCancAutoOpened = useRef(false);
 
   const toMs = (iso?: string | null) => {
     const ms = iso ? Date.parse(iso) : NaN;
@@ -525,23 +524,17 @@ export function SubscriptionCancellationsView({
 
   const isArchivedCustomer = (customerId: string | null) => {
     if (!customerId) return false;
-    return Boolean(archivedCustomerMap[customerId]);
+    return !Object.keys(customerMap).some((id) => String(id) === String(customerId));
   };
 
   const getCustomerName = (customerId: string | null) => {
     if (!customerId) return "Okänd";
-    return customerMap[customerId]?.name || archivedCustomerMap[customerId] || "Okänd";
+    const activeCustomer = Object.entries(customerMap).find(([id]) => String(id) === String(customerId))?.[1];
+    return activeCustomer?.name || archivedCustomerMap[customerId] || "Arkiverad kund";
   };
 
   const activeFiltered = filtered.filter((c) => !isArchivedCustomer(c.customer_id ?? null));
   const archivedFiltered = filtered.filter((c) => isArchivedCustomer(c.customer_id ?? null));
-
-  useEffect(() => {
-    if (!archivedCancAutoOpened.current && archivedFiltered.length > 0) {
-      archivedCancAutoOpened.current = true;
-      setShowArchivedCancellations(true);
-    }
-  }, [archivedFiltered.length]);
 
   const handleOpenCancellation = async (item: SubscriptionCancellation) => {
     setSelected(item);

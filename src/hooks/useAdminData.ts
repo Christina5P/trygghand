@@ -62,7 +62,11 @@ export const useAdminData = () => {
 
   const fetchContactRequests = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from("contact_requests").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("contact_requests")
+        .select("*")
+        .eq("source", "trygghand")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       setContactRequests(data ?? []);
     } catch (err: any) {

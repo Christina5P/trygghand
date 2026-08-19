@@ -34,7 +34,8 @@ export function useHandplockatAdminData() {
 
         const { data: contactData, error: contactError } = await supabase
           .from("contact_requests")
-          .select("id, firstname, lastname, name, email, phone, message, created_at")
+          .select("id, firstname, lastname, name, email, phone, message, created_at, source")
+          .eq("source", "handplockat")
           .order("created_at", { ascending: false })
           .limit(150);
         if (contactError) throw contactError;
@@ -83,9 +84,7 @@ export function useHandplockatAdminData() {
         setListings(normalizedListings);
         setOrders(ordersData ?? []);
         setPurchaseInterests(
-          (contactData ?? []).filter((row) =>
-            String(row?.message || "").includes("[Köpintresse Handplockat]")
-          )
+          contactData ?? []
         );
       } catch (err: any) {
         if (!isMounted) return;
