@@ -93,8 +93,8 @@ const STATUS_DEFINITIONS: { code: string; label: string; colorClass: string }[] 
   { code: "new", label: "Ny", colorClass: "bg-yellow-100 text-yellow-800" },
   { code: "pending", label: "Väntar", colorClass: "bg-yellow-100 text-yellow-800" },
   { code: "in_progress", label: "Pågår", colorClass: "bg-blue-100 text-blue-800" },
-  { code: "completed", label: "Avslutat", colorClass: "bg-green-100 text-green-800" },
-  { code: "closed", label: "Avbruten", colorClass: "bg-red-100 text-red-800" },
+ { code: "completed", label: "Avslutat", colorClass: "bg-green-100 text-green-800" },
+ { code: "cancelled", label: "Avbruten", colorClass: "bg-red-100 text-red-800" },
   { code: "declined", label: "Avböjd", colorClass: "bg-red-100 text-red-800" },
   { code: "converted", label: "Kund", colorClass: "bg-indigo-100 text-indigo-800" },
   { code: "contacted", label: "Kontaktad", colorClass: "bg-blue-100 text-blue-800" },
@@ -104,6 +104,7 @@ const normalizeStatus = (s?: string) => (s ?? "okand").toLowerCase().trim();
 
 const statusLabel = (code: string) => {
   if (code === "all") return "Alla";
+  if (code === "active") return "Aktiva ärenden";
   const def = STATUS_DEFINITIONS.find((d) => d.code === code);
   return def ? def.label : (code.charAt(0).toUpperCase() + code.slice(1));
 };
@@ -409,7 +410,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({
 
   const filteredCases = useMemo(() => {
     return (cases || []).filter((caseItem) => {
-      const statusMatches = statusFilter === "all" || normalizeStatus(caseItem.status) === statusFilter;
+      const normalizedStatus = normalizeStatus(caseItem.status);
+      const statusMatches =
+        statusFilter === "all" ||
+        (statusFilter === "active"
+          ? !["completed", "cancelled"].includes(normalizedStatus)
+          : normalizedStatus === statusFilter);
       const customerMatches = caseCustomerFilter === "all" || caseItem.customer_id === caseCustomerFilter;
       return statusMatches && customerMatches;
     });
@@ -1014,6 +1020,7 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{statusLabel("all")}</SelectItem>
+                    <SelectItem value="active">{statusLabel("active")}</SelectItem>
                     {statusOptions.map((s) => (
                       <SelectItem key={s} value={s}>
                         {statusLabel(s)}
