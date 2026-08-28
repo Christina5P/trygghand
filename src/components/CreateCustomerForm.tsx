@@ -54,7 +54,7 @@ export default function CreateCustomerForm({ onCustomerCreated }: { onCustomerCr
       toast({
         title: "Kund skapad!",
         description: invited
-          ? `${formData.name} (${formData.email}) är nu registrerad som kund. En inbjudan har skickats via e-post.`
+          ? `${formData.name} (${formData.email}) är nu registrerad som kund. Inloggningsuppgifter (lösenord) har skickats via e-post.`
           : authCreated && !hasEmail && hasPhone
             ? `${formData.name} är nu registrerad som kund utan e-post. Inloggning sker via SMS-kod till ${formData.phone}.`
             : !hasEmail && !hasPhone

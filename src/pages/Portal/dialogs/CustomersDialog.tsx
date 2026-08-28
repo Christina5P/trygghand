@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Loader2, Edit, Upload, FileText, Download, FileWarning, MessageCircle } from "lucide-react"; // Lade till FileWarning
+import { Plus, Loader2, Edit, Upload, FileText, Download, FileWarning, MessageCircle, KeyRound } from "lucide-react"; // Lade till FileWarning
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +79,7 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
   const [deletingCustomer, setDeletingCustomer] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [togglingActive, setTogglingActive] = useState(false);
+  const [sendingLogin, setSendingLogin] = useState(false);
 
   const handleUnauthorized = useCallback(async () => {
     const refreshed = await tryRefreshSession();
@@ -416,6 +417,42 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
     setShowDeleteConfirm(false);
   };
 
+  // NY FUNKTION: SKICKA NYA INLOGGNINGSUPPGIFTER TILL BEFINTLIG KUND
+  const handleResendLogin = async () => {
+    if (!editingCustomer?.id || !isAdmin) {
+      toast({
+        title: "Åtkomst nekad",
+        description: "Du behöver adminrättigheter för att skicka nya inloggningsuppgifter.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSendingLogin(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("resend-customer-login", {
+        body: { customerId: editingCustomer.id },
+      });
+
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message || data?.error || "Kunde inte skicka nya inloggningsuppgifter.");
+
+      toast({
+        title: data.password_sent ? "Nya inloggningsuppgifter skickade" : "Lösenord uppdaterat",
+        description: data.message,
+        variant: data.password_sent ? "default" : "destructive",
+      });
+    } catch (err: any) {
+      console.error("Fel vid utskick av nya inloggningsuppgifter:", err);
+      toast({
+        title: "Fel",
+        description: err.message || "Kunde inte skicka nya inloggningsuppgifter.",
+        variant: "destructive",
+      });
+    }
+    setSendingLogin(false);
+  };
+
   const handleStatusChange = async (caseId: string, newStatus: string) => {
     try {
       const { error } = await supabase.functions.invoke("admin-set-case-status", {
@@ -600,6 +637,18 @@ const CustomersDialog: React.FC<CustomersDialogProps> = ({ customer, onClose, on
             className="w-full mt-4 border-gray-300 text-gray-700 hover:bg-gray-50"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Spara Kundinformation
+          </Button>
+
+          {/* Skicka nya inloggningsuppgifter till befintlig kund */}
+          <Button
+            onClick={handleResendLogin}
+            disabled={sendingLogin || !isAdmin || adminCheckLoading || !editingCustomer.email}
+            variant="outline"
+            className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+            title={!editingCustomer.email ? "Kunden saknar e-postadress" : undefined}
+          >
+            {sendingLogin ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <KeyRound className="h-4 w-4 mr-2" />}
+            Skicka nya inloggningsuppgifter
           </Button>
 
           {/* BEKRÄFTELSEDIALOG FÖR RADERING */}

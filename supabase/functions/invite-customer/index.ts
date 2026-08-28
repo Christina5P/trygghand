@@ -93,6 +93,56 @@ async function findAuthUserIdByPhone(service: any, phoneE164: string): Promise<s
   return null;
 }
 
+function generatePassword(length = 14) {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@#$%";
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+}
+
+async function sendBrevoEmail(opts: {
+  brevoApiKey?: string;
+  emailFrom: string;
+  emailFromName: string;
+  appLoginUrl: string;
+  toEmail: string;
+  password: string;
+  name?: string;
+}): Promise<{ ok: boolean; reason?: string }> {
+  if (!opts.brevoApiKey) return { ok: false, reason: "BREVO_API_KEY saknas" };
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": opts.brevoApiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { email: opts.emailFrom, name: opts.emailFromName },
+        to: [{ email: opts.toEmail, name: opts.name || "" }],
+        subject: "Ditt konto hos Trygg Hand",
+        textContent: `Hej ${opts.name || ""}\n\nDu har blivit inlagd som kund hos Trygg Hand.\n\nE-post: ${opts.toEmail}\nLösenord: ${opts.password}\n\nLogga in här: ${opts.appLoginUrl}\n\nByt gärna lösenord efter första inloggningen.\n\nVänliga hälsningar\nTrygg Hand`,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const bodyText = await response.text().catch(() => "");
+      return { ok: false, reason: `Brevo svarade ${response.status}: ${bodyText.slice(0, 300)}` };
+    }
+
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, reason: err?.message || "Okänt fel vid mejlutskick" };
+  }
+}
+
 serve(async (req: Request): Promise<Response> => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -149,38 +199,83 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     /**
-     * 1️⃣ Bjud in användaren via Supabase (INGET lösenord)
+     * 1️⃣ Kolla först om kunden redan finns (via email) INNAN vi skapar en auth-user.
+     *    customers.email har en unique-not-null constraint, så vi vill aldrig hinna
+     *    skapa en auth-user och sedan misslyckas på upsert-konflikten.
      */
-    // If email exists -> send invite + link customer to auth user id
     if (safeEmail) {
-      const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(safeEmail, {
-        redirectTo: appLoginUrl,
-      });
+      const { data: existingCustomerRow, error: existingCustomerErr } = await supabase
+        .from("customers")
+        .select("id, email")
+        .ilike("email", safeEmail)
+        .maybeSingle();
 
-      let userId = inviteData.user?.id ?? null;
-      if (inviteError || !userId) {
-        // If user already exists (or invite didn't return an id), still allow creating/linking the customer row.
-        try {
-          const existingCustomer = await supabase
-            .from("customers")
-            .select("id")
-            .ilike("email", safeEmail)
-            .maybeSingle();
-          if (!existingCustomer.error && (existingCustomer.data as any)?.id) {
-            return json(req, 200, {
-              ok: true,
-              invited: false,
-              customer_id: String((existingCustomer.data as any).id),
-              message: "Kund finns redan för denna e-postadress.",
-            });
-          }
-        } catch {
-          // ignore
+      if (existingCustomerErr) {
+        console.error("invite-customer: lookup existing customer failed", {
+          code: (existingCustomerErr as any)?.code,
+          message: (existingCustomerErr as any)?.message,
+        });
+        return json(req, 500, { error: "Internal server error" });
+      }
+
+      if (existingCustomerRow?.id) {
+        // 2️⃣ Kunden finns redan. Verifiera att den kopplade auth-usern verkligen finns
+        //    innan vi säger att allt är klart – annars kan customers.id peka på en
+        //    raderad/obefintlig auth-user.
+        const { data: existingAuthUser, error: getAuthErr } = await supabase.auth.admin.getUserById(
+          String(existingCustomerRow.id),
+        );
+
+        if (!getAuthErr && existingAuthUser?.user?.id) {
+          return json(req, 200, {
+            ok: true,
+            invited: false,
+            password_sent: false,
+            customer_id: String(existingCustomerRow.id),
+            message: "Kund finns redan för denna e-postadress.",
+          });
         }
 
+        // 3️⃣ customers-raden finns men saknar en matchande auth.users-rad.
+        //    Vi kan inte skapa en ny auth-user med samma id (Supabase Admin API tillåter
+        //    inte att man väljer id), och att skriva om customers.id här skulle kräva att
+        //    varje FK (cases, valuations, push_subscriptions, ...) uppdateras samtidigt.
+        //    Det är en admin-åtgärd, inte något den här funktionen ska göra automatiskt.
+        console.error("invite-customer: customer exists without matching auth user", {
+          customer_id: existingCustomerRow.id,
+          email: safeEmail,
+        });
+        return json(req, 409, {
+          ok: false,
+          error: "customer_without_auth_user",
+          customer_id: String(existingCustomerRow.id),
+          message:
+            "Kunden finns redan i customers men saknar en matchande Auth-användare. Kräver manuell admin-åtgärd innan inbjudan kan skickas.",
+        });
+      }
+
+      // 4️⃣ Ingen customer-rad för denna e-post -> skapa ny auth-user med genererat lösenord.
+      let userId: string | null = null;
+      let passwordForBrevo: string | null = null;
+      let authUserCreated = false;
+
+      const password = generatePassword();
+      const { data: createdUser, error: createUserErr } = await supabase.auth.admin.createUser({
+        email: safeEmail,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: safeName },
+      });
+
+      if (!createUserErr && createdUser?.user?.id) {
+        userId = createdUser.user.id;
+        passwordForBrevo = password;
+        authUserCreated = true;
+      } else {
+        // Auth-user finns redan för denna e-post (men saknade en customers-rad) -> koppla ihop, skapa inte en ny.
         const existingUserId = await findAuthUserIdByEmail(supabase, safeEmail);
         if (!existingUserId) {
-          return json(req, 400, { error: inviteError?.message || "User invite failed" });
+          return json(req, 400, { error: createUserErr?.message || "User creation failed" });
         }
         userId = existingUserId;
       }
@@ -210,45 +305,37 @@ serve(async (req: Request): Promise<Response> => {
         throw customerError;
       }
 
-    /**
-     * 3️⃣ (Valfritt) Skicka mjukt välkomstmail via Brevo
-     * – INGEN hemlig info
-     */
-      if (brevoApiKey) {
-      await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "api-key": brevoApiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sender: { email: emailFrom, name: emailFromName },
-          to: [{ email: safeEmail, name: safeName || "" }],
-          subject: "Välkommen till Trygg Hand",
-          textContent: `
-Hej ${safeName || ""}
+      // 5️⃣ Brevo ska bara skickas när vi faktiskt skapade en ny auth-user + nytt lösenord.
+      let emailSent = false;
+      let emailError: string | null = null;
+      if (authUserCreated && passwordForBrevo) {
+        const brevoResult = await sendBrevoEmail({
+          brevoApiKey,
+          emailFrom,
+          emailFromName,
+          appLoginUrl,
+          toEmail: safeEmail,
+          password: passwordForBrevo,
+          name: safeName,
+        });
+        emailSent = brevoResult.ok;
+        emailError = brevoResult.ok ? null : brevoResult.reason ?? "Okänt fel vid mejlutskick";
+        if (!brevoResult.ok) {
+          console.error("invite-customer: Brevo email failed", { reason: brevoResult.reason });
+        }
+      }
 
-Du har nu blivit inlagd som kund hos Trygg Hand.
-
-För att komma igång:
-• Öppna mailet du fått från oss
-• Klicka på länken och skapa ditt lösenord
-• Logga in i tjänsten
-
-Har du frågor eller behöver stöd är du alltid välkommen att kontakta oss.
-
-Vänliga hälsningar
-Trygg Hand
-Från beslut till nytt kapitel
-          `,
-        }),
-      });
-    }
-
+      // 6️⃣+7️⃣ Kunden skapas oavsett, men vi rapporterar tydligt om mejlet inte gick fram.
       return json(req, 200, {
         ok: true,
-        invited: true,
-        message: "Inbjudan skickad. Användaren sätter själv sitt lösenord via Supabase.",
+        invited: authUserCreated,
+        password_sent: emailSent,
+        email_error: emailError,
+        message: !authUserCreated
+          ? "Kund kopplad till befintligt konto."
+          : emailSent
+            ? "Kund skapad. Lösenord skickat via e-post."
+            : "Kund skapad, men lösenordsmejlet kunde inte skickas.",
       });
     }
 
