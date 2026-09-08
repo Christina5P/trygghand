@@ -616,7 +616,7 @@ export function SubscriptionCancellationsView({
                       canDelete={isAdmin}
                       isDeleting={deletingId === c.id}
                       unread={unread}
-                      readStatusLabel={unread ? "Oläst" : "Läst"}
+                      readStatusLabel="Nytt meddelande"
                       onOpen={() => handleOpenCancellation(c)}
                       onStatusChange={(next) => handleStatusChange(c.id, next)}
                       onDelete={() => handleDeleteCancellation(c.id)}
@@ -658,7 +658,7 @@ export function SubscriptionCancellationsView({
                           canDelete={isAdmin}
                           isDeleting={deletingId === c.id}
                           unread={unread}
-                          readStatusLabel={unread ? "Oläst" : "Läst"}
+                          readStatusLabel="Nytt meddelande"
                           onOpen={() => handleOpenCancellation(c)}
                           onStatusChange={(next) => handleStatusChange(c.id, next)}
                           onDelete={() => handleDeleteCancellation(c.id)}

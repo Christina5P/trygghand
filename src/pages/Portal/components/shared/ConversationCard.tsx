@@ -21,7 +21,7 @@ export function ConversationCard({
   actionsSlot?: ReactNode;
   onClick: () => void;
 }) {
-  const label = readStatusLabel ?? (unread ? "Oläst" : "Läst");
+  const label = readStatusLabel ?? "Nytt meddelande";
   const hasMessages = commentCount > 0;
 
   return (
@@ -32,7 +32,7 @@ export function ConversationCard({
       <CardHeader className="relative pb-3">
         <CardTitle className="text-base truncate pr-2">{title}</CardTitle>
         <CardDescription className="min-h-[3.75rem] pr-2 line-clamp-3">{subtitle}</CardDescription>
-        {hasMessages && (
+        {hasMessages && unread && (
           <div className="mt-2">
             <span
               className={`inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-medium ${

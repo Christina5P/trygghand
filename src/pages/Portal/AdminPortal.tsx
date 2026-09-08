@@ -1070,7 +1070,6 @@ const [isGeneralFullmaktDialogOpen, setIsGeneralFullmaktDialogOpen] = useState(f
 
             <CasesView
               cases={filteredCases}
-              casesForCount={cases}
               customers={customers}
               onDataUpdated={fetchData}
              onOpenCase={(c) => setSelectedCase(c)}
