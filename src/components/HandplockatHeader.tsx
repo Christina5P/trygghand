@@ -16,10 +16,13 @@ export default function HandplockatHeader() {
                 variant="handplockat"
                 className="h-12 w-auto md:h-16"
               />
-              <span className="font-semibold text-lg md:text-xl tracking-tight truncate">
-                Handplockat Sundsvall
+              <span className="font-bold text-lg md:text-xl tracking-[0.08em] truncate">
+                HANDPLOCKAT
               </span>
             </div>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#aa7945]">
+              Vintage · Retro · Återbruk
+            </span>
             <Link
               to="/"
               className="text-xs md:text-sm text-muted-foreground hover:text-primary font-medium flex items-center gap-1 transition-colors"

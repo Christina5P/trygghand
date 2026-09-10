@@ -8,7 +8,7 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import type { HandplockatListing } from "@/types";
 import ListingCard from "@/components/ListingCard";
 import HandplockatInterestForm from "./HandplockatInterestForm";
-import { ArrowRight, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, Heart, SlidersHorizontal } from "lucide-react";
 import {
   Accordion,
   AccordionItem,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/accordion";
 
 const DEFAULT_DESCRIPTION =
-  "Second hand i Sundsvall med handplockade möbler och inredning från riktiga hem. Lokalt, hållbart och personligt via Trygg Hand.";
+  "Handplockat i Sundsvall – vintage, retro möbler och utvald inredning från riktiga hem. Handplockade fynd från Trygg Hand.";
 
 function ListingSkeleton() {
   return (
@@ -58,6 +58,9 @@ export default function HandplockatIndex() {
     [listings]
   );
 
+  // No featured field exists yet, so the storefront uses the existing public order.
+  const featuredListings = useMemo(() => visibleListings.slice(0, 4), [visibleListings]);
+
   const categoryFilters = useMemo(() => {
     const cats = Array.from(
       new Set(visibleListings.map((l) => l.category || "").filter(Boolean))
@@ -83,76 +86,97 @@ export default function HandplockatIndex() {
     return visibleListings.filter((l) => l.category === selectedCategory);
   }, [visibleListings, selectedCategory]);
 
-  const canCreate = !authLoading && !!customer;
+  const canCreate = !authLoading && customer?.is_admin === true;
 
   return (
-    <div className="min-h-[100svh] bg-background">
+    <div className="min-h-[100svh] bg-[#f8f6f1] text-[#26352f]">
       <Seo
-        title="Second hand i Sundsvall – möbler & fynd | Handplockat"
+        title="Handplockat – Vintage & retro möbler i Sundsvall"
         description={DEFAULT_DESCRIPTION}
         canonical="https://www.trygghand.com/handplockat"
       />
 
-      <main className="pb-16">
+      <main className="pb-20">
 
         {/* HERO */}
-        <section className="relative overflow-hidden">
+        <section className="relative min-h-[560px] overflow-hidden bg-[#30443c]">
           <img
             src="/handplockat.webp"
-            alt="Second hand i Sundsvall – Handplockat"
-            className="absolute inset-0 w-full h-full object-cover"
+            alt="Utvalda vintageföremål från Handplockat i Sundsvall"
+            className="absolute inset-0 h-full w-full object-cover object-center"
             fetchPriority="high"
           />
-          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1d2b27]/90 via-[#1d2b27]/55 to-[#1d2b27]/15" />
 
-          <div className="relative container mx-auto px-4 py-20 text-white">
-            <h1 className="text-4xl mb-4 drop-shadow-md">
-              Second hand i Sundsvall – handplockade möbler & fynd
+          <div className="relative mx-auto flex min-h-[560px] max-w-7xl items-end px-5 py-16 text-white sm:px-8 lg:items-center lg:py-20">
+            <div className="max-w-2xl">
+            <p className="mb-5 text-sm font-semibold uppercase tracking-[0.22em] text-[#e6c98e]">Vintage · Retro · Återbruk</p>
+            <h1 className="mb-6 max-w-xl font-nunito text-4xl font-bold leading-[1.05] sm:text-6xl">
+              Vintage, retro & handplockade möbler från Sundsvall
             </h1>
 
-            <p className="max-w-xl text-white/90 mb-6 drop-shadow-sm">
-              Upptäck unika möbler och inredning från riktiga hem i Sundsvall.
-              Handplockat erbjuder ett mer personligt alternativ till traditionell second hand.
+            <p className="mb-7 max-w-xl text-lg leading-relaxed text-white/85">
+              Vi hittar sakerna när vi hjälper familjer med flytt, avveckling och dödsbon – och ger dem en ny chans istället för att de går till spillo.
             </p>
 
-            <a
-              href="#listings"
-              className="bg-primary text-white px-6 py-3 rounded-lg inline-flex gap-2 shadow-lg"
-            >
-              Hitta fynd <ArrowRight className="w-4 h-4" />
-            </a>
+            <p className="mb-8 text-sm font-medium text-white/75">Nya fynd läggs upp löpande.</p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <a href="#listings" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#e6c98e] px-6 font-semibold text-[#26352f] shadow-lg transition-transform hover:-translate-y-0.5">Se Handplockat just nu<ArrowRight className="h-4 w-4" /></a>
+              <a href="#interest-request" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/50 px-6 font-semibold text-white transition-colors hover:bg-white/10">Jag letar efter något särskilt</a>
+            </div>
+            </div>
           </div>
         </section>
 
-        {/* 🔥 SEO TEXT (VIKTIGAST) */}
-        <section className="container mx-auto px-4 pt-10 max-w-3xl">
-          <h2 className="text-2xl font-semibold mb-4">
-            Second hand i Sundsvall – möbler, inredning & återbruk
-          </h2>
-
-          <p className="text-muted-foreground mb-4">
-            Handplockat är en lokal second hand-tjänst i Sundsvall där möbler och föremål
-            får nytt liv istället för att slängas. Utbudet kommer från riktiga hem i samband
-            med äldreflytt, dödsbo och bostadsförändringar.
-          </p>
-
-          <p className="text-muted-foreground mb-4">
-            Här hittar du noggrant utvalda möbler, vintage och inredning – ett mer hållbart
-            och personligt alternativ till traditionella second hand-butiker.
-          </p>
-
-          <p className="text-muted-foreground">
-            Letar du efter hjälp med flytt eller dödsbo? Läs mer om våra tjänster{" "}
-            <Link to="/" className="text-primary underline">
-              här
-            </Link>.
-          </p>
+        <section className="mx-auto grid max-w-7xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:py-24">
+          <div>
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#aa7945]">Det här är Handplockat</p>
+            <h2 className="font-nunito text-3xl font-bold leading-tight sm:text-4xl">Saker med en historia</h2>
+          </div>
+          <div className="max-w-2xl space-y-4 text-lg leading-relaxed text-[#5f6963]">
+            <p>Handplockat är en del av Trygg Hand.</p>
+            <p>När ett hem förändras finns ofta saker som är för fina för att försvinna. Genom Trygg Hand möter vi dessa hem vid flytt, avveckling och dödsbon.</p>
+            <p>Vi handplockar ut möbler, inredning och föremål som kan få ett nytt liv hos någon annan. Det är Handplockat.</p>
+          </div>
         </section>
 
-        {/* LIST */}
-        <section id="listings" className="container mx-auto px-4 py-12">
-          <div className="text-center text-sm text-muted-foreground mb-6">
-            Nya second hand-fynd i Sundsvall läggs upp löpande
+        <section className="bg-[#eee9df] py-16 sm:py-20">
+          <div className="mx-auto max-w-7xl px-5 sm:px-8">
+            <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="mb-3 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-[#aa7945]"><span className="h-px w-10 bg-[#d6c29c]" /> Skyltfönstret</p>
+                <h2 className="font-nunito text-3xl font-bold sm:text-4xl">Handplockat just nu</h2>
+                <p className="mt-3 max-w-xl text-[#6b746e]">Saker vi fastnade lite extra för den här veckan.</p>
+              </div>
+              <a href="#listings" className="text-sm font-semibold text-[#8d6335] hover:underline">Se alla fynd <ArrowRight className="inline h-4 w-4" /></a>
+            </div>
+
+            {loading && (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 4 }).map((_, i) => <ListingSkeleton key={i} />)}
+              </div>
+            )}
+
+            {!loading && !error && (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {featuredListings.map((listing, index) => (
+                  <ListingCard key={listing.id} listing={listing} eager={index < 4} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ALL LISTINGS */}
+        <section id="listings" className="bg-white/70 py-16 sm:py-20">
+          <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-[#aa7945]">Hela sortimentet</p>
+              <h2 className="font-nunito text-3xl font-bold sm:text-4xl">Alla Handplockade Fynd</h2>
+              <p className="mt-3 max-w-xl text-[#6b746e]">Bläddra bland alla tillgängliga vintage-, retro- och återbruksfynd.</p>
+            </div>
+            <p className="text-sm text-[#6b746e]">Nya fynd läggs upp löpande i Sundsvall</p>
           </div>
 
           {canCreate && (
@@ -164,11 +188,11 @@ export default function HandplockatIndex() {
           )}
 
           {/* FILTER */}
-          <Accordion type="single" collapsible className="mb-6">
+          <Accordion type="single" collapsible className="mb-8">
             <AccordionItem value="filters">
               <AccordionTrigger className="rounded-lg border border-border bg-card px-4 py-3 text-sm hover:no-underline">
                 <span className="flex items-center gap-2 font-medium">
-                  <SlidersHorizontal className="h-4 w-4 text-primary" />
+                  <SlidersHorizontal className="h-4 w-4 text-[#aa7945]" />
                   Filtrera fynd
                   {selectedCategory !== "Alla" && (
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
@@ -212,55 +236,77 @@ export default function HandplockatIndex() {
             </AccordionItem>
           </Accordion>
 
-          <a
+            <a
             href="#interest-request"
-            className="flex min-h-12 items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-primary/10"
+            className="mb-12 flex min-h-12 items-center justify-between gap-3 rounded-2xl border border-[#d6c29c] bg-[#fbf3df] px-5 py-4 text-sm font-semibold text-[#26352f] transition-colors hover:bg-[#f6e9c9]"
           >
             <span>Hittar du inte rätt föremål?</span>
-            <span className="inline-flex items-center gap-1 text-primary">
+            <span className="inline-flex items-center gap-1 text-[#8d6335]">
               Berätta vad du söker <ArrowRight className="h-4 w-4" />
             </span>
           </a>
-        </section>
-        
-
           {/* LOADING */}
           {loading && (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <ListingSkeleton key={i} />
-              ))}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => <ListingSkeleton key={i} />)}
             </div>
           )}
 
-          {/* ERROR */}
-          {error && <p className="text-red-500">{error}</p>}
+          {error && <p className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">{error}</p>}
 
-          {/* LISTINGS */}
           {!loading && !error && (
             <>
               {filteredListings.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
                   {filteredListings.map((listing, index) => (
-                    <ListingCard
-                      key={listing.id}
-                      listing={listing}
-                      eager={index < 4}
-                    />
+                    <ListingCard key={listing.id} listing={listing} eager={index < 4} compact />
                   ))}
                 </div>
               ) : (
-                <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                  Inga fynd i den här kategorin just nu.
-                </p>
+                <p className="rounded-2xl border border-dashed border-[#cfc9bc] px-4 py-10 text-center text-sm text-[#6b746e]">Inga fynd i den här kategorin just nu.</p>
               )}
 
-              <div id="interest-request" className="mt-10 scroll-mt-4 border-t border-border pt-8">
+              <div id="interest-request" className="mt-16 scroll-mt-4 border-t border-[#ddd8ce] pt-16">
                 <HandplockatInterestForm />
               </div>
             </>
           )}
+          </div>
+        </section>
 
+
+        <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.5fr]">
+            <div>
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#aa7945]">Enkelt från början till slut</p>
+              <h2 className="font-nunito text-3xl font-bold sm:text-4xl">Så fungerar det</h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                ["01", "Hitta något du gillar", "Bläddra bland våra aktuella fynd."],
+                ["02", "Boka eller lämna intresse", "Följ den befintliga köp- eller intresseprocessen."],
+                ["03", "Hämta i Sundsvall", "Hämtning sker enligt informationen i annonsen."],
+              ].map(([number, title, text]) => (
+                <div key={number} className="border-t-2 border-[#d6c29c] pt-4">
+                  <span className="text-sm font-semibold text-[#aa7945]">{number}</span>
+                  <h3 className="mt-4 font-nunito text-xl font-bold">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[#6b746e]">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#30443c] text-white">
+          <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center lg:py-20">
+            <div className="max-w-2xl">
+              <p className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[#e6c98e]"><Heart className="h-4 w-4" /> Trygg Hand</p>
+              <h2 className="font-nunito text-3xl font-bold sm:text-4xl">Handplockat är en del av Trygg Hand</h2>
+              <p className="mt-5 text-lg leading-relaxed text-white/75">Trygg Hand hjälper familjer genom äldreflytt, avveckling och dödsbon. När ett hem ska förändras finns ofta möbler och saker som någon annan kan uppskatta. Handplockat är vårt sätt att ge utvalda föremål ett nytt hem.</p>
+            </div>
+            <Link to="/" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 font-semibold text-[#30443c] transition-transform hover:-translate-y-0.5">Läs mer om Trygg Hand <ArrowRight className="h-4 w-4" /></Link>
+          </div>
+        </section>
 
         {/* SEO ACCORDION */}
         <section className="container mx-auto px-4 pb-16">
@@ -269,26 +315,21 @@ export default function HandplockatIndex() {
               <AccordionItem value="seo-info">
                 <AccordionTrigger>
                   <span className="text-lg font-semibold text-primary">
-                    Läs mer om second hand i Sundsvall
+                    Vintage, återbruk och second hand i Sundsvall
                   </span>
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="bg-white border border-border rounded-2xl shadow-sm p-6 mt-3 space-y-4 text-sm text-muted-foreground">
                     <p>
-                      Handplockat erbjuder second hand i Sundsvall med fokus på kvalitet,
-                      hållbarhet och lokalt återbruk. Våra produkter kommer från hem där vi
-                      hjälpt till vid flytt eller dödsbo.
-                    </p>
+                      På Handplockat hittar du utvalda vintage- och retromöbler, inredning och föremål från hem i Sundsvall med omnejd.
+                      </p>
 
-                    <ul className="list-disc pl-5">
-                      <li>Möbler och inredning</li>
-                      <li>Vintage och unika fynd</li>
-                      <li>Hållbara alternativ till nyköp</li>
-                    </ul>
+                      <p>
+                        Här kan du hitta allt från teakmöbler och retro lampor till porslin, konst och andra saker med karaktär. Vi säljer begagnade möbler och föremål som vi handplockat ut genom Trygg Hands arbete med flytt, avveckling och dödsbon.
+                      </p>
 
-                    <p>
-                      Genom att handla second hand bidrar du till minskat avfall och ett mer
-                      hållbart samhälle.
+                      <p>
+                        Det är ett lokalt återbruk med personlighet – och ett alternativ för dig som letar efter vintage möbler, retro inredning eller second hand möbler i Sundsvall.
                     </p>
                   </div>
                 </AccordionContent>

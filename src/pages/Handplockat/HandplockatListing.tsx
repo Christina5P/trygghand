@@ -131,11 +131,11 @@ export default function HandplockatListing() {
   if (error || !listing) return <div className="p-10">{error}</div>;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f8f6f1] text-[#26352f]">
       <Seo title={listing.title} description={listing.description} />
 
-      <main className="container mx-auto px-4 py-10">
-        <Link to="/handplockat" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+      <main className="mx-auto max-w-7xl px-5 py-10 font-nunito sm:px-8">
+        <Link to="/handplockat" className="text-sm font-semibold text-[#6b746e] transition-colors hover:text-[#8d6335]">
           ← Tillbaka
         </Link>
 
@@ -145,7 +145,7 @@ export default function HandplockatListing() {
           <div className="space-y-3">
 
             {/* Main image */}
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-[#f1eee8]">
               {activeImage ? (
                 <img
                   src={activeImage}
@@ -153,7 +153,7 @@ export default function HandplockatListing() {
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                <div className="flex h-full items-center justify-center text-sm text-[#6b746e]">
                   Ingen bild
                 </div>
               )}
@@ -202,8 +202,8 @@ export default function HandplockatListing() {
                     onClick={() => setActiveIndex(i)}
                     className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${
                       i === activeIndex
-                        ? "border-primary opacity-100"
-                        : "border-border opacity-60 hover:opacity-100"
+                        ? "border-[#aa7945] opacity-100"
+                        : "border-[#ddd8ce] opacity-60 hover:opacity-100"
                     }`}
                     aria-label={`Välj bild ${i + 1}`}
                   >
@@ -215,35 +215,35 @@ export default function HandplockatListing() {
           </div>
 
           {/* ── INFO ── */}
-          <div className="space-y-3 text-sm">
+          <div className="space-y-4 text-sm">
 
             <div className="flex flex-wrap gap-2">
-              <Badge className="bg-blue-600 text-white">
+              <Badge className="border-0 bg-[#30443c] text-white">
                 {listing.skick || "Okänt skick"}
               </Badge>
               {listing.clothingtype && (
-                <Badge variant="secondary">
+                <Badge className="border-0 bg-[#e8e1d4] text-[#5f6963]">
                   {listing.clothingtype}
                 </Badge>
               )}
               {listing.category && (
-                <Badge variant="outline">
+                <Badge className="border border-[#d6c29c] bg-transparent text-[#8d6335]">
                   {listing.category}
                 </Badge>
               )}
             </div>
 
-            <h1 className="text-2xl font-bold">{listing.title}</h1>
+            <h1 className="text-3xl font-bold leading-tight text-[#26352f]">{listing.title}</h1>
 
             {canEdit && (
               <Link to={`/admin/handplockat/${listing.id}/redigera`}>
-                <button className="mt-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-semibold shadow hover:opacity-90 transition">
+                <button className="mt-2 rounded-full bg-[#30443c] px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#26352f]">
                   Redigera annons
                 </button>
               </Link>
             )}
 
-            <div className="text-base text-gray-900 font-medium">
+            <div className="text-base font-medium leading-relaxed text-[#5f6963]">
               {listing.description
                 .split("\n")
                 .filter((l) => !/^(Storlek|Märke):/i.test(l.trim()))
@@ -254,35 +254,35 @@ export default function HandplockatListing() {
 
             {dimensionLabel && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Mått</span>
+                <span className="text-[#7a817b]">Mått</span>
                 <span>{dimensionLabel}</span>
               </div>
             )}
 
             {clothingTypeLabel && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Typ</span>
+                <span className="text-[#7a817b]">Typ</span>
                 <span>{clothingTypeLabel}</span>
               </div>
             )}
 
             {sizeLabel && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Storlek</span>
+                <span className="text-[#7a817b]">Storlek</span>
                 <span>{sizeLabel}</span>
               </div>
             )}
 
             {brandLabel && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Märke</span>
+                <span className="text-[#7a817b]">Märke</span>
                 <span>{brandLabel}</span>
               </div>
             )}
 
             {(listing.pickup_area || listing.pickup_window) && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Upphämtning</span>
+                <span className="text-[#7a817b]">Upphämtning</span>
                 <span>
                   {listing.pickup_area}
                   {listing.pickup_window && ` – ${listing.pickup_window}`}
@@ -292,55 +292,55 @@ export default function HandplockatListing() {
 
             {listing.pickup_deadline_at && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Hämtas senast</span>
+                <span className="text-[#7a817b]">Hämtas senast</span>
                 <span>{new Date(listing.pickup_deadline_at).toLocaleDateString("sv-SE")}</span>
               </div>
             )}
 
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Betalning</span>
+              <span className="text-[#7a817b]">Betalning</span>
               <span>{listing.payment_method || "Swish"}</span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Kontakt</span>
+              <span className="text-[#7a817b]">Kontakt</span>
               <span>{CONTACT_EMAIL}</span>
             </div>
 
-            <div className="text-2xl font-bold text-primary">{priceLabel}</div>
+            <div className="text-3xl font-bold text-[#8d6335]">{priceLabel}</div>
 
-            <div className="flex rounded-xl border overflow-hidden">
+            <div className="flex overflow-hidden rounded-full border border-[#d6cfc2] bg-white">
               <button
                 onClick={() => { setOrderMode("direct_buy"); setShowOrderForm(true); }}
-                className={`flex-1 py-2 ${orderMode === "direct_buy" ? "bg-primary text-white" : "bg-transparent"}`}
+                className={`flex-1 py-3 font-semibold ${orderMode === "direct_buy" ? "bg-[#30443c] text-white" : "bg-transparent text-[#5f6963]"}`}
               >
                 Boka direkt
               </button>
               <button
                 onClick={() => { setOrderMode("price_offer"); setShowOrderForm(true); }}
-                className={`flex-1 py-2 ${orderMode === "price_offer" ? "bg-primary text-white" : "bg-transparent"}`}
+                className={`flex-1 py-3 font-semibold ${orderMode === "price_offer" ? "bg-[#30443c] text-white" : "bg-transparent text-[#5f6963]"}`}
               >
                 Prisförslag
               </button>
             </div>
 
             {showOrderForm && (
-              <div className="space-y-2 border p-4 rounded-xl">
+              <div className="space-y-3 rounded-2xl border border-[#e5e0d7] bg-white p-5">
                 {orderMode === "price_offer" && (
-                  <input value={offeredPriceSek} onChange={(e) => setOfferedPriceSek(e.target.value)} placeholder="Ditt prisförslag (kr)" className="w-full border px-3 py-2 rounded" />
+                  <input value={offeredPriceSek} onChange={(e) => setOfferedPriceSek(e.target.value)} placeholder="Ditt prisförslag (kr)" className="w-full rounded-xl border border-[#d6cfc2] bg-[#fdfcf9] px-3 py-2" />
                 )}
-                <input value={orderName} onChange={(e) => setOrderName(e.target.value)} placeholder="Namn" className="w-full border px-3 py-2 rounded" />
-                <input value={orderPhone} onChange={(e) => setOrderPhone(e.target.value)} placeholder="Telefon" className="w-full border px-3 py-2 rounded" />
-                <input value={orderEmail} onChange={(e) => setOrderEmail(e.target.value)} placeholder="E-post" className="w-full border px-3 py-2 rounded" />
+                <input value={orderName} onChange={(e) => setOrderName(e.target.value)} placeholder="Namn" className="w-full rounded-xl border border-[#d6cfc2] bg-[#fdfcf9] px-3 py-2" />
+                <input value={orderPhone} onChange={(e) => setOrderPhone(e.target.value)} placeholder="Telefon" className="w-full rounded-xl border border-[#d6cfc2] bg-[#fdfcf9] px-3 py-2" />
+                <input value={orderEmail} onChange={(e) => setOrderEmail(e.target.value)} placeholder="E-post" className="w-full rounded-xl border border-[#d6cfc2] bg-[#fdfcf9] px-3 py-2" />
                 {orderError && <p className="text-red-500 text-sm">{orderError}</p>}
                 {orderSuccess && <p className="text-green-600 text-sm">{orderSuccess}</p>}
-                <button onClick={handleCreateOrder} disabled={orderLoading} className="w-full bg-primary text-white py-2 rounded disabled:opacity-60">
+                <button onClick={handleCreateOrder} disabled={orderLoading} className="w-full rounded-full bg-[#e6c98e] py-3 font-semibold text-[#26352f] transition hover:bg-[#d9b975] disabled:opacity-60">
                   {orderLoading ? "Skickar…" : orderMode === "direct_buy" ? "Slutför förfrågan" : "Skicka förslag"}
                 </button>
               </div>
             )}
 
-                  <div className="text-xs text-muted-foreground mt-2">
+                  <div className="mt-2 text-xs text-[#7a817b]">
           Ingen betalning sker direkt – vi bekräftar din beställning först.
         </div>
 

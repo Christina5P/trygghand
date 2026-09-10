@@ -225,7 +225,13 @@ async function removeBgLocalAndUpload(args: {
 export default function HandplockatCreate() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, customer, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && customer?.is_admin !== true) {
+      navigate("/handplockat", { replace: true });
+    }
+  }, [authLoading, customer, navigate]);
 
   const [listingId, setListingId] = useState(() => generateUuid());
 
@@ -946,6 +952,10 @@ export default function HandplockatCreate() {
   };
 
   /* ── UI ── */
+  if (authLoading || customer?.is_admin !== true) {
+    return <div className="p-8 text-center">Kontrollerar behörighet...</div>;
+  }
+
   return (
     <div className="min-h-[100svh] bg-background">
       <Seo
