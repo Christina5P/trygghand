@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import useEmblaCarousel from "embla-carousel-react";
 import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,13 +9,15 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import type { HandplockatListing } from "@/types";
 import ListingCard from "@/components/ListingCard";
 import HandplockatInterestForm from "./HandplockatInterestForm";
-import { ArrowRight, Heart, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, ArrowRight, Heart, SlidersHorizontal } from "lucide-react";
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+
+const FEATURED_LISTINGS_STORAGE_KEY = "handplockat_featured_ids";
 
 const DEFAULT_DESCRIPTION =
   "Handplockat i Sundsvall – vintage, retro möbler och utvald inredning från riktiga hem. Handplockade fynd från Trygg Hand.";
@@ -35,9 +38,27 @@ export default function HandplockatIndex() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("Alla");
+  const [featuredCarouselRef, featuredCarouselApi] = useEmblaCarousel({
+    loop: true,
+    align: "start",
+    skipSnaps: false,
+    slidesToScroll: 1,
+  });
+  const [isFeaturedHovered, setIsFeaturedHovered] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [autoRotationReset, setAutoRotationReset] = useState(0);
+  const [featuredSelection, setFeaturedSelection] = useState<string[]>([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotionPreference = () => setPrefersReducedMotion(mediaQuery.matches);
+    updateMotionPreference();
+    mediaQuery.addEventListener("change", updateMotionPreference);
+    return () => mediaQuery.removeEventListener("change", updateMotionPreference);
   }, []);
 
   useEffect(() => {
@@ -45,6 +66,16 @@ export default function HandplockatIndex() {
       setError("Supabase är inte konfigurerat.");
       setLoading(false);
       return;
+    }
+
+    try {
+      const raw = localStorage.getItem(FEATURED_LISTINGS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setFeaturedSelection(Array.isArray(parsed) ? parsed.map(String) : []);
+      }
+    } catch {
+      setFeaturedSelection([]);
     }
 
     fetchHandplockatListings()
@@ -58,8 +89,31 @@ export default function HandplockatIndex() {
     [listings]
   );
 
-  // No featured field exists yet, so the storefront uses the existing public order.
-  const featuredListings = useMemo(() => visibleListings.slice(0, 4), [visibleListings]);
+  const featuredListings = useMemo(() => {
+    if (featuredSelection.length > 0) {
+      const selected = featuredSelection
+        .map((id) => visibleListings.find((listing) => String(listing.id) === String(id)))
+        .filter((listing): listing is HandplockatListing => Boolean(listing));
+
+      if (selected.length > 0) {
+        return selected.slice(0, 8);
+      }
+    }
+
+    return visibleListings.slice(0, 4);
+  }, [featuredSelection, visibleListings]);
+
+  useEffect(() => {
+    if (!featuredCarouselApi || prefersReducedMotion || isFeaturedHovered || featuredListings.length < 2) {
+      return;
+    }
+
+    const rotationTimer = window.setInterval(() => {
+      featuredCarouselApi.scrollNext();
+    }, 5000);
+
+    return () => window.clearInterval(rotationTimer);
+  }, [featuredCarouselApi, featuredListings.length, isFeaturedHovered, prefersReducedMotion, autoRotationReset]);
 
   const categoryFilters = useMemo(() => {
     const cats = Array.from(
@@ -87,6 +141,13 @@ export default function HandplockatIndex() {
   }, [visibleListings, selectedCategory]);
 
   const canCreate = !authLoading && customer?.is_admin === true;
+
+  const scrollFeatured = (direction: "previous" | "next") => {
+    if (!featuredCarouselApi) return;
+    if (direction === "next") featuredCarouselApi.scrollNext();
+    else featuredCarouselApi.scrollPrev();
+    setAutoRotationReset((value) => value + 1);
+  };
 
   return (
     <div className="min-h-[100svh] bg-[#f8f6f1] text-[#26352f]">
@@ -148,7 +209,15 @@ export default function HandplockatIndex() {
                 <h2 className="font-nunito text-3xl font-bold sm:text-4xl">Handplockat just nu</h2>
                 <p className="mt-3 max-w-xl text-[#6b746e]">Saker vi fastnade lite extra för den här veckan.</p>
               </div>
-              <a href="#listings" className="text-sm font-semibold text-[#8d6335] hover:underline">Se alla fynd <ArrowRight className="inline h-4 w-4" /></a>
+              <div className="flex items-center gap-2">
+                <a href="#listings" className="mr-2 inline-flex items-center gap-2 text-base font-bold text-[#8d6335] transition hover:text-[#6e4e2d] hover:underline">Se alla fynd <ArrowRight className="h-4 w-4" /></a>
+                <button type="button" onClick={() => scrollFeatured("previous")} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d6cfc2] bg-white text-[#30443c] transition hover:bg-[#f6e9c9]" aria-label="Föregående fynd">
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <button type="button" onClick={() => scrollFeatured("next")} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d6cfc2] bg-white text-[#30443c] transition hover:bg-[#f6e9c9]" aria-label="Nästa fynd">
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             {loading && (
@@ -158,10 +227,22 @@ export default function HandplockatIndex() {
             )}
 
             {!loading && !error && (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div
+                ref={featuredCarouselRef}
+                onMouseEnter={() => setIsFeaturedHovered(true)}
+                onMouseLeave={() => setIsFeaturedHovered(false)}
+                className="overflow-hidden"
+                role="region"
+                aria-roledescription="carousel"
+                aria-label="Handplockat just nu"
+              >
+                <div className="-ml-6 flex">
                 {featuredListings.map((listing, index) => (
-                  <ListingCard key={listing.id} listing={listing} eager={index < 4} />
+                  <div key={listing.id} className="min-w-0 shrink-0 grow-0 basis-[84vw] pl-6 sm:basis-1/2 lg:basis-1/2">
+                    <ListingCard listing={listing} eager={index < 4} />
+                  </div>
                 ))}
+                </div>
               </div>
             )}
           </div>

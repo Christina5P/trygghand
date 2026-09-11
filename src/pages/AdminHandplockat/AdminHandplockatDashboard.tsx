@@ -4,6 +4,8 @@ import { useHandplockatAdminData } from "./useHandplockatAdminData";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
+const FEATURED_LISTINGS_STORAGE_KEY = "handplockat_featured_ids";
+
 const LISTING_STATUS_LABELS: Record<string, string> = {
   draft: "Utkast",
   available: "Tillgänglig",
@@ -157,6 +159,16 @@ export default function AdminHandplockatDashboard() {
   const [showPersonalData, setShowPersonalData] = useState(false);
   const [hideSold, setHideSold] = useState(false);
   const [showArchivedSold, setShowArchivedSold] = useState(false);
+  const [featuredIds, setFeaturedIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(FEATURED_LISTINGS_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  });
   const [archivedSoldIds, setArchivedSoldIds] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem("handplockat_admin_archived_sold_ids");
@@ -185,11 +197,29 @@ export default function AdminHandplockatDashboard() {
 
   useEffect(() => {
     try {
+      localStorage.setItem(FEATURED_LISTINGS_STORAGE_KEY, JSON.stringify(featuredIds));
+    } catch {
+      // ignore storage errors
+    }
+  }, [featuredIds]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem("handplockat_admin_archived_sold_ids", JSON.stringify(archivedSoldIds));
     } catch {
       // ignore storage errors
     }
   }, [archivedSoldIds]);
+
+  function toggleFeatured(id: string) {
+    setFeaturedIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((item) => item !== id);
+      }
+
+      return [...prev, id];
+    });
+  }
 
   function toggleListingSort(key: ListingSortKey) {
     setListingSort((prev) =>
@@ -744,30 +774,43 @@ export default function AdminHandplockatDashboard() {
                       </td>
 
                       <td className="p-3">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col gap-2">
                           <button
-                            onClick={() => navigate(`/admin/handplockat/${l.id}/redigera`)}
-                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold px-3 py-1.5 rounded transition"
+                            onClick={() => toggleFeatured(String(l.id))}
+                            className={
+                              featuredIds.includes(String(l.id))
+                                ? "bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-xs font-semibold px-3 py-1.5 rounded transition"
+                                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold px-3 py-1.5 rounded transition"
+                            }
                           >
-                            Redigera
+                            {featuredIds.includes(String(l.id)) ? "Ta bort från carousel" : "Visa i carousel"}
                           </button>
 
-                          <button
-                            onClick={() => setConfirmDelete({ id: l.id, title: l.title })}
-                            disabled={deletingId === l.id}
-                            className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold px-3 py-1.5 rounded transition"
-                          >
-                            {deletingId === l.id ? "..." : "Ta bort"}
-                          </button>
-
-                          {l.status === "sold" && (
+                          <div className="flex gap-2">
                             <button
-                              onClick={() => toggleArchiveSold(String(l.id))}
-                              className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 text-xs font-semibold px-3 py-1.5 rounded transition"
+                              onClick={() => navigate(`/admin/handplockat/${l.id}/redigera`)}
+                              className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold px-3 py-1.5 rounded transition"
                             >
-                              {archivedSoldIds.includes(String(l.id)) ? "Återställ" : "Arkivera"}
+                              Redigera
                             </button>
-                          )}
+
+                            <button
+                              onClick={() => setConfirmDelete({ id: l.id, title: l.title })}
+                              disabled={deletingId === l.id}
+                              className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold px-3 py-1.5 rounded transition"
+                            >
+                              {deletingId === l.id ? "..." : "Ta bort"}
+                            </button>
+
+                            {l.status === "sold" && (
+                              <button
+                                onClick={() => toggleArchiveSold(String(l.id))}
+                                className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 text-xs font-semibold px-3 py-1.5 rounded transition"
+                              >
+                                {archivedSoldIds.includes(String(l.id)) ? "Återställ" : "Arkivera"}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>
