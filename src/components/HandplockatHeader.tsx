@@ -27,6 +27,7 @@ export default function HandplockatHeader() {
               to="/"
               className="text-xs md:text-sm text-muted-foreground hover:text-primary font-medium flex items-center gap-1 transition-colors"
             >
+            
               ← Tillbaka till Trygg Hand
             </Link>
           </div>
@@ -49,7 +50,7 @@ export default function HandplockatHeader() {
             to="/second-hand-sundsvall"
             className="font-semibold text-lg md:text-xl tracking-tight truncate hover:underline underline-offset-4 transition-colors"
           >
-            Om second hand
+            Bakom Handplockat
           </Link>
           <a
             href="#listings"
@@ -72,12 +73,10 @@ export default function HandplockatHeader() {
   </span>
 
   <span>
-    Här säljer vi utvalda föremål från hem vi hjälper till att avveckla.
+    Här säljer vi utvalda föremål från hem omkring Sundsvall.
   </span>
 
-  <span>
-    Alla köp hanteras av Trygg Hand.
-  </span>
+ 
 </div>
 
         {/* Mobil meny */}
@@ -107,8 +106,8 @@ export default function HandplockatHeader() {
                 Trygg Hand
               </Link>
               <span>Handplockat är en del av Trygg Hand.
-              Här säljer vi utvalda föremål från hem vi hjälper till att avveckla.
-              Alla köp hanteras av Trygg Hand.</span>
+              Här säljer vi utvalda föremål från hem runtomkring Sundsvall.
+              </span>
             </div>
           </div>
         )}

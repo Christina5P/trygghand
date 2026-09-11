@@ -63,27 +63,27 @@ const Index = () => {
       <Header />
       <main>
         {/* Banner Kampanj - Äldreboende */}
-        <div className="w-full bg-gradient-to-b from-white via-white to-gray-50 py-6 md:py-8 px-4">
-          <div className="container mx-auto max-w-5xl">
+        <div className="w-full bg-gradient-to-b from-white via-white to-gray-50 px-4 py-4 md:py-6">
+          <div className="container mx-auto max-w-4xl">
             <div className="rounded-2xl shadow-xl overflow-hidden bg-gradient-to-r from-cyan-50 via-blue-50 to-cyan-50 border-2 border-cyan-200/50 hover:shadow-2xl transition-shadow duration-300">
               <div className="grid md:grid-cols-2 gap-0 md:gap-0 md:auto-rows-fr">
                 {/* Bild */}
-                <div className="hidden md:flex relative bg-cover bg-center items-center justify-center" style={{
+                <div className="relative flex h-32 bg-cover bg-center items-center justify-center md:h-auto" style={{
                   backgroundImage: 'url(/stad_aldreboende.png)',
-                  minHeight: '256px',
+                  minHeight: '0',
                 }}>
                   <div className="absolute inset-0 bg-white/20" />
                 </div>
                 {/* Text & Knapp */}
-                <div className="p-6 md:p-8 flex flex-col justify-center items-start gap-5 bg-gradient-to-br from-white to-blue-100/40">
+                <div className="p-5 md:p-6 flex flex-col justify-center items-start gap-4 bg-gradient-to-br from-white to-blue-100/40">
                   <div>
-                    <h3 className="text-sm md:text-base font-bold text-cyan-700 mb-2 tracking-widest uppercase"> Kampanj</h3>
-                    <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">Vi flyttstädar din anhörigs äldreboende.</h2>
-                    <p className="text-base md:text-lg text-gray-700 leading-relaxed font-medium">Fast pris 3 500 kr inkl. moms för normalstort rum i Sundsvallsområdet.</p>
+                    <h3 className="text-xs md:text-sm font-bold text-cyan-700 mb-2 tracking-widest uppercase"> Kampanj</h3>
+                    <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">Vi flyttstädar din anhörigs äldreboende.</h2>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed font-medium">Fast pris 3 500 kr inkl. moms för normalstort rum i Sundsvallsområdet.</p>
                   </div>
                   <Link
                     to="/#kontakt-form"
-                    className="rounded-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-700 hover:to-cyan-600 text-white font-bold py-3 px-7 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 active:scale-95 text-sm md:text-base"
+                    className="rounded-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-700 hover:to-cyan-600 text-white font-bold py-2.5 px-6 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 active:scale-95 text-sm"
                   >
                     Boka flyttstädning → 3 500 kr
                   </Link>

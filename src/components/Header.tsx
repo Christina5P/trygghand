@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Phone, Mail, User, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import HouseHandsLogo from "./HouseHandsLogo";
+import HandplockatLogo from "./HandplockatLogo";
 import { Customer } from "@/types"; // <-- adjust path if needed
 import { useAuth } from "@/hooks/useAuth"; // <-- adjust path if needed
 
@@ -53,41 +54,22 @@ const Header: React.FC<{ handplockatLogo?: boolean }> = ({ handplockatLogo }) =>
     <Link
       to="/handplockat"
       className={[
-        "group ml-2 hidden items-center gap-3 rounded-2xl px-3 py-2 md:flex",
-        "border border-border bg-emerald-50/60 backdrop-blur",
-        "shadow-sm transition hover:shadow-md hover:bg-emerald-50/90",
-        isHandplockat ? "ring-1 ring-emerald-300/60" : "",
+        "group relative isolate hidden border-l border-[#c8ad78] pl-5 leading-tight before:pointer-events-none before:absolute before:-inset-x-5 before:-inset-y-3 before:-z-10 before:rounded-full before:bg-[radial-gradient(ellipse_at_center,rgba(230,201,142,0.18),rgba(255,255,255,0)_72%)] before:blur-lg before:transition-opacity hover:border-[#aa7945] hover:before:opacity-100 md:flex md:flex-col",
+        isHandplockat ? "text-[#8d6335]" : "",
       ].join(" ")}
       aria-label="Gå till Handplockat"
-      title="Handplockat – Marknad för fynd och vintage"
+      title="Upptäck Handplockat – vintage, retro och återbruk"
     >
-      {/* Logo / ikon */}
-      <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-emerald-50">
-        <img
-          src="/handplockat-favicon-32x32.png"
-          alt="Handplockat"
-          className="h-7 w-auto opacity-95 transition group-hover:scale-[1.02]"
-        />
+      <div className="relative z-10 flex items-center gap-3 text-base font-extrabold uppercase tracking-[0.1em] text-foreground transition-colors group-hover:text-[#8d6335]">
+        Handplockat
+        <HandplockatLogo className="h-9 w-12 object-contain" />
       </div>
-
-      {/* Text */}
-      <div className="leading-tight">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">
-            Handplockat
-          </span>
-
-          {/* Diskret badge */}
-          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-s font-semibold text-trust-blue">
-            Marknad
-          </span>
-        </div>
-
-        <div className="text-xs text-muted-foreground">
-          Fynd • Vintage • Hållbart
-        </div>
+      <div className="relative z-10 mt-1 text-xs font-bold tracking-wide text-[#8d6335]">
+        Vintage · Retro · Återbruk
       </div>
-
+      <div className="relative z-10 mt-1 text-xs font-extrabold text-muted-foreground transition-colors group-hover:text-[#8d6335]">
+        Upptäck butiken →
+      </div>
     </Link>
   );
 }
@@ -229,20 +211,16 @@ const Header: React.FC<{ handplockatLogo?: boolean }> = ({ handplockatLogo }) =>
               <div className="border-t border-border">
                 <Link
                   to="/handplockat"
-                  className="block bg-emerald-50/60 px-4 py-3 text-foreground hover:bg-emerald-50/90"
+                  className="group relative isolate block border-l-2 border-[#c8ad78] px-4 py-3 text-foreground transition-colors before:pointer-events-none before:absolute before:-inset-x-3 before:-inset-y-2 before:-z-10 before:rounded-full before:bg-[radial-gradient(ellipse_at_center,rgba(230,201,142,0.16),rgba(255,255,255,0)_72%)] before:blur-lg hover:bg-[#faf7f0]"
                   onClick={closeMobileMenu}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                        <img src="/handplockat-favicon-32x32.png" alt="Handplockat" className="h-5 w-auto" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold">Handplockat</div>
-                        <div className="text-xs text-muted-foreground">Marknad för fynd och vintage</div>
-                      </div>
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-[0.1em]">
+                      Handplockat
+                      <HandplockatLogo className="h-9 w-12 object-contain" />
                     </div>
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-trust-blue">Marknad</span>
+                    <div className="mt-1 text-xs font-bold text-[#8d6335]">Vintage · Retro · Återbruk</div>
+                    <div className="mt-1 text-sm font-extrabold text-muted-foreground">Upptäck butiken →</div>
                   </div>
                 </Link>
               </div>
@@ -315,7 +293,6 @@ const Header: React.FC<{ handplockatLogo?: boolean }> = ({ handplockatLogo }) =>
               Min sida
             </Link>
           </Button>
-         
         </div>
       </div>
     </header>

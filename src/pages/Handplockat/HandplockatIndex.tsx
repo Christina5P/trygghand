@@ -42,7 +42,7 @@ export default function HandplockatIndex() {
     loop: true,
     align: "start",
     skipSnaps: false,
-    slidesToScroll: 1,
+    slidesToScroll: 2,
   });
   const [isFeaturedHovered, setIsFeaturedHovered] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -110,7 +110,7 @@ export default function HandplockatIndex() {
 
     const rotationTimer = window.setInterval(() => {
       featuredCarouselApi.scrollNext();
-    }, 5000);
+    }, 3500);
 
     return () => window.clearInterval(rotationTimer);
   }, [featuredCarouselApi, featuredListings.length, isFeaturedHovered, prefersReducedMotion, autoRotationReset]);
