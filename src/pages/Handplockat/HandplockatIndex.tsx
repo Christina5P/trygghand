@@ -205,9 +205,9 @@ export default function HandplockatIndex() {
           <div className="mx-auto max-w-7xl px-5 sm:px-8">
             <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="mb-3 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-[#aa7945]"><span className="h-px w-10 bg-[#d6c29c]" /> Skyltfönstret</p>
+                <p className="mb-3 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-[#aa7945]"><span className="h-px w-10 bg-[#d6c29c]" /> Skyltfönster</p>
                 <h2 className="font-nunito text-3xl font-bold sm:text-4xl">Handplockat just nu</h2>
-                <p className="mt-3 max-w-xl text-[#6b746e]">Saker vi fastnade lite extra för den här veckan.</p>
+                <p className="mt-3 max-w-xl text-[#6b746e]">Saker vi fastnade lite extra för just nu.</p>
               </div>
               <div className="flex items-center gap-2">
                 <a href="#listings" className="mr-2 inline-flex items-center gap-2 text-base font-bold text-[#8d6335] transition hover:text-[#6e4e2d] hover:underline">Se alla fynd <ArrowRight className="h-4 w-4" /></a>
