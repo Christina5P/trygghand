@@ -90,17 +90,14 @@ export default function HandplockatIndex() {
   );
 
   const featuredListings = useMemo(() => {
-    if (featuredSelection.length > 0) {
-      const selected = featuredSelection
-        .map((id) => visibleListings.find((listing) => String(listing.id) === String(id)))
-        .filter((listing): listing is HandplockatListing => Boolean(listing));
-
-      if (selected.length > 0) {
-        return selected.slice(0, 8);
-      }
+    if (featuredSelection.length === 0) {
+      return [];
     }
 
-    return visibleListings.slice(0, 4);
+    return featuredSelection
+      .map((id) => visibleListings.find((listing) => String(listing.id) === String(id)))
+      .filter((listing): listing is HandplockatListing => Boolean(listing))
+      .slice(0, 8);
   }, [featuredSelection, visibleListings]);
 
   useEffect(() => {
