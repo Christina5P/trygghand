@@ -166,7 +166,21 @@ export async function createHandplockatOrder(payload: {
     },
   });
 
-  if (error) throw error;
+  if (error) {
+    const response = (error as { context?: Response }).context;
+    if (response) {
+      try {
+        const body = await response.json();
+        const message = typeof body?.error === "string" ? body.error : null;
+        if (message) throw new Error(message);
+      } catch (parseError) {
+        if (parseError instanceof Error && parseError.message !== "Unexpected end of JSON input") {
+          throw parseError;
+        }
+      }
+    }
+    throw error;
+  }
   if ((data as any)?.ok === false) {
     const msg = (data as any)?.error || (data as any)?.message || "Kunde inte skapa order.";
     throw new Error(msg);

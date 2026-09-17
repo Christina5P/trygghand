@@ -5,7 +5,6 @@ import {
   createHandplockatOrder,
   fetchHandplockatListingById,
   formatSek,
-  updateHandplockatListing,
 } from "@/lib/handplockat";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import type { HandplockatListing as HandplockatListingType } from "@/types";
@@ -110,8 +109,7 @@ export default function HandplockatListing() {
         offeredPriceSek: orderMode === "price_offer" ? parsedOffer : undefined,
       });
       if (orderMode === "direct_buy") {
-        const updated = await updateHandplockatListing({ id: listing.id, status: "reserved" });
-        setListing(updated);
+        setListing({ ...listing, status: "reserved" });
       }
       setOrderSuccess(
         orderMode === "direct_buy"
@@ -120,8 +118,13 @@ export default function HandplockatListing() {
       );
       setOrderName(""); setOrderPhone(""); setOrderEmail(""); setOfferedPriceSek("");
       setShowOrderForm(false);
-    } catch {
-      setOrderError("Kunde inte skicka.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      setOrderError(
+        message === "Annonsen är inte tillgänglig."
+          ? message
+          : "Kunde inte skicka."
+      );
     } finally {
       setOrderLoading(false);
     }
@@ -309,22 +312,26 @@ export default function HandplockatListing() {
 
             <div className="text-3xl font-bold text-[#8d6335]">{priceLabel}</div>
 
-            <div className="flex overflow-hidden rounded-full border border-[#d6cfc2] bg-white">
-              <button
-                onClick={() => { setOrderMode("direct_buy"); setShowOrderForm(true); }}
-                className={`flex-1 py-3 font-semibold ${orderMode === "direct_buy" ? "bg-[#30443c] text-white" : "bg-transparent text-[#5f6963]"}`}
-              >
-                Boka direkt
-              </button>
-              <button
-                onClick={() => { setOrderMode("price_offer"); setShowOrderForm(true); }}
-                className={`flex-1 py-3 font-semibold ${orderMode === "price_offer" ? "bg-[#30443c] text-white" : "bg-transparent text-[#5f6963]"}`}
-              >
-                Prisförslag
-              </button>
-            </div>
+            {listing.status === "available" ? (
+              <div className="flex overflow-hidden rounded-full border border-[#d6cfc2] bg-white">
+                <button
+                  onClick={() => { setOrderMode("direct_buy"); setShowOrderForm(true); }}
+                  className={`flex-1 py-3 font-semibold ${orderMode === "direct_buy" ? "bg-[#30443c] text-white" : "bg-transparent text-[#5f6963]"}`}
+                >
+                  Boka direkt
+                </button>
+                <button
+                  onClick={() => { setOrderMode("price_offer"); setShowOrderForm(true); }}
+                  className={`flex-1 py-3 font-semibold ${orderMode === "price_offer" ? "bg-[#30443c] text-white" : "bg-transparent text-[#5f6963]"}`}
+                >
+                  Prisförslag
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm font-semibold text-[#6b746e]">Annonsen är inte tillgänglig.</p>
+            )}
 
-            {showOrderForm && (
+            {showOrderForm && listing.status === "available" && (
               <div className="space-y-3 rounded-2xl border border-[#e5e0d7] bg-white p-5">
                 {orderMode === "price_offer" && (
                   <input value={offeredPriceSek} onChange={(e) => setOfferedPriceSek(e.target.value)} placeholder="Ditt prisförslag (kr)" className="w-full rounded-xl border border-[#d6cfc2] bg-[#fdfcf9] px-3 py-2" />
