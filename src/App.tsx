@@ -15,13 +15,14 @@ import PwaHead from "@/components/PwaHead";
 import ScrollToTop from "@/components/ScrollToTop";
 import CookieBanner from "@/components/CookieBanner";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import MetaPixel from "@/components/MetaPixel";
 
 // Auth
 import { AuthProvider } from "@/hooks/useAuth";
 import CustomerRoute from "@/components/CustomerRoute";
 
 // Helpers
-import { getCookieConsent, acceptStatisticsCookies } from "@/utils/cookies";
+import { applyStoredConsent } from "@/utils/cookies";
 
 // Components
 import ResetPassword from "@/components/ResetPassword";
@@ -83,10 +84,7 @@ const queryClient = new QueryClient();
 
 function App() {
   useEffect(() => {
-    const consent = getCookieConsent();
-    if (consent === true) {
-      acceptStatisticsCookies();
-    }
+    applyStoredConsent();
   }, []);
 
   return (
@@ -94,6 +92,7 @@ function App() {
       <PwaHead />
       <CookieBanner />
       <GoogleAnalytics />
+      <MetaPixel />
 
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>

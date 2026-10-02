@@ -145,12 +145,24 @@ export default function Privacy() {
         Du kan när som helst återkalla ditt samtycke genom att använda länken “Rensa cookies” längst ned på sidan.
       </p>
 
+      <h3 className="font-semibold mt-4">Meta Pixel (marknadsföring)</h3>
+      <p className="mb-2 text-base">
+        Vi använder Meta Pixel från Meta Platforms Ireland Ltd för att mäta hur våra annonser på Facebook och Instagram fungerar och för att kunna visa relevanta annonser. Meta Pixel laddas endast om du aktivt godkänner marknadsföringscookies, och aldrig när du är inloggad i kundportalen.
+      </p>
+      <p className="mb-2 text-base">
+        Meta Pixel sätter cookies (t.ex. <code>_fbp</code>) med ett slumpmässigt id och skickar information om vilka sidor du besöker till Meta. Trygg Hand och Meta är gemensamt personuppgiftsansvariga för insamlingen. Meta kan överföra uppgifter till länder utanför EU/EES med stöd av EU-kommissionens beslut om EU–US Data Privacy Framework. Läs mer i <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener noreferrer" className="underline">Metas integritetspolicy</a>.
+      </p>
+
       <h3 className="font-semibold mt-4">Cookies vi använder</h3>
       <ul className="list-disc pl-5 mt-3 space-y-2 text-base">
         <li>
           <strong>trygghand_cookie_consent</strong><br />
-          Denna cookie sparar ditt val om du vill tillåta statistik. Den används enbart för att komma ihåg ditt val och påverkar inte webbplatsens funktion.
+          Denna cookie sparar ditt val om du vill tillåta statistik och marknadsföring. Den används enbart för att komma ihåg ditt val och påverkar inte webbplatsens funktion.
           Den sparas i 12 månader.
+        </li>
+        <li>
+          <strong>_fbp</strong> (endast efter samtycke till marknadsföring)<br />
+          Sätts av Meta Pixel för att känna igen webbläsaren och mäta annonser. Den sparas i upp till 90 dagar.
         </li>
       </ul>
 
@@ -158,6 +170,7 @@ export default function Privacy() {
       <ul className="list-disc pl-5 mt-2 text-base">
         <li>Nödvändiga cookies: Krävs för att webbplatsen ska fungera.</li>
         <li>Statistik (valfritt): Hjälper oss förstå hur sidan används och göra den bättre. Vi sätter sådana cookies bara om du godkänner.</li>
+        <li>Marknadsföring (valfritt): Hjälper oss mäta och anpassa våra annonser hos Meta (Facebook och Instagram). Vi sätter sådana cookies bara om du godkänner.</li>
       </ul>
 
       <h3 className="font-semibold mt-4">Vår trygghetsgaranti</h3>
@@ -179,7 +192,7 @@ export default function Privacy() {
         Du kan också ta bort cookien <code>trygghand_cookie_consent</code> i din webbläsare eller kontakta oss så hjälper vi dig.
       </p>
 
-      <p className="text-sm text-muted-foreground">Senast uppdaterad: 2026-01-07</p>
+      <p className="text-sm text-muted-foreground">Senast uppdaterad: 2026-10-02</p>
     </div>
   );
 }
