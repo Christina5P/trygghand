@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { getConsentPreferences } from "@/utils/cookies";
 
 // Hämta GA Measurement ID från miljövariabler
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
@@ -10,16 +11,7 @@ export default function GoogleAnalytics() {
 
   useEffect(() => {
     const checkConsent = () => {
-      const getCookie = (name: string) => {
-        return document.cookie
-          .split("; ")
-          .find((row) => row.startsWith(name + "="))
-          ?.split("=")[1];
-      };
-
-      const consentCookie = getCookie("trygghand_cookie_consent");
-      const newConsent = consentCookie === "true";
-      setHasAnalyticsConsent(newConsent);
+      setHasAnalyticsConsent(getConsentPreferences()?.statistics === true);
     };
 
     checkConsent();

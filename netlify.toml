@@ -72,6 +72,17 @@ status = 200
   to = "/og.jpg"
   status = 200
 
+# Grundläggande säkerhetsheaders för hela sajten
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Content-Security-Policy = "frame-ancestors 'self'; base-uri 'self'; object-src 'none'"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Strict-Transport-Security = "max-age=31536000"
+
 [[headers]]
   for = "/assets/*"
   [headers.values]

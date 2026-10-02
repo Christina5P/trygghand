@@ -1,27 +1,36 @@
 import React, { useEffect, useState, useRef } from "react";
-import { acceptStatisticsCookies, declineStatisticsCookies } from "@/utils/cookies";
-
-const COOKIE_NAME = "trygghand_cookie_consent";
-
-function getCookie(name: string) {
-  return document.cookie.split("; ").find((row) => row.startsWith(name + "="))?.split("=")[1];
-}
+import {
+  acceptAllCookies,
+  acceptOnlyNecessaryCookies,
+  getConsentPreferences,
+  needsConsentPrompt,
+  saveConsentPreferences,
+} from "@/utils/cookies";
 
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ x: 16, y: window.innerHeight - 150 }); // Initial position: left-4 (16px), higher up from bottom
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [showSettings, setShowSettings] = useState(false);
+  const [statistics, setStatistics] = useState(false);
+  const [marketing, setMarketing] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const c = getCookie(COOKIE_NAME);
     const url = new URL(window.location.href);
     const force = url.searchParams.get("showCookieBanner") === "1";
-    if (!c || force) setVisible(true);
+    if (needsConsentPrompt() || force) {
+      const prefs = getConsentPreferences();
+      setStatistics(prefs?.statistics ?? false);
+      setMarketing(prefs?.marketing ?? false);
+      setVisible(true);
+    }
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Låt knappar, länkar och kryssrutor fungera som vanligt
+    if ((e.target as HTMLElement).closest("button, a, input, label")) return;
     setIsDragging(true);
     setDragStart({
       x: e.clientX - position.x,
@@ -56,12 +65,17 @@ export default function CookieBanner() {
   }, [isDragging, dragStart]);
 
   const acceptAll = () => {
-    acceptStatisticsCookies();
+    acceptAllCookies();
     setVisible(false);
   };
 
   const acceptOnlyNecessary = () => {
-    declineStatisticsCookies();
+    acceptOnlyNecessaryCookies();
+    setVisible(false);
+  };
+
+  const saveSelection = () => {
+    saveConsentPreferences({ statistics, marketing });
     setVisible(false);
   };
 
@@ -87,12 +101,42 @@ export default function CookieBanner() {
         <div>
           <strong className="block text-base mb-1">Vi använder cookies</strong>
           <div className="text-sm">
-            Vi behöver några tekniska cookies för att sidan ska fungera. Välj "Acceptera alla" om du vill tillåta statistik‑cookies som hjälper oss förbättra tjänsten? Ditt val sparas i ett år.
+            Nödvändiga cookies krävs för att sidan ska fungera. Med ditt samtycke använder vi även
+            statistik (Google Analytics) och marknadsföring (Meta Pixel) för att förbättra sidan och
+            mäta våra annonser på Facebook och Instagram. Ditt val sparas i ett år.
           </div>
           <a href="/privacy" className="text-xs underline mt-1 inline-block">Läs mer om cookies</a>
+
+          {showSettings && (
+            <fieldset className="mt-2 space-y-1 text-sm">
+              <legend className="sr-only">Välj cookies</legend>
+              <label className="flex items-start gap-2">
+                <input type="checkbox" checked disabled className="mt-1" />
+                <span><strong>Nödvändiga</strong> – krävs för att sidan ska fungera.</span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={statistics}
+                  onChange={(e) => setStatistics(e.target.checked)}
+                  className="mt-1"
+                />
+                <span><strong>Statistik</strong> – hjälper oss förstå hur sidan används.</span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={marketing}
+                  onChange={(e) => setMarketing(e.target.checked)}
+                  className="mt-1"
+                />
+                <span><strong>Marknadsföring</strong> – mäter och anpassar våra annonser hos Meta.</span>
+              </label>
+            </fieldset>
+          )}
         </div>
 
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <button
             onClick={acceptOnlyNecessary}
             className="rounded-md px-3 py-2 border border-gray-300 bg-gray-50 text-xs"
@@ -100,6 +144,27 @@ export default function CookieBanner() {
           >
             Endast nödvändiga
           </button>
+
+          {showSettings ? (
+            <button
+              onClick={saveSelection}
+              className="rounded-md px-3 py-2 border border-gray-300 bg-gray-50 text-xs"
+            >
+              Spara val
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setShowSettings(true);
+                // Flytta upp så att de utfällda valen syns
+                setPosition((p) => ({ ...p, y: Math.max(16, Math.min(p.y, window.innerHeight - 340)) }));
+              }}
+              className="rounded-md px-3 py-2 border border-gray-300 bg-gray-50 text-xs"
+              aria-expanded={showSettings}
+            >
+              Anpassa
+            </button>
+          )}
 
           <button
             onClick={acceptAll}
