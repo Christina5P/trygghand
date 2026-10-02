@@ -73,7 +73,12 @@ export default function MetaPixel() {
   useEffect(() => {
     const onChange = () => setHasMarketingConsent(getConsentPreferences()?.marketing === true);
     window.addEventListener(CONSENT_CHANGED_EVENT, onChange);
-    return () => window.removeEventListener(CONSENT_CHANGED_EVENT, onChange);
+    // Fångar även ändringar i andra flikar eller om cookien raderas manuellt
+    const interval = setInterval(onChange, 1000);
+    return () => {
+      window.removeEventListener(CONSENT_CHANGED_EVENT, onChange);
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {

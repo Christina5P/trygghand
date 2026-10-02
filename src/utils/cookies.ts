@@ -9,7 +9,7 @@ export type ConsentPreferences = {
 function readRawConsent(): string | null {
   const cookie = document.cookie.split('; ').find(row => row.startsWith(COOKIE_NAME + '='));
   if (!cookie) return null;
-  return decodeURIComponent(cookie.split('=')[1] ?? '');
+  return cookie.split('=')[1] ?? '';
 }
 
 // Format: "v2.s1.m0" (s = statistik, m = marknadsföring).
